@@ -1,0 +1,13 @@
+id: 18-redistribute-connected
+title: redistribute connected added on pe1
+category: hygiene
+expected: unsafe
+rationale: Infrastructure /30s and loopbacks go to the customer and into iBGP. Export filters keep them from the upstream and the peer, but leaking infrastructure to customers is rejected in review.
+note: Not covered by the intent spec, which has no check for infrastructure routes at the customer.
+edits:
+- node: pe1
+  append: |-
+    router bgp 65000
+     address-family ipv4 unicast
+      redistribute connected
+     exit-address-family

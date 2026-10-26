@@ -1,0 +1,10 @@
+id: 19-nexthop-self-removed
+title: next-hop-self removed on pe2 toward pe1
+category: policy-bug
+expected: unsafe
+rationale: pe1 learns the peer route with an unreachable next hop, so the customer loses the peer route.
+edits:
+- node: pe2
+  replace: |2
+      neighbor 10.0.3.1 next-hop-self
+  with: ''

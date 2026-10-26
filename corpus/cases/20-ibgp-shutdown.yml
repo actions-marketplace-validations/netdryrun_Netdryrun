@@ -1,0 +1,10 @@
+id: 20-ibgp-shutdown
+title: iBGP session between pe1 and pe2 shut down
+category: fat-finger
+expected: unsafe
+rationale: The two halves of the network stop exchanging routes.
+edits:
+- node: pe1
+  append: |-
+    router bgp 65000
+     neighbor 10.0.3.2 shutdown

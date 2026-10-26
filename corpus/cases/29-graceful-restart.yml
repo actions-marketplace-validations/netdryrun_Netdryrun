@@ -1,0 +1,10 @@
+id: 29-graceful-restart
+title: Enable BGP graceful restart on pe1
+category: hygiene
+expected: safe
+rationale: A resilience feature; the routing outcome is unchanged.
+edits:
+- node: pe1
+  append: |-
+    router bgp 65000
+     bgp graceful-restart

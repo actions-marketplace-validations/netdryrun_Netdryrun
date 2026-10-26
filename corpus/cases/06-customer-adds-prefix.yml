@@ -1,0 +1,14 @@
+id: 06-customer-adds-prefix
+title: Customer announces a second allowed /24
+category: customer-growth
+expected: safe
+rationale: The customer adds 10.100.1.0/24, inside its registered 10.100.0.0/22. Announcing it upstream is the desired outcome.
+note: Normal customer growth inside the registered range.
+edits:
+- node: ce1
+  append: |-
+    ip route 10.100.1.0/24 blackhole
+    router bgp 65100
+     address-family ipv4 unicast
+      network 10.100.1.0/24
+     exit-address-family

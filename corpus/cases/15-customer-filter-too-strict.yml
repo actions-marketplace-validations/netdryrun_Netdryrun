@@ -1,0 +1,9 @@
+id: 15-customer-filter-too-strict
+title: Customer prefix-list typo rejects the customer's /24
+category: policy-bug
+expected: unsafe
+rationale: le 23 instead of le 24 drops the customer's only prefix, so the customer becomes unreachable from the internet.
+edits:
+- node: pe1
+  replace: permit 10.100.0.0/22 le 24
+  with: permit 10.100.0.0/22 le 23

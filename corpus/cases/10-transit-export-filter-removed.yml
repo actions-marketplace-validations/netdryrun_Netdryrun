@@ -1,0 +1,10 @@
+id: 10-transit-export-filter-removed
+title: Upstream export filter replaced with permit-all
+category: route-leak
+expected: unsafe
+rationale: 'pe1 now announces everything to the upstream, including the peer''s route: free transit for the peer, a classic route leak.'
+note: Route leak as defined in RFC 7908.
+edits:
+- node: pe1
+  replace: '  neighbor 10.0.2.2 route-map TO-UPSTREAM out'
+  with: '  neighbor 10.0.2.2 route-map TO-CUSTOMER out'

@@ -1,0 +1,10 @@
+id: 02-med-to-upstream
+title: Set MED on routes sent to the upstream
+category: traffic-engineering
+expected: safe
+rationale: Adds a metric to the upstream export clause. Changes path attributes only; nothing leaks or disappears.
+edits:
+- node: pe1
+  append: |-
+    route-map TO-UPSTREAM permit 10
+     set metric 50

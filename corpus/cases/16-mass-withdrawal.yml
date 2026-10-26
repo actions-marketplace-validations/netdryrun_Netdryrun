@@ -1,0 +1,16 @@
+id: 16-mass-withdrawal
+title: Upstream export policy denies everything
+category: withdrawal
+expected: unsafe
+rationale: 'Every route we announce to the upstream is withdrawn: our aggregate and the customer vanish from the upstream.'
+note: Mass-withdrawal outage class (the 2021 Facebook outage began with withdrawn routes).
+edits:
+- node: pe1
+  replace: |
+    route-map TO-UPSTREAM permit 10
+     match community CUSTOMER
+    !
+    route-map TO-UPSTREAM permit 20
+     match ip address prefix-list OWN
+  with: |
+    route-map TO-UPSTREAM deny 10

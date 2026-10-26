@@ -1,0 +1,12 @@
+id: 17-default-leaked-to-peer
+title: default-originate configured toward the peer
+category: route-leak
+expected: unsafe
+rationale: We offer the peer a default route, so the peer can send all its traffic through us for free.
+edits:
+- node: pe2
+  append: |-
+    router bgp 65000
+     address-family ipv4 unicast
+      neighbor 10.0.4.2 default-originate
+     exit-address-family

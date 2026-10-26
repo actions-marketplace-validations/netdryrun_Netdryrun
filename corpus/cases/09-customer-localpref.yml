@@ -1,0 +1,9 @@
+id: 09-customer-localpref
+title: Lower customer local-preference from 300 to 250
+category: traffic-engineering
+expected: safe
+rationale: Customer routes stay the most preferred (peer 200, upstream 100).
+edits:
+- node: pe1
+  replace: ' set local-preference 300'
+  with: ' set local-preference 250'

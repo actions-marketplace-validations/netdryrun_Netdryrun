@@ -11,7 +11,7 @@ import yaml
 CHECK_TYPES = {
     "bgp_session": {"required": ("node", "neighbor"), "optional": ("state", "vrf")},
     "bgp_prefixes": {"required": ("node", "neighbor"), "optional": ("min", "max", "exact", "afi", "vrf")},
-    "route": {"required": ("node", "prefix"), "optional": ("present", "protocol", "vrf")},
+    "route": {"required": ("node", "prefix"), "optional": ("present", "protocol", "vrf", "active")},
     "ping": {"required": ("node", "target"), "optional": ("source", "expect", "vrf", "count", "min_replies")},
 }
 COMMON_KEYS = ("type", "name", "timeout", "hold")

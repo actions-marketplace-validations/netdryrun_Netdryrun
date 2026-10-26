@@ -1,0 +1,6 @@
+id: 01-no-change
+title: No change (control)
+category: control
+expected: safe
+rationale: The base network with no edits. Every strategy must pass it, or the corpus itself is broken.
+edits: []

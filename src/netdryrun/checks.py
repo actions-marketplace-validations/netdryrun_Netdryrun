@@ -60,6 +60,9 @@ def _route(d: Driver, p: dict) -> tuple[bool, str, list]:
     if p.get("present", True):
         if active:
             return True, f"active via {active[0].protocol}", obs.evidence
+        if p.get("active", True) is False and matching:
+            # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
+            return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
         seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
         return False, f"not active{' via ' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
     # Absent means not in the routing table at all: a received-but-not-selected route

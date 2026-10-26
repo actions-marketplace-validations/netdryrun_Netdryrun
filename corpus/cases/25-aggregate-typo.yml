@@ -1,0 +1,9 @@
+id: 25-aggregate-typo
+title: Aggregate network statement typo (192.0.3.0/24)
+category: fat-finger
+expected: unsafe
+rationale: Our own aggregate is no longer announced anywhere.
+edits:
+- node: pe1
+  replace: '  network 192.0.2.0/24'
+  with: '  network 192.0.3.0/24'

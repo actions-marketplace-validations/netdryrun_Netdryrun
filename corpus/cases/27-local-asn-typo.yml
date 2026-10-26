@@ -1,0 +1,13 @@
+id: 27-local-asn-typo
+title: pe2 configured with the wrong local ASN
+category: fat-finger
+expected: unsafe
+rationale: All of pe2's sessions fail and the peer is cut off.
+edits:
+- node: pe2
+  replace: |-
+    router bgp 65000
+     bgp router-id 10.255.0.2
+  with: |-
+    router bgp 65001
+     bgp router-id 10.255.0.2

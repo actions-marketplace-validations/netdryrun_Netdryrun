@@ -1,0 +1,10 @@
+id: 14-peer-session-shutdown
+title: Peer session administratively shut down
+category: fat-finger
+expected: unsafe
+rationale: The peer route disappears and the peer loses our routes.
+edits:
+- node: pe2
+  append: |-
+    router bgp 65000
+     neighbor 10.0.4.2 shutdown

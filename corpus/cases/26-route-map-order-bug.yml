@@ -1,0 +1,8 @@
+id: 26-route-map-order-bug
+title: A permit-everything clause inserted before the peer export filter
+category: route-leak
+expected: unsafe
+rationale: Sequence 5 matches everything, so upstream routes and the default leak to the peer.
+edits:
+- node: pe2
+  append: route-map TO-PEER permit 5

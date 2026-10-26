@@ -1,0 +1,12 @@
+id: 24-customer-blackholed
+title: Static discard route for the customer prefix on pe1
+category: fat-finger
+expected: unsafe
+rationale: The static route beats BGP, so traffic to the customer is dropped while the route is still announced.
+edits:
+- node: pe1
+  replace: |
+    ip route 192.0.2.0/24 blackhole
+  with: |
+    ip route 192.0.2.0/24 blackhole
+    ip route 10.100.0.0/24 blackhole

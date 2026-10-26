@@ -1,0 +1,9 @@
+id: 13-upstream-asn-typo
+title: Typo in the upstream's ASN (65020 instead of 65200)
+category: fat-finger
+expected: unsafe
+rationale: The upstream session never comes up; the customer loses internet access.
+edits:
+- node: pe1
+  replace: ' neighbor 10.0.2.2 remote-as 65200'
+  with: ' neighbor 10.0.2.2 remote-as 65020'

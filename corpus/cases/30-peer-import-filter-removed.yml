@@ -1,0 +1,12 @@
+id: 30-peer-import-filter-removed
+title: Peer inbound filter replaced with permit-all
+category: latent-risk
+expected: unsafe
+rationale: Nothing changes today because the peer only sends its /24, but the peer could now send a default or bogons. Reviewers reject removing an import filter.
+note: 'Latent risk: invisible in steady state until the peer misbehaves. Needs a failure-injection scenario.'
+edits:
+- node: pe2
+  append: route-map ALLOW-ALL permit 10
+- node: pe2
+  replace: '  neighbor 10.0.4.2 route-map FROM-PEER in'
+  with: '  neighbor 10.0.4.2 route-map ALLOW-ALL in'

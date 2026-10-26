@@ -1,0 +1,14 @@
+id: 23-fat-finger-third-party-origin
+title: pe1 accidentally originates 8.8.8.0/24
+category: hijack
+expected: unsafe
+rationale: A fat-fingered network statement hijacks 8.8.8.0/24 for our own customer. Export filters keep it from the upstream and the peer.
+note: Not covered by the intent spec, which has no check for unexpected routes at the customer.
+edits:
+- node: pe1
+  append: |-
+    ip route 8.8.8.0/24 blackhole
+    router bgp 65000
+     address-family ipv4 unicast
+      network 8.8.8.0/24
+     exit-address-family

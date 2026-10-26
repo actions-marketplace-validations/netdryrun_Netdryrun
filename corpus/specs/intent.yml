@@ -1,0 +1,35 @@
+# The NetDryRun intent spec for the corpus network, written ONCE from INTENT.md and used
+# unchanged for every case. It is deliberately not tuned per case: if a bad change slips
+# past these checks, that row is a published loss.
+lab: topology.clab.yml
+timeout: 90
+
+checks:
+  # Sessions (I1)
+  - {type: bgp_session, node: pe1, neighbor: 10.0.1.2, name: "I1 pe1-ce1 session up"}
+  - {type: bgp_session, node: pe1, neighbor: 10.0.2.2, name: "I1 pe1-up1 session up"}
+  - {type: bgp_session, node: pe1, neighbor: 10.0.3.2, name: "I1 pe1-pe2 iBGP up"}
+  - {type: bgp_session, node: pe2, neighbor: 10.0.4.2, name: "I1 pe2-peer1 session up"}
+
+  # Customer and own routes reach the upstream and the peer (I2)
+  - {type: route, node: up1, prefix: 10.100.0.0/24, protocol: bgp, name: "I2 upstream has customer route"}
+  - {type: route, node: up1, prefix: 192.0.2.0/24, protocol: bgp, name: "I2 upstream has our aggregate"}
+  - {type: route, node: peer1, prefix: 10.100.0.0/24, protocol: bgp, name: "I2 peer has customer route"}
+  - {type: route, node: peer1, prefix: 192.0.2.0/24, protocol: bgp, name: "I2 peer has our aggregate"}
+
+  # Customer gets the internet: upstream and peer routes plus a default (I3)
+  - {type: route, node: ce1, prefix: 203.0.113.0/24, protocol: bgp, name: "I3 customer has upstream route"}
+  - {type: route, node: ce1, prefix: 198.51.100.0/24, protocol: bgp, name: "I3 customer has peer route"}
+  # active: false - the lab's management default route outranks it; receiving it is the intent
+  - {type: route, node: ce1, prefix: 0.0.0.0/0, protocol: bgp, active: false, name: "I3 customer has default"}
+  - {type: ping, node: ce1, source: 10.100.0.1, target: 203.0.113.1, name: "I3 customer reaches upstream"}
+  - {type: ping, node: ce1, source: 10.100.0.1, target: 198.51.100.1, name: "I3 customer reaches peer"}
+
+  # No route leaks: upstream/peer routes never go to the other (I4)
+  - {type: route, node: up1, prefix: 198.51.100.0/24, protocol: bgp, present: false, name: "I4 no peer route leaked to upstream"}
+  - {type: route, node: peer1, prefix: 203.0.113.0/24, protocol: bgp, present: false, name: "I4 no upstream route leaked to peer"}
+  - {type: route, node: peer1, prefix: 0.0.0.0/0, protocol: bgp, present: false, name: "I4 no default leaked to peer"}
+
+  # We announce only what we should (I5)
+  - {type: bgp_prefixes, node: up1, neighbor: 10.0.2.1, min: 2, max: 2, name: "I5 upstream receives exactly our 2 prefixes"}
+  - {type: bgp_prefixes, node: peer1, neighbor: 10.0.4.1, min: 2, max: 2, name: "I5 peer receives exactly our 2 prefixes"}

@@ -1,0 +1,11 @@
+id: 21-customer-max-prefix-removed
+title: Customer maximum-prefix safety limit removed
+category: latent-risk
+expected: unsafe
+rationale: Nothing changes today, but a customer leaking a full table would now be accepted. Reviewers reject removing safety limits.
+note: 'Latent risk: no steady-state check can see it until the customer actually leaks. Catching it needs a failure-injection scenario (the customer sends many prefixes), planned for a later release.'
+edits:
+- node: pe1
+  replace: |2
+      neighbor 10.0.1.2 maximum-prefix 100
+  with: ''

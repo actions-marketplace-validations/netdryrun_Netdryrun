@@ -1,0 +1,11 @@
+id: 12-ibgp-send-community-dropped
+title: send-community removed on the pe1 to pe2 iBGP session
+category: policy-bug
+expected: unsafe
+rationale: pe2 no longer sees the customer community, so it stops announcing the customer route to the peer.
+note: A common mistake when rebuilding iBGP sessions.
+edits:
+- node: pe1
+  replace: |2
+      neighbor 10.0.3.2 send-community
+  with: ''

@@ -1,0 +1,10 @@
+id: 28-customer-import-policy-removed
+title: Customer inbound route-map removed
+category: policy-bug
+expected: unsafe
+rationale: Without the import policy the customer's routes lose their community (or are rejected outright), so they are no longer exported upstream.
+edits:
+- node: pe1
+  replace: |2
+      neighbor 10.0.1.2 route-map FROM-CUSTOMER in
+  with: ''

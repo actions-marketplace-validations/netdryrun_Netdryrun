@@ -1,0 +1,10 @@
+id: 04-tag-community-upstream
+title: Tag our aggregate with an informational community toward the upstream
+category: hygiene
+expected: safe
+rationale: Adds a community on the OWN clause. Attribute change only.
+edits:
+- node: pe1
+  append: |-
+    route-map TO-UPSTREAM permit 20
+     set community 65000:999 additive

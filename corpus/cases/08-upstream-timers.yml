@@ -1,0 +1,10 @@
+id: 08-upstream-timers
+title: Shorten BGP timers toward the upstream
+category: hygiene
+expected: safe
+rationale: Faster failure detection; the session stays up.
+edits:
+- node: pe1
+  append: |-
+    router bgp 65000
+     neighbor 10.0.2.2 timers 10 30

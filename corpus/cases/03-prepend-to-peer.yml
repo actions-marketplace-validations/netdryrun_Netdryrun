@@ -1,0 +1,10 @@
+id: 03-prepend-to-peer
+title: Prepend our AS twice toward the peer
+category: traffic-engineering
+expected: safe
+rationale: Routine inbound traffic engineering. The same prefixes are still announced.
+edits:
+- node: pe2
+  append: |-
+    route-map TO-PEER permit 10
+     set as-path prepend 65000 65000

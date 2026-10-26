@@ -135,3 +135,14 @@ def test_converge_then_hold_catches_a_late_leak():
     r = converge_then_hold(check("bgp_prefixes", node="r1", neighbor="10.0.0.2", min=1, max=10), Ramp(),
                            hold=10, interval=3, clock=clock, sleep=clock.sleep)
     assert not r.passed and "50" in r.detail
+
+
+def test_route_present_not_selected_with_active_false():
+    clock = FakeClock()
+    d = FakeDriver(routes=[[Route("0.0.0.0/0", "kernel", True), Route("0.0.0.0/0", "bgp", False)]])
+    ok = run_check(check("route", timeout=0, node="r1", prefix="0.0.0.0/0", protocol="bgp", active=False), d,
+                   confirm=1, clock=clock, sleep=clock.sleep)
+    assert ok.passed and "not selected" in ok.detail
+    strict = run_check(check("route", timeout=0, node="r1", prefix="0.0.0.0/0", protocol="bgp"), d,
+                       confirm=1, clock=clock, sleep=clock.sleep)
+    assert not strict.passed

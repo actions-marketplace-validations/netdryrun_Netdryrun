@@ -1,0 +1,9 @@
+id: 07-tighten-max-prefix
+title: Lower the customer maximum-prefix from 100 to 50
+category: hygiene
+expected: safe
+rationale: Tightening a safety limit that is still far above the customer's real count.
+edits:
+- node: pe1
+  replace: maximum-prefix 100
+  with: maximum-prefix 50

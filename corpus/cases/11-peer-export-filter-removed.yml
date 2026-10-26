@@ -1,0 +1,12 @@
+id: 11-peer-export-filter-removed
+title: Peer export filter replaced with permit-all
+category: route-leak
+expected: unsafe
+rationale: 'pe2 announces upstream routes and the default to the peer: a route leak toward the peer.'
+note: Route leak as defined in RFC 7908.
+edits:
+- node: pe2
+  append: route-map ALLOW-ALL permit 10
+- node: pe2
+  replace: '  neighbor 10.0.4.2 route-map TO-PEER out'
+  with: '  neighbor 10.0.4.2 route-map ALLOW-ALL out'

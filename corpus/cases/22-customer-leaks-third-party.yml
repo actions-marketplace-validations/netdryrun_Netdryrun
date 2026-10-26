@@ -1,0 +1,13 @@
+id: 22-customer-leaks-third-party
+title: Customer announces someone else's prefix; our filter blocks it
+category: filter-works
+expected: safe
+rationale: ce1 starts announcing 8.8.8.0/24. pe1's customer filter rejects it, so nothing leaks. The customer-side change is bad, but our network behaves correctly, so a test of our network must pass.
+edits:
+- node: ce1
+  append: |-
+    ip route 8.8.8.0/24 blackhole
+    router bgp 65100
+     address-family ipv4 unicast
+      network 8.8.8.0/24
+     exit-address-family

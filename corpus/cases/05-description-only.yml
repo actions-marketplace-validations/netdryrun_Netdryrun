@@ -1,0 +1,9 @@
+id: 05-description-only
+title: Change an interface description
+category: hygiene
+expected: safe
+rationale: Cosmetic change. Must never be blocked.
+edits:
+- node: pe1
+  replace: ' description to-upstream-up1'
+  with: ' description to-upstream-up1 (transit, CHG-1042)'
