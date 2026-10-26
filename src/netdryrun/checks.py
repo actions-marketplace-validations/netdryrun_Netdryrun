@@ -7,11 +7,14 @@ after convergence and must hold for a whole window.
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 
 from .config import Check
 from .drivers import Driver
+
+REACH_WINDOW = 30.0  # seconds for post-convergence prefix counts to reach their range
 
 
 @dataclass
@@ -31,6 +34,8 @@ def _bgp_session(d: Driver, p: dict) -> tuple[bool, str, list]:
     n = obs.value.get(p["neighbor"])
     if n is None:
         return False, f"neighbor {p['neighbor']} not configured (seen: {', '.join(obs.value) or 'none'})", obs.evidence
+    if p["state"] == "down":
+        return n.state != "established", f"state is {n.state}", obs.evidence
     return n.state == p["state"], f"state is {n.state}", obs.evidence
 
 
@@ -165,3 +170,117 @@ def converge_then_hold(check: Check, driver: Driver, hold: float = 10.0, interva
     held.attempts += first.attempts
     held.history = (first.history + held.history)[-50:]
     return held
+
+
+def _evaluate_all(checks: list[Check], drivers: dict, workers: int = 8) -> list[tuple]:
+    """One sample of every check, run concurrently (each is a docker exec), results in input order."""
+    if len(checks) <= 1:
+        return [_evaluate(c, drivers[c.node]) for c in checks]
+    with ThreadPoolExecutor(max_workers=min(workers, len(checks))) as pool:
+        return list(pool.map(lambda c: _evaluate(c, drivers[c.node]), checks))
+
+
+def run_round_robin(checks: list[Check], drivers: dict, interval: float = 3.0, confirm: int = 2,
+                    clock=time.monotonic, sleep=time.sleep, on_result=None) -> list[Result]:
+    """Positive checks polled together, one concurrent round at a time, against one shared start time.
+
+    A check passes after `confirm` consecutive passing samples. The timeout only ends a check on a
+    *failing* sample, so a big list (or a slow round) can't fail a healthy check as "not stable".
+    """
+    started = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    t0 = clock()
+    state = {id(c): {"streak": 0, "history": []} for c in checks}
+    done: dict[int, Result] = {}
+    while len(done) < len(checks):
+        pending = [c for c in checks if id(c) not in done]
+        for c, (ok, detail, evidence) in zip(pending, _evaluate_all(pending, drivers)):
+            st = state[id(c)]
+            elapsed = clock() - t0
+            st["history"].append({"t": round(elapsed, 1), "passed": ok, "detail": detail})
+            st["streak"] = st["streak"] + 1 if ok else 0
+            # The timeout ends a check only on a failing sample. A passing check always gets its
+            # confirming samples, however slow the round: it then passes, or fails on the next sample.
+            finished = st["streak"] >= confirm or (not ok and elapsed >= c.timeout)
+            if not finished:
+                continue
+            passed = st["streak"] >= confirm
+            if not passed and ok:
+                detail = f"{detail}, but not stable ({st['streak']}/{confirm} consecutive passes)"
+            elif not passed and any(h["passed"] for h in st["history"]):
+                detail = f"{detail} (flapping: passed {sum(h['passed'] for h in st['history'])} of {len(st['history'])} samples)"
+            done[id(c)] = Result(c, passed, detail, len(st["history"]), round(elapsed, 1), started, evidence, st["history"][-50:])
+            if on_result:
+                on_result(done[id(c)])
+        if len(done) < len(checks):
+            elapsed = clock() - t0
+            # wake up in time for the nearest deadline among checks that are still failing
+            nearest = min((c.timeout - elapsed for c in checks if id(c) not in done and state[id(c)]["streak"] == 0),
+                          default=interval)
+            sleep(max(0.0, min(interval, nearest)) if nearest > 0 else interval)
+    return [done[id(c)] for c in checks]
+
+
+def _reach_view(c: Check) -> Check | None:
+    """The lower-bound part of a prefix check, used to wait for counters to ramp up.
+
+    Upper bounds are never "reached" (0 prefixes satisfies max while BGP is still sending), so a
+    max-only check has no reach phase and goes straight into the hold.
+    """
+    p = c.params
+    low = p.get("exact", p.get("min"))
+    if not low:
+        return None
+    params = {k: v for k, v in p.items() if k not in ("min", "max", "exact")}
+    params["min"] = low
+    return replace(c, params=params, timeout=min(c.timeout, REACH_WINDOW))
+
+
+def hold_together(checks: list[Check], drivers: dict, hold: float = 10.0, interval: float = 3.0,
+                  clock=time.monotonic, sleep=time.sleep, on_result=None) -> list[Result]:
+    """Post-convergence checks, each held for its own window (check.hold or `hold`), sampled together.
+
+    Prefix counts with a lower bound first wait (briefly; convergence is already proven) to reach it.
+    Then every check must be true on every sample until its own window ends; the first violation fails it.
+    """
+    failed: dict[int, Result] = {}
+    views = {id(c): _reach_view(c) for c in checks if c.type == "bgp_prefixes"}
+    reach = [(c, v) for c in checks if (v := views.get(id(c)))]
+    if reach:
+        for (orig, _), r in zip(reach, run_round_robin([v for _, v in reach], drivers, interval=interval,
+                                                       confirm=1, clock=clock, sleep=sleep)):
+            if not r.passed:
+                r.check = orig
+                failed[id(orig)] = r
+    started = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    t0 = clock()
+    window = {id(c): (c.hold or hold) for c in checks}
+    live = [c for c in checks if id(c) not in failed]
+    hist: dict[int, list] = {id(c): [] for c in live}
+    last: dict[int, tuple] = {}
+    finished_ok: dict[int, float] = {}
+    while live:
+        for c, (ok, detail, evidence) in zip(list(live), _evaluate_all(live, drivers)):
+            t = clock() - t0
+            hist[id(c)].append({"t": round(t, 1), "passed": ok, "detail": detail})
+            last[id(c)] = (detail, evidence)
+            if not ok:
+                failed[id(c)] = Result(c, False, detail, len(hist[id(c)]), round(t, 1), started, evidence, hist[id(c)][-50:])
+                live.remove(c)
+            elif t >= window[id(c)]:
+                finished_ok[id(c)] = t
+                live.remove(c)
+        if live:
+            t = clock() - t0
+            sleep(max(0.0, min(interval, min(window[id(c)] - t for c in live))))
+    results = []
+    for c in checks:
+        if id(c) in failed:
+            r = failed[id(c)]
+        else:
+            detail, evidence = last[id(c)]
+            n, t = len(hist[id(c)]), finished_ok[id(c)]
+            r = Result(c, True, f"{detail} (held {round(t)}s, {n} samples)", n, round(t, 1), started, evidence, hist[id(c)][-50:])
+        results.append(r)
+        if on_result:
+            on_result(r)
+    return results

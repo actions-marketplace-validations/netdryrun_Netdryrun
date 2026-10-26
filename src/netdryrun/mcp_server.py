@@ -58,6 +58,31 @@ def run_checks(path: str) -> str:
 
 
 @mcp.tool()
+def record_baseline(topology: str, deploy: bool = True, wait_seconds: float = 45) -> str:
+    """Snapshot a known-good lab (containerlab topology file) into netdryrun.yml check text: every
+    established BGP session, prefix count and BGP route. Use it BEFORE proposing a change, then dry-run
+    the change against this baseline. Returns the YAML; it is not written to disk."""
+    import time
+
+    from .lab import Lab, LabError
+    from .record import record, render
+
+    topo = Path(topology).resolve()
+    lab = Lab(topo)
+    try:
+        if deploy:
+            lab.deploy()
+            time.sleep(wait_seconds)
+        data, warnings = record(topo)
+    except LabError as e:
+        return json.dumps({"error": str(e)})
+    finally:
+        if deploy:
+            lab.destroy()
+    return render(data, warnings)
+
+
+@mcp.tool()
 def validate(path: str) -> str:
     """Validate netdryrun.yml at `path` without starting a lab. Returns the parsed checks or the error."""
     try:

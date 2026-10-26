@@ -1,11 +1,11 @@
-site_name: netdryrun
+site_name: Netdryrun
 site_url: https://netdryrun.com/
 site_description: >-
-  netdryrun is an open-source tool that tests network changes in a real
+  Netdryrun is an open-source tool that tests network changes in a real
   containerlab virtual lab before they reach production, with a pass/fail
   verdict and evidence.
-site_author: netdryrun
-copyright: netdryrun is open source under the Apache-2.0 license.
+site_author: Netdryrun
+copyright: Netdryrun is open source under the Apache-2.0 license.
 
 repo_url: https://github.com/netdryrun/netdryrun
 repo_name: netdryrun/netdryrun
@@ -29,7 +29,7 @@ theme:
   # --- Brand ------------------------------------------------------------------
   # Navy #041334 (from the wordmark) + amber #F59E0B accent ("dry run, not live").
   # Red/green stay reserved for pass/fail. Colors are set in stylesheets/brand.css.
-  logo: assets/netdryrun-wordmark-white.svg
+  logo: assets/netdryrun-wordmark-white-tm.svg
   favicon: assets/favicon.ico
   palette:
     - media: "(prefers-color-scheme: light)"
@@ -86,7 +86,7 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/netdryrun/netdryrun
-      name: netdryrun on GitHub
+      name: Netdryrun on GitHub
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/netdryrun/
-      name: netdryrun on PyPI
+      name: Netdryrun on PyPI

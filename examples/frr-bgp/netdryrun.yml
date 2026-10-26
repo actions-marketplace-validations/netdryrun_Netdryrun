@@ -27,3 +27,21 @@ checks:
     prefix: 0.0.0.0/0
     protocol: bgp
     present: false
+
+# Failure scenarios: take links down, check the network still behaves, then restore them.
+scenarios:
+  - name: r1-r2 link fails
+    link_down: {node: r1, interface: eth1}
+    checks:
+      - type: route        # r2's LAN is still reachable, now via r3
+        node: r1
+        prefix: 192.168.2.0/24
+        protocol: bgp
+      - type: ping
+        node: r1
+        source: 192.168.1.1
+        target: 192.168.2.1
+      - type: bgp_session  # and the session over the failed link is really down
+        node: r1
+        neighbor: 10.0.12.2
+        state: down        # any state except established

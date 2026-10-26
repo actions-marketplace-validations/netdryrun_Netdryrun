@@ -1,0 +1,902 @@
+# Netdryrun: full documentation
+
+> Netdryrun is an open-source tool that tests network changes in a real virtual lab before they reach production. It boots the topology with containerlab, waits for convergence, checks BGP sessions, prefixes, routes and reachability, and returns a pass/fail verdict with evidence. It runs locally, in GitHub Actions, or as an MCP server for AI agents.
+
+Install: `pip install netdryrun` · Source: https://github.com/netdryrun/netdryrun · Docs: https://netdryrun.com/
+
+
+
+---
+Source: https://netdryrun.com/
+
+# Fail CI on routing mistakes before they reach production
+
+To test a network change in CI, keep the changed configs and a containerlab topology in Git, describe the expected behavior in a `netdryrun.yml` file, and run `netdryrun run` (or the GitHub Action) on every pull request. Netdryrun deploys the lab, waits for BGP to converge, checks sessions, prefix counts, routes and pings, then destroys the lab. Any failed check exits non-zero and fails the job, with a JSON evidence file showing every command and its raw output.
+
+!!! abstract "What Netdryrun is"
+    Netdryrun is an open-source tool that tests network changes in a real virtual lab before they reach production. It boots the topology with containerlab, waits for convergence, checks BGP sessions, prefixes, routes and reachability, and returns a pass/fail verdict with evidence. It runs locally, in GitHub Actions, or as an MCP server for AI agents.
+
+## A failing run
+
+This is the bundled `frr-bgp-broken` example. Router r2 has a bad change: it sends r1 a default route.
+
+
+```text
+$ netdryrun run examples/frr-bgp-broken
+Deploying lab ndr-frr-broken (3 nodes)...
+  [PASS] r1: BGP session to 10.0.12.2 is established -- state is established (6.3s)
+  [PASS] r1: ping 192.168.3.1 from 192.168.1.1 expects success -- 3/3 replies (2.3s)
+  ... (3 more passing checks trimmed)
+  [FAIL] r1: route 0.0.0.0/0 via bgp is absent -- unexpectedly present via bgp (not selected) (0.1s)
+FAILED: 5 passed, 1 failed (6 checks)
+```
+
+The leaked default route was *received but not selected*: r1 kept its own default, so traffic still flowed and the ping passed. A ping test or a config linter would have missed it. Netdryrun counts a route that is in the routing table but not selected as present, so the "must be absent" check fails.
+
+The check that caught it:
+
+```yaml
+- type: route        # nothing should send r1 a default route
+  node: r1
+  prefix: 0.0.0.0/0
+  protocol: bgp
+  present: false
+```
+
+Checks like this one run only after the network has converged and must hold for a time window, so they cannot pass just because BGP has not come up yet. See [convergence semantics](reference/config.md#convergence-semantics).
+
+## Run it in GitHub Actions
+
+```yaml title=".github/workflows/network-dryrun.yml"
+name: Network dry run
+on: pull_request
+jobs:
+  dryrun:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: netdryrun/netdryrun@v0.1.0
+        with:
+          path: network/        # folder containing netdryrun.yml
+```
+
+The action installs containerlab, runs the checks, writes a summary to the job page, uploads the JSON and JUnit reports as an artifact, and fails the job if any check fails. Details: [GitHub Action](github-action.md).
+
+## Run it locally
+
+Fastest start on your own topology: `netdryrun record my-lab/topology.clab.yml --deploy` snapshots today's behavior into checks, then `netdryrun run my-lab` tests every change against it.
+
+
+```bash
+pip install netdryrun
+netdryrun run path/to/folder    # the folder containing netdryrun.yml
+```
+
+Requirements: Linux or WSL2, Docker, containerlab, Python 3.10+. Walkthrough: [Getting started](getting-started.md).
+
+!!! warning "What a lab cannot prove"
+    A pass means the change behaved correctly in a lab built from open-source router images (FRR, Nokia SR Linux). That is strong evidence for protocol logic and policy intent. It is not proof of:
+
+    - vendor-specific behavior on the routers you run in production
+    - behavior at production scale (full tables, many peers)
+    - hardware and ASIC limits
+    - timing and convergence at scale
+
+    More on this in [Trust and security](trust.md#what-a-lab-cannot-prove).
+
+## Status
+
+Version 0.1.0, early. Works with FRR and Nokia SR Linux on Linux and WSL2. It covers IPv4/IPv6 unicast BGP, routes and ping. Issues and feedback: [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun/issues).
+
+
+---
+Source: https://netdryrun.com/getting-started/
+
+# Getting started
+
+## Requirements
+
+| Requirement | Notes |
+|---|---|
+| Linux or WSL2 | containerlab runs on Linux. On Windows, use WSL2. |
+| Docker | The lab nodes are containers. |
+| [containerlab](https://containerlab.dev/install/) | Netdryrun drives the `containerlab` CLI; it must be on `PATH`. |
+| Python 3.10+ | |
+
+containerlab needs root (or a user in the right groups) to create the lab. Run Netdryrun the same way you run containerlab on that machine.
+
+!!! note "WSL2 and /mnt/c"
+    If your topology lives under `/mnt/...` (a Windows drive), Netdryrun keeps containerlab's lab directory on the Linux filesystem (`~/.cache/netdryrun/labs`) unless you set `CLAB_LABDIR_BASE` yourself. SR Linux cannot save its config on a Windows drive.
+
+## Install
+
+```bash
+pip install netdryrun
+netdryrun --version
+```
+
+The MCP server for AI agents is included: run `netdryrun mcp`. See [AI agents](ai-agents.md).
+
+## Run the examples
+
+The repository ships three example labs.
+
+```bash
+git clone https://github.com/netdryrun/netdryrun && cd netdryrun
+netdryrun run examples/frr-bgp          # 3 FRR routers, should pass
+netdryrun run examples/srl-frr          # SR Linux + FRR, should pass
+netdryrun run examples/frr-bgp-broken   # a bad change, should fail
+```
+
+Each run deploys the lab, runs the checks, prints one line per check and destroys the lab. Images are pulled on first use, so the first run takes longer.
+
+### Expected results
+
+| Example | Topology | Checks | Expected | Exit code |
+|---|---|---|---|---|
+| `examples/frr-bgp` | Triangle of three FRR routers (r1, r2, r3), eBGP | 2 sessions, prefix count 1 to 10, route present via BGP, ping, default route absent | `PASSED: 6 passed, 0 failed` | `0` |
+| `examples/srl-frr` | Nokia SR Linux (`srl1`) peering eBGP with FRR (`frr1`) | 2 sessions, a BGP route on each side, a ping in each direction | `PASSED: 6 passed, 0 failed` | `0` |
+| `examples/frr-bgp-broken` | Same triangle, but r2 adds `default-originate` toward r1 | Same 6 checks as `frr-bgp` | `FAILED: 5 passed, 1 failed`; the default route check fails | `1` |
+
+The broken example is the one shown on the [home page](index.md#a-failing-run). r1 receives the leaked default route but does not select it, so the ping still works. The route check catches it because a received-but-not-selected route counts as present.
+
+SR Linux takes longer to boot, so `examples/srl-frr` sets `timeout: 120`.
+
+## Record a baseline of your own lab (fastest start)
+
+Point `record` at any containerlab topology you already have:
+
+```bash
+netdryrun record my-lab/topology.clab.yml --deploy
+```
+
+It deploys the lab, waits for BGP to converge, and writes `my-lab/netdryrun.yml` with a check for every established BGP session, every prefix count and every BGP route (up to 50 per node). Then make your change and run:
+
+```bash
+netdryrun run my-lab
+```
+
+Anything that changed fails, with evidence. Before committing the baseline, remove what is allowed to change and add negative checks for what must never happen (for example `present: false` for a default route at a peer). See the [`record` reference](reference/cli.md#record).
+
+## Write checks for your own lab
+
+Put a `netdryrun.yml` next to your containerlab topology:
+
+```yaml title="netdryrun.yml"
+lab: topology.clab.yml      # your containerlab topology
+timeout: 90                 # seconds a positive check may wait for convergence
+
+checks:
+  - type: bgp_session
+    node: r1
+    neighbor: 10.0.12.2
+  - type: route
+    node: r1
+    prefix: 192.168.3.0/24
+    protocol: bgp
+  - type: ping
+    node: r1
+    source: 192.168.1.1
+    target: 192.168.3.1
+```
+
+Check the file without starting anything, then run it:
+
+```bash
+netdryrun validate .
+netdryrun run .
+```
+
+To debug a failing run, keep the lab up with `--keep` (or `--keep-on-failure`), inspect the routers, and rerun the checks against the running lab with `netdryrun check .`. Destroy it afterwards with `containerlab destroy -t topology.clab.yml --cleanup`.
+
+Next: the [netdryrun.yml reference](reference/config.md) and the [CLI reference](reference/cli.md).
+
+
+---
+Source: https://netdryrun.com/reference/config/
+
+# netdryrun.yml reference
+
+`netdryrun.yml` describes one lab and the behavior you expect from it. Commands accept either the file or the folder that contains it (`netdryrun run network/` reads `network/netdryrun.yml`).
+
+```yaml title="netdryrun.yml"
+lab: topology.clab.yml
+timeout: 90
+nodes:
+  r1:
+    driver: frr
+checks:
+  - type: bgp_session
+    node: r1
+    neighbor: 10.0.12.2
+  - type: route
+    node: r1
+    prefix: 0.0.0.0/0
+    protocol: bgp
+    present: false
+```
+
+Validation is strict: unknown keys inside a check, missing required keys, bad IP addresses and bad values are errors (exit code `2`). Run `netdryrun validate` to check a file without starting a lab.
+
+## Top-level keys
+
+| Key | Required | Default | Meaning |
+|---|---|---|---|
+| `lab` | yes | | Path to the containerlab topology file, relative to `netdryrun.yml`. The topology must have a `name`. |
+| `timeout` | no | `120` | Seconds a positive check may wait for convergence. Each check can override it. |
+| `checks` | yes | | List of checks. At least one is required. |
+| `nodes.<node>.driver` | no | detected | Force the driver for a node: `frr` or `srlinux`. See [drivers](#drivers). |
+
+## Keys every check accepts
+
+| Key | Default | Meaning |
+|---|---|---|
+| `type` | required | `bgp_session`, `bgp_prefixes`, `route` or `ping` |
+| `node` | required | Node name from the topology (for example `r1`) |
+| `name` | generated | Label used in reports. The default describes the check, for example `r1: BGP session to 10.0.12.2 is established`. |
+| `timeout` | top-level `timeout` | Seconds this check may wait to pass. Positive number. |
+| `hold` | `--hold` (10) | Seconds a [post-convergence check](#convergence-semantics) must hold. Positive number. |
+| `vrf` | `default` | VRF (FRR) or network-instance (SR Linux) to look in |
+
+IP addresses and prefixes are normalized, so `2001:db8:0::1` in YAML matches `2001:db8::1` on the device. Prefixes with host bits set are reduced to the network (`10.0.0.1/24` becomes `10.0.0.0/24`).
+
+## Check types
+
+### bgp_session
+
+A BGP session reaches a state.
+
+| Key | Required | Default | Meaning |
+|---|---|---|---|
+| `neighbor` | yes | | Neighbor IP address as configured on `node` |
+| `state` | no | `established` | One of `idle`, `connect`, `active`, `opensent`, `openconfirm`, `established`, or `down` (any state except established). Case-insensitive |
+
+The check fails if the neighbor is not configured. A `state` other than `established` makes it a post-convergence check.
+
+```yaml
+- type: bgp_session
+  node: r1
+  neighbor: 10.0.12.2
+```
+
+### bgp_prefixes
+
+The number of prefixes accepted from a neighbor is within a range. Accepted means received minus rejected by import policy.
+
+| Key | Required | Default | Meaning |
+|---|---|---|---|
+| `neighbor` | yes | | Neighbor IP address |
+| `min` | one of `min`, `max`, `exact` | | Lower bound, inclusive |
+| `max` | one of `min`, `max`, `exact` | | Upper bound, inclusive |
+| `exact` | one of `min`, `max`, `exact` | | Exact count |
+| `afi` | no | `ipv4-unicast` | Address family: `ipv4-unicast`, `ipv6-unicast` or `evpn` |
+
+Rules:
+
+- At least one of `min`, `max` or `exact` is required.
+- `exact` cannot be combined with `min` or `max`.
+- `min` must not be greater than `max`.
+- All three are non-negative integers.
+- The session must be `established`. Counters reset to 0 when a session drops, so a count from a down session would satisfy `max` by accident; Netdryrun fails the check instead.
+- If the session is established but the address family reports nothing, the count is 0.
+- A check with `max` or `exact` is a post-convergence check. A check with only `min` is a positive check.
+
+```yaml
+- type: bgp_prefixes
+  node: r1
+  neighbor: 10.0.12.2
+  min: 1
+  max: 10          # guards against a route leak flooding r1
+```
+
+### route
+
+A route is present in (or absent from) the routing table.
+
+| Key | Required | Default | Meaning |
+|---|---|---|---|
+| `prefix` | yes | | IPv4 or IPv6 prefix |
+| `present` | no | `true` | `false` means the route must be absent |
+| `protocol` | no | any | Only count routes from this protocol. See [protocol names](#protocol-names). |
+| `vrf` | no | `default` | VRF or network-instance |
+| `active` | no | `true` | With `present: true`: `false` also accepts a route that is in the table but not selected (for example a BGP default losing to a local one) |
+
+- **Present** means an *active* route matches: selected and installed on FRR, `active` on SR Linux.
+- **Absent** means no matching route at all, active or not. A route that was received but not selected (for example a leaked default losing to a local one) still counts as present, so `present: false` fails. This is how the [failing example](../index.md#a-failing-run) is caught.
+- `present: false` makes it a post-convergence check.
+
+```yaml
+- type: route
+  node: r1
+  prefix: 192.168.3.0/24
+  protocol: bgp
+```
+
+### ping
+
+Reachability from a node.
+
+| Key | Required | Default | Meaning |
+|---|---|---|---|
+| `target` | yes | | Destination IP address |
+| `source` | no | | Source IP address (passed as `ping -I`) |
+| `expect` | no | `success` | `success` or `failure` |
+| `count` | no | `3` | Packets to send. Non-negative integer. |
+| `min_replies` | no | `count - 1`, at least 1 | Replies needed for `expect: success`. One lost packet is tolerated by default (first-packet ARP). |
+| `vrf` | no | `default` | Runs in the VRF (`ip vrf exec` on FRR) or network-instance namespace (`srbase-<name>` on SR Linux) |
+
+- `expect: failure` passes only with 0 replies, and is a post-convergence check.
+- If ping did not run at all (bad source address, missing VRF), the check fails with an error. It never counts as a successful "failure".
+
+```yaml
+- type: ping
+  node: r1
+  source: 192.168.1.1
+  target: 192.168.3.1
+```
+
+## Failure scenarios
+
+`scenarios:` runs extra checks while links are down, then restores them. Use it to prove the network survives a failure, for example that traffic reroutes when an uplink dies.
+
+```yaml
+scenarios:
+  - name: r1-r2 link fails
+    link_down: {node: r1, interface: eth1}   # or a list of links
+    checks:
+      - {type: route, node: r1, prefix: 192.168.2.0/24, protocol: bgp}   # rerouted via r3
+      - {type: ping, node: r1, source: 192.168.1.1, target: 192.168.2.1}
+      - {type: bgp_session, node: r1, neighbor: 10.0.12.2, state: down}
+
+  - node_isolated: r2          # all of r2's lab links down
+    checks:
+      - {type: route, node: r1, prefix: 192.168.2.0/24, present: false}
+```
+
+| Key | Meaning |
+|---|---|
+| `name` | Label shown before each check (default: generated from the faults) |
+| `link_down` | `{node, interface}` or a list of them. Interface names as seen inside the node (`eth1` on FRR, `e1-1` on SR Linux) |
+| `node_isolated` | A node name (or list): every lab link of that node goes down |
+| `checks` | Same check types as the top level, with the same convergence rules |
+
+Scenarios run after the main checks, one at a time. Links are always restored afterwards, even if a check fails, and Netdryrun waits for the network to settle before the next scenario.
+
+## Convergence semantics
+
+Networks need time to converge, and some checks are trivially true before they do. Netdryrun splits checks into two groups.
+
+**Positive checks** (session `established`, prefix count with only `min`, route present, ping expected to succeed):
+
+- Polled every 3 seconds until they pass on **2 consecutive samples**, or until `timeout` expires.
+- A single lucky sample is not enough. If the last sample passed but the streak was too short, the result says "not stable". If the check passed some samples but not consistently, the result says "flapping".
+
+**Post-convergence checks** are the ones that would pass on a network that has not come up yet:
+
+- routes that must be absent (`present: false`)
+- pings that must fail (`expect: failure`)
+- sessions expected in a state other than `established`
+- prefix counts with an upper bound (`max` or `exact`), since 0 prefixes satisfies `max: 10` while BGP is still starting
+
+They run after every positive check has finished plus a settle delay (`--settle`, default 10 seconds; at least 30 seconds if the file has no positive checks, because nothing else has shown that the network converged). Each one must then hold for the hold window (`--hold` or the check's `hold`, default 10 seconds), sampled every 3 seconds. A violation at any sample fails the check immediately.
+
+Prefix counts with an upper bound first wait (up to `timeout`) for the count to enter the range, because counters ramp up, and then must hold.
+
+Results are reported in the order the checks appear in the file.
+
+## Drivers
+
+A driver turns device state into a common shape. Netdryrun detects it from the topology:
+
+- `kind: nokia_srlinux` or `kind: srl` uses `srlinux`
+- an image whose name contains `frr` uses `frr`
+- anything else is an error unless you set `nodes.<node>.driver`
+
+| Check | FRR | SR Linux |
+|---|---|---|
+| `bgp_session` | yes | yes |
+| `bgp_prefixes` (accepted = received minus rejected by policy) | yes | yes |
+| `route` present / absent | yes | yes |
+| `ping` success / failure | yes | yes |
+
+| Driver | Source of state |
+|---|---|
+| FRR | `vtysh -c "show ... json"`; accepted prefixes from `acceptedPrefixCounter` |
+| SR Linux | `sr_cli --output-format json "info from state ..."`; accepted = `received-routes` minus `rejected-routes` |
+
+Every command and its raw output is kept in the [JSON report](cli.md#json).
+
+## Protocol names
+
+`protocol` on a route check is compared in lower case with the protocol the device reports, after normalization:
+
+| Use | FRR reports | SR Linux reports |
+|---|---|---|
+| `bgp` | `bgp` | `bgp` |
+| `static` | `static` | `static` |
+| `connected` | `connected` | `local` |
+| `local` | `local` | `host` |
+| `ospf` | `ospf` | `ospfv2` |
+| `ospf6` | `ospf6` | `ospfv3` |
+| `isis` | `isis` | `isis` |
+
+Other protocol names are passed through in lower case as the device reports them. The failure detail lists the protocols that were seen, which helps when a name does not match.
+
+
+---
+Source: https://netdryrun.com/reference/cli/
+
+# CLI and reports
+
+```text
+netdryrun run      [path] [options]   deploy the lab, run checks, destroy the lab
+netdryrun check    [path] [options]   run checks against an already running lab
+netdryrun validate [path]             validate netdryrun.yml without running anything
+netdryrun --version
+```
+
+`path` is `netdryrun.yml` or the folder containing it. Default: the current folder.
+
+## Commands
+
+### run
+
+Deploys the containerlab topology (`containerlab deploy --reconfigure`), runs every check, writes reports, and destroys the lab (`containerlab destroy --cleanup`). The lab is destroyed even when checks fail, unless you ask to keep it.
+
+### check
+
+Runs the checks against a lab that is already up, for example one left running with `--keep`. It does not deploy or destroy anything. It fails with an error if any of the lab's containers are not running.
+
+### validate
+
+Loads and validates `netdryrun.yml` and prints the parsed checks. It does not need Docker or containerlab to be running.
+
+```text
+$ netdryrun validate examples/frr-bgp
+OK: examples/frr-bgp/netdryrun.yml (6 checks, lab .../examples/frr-bgp/topology.clab.yml)
+  - [bgp_session] r1: BGP session to 10.0.12.2 is established
+  ...
+```
+
+### record
+
+```bash
+netdryrun record path/to/topology.clab.yml --deploy
+```
+
+Snapshots a known-good lab into a `netdryrun.yml` baseline: every established BGP session, every prefix count (exact, or minimums with `--min-prefixes`) and up to 50 BGP routes per node. Commit it, and every later change is tested against today's behavior. Review the file before committing: remove what is allowed to change, and add negative checks for what must never happen.
+
+| Option | Meaning |
+|---|---|
+| `--out FILE` | Where to write (default: `netdryrun.yml` next to the topology) |
+| `--deploy` | Deploy the lab first and destroy it afterwards (otherwise the lab must be running) |
+| `--wait SECONDS` | With `--deploy`: time for BGP to converge before recording (default 45) |
+| `--min-prefixes` | Record prefix counts as minimums instead of exact |
+| `--no-routes` | Don't record individual routes |
+| `--force` | Overwrite an existing file |
+
+## Options
+
+`run` and `check`:
+
+| Option | Default | Meaning |
+|---|---|---|
+| `--json FILE` | | Write the full evidence report as JSON |
+| `--markdown FILE` | | Write a Markdown summary (for PR comments) |
+| `--junit FILE` | | Write JUnit XML (for CI test reporting) |
+| `--settle SECONDS` | `10` | Wait before post-convergence checks |
+| `--hold SECONDS` | `10` | How long a post-convergence check must hold (a check's own `hold` key overrides it) |
+| `--no-step-summary` | | Do not append the Markdown summary to `$GITHUB_STEP_SUMMARY` |
+
+`run` only:
+
+| Option | Meaning |
+|---|---|
+| `--keep` | Leave the lab running afterwards, for debugging |
+| `--keep-on-failure` | Leave the lab running only if the run did not pass |
+
+When a lab is kept, Netdryrun prints the command to destroy it. See [convergence semantics](config.md#convergence-semantics) for what `--settle` and `--hold` control.
+
+## Exit codes
+
+| Code | Status | Meaning |
+|---|---|---|
+| `0` | `passed` | Every check passed |
+| `1` | `failed` | At least one check failed |
+| `2` | `error` | Config error, or the lab could not be deployed or reached (containerlab or Docker missing, deploy failed, containers not running, unknown driver) |
+
+## GitHub Actions step summary
+
+When the `GITHUB_STEP_SUMMARY` environment variable is set (it is in GitHub Actions), the Markdown summary is appended to the job page automatically. Use `--no-step-summary` to turn this off.
+
+## Report formats
+
+### Console
+
+One line per check as it finishes, then a summary line:
+
+```text
+  [FAIL] r1: route 0.0.0.0/0 via bgp is absent -- unexpectedly present via bgp (not selected) (0.1s)
+FAILED: 5 passed, 1 failed (6 checks)
+```
+
+### JSON
+
+`--json FILE` writes the full evidence. Schema identifier: `netdryrun.report/v1`.
+
+| Field | Type | Meaning |
+|---|---|---|
+| `schema` | string | Always `netdryrun.report/v1` |
+| `status` | string | `passed`, `failed` or `error` |
+| `lab` | string | containerlab lab name |
+| `config` | string | Path of the `netdryrun.yml` that was run |
+| `started`, `finished` | string | UTC timestamps (ISO 8601) |
+| `error` | string or null | Lab or driver error, if the run could not complete |
+| `environment` | object | `netdryrun`, `containerlab` and `python` versions, `host` platform, and `nodes` (each with `kind` and `image`) |
+| `summary` | object | `passed`, `failed`, `total` |
+| `checks` | array | One object per check, in file order (below) |
+
+Each entry in `checks`:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `name` | string | Check name |
+| `type` | string | Check type |
+| `params` | object | The check's parameters after normalization |
+| `passed` | boolean | Result |
+| `detail` | string | Human-readable result, for example `3 ipv4-unicast prefixes accepted` |
+| `attempts` | integer | Number of samples taken |
+| `duration_s` | number | Seconds spent on the check |
+| `started` | string | UTC timestamp |
+| `history` | array | Every sample (last 50): `t` (seconds since start), `passed`, `detail` |
+| `evidence` | array | Raw commands from the final sample: `node`, `cmd`, `rc`, `output`, `stderr` |
+
+Long outputs are truncated (the last 20,000 characters of command output are kept).
+
+### Markdown
+
+`--markdown FILE` writes a short summary: a heading (passed, failed, or could not run), the pass/fail counts and lab name, a table of checks with failures first, and a footer with the Netdryrun and containerlab versions. This is the same text appended to the GitHub Actions step summary.
+
+### JUnit XML
+
+`--junit FILE` writes one `<testsuite name="netdryrun">` with one `<testcase>` per check:
+
+- `classname` is `netdryrun.<type>`, for example `netdryrun.route`
+- a failed check has a `<failure>` whose `message` is the detail and whose body is the evidence as JSON
+- a lab error adds a testcase named `lab` with an `<error>` element
+
+
+---
+Source: https://netdryrun.com/github-action/
+
+# GitHub Action
+
+The action installs containerlab, installs Netdryrun, runs your checks, writes a summary to the job page, uploads the JSON and JUnit reports as an artifact, and fails the job if any check fails.
+
+```yaml title=".github/workflows/network-dryrun.yml"
+name: Network dry run
+on: pull_request
+jobs:
+  dryrun:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: netdryrun/netdryrun@v0.1.0
+        with:
+          path: network/        # folder containing netdryrun.yml
+```
+
+It needs a Linux runner with Docker. GitHub-hosted `ubuntu-latest` runners work.
+
+## Inputs
+
+| Input | Default | Meaning |
+|---|---|---|
+| `path` | `.` | `netdryrun.yml` or the folder containing it |
+| `containerlab-version` | `0.81.1` | containerlab version to install, pinned for reproducible runs. Empty means latest. If containerlab is already installed, it is used as is, with a warning if the version differs. |
+| `json-report` | `netdryrun-report.json` | Path for the JSON evidence report |
+| `junit-report` | `netdryrun-junit.xml` | Path for the JUnit XML report |
+| `upload-artifact` | `true` | Upload the reports as a workflow artifact |
+| `artifact-name` | `netdryrun-report` | Name of the uploaded artifact |
+| `settle` | `10` | Seconds to wait before post-convergence checks |
+| `hold` | `10` | Seconds a post-convergence check must hold |
+| `pr-comment` | `false` | On pull requests, post one comment with the verdict, failures first, and the evidence for each failed check. Updated in place on every push. Needs `permissions: pull-requests: write` |
+| `github-token` | `${{ github.token }}` | Token used for the PR comment |
+| `cloud` | `false` | Upload the evidence to Netdryrun Cloud (beta). Needs `permissions: id-token: write`; no secrets are configured |
+| `cloud-url` | `https://cloud.netdryrun.com` | Netdryrun Cloud address |
+
+## Outputs
+
+| Output | Meaning |
+|---|---|
+| `status` | `passed`, `failed` or `error` |
+| `passed` | Number of passed checks |
+| `failed` | Number of failed checks |
+| `evidence-url` | Link to the evidence page, when `cloud` is `true` |
+
+## Examples
+
+### Only run when network files change
+
+```yaml
+name: Network dry run
+on:
+  pull_request:
+    paths:
+      - "network/**"
+jobs:
+  dryrun:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: netdryrun/netdryrun@v0.1.0
+        with:
+          path: network/
+```
+
+### Use the outputs in a later step
+
+```yaml
+      - uses: netdryrun/netdryrun@v0.1.0
+        id: ndr
+        with:
+          path: network/
+      - if: always()
+        run: echo "Netdryrun ${{ steps.ndr.outputs.status }}: ${{ steps.ndr.outputs.passed }} passed, ${{ steps.ndr.outputs.failed }} failed"
+```
+
+### Several labs
+
+```yaml
+jobs:
+  dryrun:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        lab: [network/core, network/edge]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: netdryrun/netdryrun@v0.1.0
+        with:
+          path: ${{ matrix.lab }}
+          artifact-name: netdryrun-${{ strategy.job-index }}
+```
+
+Give each matrix job its own `artifact-name`; artifact names must be unique within a workflow run.
+
+### Comment the verdict on every pull request
+
+```yaml
+name: Network dry run
+on: pull_request
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  dryrun:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: netdryrun/netdryrun@v0.2.0
+        with:
+          path: network/
+          pr-comment: true
+```
+
+## Security notes
+
+- **The lab runs privileged containers.** containerlab needs root on the runner, and the containers it starts are privileged. Treat the topology and router configs as code that runs with root on the runner.
+- **Secrets are not passed to the lab.** The action runs Netdryrun with a cleared environment (`sudo env -i`), passing only `PATH`, `HOME` and `GITHUB_STEP_SUMMARY`. The job's `GITHUB_TOKEN` and your secrets are not in that environment.
+- **Use it on trusted branches.** A pull request can change the topology, the configs or the images it runs. Prefer the `pull_request` trigger (which gives forks a read-only token and no secrets) over `pull_request_target`, and do not run untrusted fork code on self-hosted runners.
+- **Artifacts are kept for 14 days.** The reports include raw device output from the lab (configs, routes, command output). They are uploaded with `retention-days: 14`. Set `upload-artifact: false` if that is too long or not wanted.
+- **Pin the version.** Use a release tag (`@v0.1.0`) or a commit SHA, not a branch.
+
+
+---
+Source: https://netdryrun.com/ai-agents/
+
+# AI agents (MCP server)
+
+AI agents are starting to change networks. Netdryrun includes an [MCP](https://modelcontextprotocol.io) server that gives an agent a safety gate: it dry-runs the proposed change in a real lab and proceeds only if every check passes.
+
+## Install
+
+```bash
+pip install netdryrun
+```
+
+The MCP server is built in: `netdryrun mcp` starts it over stdio. The same requirements apply as for the CLI: Linux or WSL2, Docker, containerlab.
+
+Add it to your MCP client. For example, Claude Code:
+
+```bash
+claude mcp add netdryrun -- netdryrun mcp
+```
+
+Other clients: configure a stdio server with command `netdryrun` and argument `mcp` (or `uvx netdryrun mcp` with no install).
+
+## Workflow
+
+1. The agent writes its proposed change into the lab's configs (in a lab folder with a containerlab topology and a `netdryrun.yml`).
+2. It calls `dry_run` on that folder.
+3. It applies the change elsewhere only if `status` is `passed`.
+
+## Tools
+
+| Tool | Arguments | What it does |
+|---|---|---|
+| `dry_run` | `path`, `keep_lab` (default `false`) | Deploy the lab, run every check, destroy the lab, return the verdict. Takes 1 to 5 minutes. |
+| `run_checks` | `path` | Run the checks against a lab that is already running (no deploy or destroy) |
+| `validate` | `path` | Validate `netdryrun.yml` without starting a lab |
+| `check_types` | | List supported check types and their keys, to help write `netdryrun.yml` |
+
+The server also exposes the last full JSON report as a resource, `netdryrun://report/{path}`.
+
+## Result and verdict
+
+`dry_run` and `run_checks` return JSON like this:
+
+```json
+{
+  "status": "failed",
+  "passed": 5,
+  "failed": 1,
+  "error": null,
+  "lab": "ndr-frr-broken",
+  "checks": [
+    {"name": "r1: route 0.0.0.0/0 via bgp is absent", "passed": false,
+     "detail": "unexpectedly present via bgp (not selected)"}
+  ],
+  "evidence_file": "/path/to/lab/netdryrun-report.json",
+  "verdict": "DO NOT APPLY THIS CHANGE"
+}
+```
+
+(`checks` is shortened here; the real result lists every check.)
+
+`verdict` is a separate field with one of two values:
+
+- `SAFE TO PROCEED` when `status` is `passed`
+- `DO NOT APPLY THIS CHANGE` for `failed` or `error`, including config errors
+
+The full evidence is written to `netdryrun-report.json` next to `netdryrun.yml`.
+
+## Safety model
+
+- **It never touches production.** The server has no tool that pushes config anywhere. It only builds and tests labs.
+- **No raw device output in tool results.** Tool results contain normalized check results (name, pass/fail, a short detail), not raw device output. Text inside a lab, such as a banner or a route description, cannot inject instructions into the agent through the tool result. Raw evidence goes to the JSON report file.
+- **Labs are code.** containerlab runs privileged containers. Only point the server at topologies you trust, on a machine you would let run Docker.
+
+A pass is evidence from a lab, not a guarantee about production. See [what a lab cannot prove](trust.md#what-a-lab-cannot-prove).
+
+
+---
+Source: https://netdryrun.com/corpus/
+
+# Network Change Verdict Corpus
+
+How much does a typical "ping after the change" test miss? This corpus answers that with data anyone can rerun.
+
+## Method
+
+- **The network:** a small provider (AS65000, two routers) with a customer, an upstream transit and a settlement-free peer, running FRR in containerlab. Its written intent is in [INTENT.md](https://github.com/netdryrun/netdryrun/blob/main/corpus/INTENT.md).
+- **The changes:** 30 realistic edits ([cases](https://github.com/netdryrun/netdryrun/tree/main/corpus/cases)): route leaks, filter typos, mass withdrawals, fat-fingered ASNs, latent risks, and safe changes that must not be blocked.
+- **Pre-registered verdicts:** each case's expected verdict (would an experienced operator reject it?) was **committed to git before any run**. Verdicts are never edited afterwards; findings after the run are listed separately below.
+- **Three strategies, same running lab per case:**
+    1. **Ping only:** the customer pings the upstream and the peer.
+    2. **All BGP sessions up:** every session established.
+    3. **Netdryrun intent checks:** one [intent spec](https://github.com/netdryrun/netdryrun/blob/main/corpus/specs/intent.yml), written once and used unchanged for every case, so it can't be tuned to win.
+- **Rerun it:** `python corpus/run.py` on any Linux or WSL2 machine with Docker and containerlab.
+
+## Results
+
+
+---
+Source: https://netdryrun.com/when-to-use-what/
+
+# When to use what
+
+Several good open-source tools help you test network changes. They answer different questions and work well together. This page tries to describe each one fairly; if something here is wrong or out of date, please [open an issue](https://github.com/netdryrun/netdryrun/issues).
+
+## The short version
+
+| Tool | Best at | Runs routers? |
+|---|---|---|
+| [Batfish](https://batfish.org) | Analyzing configs of many vendors without booting anything: reachability, ACLs and firewall rules, routing, differences between two snapshots | No, it models them |
+| [netlab](https://netlab.tools) | Building a working lab from a short, high-level topology, with generated configs for many platforms and built-in validation tests | Yes, through containerlab or libvirt |
+| [pyATS / Genie](https://developer.cisco.com/pyats/) | A full Python test framework with a large library of device parsers, for testing labs and real (including production) devices, with state snapshots and diffs | Works against any reachable device |
+| [containerlab](https://containerlab.dev) | Running container-based network labs from a YAML topology, for many network operating systems | Yes, it is the lab |
+| Netdryrun | Declarative, convergence-aware checks on a containerlab lab, packaged for CI with a pass/fail verdict and evidence | Yes, through containerlab |
+
+## Batfish
+
+Batfish parses device configs and builds a model of the network's control and data plane. Because nothing has to boot, it is fast, covers large networks, and supports configs from many vendors. It can answer broad questions ("can any host in this subnet reach that server?", "what changed between these two snapshots?") that are hard to test by sending packets.
+
+Use it when you want broad, fast analysis on every commit, especially for ACLs, firewall policy and multi-vendor configs that you cannot run in containers.
+
+A model is not the running software, so behavior that depends on the real implementation (timers, convergence order, bugs) is outside what it sees. That is where a lab helps.
+
+## netlab
+
+netlab takes a compact topology description ("these routers, running OSPF and BGP, connected like this") and builds the whole lab: addressing, device configs for many platforms, and the containerlab or libvirt topology. It also includes validation tests you can run against the lab.
+
+Use it when building and maintaining the lab is the hard part, or when you want the same design on several platforms.
+
+It combines with Netdryrun naturally: netlab can generate a containerlab topology, and Netdryrun can run its checks against that topology as a CI gate.
+
+## pyATS / Genie
+
+pyATS is a mature Python test framework from Cisco, and Genie adds a large library of parsers and models that turn CLI output into structured data. It can learn the state of a device, take before and after snapshots, and diff them. It works against lab devices and real ones.
+
+Use it when you need deep, programmable testing, broad parser coverage (especially for Cisco platforms), or pre- and post-change checks on production devices.
+
+Netdryrun is much smaller: a YAML file and a GitHub Action, with no test code to write, and it only runs against labs. If you already have pyATS tests, keep them.
+
+## containerlab
+
+containerlab runs network labs from a YAML topology: container-native network operating systems (such as Nokia SR Linux, Arista cEOS, Juniper cRPD, FRR) and, through vrnetlab, many VM-based ones. It handles wiring, management addresses and lifecycle.
+
+Use it whenever you want a real lab on a laptop or a CI runner. Netdryrun does not replace it; Netdryrun drives it.
+
+## Netdryrun
+
+Netdryrun adds a test layer on top of a containerlab lab:
+
+- positive checks wait for convergence and must pass twice in a row
+- negative checks (absent routes, failing pings, prefix upper bounds) run only after convergence and must hold
+- a route that was received but not selected counts as present
+- every run produces one pass/fail result, a CI-friendly exit code, and a JSON evidence file
+
+It is early (version 0.1.0). Drivers exist only for FRR and Nokia SR Linux, and checks cover BGP sessions, prefix counts, routes and ping. It does not do static analysis, build labs for you, or test production devices.
+
+## How they combine
+
+A reasonable pipeline uses more than one:
+
+1. **Batfish** on every commit for fast, broad config analysis.
+2. **netlab** or a hand-written **containerlab** topology to build a lab that mirrors the change.
+3. **Netdryrun** in CI to boot that lab, wait for convergence, and gate the merge on runtime behavior.
+4. **pyATS / Genie** (or similar) for pre- and post-change checks on the production devices during the change window.
+
+None of these steps proves the change is safe on its own. Each one removes a different class of mistakes.
+
+
+---
+Source: https://netdryrun.com/trust/
+
+# Trust and security
+
+## License
+
+Netdryrun is open source under the [Apache License 2.0](https://github.com/netdryrun/netdryrun/blob/main/LICENSE). The source is at [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun).
+
+## How releases are published
+
+- Releases are built and published by a GitHub Actions workflow when a version tag (`v*`) is pushed. The workflow checks that the tag matches the package version before building.
+- Packages are uploaded to [PyPI](https://pypi.org/project/netdryrun/) with **Trusted Publishing** (OpenID Connect). No PyPI token or password is stored in the repository or its secrets; PyPI accepts the upload because it comes from that workflow in that repository.
+- The same workflow creates a GitHub release with the built files attached.
+- The GitHub Action (`netdryrun/netdryrun@v0.1.0`) installs Netdryrun from the action's own source at the tag you reference. Pin a tag or a commit SHA.
+
+## Reporting a security issue
+
+Email **[security@netdryrun.com](mailto:security@netdryrun.com)**. Please do not open a public issue for a vulnerability. Include the version, what you found, and how to reproduce it.
+
+## What a lab cannot prove
+
+A Netdryrun pass means the change behaved correctly in a lab. The lab runs real routing software, so a pass is strong evidence for protocol logic and policy intent: sessions come up, the intended prefixes are accepted, routes land in the routing table, traffic gets through, and unwanted routes stay out. It does not prove:
+
+- **Vendor-specific behavior.** FRR and SR Linux are not your vendor's routers. Defaults, policy evaluation and bugs differ between implementations. Running your own licensed vendor images is on the roadmap.
+- **Scale.** A lab has a handful of nodes and small tables, not full Internet tables or hundreds of peers.
+- **Hardware and ASIC behavior.** Containers have no forwarding hardware, so TCAM limits, hardware programming and line-rate effects are not tested.
+- **Timing at scale.** Convergence time in a small lab says little about convergence time in a large production network.
+
+Version 0.1.0 also covers only BGP (IPv4/IPv6 unicast), routes and ping. OSPF/IS-IS adjacencies, path checks, policy attributes and failure scenarios are not covered yet.
+
+## Running untrusted labs
+
+containerlab runs privileged containers, so a topology and its configs are code that runs with root on the host. Only run labs you trust. In CI, see the [GitHub Action security notes](github-action.md#security-notes). For AI agents, see the [MCP safety model](ai-agents.md#safety-model).
+
+## Privacy
+
+Netdryrun has no telemetry. It does not phone home or send usage data anywhere. Reports are written only to the files you ask for (and to the GitHub Actions step summary when running in Actions). containerlab and Docker may pull images from registries named in your topology, as they normally would.

@@ -70,6 +70,17 @@ class SrlDriver(Driver):
         )
         return Observation(parse_routes(text, prefix), ev)
 
+    def all_routes(self, vrf: str = "default", family: int = 4) -> Observation:
+        ev: list[dict] = []
+        table, key = ("ipv6-unicast", "ipv6-prefix") if family == 6 else ("ipv4-unicast", "ipv4-prefix")
+        text = self._cli(f"info from state /network-instance {vrf} route-table {table} route * "
+                         "id * route-type * route-owner * origin-network-instance *", ev)
+        out = []
+        for r in _json(text).get("route", []):
+            rtype = str(r.get("route-type", "")).lower()
+            out.append(Route(str(r.get(key, "")), PROTOCOLS.get(rtype, rtype), bool(r.get("active"))))
+        return Observation(out, ev)
+
     def _netns(self, vrf: str) -> str:
         """Linux namespace of a network-instance: srbase-<name>; some releases name default plain 'srbase'."""
         r = self.lab.exec(self.node, ["ip", "netns", "list"], timeout=15)

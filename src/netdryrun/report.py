@@ -54,8 +54,22 @@ def _md_cell(text: str) -> str:
     return str(text).replace("|", "\\|").replace("\n", " ")
 
 
+def _evidence_excerpt(output: str, params: dict, max_lines: int = 15) -> str:
+    """The part of a raw command output a reviewer needs: lines mentioning the prefix or neighbor
+    under test (with a little context), else the first lines. Kept short enough to paste in a PR."""
+    rows = output.splitlines()
+    keys = [str(params[k]) for k in ("prefix", "neighbor", "target") if params.get(k)]
+    if keys and len(rows) > max_lines:
+        hits = [i for i, row in enumerate(rows) if any(k in row for k in keys)]
+        if hits:
+            start = max(0, hits[0] - 2)
+            rows = rows[start:start + max_lines]
+            return "\n".join(rows + ["..."])
+    return "\n".join(rows[:max_lines] + (["..."] if len(rows) > max_lines else []))
+
+
 def to_markdown(rep: RunReport) -> str:
-    head = {"passed": "✅ netdryrun passed", "failed": "❌ netdryrun failed", "error": "⚠️ netdryrun could not run"}[rep.status]
+    head = {"passed": "✅ Netdryrun passed", "failed": "❌ Netdryrun failed", "error": "⚠️ Netdryrun could not run"}[rep.status]
     lines = [f"### {head}", ""]
     if rep.error:
         lines += ["```", rep.error, "```"]
@@ -64,6 +78,14 @@ def to_markdown(rep: RunReport) -> str:
               "| | Check | Result | Time |", "|---|---|---|---|"]
     for r in sorted(rep.results, key=lambda r: r.passed):  # failures first
         lines.append(f"| {'✅' if r.passed else '❌'} | {_md_cell(r.check.name)} | {_md_cell(r.detail)} | {r.duration}s |")
+    failures = [r for r in rep.results if not r.passed]
+    for r in failures[:5]:
+        ev = r.evidence[-1] if r.evidence else None
+        if not ev:
+            continue
+        out = _evidence_excerpt(ev.get("output") or ev.get("stderr") or "", r.check.params)
+        lines += ["", f"<details><summary>Evidence: {_md_cell(r.check.name)}</summary>", "",
+                  f"`{ev['node']}$ {ev['cmd']}`", "", "```", out, "```", "", "</details>"]
     env = rep.environment
     lines += ["", f"<sub>netdryrun {env.get('netdryrun', '?')} · containerlab {env.get('containerlab', '?')} · "
               f"{rep.started} · full evidence in the JSON report</sub>"]

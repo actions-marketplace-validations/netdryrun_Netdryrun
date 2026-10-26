@@ -30,7 +30,7 @@ def _cmd_run(args, deploy: bool) -> int:
     except ConfigError as e:
         print(f"config error: {e}", file=sys.stderr)
         return 2
-    print(f"netdryrun {__version__}: {len(cfg.checks)} checks from {cfg.path}")
+    print(f"Netdryrun {__version__}: {len(cfg.checks)} checks from {cfg.path}")
     rep = run(cfg, deploy=deploy, keep=args.keep, keep_on_failure=getattr(args, 'keep_on_failure', False),
               settle=args.settle, hold=args.hold,
               on_result=lambda r: print(report.console_line(r), flush=True),
@@ -49,6 +49,49 @@ def _cmd_validate(args) -> int:
     print(f"OK: {cfg.path} ({len(cfg.checks)} checks, lab {cfg.lab})")
     for c in cfg.checks:
         print(f"  - [{c.type}] {c.name}")
+    return 0
+
+
+def _cmd_record(args) -> int:
+    import os
+    import time
+
+    from .lab import Lab, LabError
+    from .record import record, render
+
+    topo = Path(args.topology).resolve()
+    if not topo.exists():
+        print(f"error: {topo} not found", file=sys.stderr)
+        return 2
+    out = Path(args.out).resolve() if args.out else topo.parent / "netdryrun.yml"
+    if out.exists() and not args.force:
+        print(f"error: {out} exists; use --force to overwrite or --out to pick another file", file=sys.stderr)
+        return 2
+    lab = Lab(topo)
+    try:
+        if args.deploy:
+            print(f"Deploying lab {lab.name}, then waiting {args.wait:g}s for the network to converge...", flush=True)
+            lab.deploy()
+            time.sleep(args.wait)
+        data, warnings = record(topo, include_routes=not args.no_routes, exact_prefixes=not args.min_prefixes,
+                                log=lambda m: print(m, flush=True))
+    except LabError as e:
+        print(f"lab error: {e}", file=sys.stderr)
+        return 2
+    finally:
+        if args.deploy:
+            lab.destroy()
+    if not data["checks"]:
+        for w in warnings:
+            print(f"warning: {w}")
+        print("error: nothing to record (no established BGP sessions or BGP routes found); is the lab converged? "
+              "Try --deploy with a longer --wait.", file=sys.stderr)
+        return 2
+    data["lab"] = os.path.relpath(topo, out.parent).replace(os.sep, "/")
+    out.write_text(render(data, warnings), encoding="utf-8")
+    for w in warnings:
+        print(f"warning: {w}")
+    print(f"Recorded {len(data['checks'])} checks to {out}. Review it, then: netdryrun run {out.parent}")
     return 0
 
 
@@ -78,9 +121,26 @@ def main(argv: list[str] | None = None) -> int:
     p_val = sub.add_parser("validate", help="validate netdryrun.yml without running anything")
     p_val.add_argument("path", nargs="?", default=".")
 
+    p_rec = sub.add_parser("record", help="snapshot a known-good lab into a netdryrun.yml baseline")
+    p_rec.add_argument("topology", help="containerlab topology file of the lab to record")
+    p_rec.add_argument("--out", metavar="FILE", help="where to write (default: netdryrun.yml next to the topology)")
+    p_rec.add_argument("--deploy", action="store_true", help="deploy the lab first and destroy it afterwards")
+    p_rec.add_argument("--wait", type=float, default=45.0, help="with --deploy: seconds to let BGP converge (default 45)")
+    p_rec.add_argument("--min-prefixes", action="store_true", help="record prefix counts as minimums instead of exact")
+    p_rec.add_argument("--no-routes", action="store_true", help="don't record individual BGP routes")
+    p_rec.add_argument("--force", action="store_true", help="overwrite an existing output file")
+
+    sub.add_parser("mcp", help="run the MCP server (stdio) so AI agents can dry-run changes")
+
     args = ap.parse_args(argv)
+    if args.cmd == "mcp":
+        from .mcp_server import main as mcp_main
+        mcp_main()
+        return 0
     if args.cmd == "validate":
         return _cmd_validate(args)
+    if args.cmd == "record":
+        return _cmd_record(args)
     return _cmd_run(args, deploy=args.cmd == "run")
 
 

@@ -1,14 +1,22 @@
 ---
 title: Network Change Verdict Corpus
-description: A frozen, rerunnable set of about 30 realistic network changes with expected verdicts, comparing ping-only, session-only and netdryrun checks. Results are coming soon.
+description: 30 realistic BGP changes with expected verdicts committed before any run, tested with ping-only checks, session-only checks and Netdryrun intent checks in a real containerlab lab. Losses published.
 ---
 
 # Network Change Verdict Corpus
 
-!!! info "Results are coming soon"
-    The corpus is being built. This page will be updated with the first results.
+How much does a typical "ping after the change" test miss? This corpus answers that with data anyone can rerun.
 
-The Network Change Verdict Corpus is a frozen, rerunnable set of about 30 realistic network changes, each with an expected verdict (safe or unsafe) decided before any tool is run. Every change is tested three ways: with ping-only checks, with BGP-session-only checks, and with full netdryrun checks. The results table will show where each approach gets the verdict right and where it gets it wrong, including the cases netdryrun misses. Losses will be published alongside wins, and anyone can rerun the corpus to check the numbers.
+## Method
+
+- **The network:** a small provider (AS65000, two routers) with a customer, an upstream transit and a settlement-free peer, running FRR in containerlab. Its written intent is in [INTENT.md](https://github.com/netdryrun/netdryrun/blob/main/corpus/INTENT.md).
+- **The changes:** 30 realistic edits ([cases](https://github.com/netdryrun/netdryrun/tree/main/corpus/cases)): route leaks, filter typos, mass withdrawals, fat-fingered ASNs, latent risks, and safe changes that must not be blocked.
+- **Pre-registered verdicts:** each case's expected verdict (would an experienced operator reject it?) was **committed to git before any run**. Verdicts are never edited afterwards; findings after the run are listed separately below.
+- **Three strategies, same running lab per case:**
+    1. **Ping only:** the customer pings the upstream and the peer.
+    2. **All BGP sessions up:** every session established.
+    3. **Netdryrun intent checks:** one [intent spec](https://github.com/netdryrun/netdryrun/blob/main/corpus/specs/intent.yml), written once and used unchanged for every case, so it can't be tuned to win.
+- **Rerun it:** `python corpus/run.py` on any Linux or WSL2 machine with Docker and containerlab.
 
 ## Results
 

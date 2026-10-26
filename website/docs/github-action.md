@@ -1,11 +1,11 @@
 ---
 title: GitHub Action
-description: Run netdryrun in GitHub Actions with netdryrun/netdryrun@v0.1.0. Inputs, outputs, example workflows, and security notes for running privileged containerlab labs in CI.
+description: Run Netdryrun in GitHub Actions with netdryrun/netdryrun@v0.1.0. Inputs, outputs, example workflows, and security notes for running privileged containerlab labs in CI.
 ---
 
 # GitHub Action
 
-The action installs containerlab, installs netdryrun, runs your checks, writes a summary to the job page, uploads the JSON and JUnit reports as an artifact, and fails the job if any check fails.
+The action installs containerlab, installs Netdryrun, runs your checks, writes a summary to the job page, uploads the JSON and JUnit reports as an artifact, and fails the job if any check fails.
 
 ```yaml title=".github/workflows/network-dryrun.yml"
 name: Network dry run
@@ -34,6 +34,10 @@ It needs a Linux runner with Docker. GitHub-hosted `ubuntu-latest` runners work.
 | `artifact-name` | `netdryrun-report` | Name of the uploaded artifact |
 | `settle` | `10` | Seconds to wait before post-convergence checks |
 | `hold` | `10` | Seconds a post-convergence check must hold |
+| `pr-comment` | `false` | On pull requests, post one comment with the verdict, failures first, and the evidence for each failed check. Updated in place on every push. Needs `permissions: pull-requests: write` |
+| `github-token` | `${{ github.token }}` | Token used for the PR comment |
+| `cloud` | `false` | Upload the evidence to Netdryrun Cloud (beta). Needs `permissions: id-token: write`; no secrets are configured |
+| `cloud-url` | `https://cloud.netdryrun.com` | Netdryrun Cloud address |
 
 ## Outputs
 
@@ -42,6 +46,7 @@ It needs a Linux runner with Docker. GitHub-hosted `ubuntu-latest` runners work.
 | `status` | `passed`, `failed` or `error` |
 | `passed` | Number of passed checks |
 | `failed` | Number of failed checks |
+| `evidence-url` | Link to the evidence page, when `cloud` is `true` |
 
 ## Examples
 
@@ -71,7 +76,7 @@ jobs:
         with:
           path: network/
       - if: always()
-        run: echo "netdryrun ${{ steps.ndr.outputs.status }}: ${{ steps.ndr.outputs.passed }} passed, ${{ steps.ndr.outputs.failed }} failed"
+        run: echo "Netdryrun ${{ steps.ndr.outputs.status }}: ${{ steps.ndr.outputs.passed }} passed, ${{ steps.ndr.outputs.failed }} failed"
 ```
 
 ### Several labs
@@ -94,10 +99,28 @@ jobs:
 
 Give each matrix job its own `artifact-name`; artifact names must be unique within a workflow run.
 
+### Comment the verdict on every pull request
+
+```yaml
+name: Network dry run
+on: pull_request
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  dryrun:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: netdryrun/netdryrun@v0.2.0
+        with:
+          path: network/
+          pr-comment: true
+```
+
 ## Security notes
 
-- **The lab runs privileged containers.** containerlab needs root on the runner, and the containers it starts are privileged. Treat the topology and router configs as code that runs with root on the runner.
-- **Secrets are not passed to the lab.** The action runs netdryrun with a cleared environment (`sudo env -i`), passing only `PATH`, `HOME` and `GITHUB_STEP_SUMMARY`. The job's `GITHUB_TOKEN` and your secrets are not in that environment.
-- **Use it on trusted branches.** A pull request can change the topology, the configs or the images it runs. Prefer the `pull_request` trigger (which gives forks a read-only token and no secrets) over `pull_request_target`, and do not run untrusted fork code on self-hosted runners.
-- **Artifacts are kept for 14 days.** The reports include raw device output from the lab (configs, routes, command output). They are uploaded with `retention-days: 14`. Set `upload-artifact: false` if that is too long or not wanted.
-- **Pin the version.** Use a release tag (`@v0.1.0`) or a commit SHA, not a branch.
+- **A lab is code that runs as root on the runner.** containerlab starts privileged containers with access to the host. Netdryrun passes the lab process a minimal environment (no job tokens, not the runner user's home directory), but that only narrows exposure; it is not a security boundary.
+- **Run labs from untrusted pull requests (forks) only in jobs with no secrets**, a read-only `GITHUB_TOKEN`, and without `id-token: write`. Never run them under `pull_request_target`.
+- `pr-comment` needs `pull-requests: write`; `cloud` needs `id-token: write`. Grant each only when you use it.
+- Uploaded report artifacts contain raw command output from the lab and are kept for 14 days. Don't put real secrets in lab configs.

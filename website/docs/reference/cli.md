@@ -1,6 +1,6 @@
 ---
 title: CLI and reports
-description: netdryrun command-line reference. The run, check and validate commands, every flag, exit codes, and the JSON (netdryrun.report/v1), Markdown and JUnit report formats.
+description: Netdryrun command-line reference. The run, check and validate commands, every flag, exit codes, and the JSON (netdryrun.report/v1), Markdown and JUnit report formats.
 ---
 
 # CLI and reports
@@ -35,6 +35,23 @@ OK: examples/frr-bgp/netdryrun.yml (6 checks, lab .../examples/frr-bgp/topology.
   ...
 ```
 
+### record
+
+```bash
+netdryrun record path/to/topology.clab.yml --deploy
+```
+
+Snapshots a known-good lab into a `netdryrun.yml` baseline: every established BGP session, every prefix count (exact, or minimums with `--min-prefixes`) and up to 50 BGP routes per node. Commit it, and every later change is tested against today's behavior. Review the file before committing: remove what is allowed to change, and add negative checks for what must never happen.
+
+| Option | Meaning |
+|---|---|
+| `--out FILE` | Where to write (default: `netdryrun.yml` next to the topology) |
+| `--deploy` | Deploy the lab first and destroy it afterwards (otherwise the lab must be running) |
+| `--wait SECONDS` | With `--deploy`: time for BGP to converge before recording (default 45) |
+| `--min-prefixes` | Record prefix counts as minimums instead of exact |
+| `--no-routes` | Don't record individual routes |
+| `--force` | Overwrite an existing file |
+
 ## Options
 
 `run` and `check`:
@@ -55,7 +72,7 @@ OK: examples/frr-bgp/netdryrun.yml (6 checks, lab .../examples/frr-bgp/topology.
 | `--keep` | Leave the lab running afterwards, for debugging |
 | `--keep-on-failure` | Leave the lab running only if the run did not pass |
 
-When a lab is kept, netdryrun prints the command to destroy it. See [convergence semantics](config.md#convergence-semantics) for what `--settle` and `--hold` control.
+When a lab is kept, Netdryrun prints the command to destroy it. See [convergence semantics](config.md#convergence-semantics) for what `--settle` and `--hold` control.
 
 ## Exit codes
 
@@ -115,7 +132,7 @@ Long outputs are truncated (the last 20,000 characters of command output are kep
 
 ### Markdown
 
-`--markdown FILE` writes a short summary: a heading (passed, failed, or could not run), the pass/fail counts and lab name, a table of checks with failures first, and a footer with the netdryrun and containerlab versions. This is the same text appended to the GitHub Actions step summary.
+`--markdown FILE` writes a short summary: a heading (passed, failed, or could not run), the pass/fail counts and lab name, a table of checks with failures first, and a footer with the Netdryrun and containerlab versions. This is the same text appended to the GitHub Actions step summary.
 
 ### JUnit XML
 

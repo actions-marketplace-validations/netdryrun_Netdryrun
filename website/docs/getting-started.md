@@ -1,6 +1,6 @@
 ---
 title: Getting started
-description: Install netdryrun, check the requirements (Linux or WSL2, Docker, containerlab, Python 3.10+), and run the three bundled examples with their expected results.
+description: Install Netdryrun, check the requirements (Linux or WSL2, Docker, containerlab, Python 3.10+), and run the three bundled examples with their expected results.
 ---
 
 # Getting started
@@ -11,13 +11,13 @@ description: Install netdryrun, check the requirements (Linux or WSL2, Docker, c
 |---|---|
 | Linux or WSL2 | containerlab runs on Linux. On Windows, use WSL2. |
 | Docker | The lab nodes are containers. |
-| [containerlab](https://containerlab.dev/install/) | netdryrun drives the `containerlab` CLI; it must be on `PATH`. |
+| [containerlab](https://containerlab.dev/install/) | Netdryrun drives the `containerlab` CLI; it must be on `PATH`. |
 | Python 3.10+ | |
 
-containerlab needs root (or a user in the right groups) to create the lab. Run netdryrun the same way you run containerlab on that machine.
+containerlab needs root (or a user in the right groups) to create the lab. Run Netdryrun the same way you run containerlab on that machine.
 
 !!! note "WSL2 and /mnt/c"
-    If your topology lives under `/mnt/...` (a Windows drive), netdryrun keeps containerlab's lab directory on the Linux filesystem (`~/.cache/netdryrun/labs`) unless you set `CLAB_LABDIR_BASE` yourself. SR Linux cannot save its config on a Windows drive.
+    If your topology lives under `/mnt/...` (a Windows drive), Netdryrun keeps containerlab's lab directory on the Linux filesystem (`~/.cache/netdryrun/labs`) unless you set `CLAB_LABDIR_BASE` yourself. SR Linux cannot save its config on a Windows drive.
 
 ## Install
 
@@ -26,7 +26,7 @@ pip install netdryrun
 netdryrun --version
 ```
 
-For the MCP server used by AI agents, install the extra: `pip install "netdryrun[mcp]"`. See [AI agents](ai-agents.md).
+The MCP server for AI agents is included: run `netdryrun mcp`. See [AI agents](ai-agents.md).
 
 ## Run the examples
 
@@ -52,6 +52,22 @@ Each run deploys the lab, runs the checks, prints one line per check and destroy
 The broken example is the one shown on the [home page](index.md#a-failing-run). r1 receives the leaked default route but does not select it, so the ping still works. The route check catches it because a received-but-not-selected route counts as present.
 
 SR Linux takes longer to boot, so `examples/srl-frr` sets `timeout: 120`.
+
+## Record a baseline of your own lab (fastest start)
+
+Point `record` at any containerlab topology you already have:
+
+```bash
+netdryrun record my-lab/topology.clab.yml --deploy
+```
+
+It deploys the lab, waits for BGP to converge, and writes `my-lab/netdryrun.yml` with a check for every established BGP session, every prefix count and every BGP route (up to 50 per node). Then make your change and run:
+
+```bash
+netdryrun run my-lab
+```
+
+Anything that changed fails, with evidence. Before committing the baseline, remove what is allowed to change and add negative checks for what must never happen (for example `present: false` for a default route at a peer). See the [`record` reference](reference/cli.md#record).
 
 ## Write checks for your own lab
 

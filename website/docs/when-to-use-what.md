@@ -1,6 +1,6 @@
 ---
 title: When to use what
-description: A neutral comparison of Batfish, netlab, pyATS/Genie, containerlab and netdryrun for network change testing. What each tool is best at and how they combine.
+description: A neutral comparison of Batfish, netlab, pyATS/Genie, containerlab and Netdryrun for network change testing. What each tool is best at and how they combine.
 ---
 
 # When to use what
@@ -15,7 +15,7 @@ Several good open-source tools help you test network changes. They answer differ
 | [netlab](https://netlab.tools) | Building a working lab from a short, high-level topology, with generated configs for many platforms and built-in validation tests | Yes, through containerlab or libvirt |
 | [pyATS / Genie](https://developer.cisco.com/pyats/) | A full Python test framework with a large library of device parsers, for testing labs and real (including production) devices, with state snapshots and diffs | Works against any reachable device |
 | [containerlab](https://containerlab.dev) | Running container-based network labs from a YAML topology, for many network operating systems | Yes, it is the lab |
-| netdryrun | Declarative, convergence-aware checks on a containerlab lab, packaged for CI with a pass/fail verdict and evidence | Yes, through containerlab |
+| Netdryrun | Declarative, convergence-aware checks on a containerlab lab, packaged for CI with a pass/fail verdict and evidence | Yes, through containerlab |
 
 ## Batfish
 
@@ -31,7 +31,7 @@ netlab takes a compact topology description ("these routers, running OSPF and BG
 
 Use it when building and maintaining the lab is the hard part, or when you want the same design on several platforms.
 
-It combines with netdryrun naturally: netlab can generate a containerlab topology, and netdryrun can run its checks against that topology as a CI gate.
+It combines with Netdryrun naturally: netlab can generate a containerlab topology, and Netdryrun can run its checks against that topology as a CI gate.
 
 ## pyATS / Genie
 
@@ -39,17 +39,17 @@ pyATS is a mature Python test framework from Cisco, and Genie adds a large libra
 
 Use it when you need deep, programmable testing, broad parser coverage (especially for Cisco platforms), or pre- and post-change checks on production devices.
 
-netdryrun is much smaller: a YAML file and a GitHub Action, with no test code to write, and it only runs against labs. If you already have pyATS tests, keep them.
+Netdryrun is much smaller: a YAML file and a GitHub Action, with no test code to write, and it only runs against labs. If you already have pyATS tests, keep them.
 
 ## containerlab
 
 containerlab runs network labs from a YAML topology: container-native network operating systems (such as Nokia SR Linux, Arista cEOS, Juniper cRPD, FRR) and, through vrnetlab, many VM-based ones. It handles wiring, management addresses and lifecycle.
 
-Use it whenever you want a real lab on a laptop or a CI runner. netdryrun does not replace it; netdryrun drives it.
+Use it whenever you want a real lab on a laptop or a CI runner. Netdryrun does not replace it; Netdryrun drives it.
 
-## netdryrun
+## Netdryrun
 
-netdryrun adds a test layer on top of a containerlab lab:
+Netdryrun adds a test layer on top of a containerlab lab:
 
 - positive checks wait for convergence and must pass twice in a row
 - negative checks (absent routes, failing pings, prefix upper bounds) run only after convergence and must hold
@@ -64,7 +64,7 @@ A reasonable pipeline uses more than one:
 
 1. **Batfish** on every commit for fast, broad config analysis.
 2. **netlab** or a hand-written **containerlab** topology to build a lab that mirrors the change.
-3. **netdryrun** in CI to boot that lab, wait for convergence, and gate the merge on runtime behavior.
+3. **Netdryrun** in CI to boot that lab, wait for convergence, and gate the merge on runtime behavior.
 4. **pyATS / Genie** (or similar) for pre- and post-change checks on the production devices during the change window.
 
 None of these steps proves the change is safe on its own. Each one removes a different class of mistakes.

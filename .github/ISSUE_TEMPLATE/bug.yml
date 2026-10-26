@@ -1,0 +1,25 @@
+name: Bug report
+description: netdryrun got something wrong (a false pass, false fail, crash or confusing output)
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations: {required: true}
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of problem
+      options: [False pass (a bad change passed), False fail (a good change failed), Crash or error, Docs or output unclear]
+    validations: {required: true}
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Attach the JSON report (run with --json report.json) and your netdryrun.yml. Remove secrets first.
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      placeholder: netdryrun 0.2.0, containerlab 0.81.1, FRR 10.4.1 / SR Linux 26.7.2

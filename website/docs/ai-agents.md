@@ -1,27 +1,27 @@
 ---
 title: AI agents (MCP server)
-description: The netdryrun MCP server lets an AI agent dry-run a network change in a real containerlab lab and proceed only if every check passes. Install, tools, verdict field and safety model.
+description: The Netdryrun MCP server lets an AI agent dry-run a network change in a real containerlab lab and proceed only if every check passes. Install, tools, verdict field and safety model.
 ---
 
 # AI agents (MCP server)
 
-AI agents are starting to change networks. netdryrun includes an [MCP](https://modelcontextprotocol.io) server that gives an agent a safety gate: it dry-runs the proposed change in a real lab and proceeds only if every check passes.
+AI agents are starting to change networks. Netdryrun includes an [MCP](https://modelcontextprotocol.io) server that gives an agent a safety gate: it dry-runs the proposed change in a real lab and proceeds only if every check passes.
 
 ## Install
 
 ```bash
-pip install "netdryrun[mcp]"
+pip install netdryrun
 ```
 
-This adds the `netdryrun-mcp` command, a stdio MCP server. The same requirements apply as for the CLI: Linux or WSL2, Docker, containerlab.
+The MCP server is built in: `netdryrun mcp` starts it over stdio. The same requirements apply as for the CLI: Linux or WSL2, Docker, containerlab.
 
 Add it to your MCP client. For example, Claude Code:
 
 ```bash
-claude mcp add netdryrun -- netdryrun-mcp
+claude mcp add netdryrun -- netdryrun mcp
 ```
 
-Other clients: configure a stdio server whose command is `netdryrun-mcp`.
+Other clients: configure a stdio server with command `netdryrun` and argument `mcp` (or `uvx netdryrun mcp` with no install).
 
 ## Workflow
 

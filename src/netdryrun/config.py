@@ -15,7 +15,7 @@ CHECK_TYPES = {
     "ping": {"required": ("node", "target"), "optional": ("source", "expect", "vrf", "count", "min_replies")},
 }
 COMMON_KEYS = ("type", "name", "timeout", "hold")
-BGP_STATES = ("idle", "connect", "active", "opensent", "openconfirm", "established")
+BGP_STATES = ("idle", "connect", "active", "opensent", "openconfirm", "established", "down")  # down = any state except established
 
 
 class ConfigError(ValueError):
@@ -42,6 +42,24 @@ class Config:
     timeout: float
     checks: list[Check]
     drivers: dict[str, str] = field(default_factory=dict)  # node -> driver override
+    scenarios: list["Scenario"] = field(default_factory=list)
+
+
+@dataclass
+class Fault:
+    kind: str          # "link_down" or "node_isolated"
+    node: str
+    interface: str | None = None
+
+    def describe(self) -> str:
+        return f"{self.node} {self.interface} down" if self.kind == "link_down" else f"{self.node} isolated"
+
+
+@dataclass
+class Scenario:
+    name: str
+    faults: list[Fault]
+    checks: list[Check]
 
 
 def _describe(ctype: str, p: dict[str, Any]) -> str:
@@ -49,6 +67,8 @@ def _describe(ctype: str, p: dict[str, Any]) -> str:
         return f"{p['node']}: BGP session to {p['neighbor']} is {p.get('state', 'established')}"
     if ctype == "bgp_prefixes":
         rng = []
+        if "exact" in p:
+            rng.append(f"= {p['exact']}")
         if "min" in p:
             rng.append(f">= {p['min']}")
         if "max" in p:
@@ -139,4 +159,40 @@ def load(path: str | Path) -> Config:
         raise ConfigError(f"{path}: no checks defined")
     checks = [_validate_check(i, c, timeout) for i, c in enumerate(raw_checks)]
     drivers = {str(k): str(v.get("driver")) for k, v in (data.get("nodes") or {}).items() if isinstance(v, dict) and v.get("driver")}
-    return Config(path=path, lab=lab, timeout=timeout, checks=checks, drivers=drivers)
+    scenarios = [_validate_scenario(i, sc, timeout) for i, sc in enumerate(data.get("scenarios") or [])]
+    return Config(path=path, lab=lab, timeout=timeout, checks=checks, drivers=drivers, scenarios=scenarios)
+
+
+def _validate_scenario(i: int, raw: Any, default_timeout: float) -> Scenario:
+    where = f"scenarios[{i}]"
+    if not isinstance(raw, dict):
+        raise ConfigError(f"{where}: must be a mapping")
+    unknown = set(raw) - {"name", "link_down", "node_isolated", "checks"}
+    if unknown:
+        raise ConfigError(f"{where}: unknown keys {sorted(unknown)}")
+    faults = []
+    for item in _as_list(raw.get("link_down")):
+        if not isinstance(item, dict) or not {"node", "interface"} <= set(item):
+            raise ConfigError(f"{where}: link_down needs node and interface")
+        faults.append(Fault("link_down", str(item["node"]), str(item["interface"])))
+    for item in _as_list(raw.get("node_isolated")):
+        node = item.get("node") if isinstance(item, dict) else item
+        if not node:
+            raise ConfigError(f"{where}: node_isolated needs a node")
+        faults.append(Fault("node_isolated", str(node)))
+    if not faults:
+        raise ConfigError(f"{where}: define at least one fault (link_down or node_isolated)")
+    raw_checks = raw.get("checks") or []
+    if not raw_checks:
+        raise ConfigError(f"{where}: no checks defined")
+    name = str(raw.get("name") or ", ".join(f.describe() for f in faults))
+    checks = [_validate_check(j, c, default_timeout) for j, c in enumerate(raw_checks)]
+    for c in checks:
+        c.name = f"[{name}] {c.name}"
+    return Scenario(name=name, faults=faults, checks=checks)
+
+
+def _as_list(v: Any) -> list:
+    if v is None:
+        return []
+    return v if isinstance(v, list) else [v]

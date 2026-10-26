@@ -55,3 +55,7 @@ class Driver:
 
     def ping(self, target: str, source: str | None, count: int, vrf: str = "default") -> Observation:
         raise NotImplementedError
+
+    def all_routes(self, vrf: str = "default", family: int = 4) -> Observation:
+        """Every route in the table (used by `netdryrun record`)."""
+        raise NotImplementedError

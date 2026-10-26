@@ -109,5 +109,29 @@ class Lab:
         rows = data.get(self.name, []) if isinstance(data, dict) else []
         return {row["name"] for row in rows if row.get("state") == "running"}
 
+    def data_interfaces(self, node: str) -> list[str]:
+        """Interfaces a node uses for the lab's links (everything except loopback and management)."""
+        self._require_linux_links(node)
+        r = self.exec(node, ["ls", "/sys/class/net"], timeout=15)
+        if r.rc != 0:
+            raise LabError(f"could not list interfaces on {node}: {(r.stderr or r.stdout).strip()}")
+        skip = {"lo", "eth0", "mgmt0", "docker0"}
+        ifaces = sorted(i for i in r.stdout.split() if i not in skip and not i.startswith(("mgmt0", "gway", "monit")))
+        if not ifaces:
+            raise LabError(f"{node} has no lab links to take down")
+        return ifaces
+
+    def _require_linux_links(self, node: str) -> None:
+        if self.nodes[node].kind in ("nokia_srlinux", "srl"):
+            raise LabError(f"failure scenarios on SR Linux nodes ({node}) are not supported yet; "
+                           "take the link down on the FRR/Linux side of the link instead")
+
+    def set_link(self, node: str, interface: str, up: bool) -> ExecResult:
+        self._require_linux_links(node)
+        r = self.exec(node, ["ip", "link", "set", "dev", interface, "up" if up else "down"], timeout=15)
+        if r.rc != 0:
+            raise LabError(f"could not set {node} {interface} {'up' if up else 'down'}: {(r.stderr or r.stdout).strip()}")
+        return r
+
     def exec(self, node: str, cmd: list[str], timeout: float = 60) -> ExecResult:
         return _run(["docker", "exec", self.nodes[node].container, *cmd], timeout=timeout)

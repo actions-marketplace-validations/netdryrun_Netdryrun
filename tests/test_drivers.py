@@ -47,3 +47,8 @@ def test_srl_bad_output_is_an_error():
     with pytest.raises(DriverError):
         srlinux.parse_bgp_neighbors("Parsing error: nope")
     assert srlinux.parse_bgp_neighbors("") == {}
+
+
+def test_frr_all_routes():
+    routes = frr.parse_all_routes(read("frr_route.txt"))
+    assert any(r.prefix == "192.168.3.0/24" and r.protocol == "bgp" for r in routes)

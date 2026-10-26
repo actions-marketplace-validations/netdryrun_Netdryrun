@@ -9,7 +9,7 @@ description = "Test network changes before they touch production: real virtual l
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"
-authors = [{ name = "netdryrun" }]
+authors = [{ name = "Netdryrun" }]
 keywords = ["network", "testing", "containerlab", "frr", "srlinux", "bgp", "netdevops", "ci"]
 classifiers = [
   "Development Status :: 3 - Alpha",
@@ -17,11 +17,11 @@ classifiers = [
   "Topic :: System :: Networking",
   "Programming Language :: Python :: 3",
 ]
-dependencies = ["pyyaml>=6.0"]
+dependencies = ["pyyaml>=6.0", "mcp>=2.0,<3"]
 
 [project.optional-dependencies]
-mcp = ["mcp>=2.0,<3"]
-dev = ["pytest>=8.0", "mcp>=2.0,<3"]
+mcp = []  # kept so `pip install "netdryrun[mcp]"` keeps working; MCP is now built in
+dev = ["pytest>=8.0"]
 
 [project.urls]
 Homepage = "https://netdryrun.com"

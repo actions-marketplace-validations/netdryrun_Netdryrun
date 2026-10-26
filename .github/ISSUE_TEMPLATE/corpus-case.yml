@@ -1,0 +1,22 @@
+name: Corpus case proposal
+description: Propose a realistic network change for the Verdict Corpus
+labels: [corpus]
+body:
+  - type: textarea
+    id: change
+    attributes:
+      label: The change
+      description: What the engineer changes, as a config diff if possible.
+    validations: {required: true}
+  - type: dropdown
+    id: expected
+    attributes:
+      label: Expected verdict (decide before running anything)
+      options: [unsafe, safe]
+    validations: {required: true}
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: Why would an experienced operator approve or reject it? Link a real incident if there is one.
+    validations: {required: true}

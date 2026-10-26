@@ -57,7 +57,7 @@ A BGP session reaches a state.
 | Key | Required | Default | Meaning |
 |---|---|---|---|
 | `neighbor` | yes | | Neighbor IP address as configured on `node` |
-| `state` | no | `established` | One of `idle`, `connect`, `active`, `opensent`, `openconfirm`, `established` (case-insensitive) |
+| `state` | no | `established` | One of `idle`, `connect`, `active`, `opensent`, `openconfirm`, `established`, or `down` (any state except established). Case-insensitive |
 
 The check fails if the neighbor is not configured. A `state` other than `established` makes it a post-convergence check.
 
@@ -85,7 +85,7 @@ Rules:
 - `exact` cannot be combined with `min` or `max`.
 - `min` must not be greater than `max`.
 - All three are non-negative integers.
-- The session must be `established`. Counters reset to 0 when a session drops, so a count from a down session would satisfy `max` by accident; netdryrun fails the check instead.
+- The session must be `established`. Counters reset to 0 when a session drops, so a count from a down session would satisfy `max` by accident; Netdryrun fails the check instead.
 - If the session is established but the address family reports nothing, the count is 0.
 - A check with `max` or `exact` is a post-convergence check. A check with only `min` is a positive check.
 
@@ -107,6 +107,7 @@ A route is present in (or absent from) the routing table.
 | `present` | no | `true` | `false` means the route must be absent |
 | `protocol` | no | any | Only count routes from this protocol. See [protocol names](#protocol-names). |
 | `vrf` | no | `default` | VRF or network-instance |
+| `active` | no | `true` | With `present: true`: `false` also accepts a route that is in the table but not selected (for example a BGP default losing to a local one) |
 
 - **Present** means an *active* route matches: selected and installed on FRR, `active` on SR Linux.
 - **Absent** means no matching route at all, active or not. A route that was received but not selected (for example a leaked default losing to a local one) still counts as present, so `present: false` fails. This is how the [failing example](../index.md#a-failing-run) is caught.
@@ -142,9 +143,36 @@ Reachability from a node.
   target: 192.168.3.1
 ```
 
+## Failure scenarios
+
+`scenarios:` runs extra checks while links are down, then restores them. Use it to prove the network survives a failure, for example that traffic reroutes when an uplink dies.
+
+```yaml
+scenarios:
+  - name: r1-r2 link fails
+    link_down: {node: r1, interface: eth1}   # or a list of links
+    checks:
+      - {type: route, node: r1, prefix: 192.168.2.0/24, protocol: bgp}   # rerouted via r3
+      - {type: ping, node: r1, source: 192.168.1.1, target: 192.168.2.1}
+      - {type: bgp_session, node: r1, neighbor: 10.0.12.2, state: down}
+
+  - node_isolated: r2          # all of r2's lab links down
+    checks:
+      - {type: route, node: r1, prefix: 192.168.2.0/24, present: false}
+```
+
+| Key | Meaning |
+|---|---|
+| `name` | Label shown before each check (default: generated from the faults) |
+| `link_down` | `{node, interface}` or a list of them. Interface names as seen inside the node (`eth1` on FRR, `e1-1` on SR Linux) |
+| `node_isolated` | A node name (or list): every lab link of that node goes down |
+| `checks` | Same check types as the top level, with the same convergence rules |
+
+Scenarios run after the main checks, one at a time. Links are always restored afterwards, even if a check fails, and Netdryrun waits for the network to settle before the next scenario.
+
 ## Convergence semantics
 
-Networks need time to converge, and some checks are trivially true before they do. netdryrun splits checks into two groups.
+Networks need time to converge, and some checks are trivially true before they do. Netdryrun splits checks into two groups.
 
 **Positive checks** (session `established`, prefix count with only `min`, route present, ping expected to succeed):
 
@@ -166,7 +194,7 @@ Results are reported in the order the checks appear in the file.
 
 ## Drivers
 
-A driver turns device state into a common shape. netdryrun detects it from the topology:
+A driver turns device state into a common shape. Netdryrun detects it from the topology:
 
 - `kind: nokia_srlinux` or `kind: srl` uses `srlinux`
 - an image whose name contains `frr` uses `frr`

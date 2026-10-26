@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write   # the e2e job dogfoods pr-comment
 
 jobs:
   unit:
@@ -36,6 +37,7 @@ jobs:
         with:
           path: examples/${{ matrix.example }}
           artifact-name: report-${{ matrix.example }}
+          pr-comment: ${{ matrix.example == 'frr-bgp' }}
 
   # Proves the tool catches a real mistake: this run MUST fail.
   catches-bad-change:

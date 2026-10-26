@@ -146,3 +146,91 @@ def test_route_present_not_selected_with_active_false():
     strict = run_check(check("route", timeout=0, node="r1", prefix="0.0.0.0/0", protocol="bgp"), d,
                        confirm=1, clock=clock, sleep=clock.sleep)
     assert not strict.passed
+
+
+def test_round_robin_shares_one_timeout():
+    """Three permanently failing checks cost about one timeout, not three."""
+    from netdryrun.checks import run_round_robin
+    clock = FakeClock()
+    d = FakeDriver(states=["active"])
+    checks = [check("bgp_session", timeout=30, node="r1", neighbor="10.0.0.2", state="established") for _ in range(3)]
+    results = run_round_robin(checks, {"r1": d}, interval=3, clock=clock, sleep=clock.sleep)
+    assert all(not r.passed for r in results)
+    assert clock.t <= 33
+
+
+def test_round_robin_passes_converging_checks():
+    from netdryrun.checks import run_round_robin
+    clock = FakeClock()
+    d = FakeDriver(states=["active", "established"])
+    results = run_round_robin([check("bgp_session", node="r1", neighbor="10.0.0.2", state="established")],
+                              {"r1": d}, interval=3, clock=clock, sleep=clock.sleep)
+    assert results[0].passed
+
+
+def test_hold_together_catches_late_violation_and_passes_others():
+    from netdryrun.checks import hold_together
+    clock = FakeClock()
+    leak = [Route("0.0.0.0/0", "bgp", True)]
+    bad = check("route", node="r1", prefix="0.0.0.0/0", present=False)
+    good = check("route", node="r2", prefix="0.0.0.0/0", present=False)
+    results = hold_together([bad, good], {"r1": FakeDriver(routes=[[], leak]), "r2": FakeDriver(routes=[[]])},
+                            hold=10, interval=3, clock=clock, sleep=clock.sleep)
+    assert not results[0].passed and results[1].passed
+
+
+def test_evidence_excerpt_finds_the_prefix():
+    from netdryrun.report import _evidence_excerpt
+    out = "\n".join([f"line {i}" for i in range(40)] + ['"0.0.0.0/0": [{"protocol": "bgp", "selected": false}]'] + ["tail"] * 20)
+    ex = _evidence_excerpt(out, {"prefix": "0.0.0.0/0"})
+    assert '"0.0.0.0/0"' in ex and len(ex.splitlines()) <= 16
+
+
+class SlowDriver(FakeDriver):
+    """Every sample costs 2 seconds of (fake) time, like a slow SR Linux show command."""
+
+    def __init__(self, clock, **kw):
+        super().__init__(**kw)
+        self.clock = clock
+
+    def bgp_neighbors(self, vrf="default"):
+        self.clock.t += 2
+        return super().bgp_neighbors(vrf)
+
+
+def test_big_slow_list_does_not_false_fail_healthy_checks():
+    """Regression (Grok review): 80 healthy checks, slow samples, short timeout: all must pass."""
+    from netdryrun.checks import run_round_robin
+    clock = FakeClock()
+    d = SlowDriver(clock, states=["established"])
+    checks = [check("bgp_session", timeout=30, node="r1", neighbor="10.0.0.2", state="established") for _ in range(80)]
+    results = run_round_robin(checks, {"r1": d}, interval=3, clock=clock, sleep=clock.sleep)
+    assert all(r.passed for r in results), [r.detail for r in results if not r.passed][:3]
+
+
+def test_max_only_prefix_check_fails_when_count_climbs_after_zero():
+    """Regression (Grok review): 0 prefixes at first must not let a max check pass a later leak."""
+    from netdryrun.checks import hold_together
+    clock = FakeClock()
+
+    class Climb(FakeDriver):
+        counts = [0, 0, 50]
+
+        def bgp_neighbors(self, vrf="default"):
+            n = self.counts.pop(0) if len(self.counts) > 1 else self.counts[0]
+            return Observation({"10.0.0.2": BgpNeighbor("10.0.0.2", "established", {"ipv4-unicast": n})}, [])
+
+    r = hold_together([check("bgp_prefixes", node="r1", neighbor="10.0.0.2", max=10)], {"r1": Climb()},
+                      hold=10, interval=3, clock=clock, sleep=clock.sleep)[0]
+    assert not r.passed and "50" in r.detail
+
+
+def test_per_check_hold_is_honored():
+    """Regression (Grok review): hold: 30 on one check must catch a violation at t=20."""
+    from netdryrun.checks import hold_together
+    clock = FakeClock()
+    leak_late = FakeDriver(routes=[[]] * 7 + [[Route("0.0.0.0/0", "bgp", True)]])
+    c = check("route", node="r1", prefix="0.0.0.0/0", present=False)
+    c.hold = 30
+    r = hold_together([c], {"r1": leak_late}, hold=10, interval=3, clock=clock, sleep=clock.sleep)[0]
+    assert not r.passed and "unexpectedly present" in r.detail

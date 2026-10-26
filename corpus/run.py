@@ -123,7 +123,7 @@ def write_results(rows: list[dict], out: Path, env: dict) -> None:
         "# Verdict Corpus results", "",
         f"Generated {env['generated']} with netdryrun {env['netdryrun']}, containerlab {env['containerlab']}, "
         f"FRR {env['frr_image']}. Rerun with `python corpus/run.py`.", "",
-        "**Conflict of interest:** the netdryrun maintainers wrote this corpus and the runner. "
+        "**Conflict of interest:** the Netdryrun maintainers wrote this corpus and the runner. "
         "Expected verdicts were recorded before running. Losses are kept.", "",
         "## Summary", "",
         "| Strategy | Correct | False passes (bad change approved) | False blocks (good change rejected) | Errors |",
@@ -132,19 +132,26 @@ def write_results(rows: list[dict], out: Path, env: dict) -> None:
     for s in names:
         oc = [outcome(r["expected"], r["strategies"][s]["verdict"]) for r in rows]
         lines.append(f"| {s} | {oc.count('correct')}/{len(rows)} | {oc.count('false pass')} | {oc.count('false block')} | {oc.count('error')} |")
-    lines += ["", "## Cases", "", "| Case | Category | Expected | Ping | Sessions | netdryrun | What netdryrun flagged |", "|---|---|---|---|---|---|---|"]
+    lines += ["", "## Cases", "", "| Case | Category | Expected | Ping | Sessions | Netdryrun | What Netdryrun flagged |", "|---|---|---|---|---|---|---|"]
     mark = {"correct": "✅", "false pass": "❌ false pass", "false block": "⚠️ false block", "error": "💥 error"}
     for r in rows:
         cells = [mark[outcome(r["expected"], r["strategies"][s]["verdict"])] for s in names]
         flagged = "; ".join(r["strategies"]["netdryrun"]["failed_checks"]) or "nothing"
         lines.append(f"| `{r['id']}` {r['title']} | {r['category']} | {r['expected']} | {' | '.join(cells)} | {flagged} |")
     losses = [r for r in rows if outcome(r["expected"], r["strategies"]["netdryrun"]["verdict"]) != "correct"]
-    lines += ["", "## netdryrun losses", ""]
+    lines += ["", "## Netdryrun losses", ""]
     if not losses:
         lines.append("None in this run.")
     for r in losses:
         lines.append(f"- **`{r['id']}` {r['title']}**: {outcome(r['expected'], r['strategies']['netdryrun']['verdict'])}. {r.get('note') or ''}")
     (HERE / "RESULTS.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _git_commit() -> str:
+    import subprocess
+    r = subprocess.run(["git", "-C", str(HERE), "rev-parse", "--short", "HEAD"], capture_output=True, text=True)
+    dirty = subprocess.run(["git", "-C", str(HERE), "status", "--porcelain", "--", "src", "corpus"], capture_output=True, text=True)
+    return (r.stdout.strip() or "unknown") + ("+dirty" if dirty.stdout.strip() else "")
 
 
 def main() -> int:
@@ -161,6 +168,7 @@ def main() -> int:
         "generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "netdryrun": __version__, "containerlab": clab.version(),
         "frr_image": next(iter(clab.nodes.values())).image, "host": platform.platform(),
+        "commit": _git_commit(),
     }
     rows = []
     for case in cases:

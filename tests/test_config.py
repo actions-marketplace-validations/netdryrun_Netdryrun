@@ -64,3 +64,26 @@ def test_ipv6_is_canonicalized(tmp_path):
     cfg = load(write(tmp_path, "lab: topo.clab.yml\nchecks:\n  - {type: bgp_session, node: r1, neighbor: '2001:db8:0:0::1', vrf: blue}\n"))
     assert cfg.checks[0].params["neighbor"] == "2001:db8::1"
     assert cfg.checks[0].params["vrf"] == "blue"
+
+
+def test_scenarios(tmp_path):
+    cfg = load(write(tmp_path, """
+        lab: topo.clab.yml
+        checks:
+          - {type: ping, node: r1, target: 10.0.0.1}
+        scenarios:
+          - name: uplink fails
+            link_down: {node: r1, interface: eth1}
+            checks:
+              - {type: ping, node: r1, target: 10.0.0.9}
+          - node_isolated: r2
+            checks:
+              - {type: route, node: r1, prefix: 10.2.0.0/24, present: false}
+    """))
+    assert [s.name for s in cfg.scenarios] == ["uplink fails", "r2 isolated"]
+    assert cfg.scenarios[0].checks[0].name.startswith("[uplink fails]")
+
+
+def test_scenario_needs_a_fault(tmp_path):
+    with pytest.raises(ConfigError, match="at least one fault"):
+        load(write(tmp_path, "lab: topo.clab.yml\nchecks:\n  - {type: ping, node: r1, target: 10.0.0.1}\nscenarios:\n  - checks: [{type: ping, node: r1, target: 10.0.0.1}]\n"))

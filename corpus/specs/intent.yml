@@ -1,4 +1,4 @@
-# The netdryrun intent spec for the corpus network, written ONCE from INTENT.md and used
+# The Netdryrun intent spec for the corpus network, written ONCE from INTENT.md and used
 # unchanged for every case. It is deliberately not tuned per case: if a bad change slips
 # past these checks, that row is a published loss.
 lab: topology.clab.yml

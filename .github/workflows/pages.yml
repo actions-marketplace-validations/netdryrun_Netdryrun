@@ -26,6 +26,8 @@ jobs:
           python-version: "3.12"
       - name: Install MkDocs Material
         run: python -m pip install --quiet "mkdocs-material==9.8.0"
+      - name: Build llms-full.txt
+        run: python website/build_llms_full.py
       - name: Build site
         working-directory: website
         run: mkdocs build --strict
@@ -46,3 +48,18 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # Tell IndexNow search engines (Bing, which feeds ChatGPT search and Copilot; Yandex; Seznam)
+  # about every page after each deploy. The key file is website/docs/<key>.txt.
+  indexnow:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Submit sitemap URLs to IndexNow
+        run: |
+          KEY=$(basename website/docs/*.txt .txt | grep -E '^[0-9a-f]{32}$' | head -1)
+          sleep 30
+          URLS=$(curl -fsSL https://netdryrun.com/sitemap.xml | grep -oE '<loc>[^<]+</loc>' | sed -E 's#</?loc>##g' | python3 -c "import json,sys;print(json.dumps([l.strip() for l in sys.stdin if l.strip()]))")
+          curl -fsS -X POST https://api.indexnow.org/indexnow -H 'Content-Type: application/json; charset=utf-8' \
+            -d "{\"host\":\"netdryrun.com\",\"key\":\"$KEY\",\"keyLocation\":\"https://netdryrun.com/$KEY.txt\",\"urlList\":$URLS}" -w "IndexNow HTTP %{http_code}\n"

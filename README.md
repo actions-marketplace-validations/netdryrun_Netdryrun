@@ -1,13 +1,15 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/netdryrun-wordmark-white.svg">
-    <img alt="netdryrun" src=".github/assets/netdryrun-wordmark-navy.svg" width="360">
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/netdryrun-wordmark-white-tm.svg">
+    <img alt="Netdryrun" src=".github/assets/netdryrun-wordmark-navy-tm.svg" width="360">
   </picture>
 </p>
 
 **Test network changes before they touch production.**
 
-netdryrun boots your topology as a real virtual network ([containerlab](https://containerlab.dev)), applies your configs, and checks how the network actually *behaves*: BGP sessions, prefix counts, routes, reachability. It catches mistakes like route leaks before they reach production, and leaves evidence a reviewer can trust.
+Netdryrun boots your topology as a real virtual network ([containerlab](https://containerlab.dev)), applies your configs, and checks how the network actually *behaves*: BGP sessions, prefix counts, routes, reachability. It catches mistakes like route leaks before they reach production, and leaves evidence a reviewer can trust.
+
+<p align="center"><img alt="Netdryrun catching a leaked default route that ping and session checks miss" src=".github/assets/netdryrun-demo.gif" width="820"></p>
 
 ```text
 $ netdryrun run examples/frr-bgp-broken
@@ -41,6 +43,16 @@ netdryrun run examples/srl-frr          # SR Linux + FRR, should pass
 netdryrun run examples/frr-bgp-broken   # a bad change, should fail
 ```
 
+### On your own containerlab topology (3 commands)
+
+```bash
+netdryrun record my-lab/topology.clab.yml --deploy   # snapshot today's behavior into my-lab/netdryrun.yml
+# ...edit your configs (the change you want to test)...
+netdryrun run my-lab                                   # did anything break?
+```
+
+`record` writes a baseline of every established BGP session, prefix count and BGP route. Review it, commit it, and every future change is tested against it, locally or in CI.
+
 ## netdryrun.yml
 
 ```yaml
@@ -71,6 +83,17 @@ checks:
     present: false
 ```
 
+Failure scenarios take links down and check the network still behaves, then restore them:
+
+```yaml
+scenarios:
+  - name: r1-r2 link fails
+    link_down: {node: r1, interface: eth1}
+    checks:
+      - {type: ping, node: r1, source: 192.168.1.1, target: 192.168.2.1}   # rerouted via r3
+      - {type: bgp_session, node: r1, neighbor: 10.0.12.2, state: down}
+```
+
 Every check also accepts `name`, `timeout` and `vrf`. Ping accepts `expect: failure` and `count`. Drivers are detected from the topology; override them with `nodes: {r1: {driver: frr}}`.
 
 | Check | FRR | SR Linux |
@@ -87,6 +110,7 @@ Every check also accepts `name`, `timeout` and `vrf`. Ping accepts `expect: fail
 | `netdryrun run [path]` | Deploy the lab, run the checks, destroy the lab. Add `--keep` to leave it up for debugging |
 | `netdryrun check [path]` | Run the checks against a lab that is already running |
 | `netdryrun validate [path]` | Validate `netdryrun.yml` without running anything |
+| `netdryrun record topology.clab.yml` | Snapshot a known-good lab into a `netdryrun.yml` baseline, so you don't write checks by hand |
 
 Reports: `--json FILE` (full evidence), `--markdown FILE`, `--junit FILE`. Under GitHub Actions, a summary is appended to the job page automatically. Exit codes: `0` passed, `1` a check failed, `2` config or lab error.
 
@@ -109,16 +133,16 @@ The action installs containerlab, runs the checks, uploads the JSON and JUnit re
 
 ## For AI agents (MCP)
 
-AI agents are starting to change networks. netdryrun gives them a safety gate: an [MCP](https://modelcontextprotocol.io) server that lets an agent dry-run its change in a real lab and proceed only if every check passes.
+AI agents are starting to change networks. Netdryrun gives them a safety gate: an [MCP](https://modelcontextprotocol.io) server that lets an agent dry-run its change in a real lab and proceed only if every check passes.
 
 ```bash
-pip install "netdryrun[mcp]"
+pip install netdryrun
 ```
 
 Add it to your MCP client (for example Claude Code):
 
 ```bash
-claude mcp add netdryrun -- netdryrun-mcp
+claude mcp add netdryrun -- netdryrun mcp
 ```
 
 Tools: `dry_run` (deploy, check, destroy, verdict), `run_checks` (against a running lab), `validate`, `check_types`. Each result carries a separate `verdict` field: `SAFE TO PROCEED` or `DO NOT APPLY THIS CHANGE`.
@@ -130,16 +154,16 @@ Safety model:
 
 ## How it compares
 
-netdryrun complements these tools; it doesn't replace them.
+Netdryrun complements these tools; it doesn't replace them.
 
-| Tool | What it does best | Where netdryrun fits |
+| Tool | What it does best | Where Netdryrun fits |
 |---|---|---|
-| [Batfish](https://batfish.org) | Static analysis of configs, without booting anything; fast and broad | netdryrun runs the real control plane, so it sees runtime behavior: convergence, timers, what actually lands in the RIB |
-| [netlab](https://netlab.tools) | Builds labs from a high-level topology, with built-in validation | Use netlab to build the lab and netdryrun for convergence-aware CI gates and evidence reports |
-| [pyATS / Genie](https://developer.cisco.com/pyats/) | A full test framework with deep Cisco parsers | netdryrun is a small declarative YAML file plus one GitHub Action, with no test code to write |
-| [containerlab](https://containerlab.dev) | Runs the lab | netdryrun drives containerlab; it doesn't replace it |
+| [Batfish](https://batfish.org) | Static analysis of configs, without booting anything; fast and broad | Netdryrun runs the real control plane, so it sees runtime behavior: convergence, timers, what actually lands in the RIB |
+| [netlab](https://netlab.tools) | Builds labs from a high-level topology, with built-in validation | Use netlab to build the lab and Netdryrun for convergence-aware CI gates and evidence reports |
+| [pyATS / Genie](https://developer.cisco.com/pyats/) | A full test framework with deep Cisco parsers | Netdryrun is a small declarative YAML file plus one GitHub Action, with no test code to write |
+| [containerlab](https://containerlab.dev) | Runs the lab | Netdryrun drives containerlab; it doesn't replace it |
 
-What netdryrun adds: positive checks wait for convergence, negative checks run only after convergence and must hold, received-but-not-selected routes count as present, and every run produces one pass/fail plus an evidence file.
+What Netdryrun adds: positive checks wait for convergence, negative checks run only after convergence and must hold, received-but-not-selected routes count as present, and every run produces one pass/fail plus an evidence file.
 
 ## Honest limits
 
@@ -155,3 +179,5 @@ What netdryrun adds: positive checks wait for convergence, negative checks run o
 ## License
 
 Apache-2.0
+
+<!-- mcp-name: io.github.netdryrun/netdryrun -->

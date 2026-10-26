@@ -52,6 +52,16 @@ def parse_routes(text: str, prefix: str) -> list[Route]:
     return out
 
 
+def parse_all_routes(text: str) -> list[Route]:
+    data = json.loads(text or "{}")
+    out = []
+    for prefix, entries in (data.items() if isinstance(data, dict) else []):
+        for e in entries if isinstance(entries, list) else []:
+            out.append(Route(prefix, str(e.get("protocol", "")).lower(),
+                             bool(e.get("selected")) and bool(e.get("installed", True))))
+    return out
+
+
 def parse_ping(text: str) -> tuple[int, int]:
     m = re.search(r"(\d+) packets transmitted, (\d+) (?:packets )?received", text)
     return (int(m.group(1)), int(m.group(2))) if m else (0, 0)
@@ -74,6 +84,12 @@ class FrrDriver(Driver):
         vrf_part = "" if vrf == "default" else f" vrf {vrf}"
         text = self._vtysh(f"show {fam} route{vrf_part} {prefix} json", ev)
         return Observation(parse_routes(text, prefix), ev)
+
+    def all_routes(self, vrf: str = "default", family: int = 4) -> Observation:
+        ev: list[dict] = []
+        fam = "ipv6" if family == 6 else "ip"
+        vrf_part = "" if vrf == "default" else f" vrf {vrf}"
+        return Observation(parse_all_routes(self._vtysh(f"show {fam} route{vrf_part} json", ev)), ev)
 
     def ping(self, target: str, source: str | None, count: int, vrf: str = "default") -> Observation:
         ev: list[dict] = []

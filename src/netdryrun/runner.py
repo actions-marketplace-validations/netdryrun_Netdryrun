@@ -8,8 +8,8 @@ from datetime import datetime, timezone
 from typing import Callable
 
 from . import __version__
-from .checks import Result, converge_then_hold, is_post_convergence, run_check
-from .config import Config
+from .checks import Result, hold_together, is_post_convergence, run_round_robin
+from .config import Config, Scenario
 from .drivers import DriverError, for_node
 from .lab import Lab, LabError
 
@@ -63,6 +63,11 @@ def run(config: Config, *, deploy: bool = True, keep: bool = False, keep_on_fail
             "host": platform.platform(),
             "nodes": {n.name: {"kind": n.kind, "image": n.image} for n in lab.nodes.values()},
         }
+        # Every node a check or a fault names must exist, before anything is deployed
+        wanted = {c.node for c in config.checks} | {c.node for sc in config.scenarios for c in sc.checks}             | {f.node for sc in config.scenarios for f in sc.faults}
+        unknown = sorted(wanted - set(lab.nodes))
+        if unknown:
+            raise LabError(f"unknown node(s) {', '.join(unknown)}; the topology has {', '.join(lab.nodes)}")
         if deploy:
             log(f"Deploying lab {lab.name} ({len(lab.nodes)} nodes)...")
             lab.deploy()
@@ -77,25 +82,27 @@ def run(config: Config, *, deploy: bool = True, keep: bool = False, keep_on_fail
 
         positives = [c for c in config.checks if not is_post_convergence(c)]
         negatives = [c for c in config.checks if is_post_convergence(c)]
-        for check in positives:
-            res = run_check(check, drivers[check.node])
-            report.results.append(res)
-            if on_result:
-                on_result(res)
+        report.results += run_round_robin(positives, drivers, on_result=on_result)
         if negatives:
             if not positives:
                 # nothing has proven convergence yet; give the control plane time to come up
                 settle = max(settle, 30.0)
             log(f"Convergence checks done; settling {settle:g}s before post-convergence checks...")
             time.sleep(settle)
-            for check in negatives:
-                res = converge_then_hold(check, drivers[check.node], hold=hold)
-                report.results.append(res)
-                if on_result:
-                    on_result(res)
+            report.results += hold_together(negatives, drivers, hold=hold, on_result=on_result)
         # Keep the report in the order the user wrote the checks
         order = {id(c): i for i, c in enumerate(config.checks)}
         report.results.sort(key=lambda r: order[id(r.check)])
+
+        for sc in config.scenarios:
+            for check in sc.checks:
+                if check.node not in drivers:
+                    drivers[check.node] = for_node(lab, check.node, config.drivers.get(check.node))
+            report.results += run_scenario(lab, sc, drivers, settle=settle, hold=hold, on_result=on_result, log=log)
+            # Before the next scenario, prove the network recovered (not just slept): the main
+            # positive checks must pass again.
+            if positives and not all(r.passed for r in run_round_robin(positives, drivers)):
+                raise LabError(f"the network did not recover after scenario '{sc.name}'; later scenarios skipped")
     except (LabError, DriverError) as e:
         report.error = str(e)
     finally:
@@ -112,3 +119,38 @@ def run(config: Config, *, deploy: bool = True, keep: bool = False, keep_on_fail
             log(f"Lab {lab.name} left running for debugging; destroy with: containerlab destroy -t {lab.topology} --cleanup")
         report.finished = _now()
     return report
+
+
+def run_scenario(lab: Lab, sc: Scenario, drivers: dict, *, settle: float, hold: float,
+                 on_result=None, log=lambda _: None) -> list[Result]:
+    """Inject the scenario's faults, run its checks, then restore the links and let the network re-converge."""
+    downed: list[tuple[str, str]] = []
+    results: list[Result] = []
+    log(f"Scenario: {sc.name}")
+    try:
+        for f in sc.faults:
+            lab._require_linux_links(f.node)
+            ifaces = [f.interface] if f.kind == "link_down" else lab.data_interfaces(f.node)
+            for iface in ifaces:
+                downed.append((f.node, iface))   # recorded first: restore even if this call half-fails
+                lab.set_link(f.node, iface, up=False)
+        positives = [c for c in sc.checks if not is_post_convergence(c)]
+        negatives = [c for c in sc.checks if is_post_convergence(c)]
+        results += run_round_robin(positives, drivers, on_result=on_result)
+        if negatives:
+            time.sleep(settle)
+            results += hold_together(negatives, drivers, hold=hold, on_result=on_result)
+    finally:
+        not_restored = []
+        for node, iface in downed:
+            try:
+                lab.set_link(node, iface, up=True)
+            except LabError as e:
+                not_restored.append(f"{node} {iface}: {e}")
+        if not_restored:
+            # A link left down silently would corrupt every later result: stop the run instead
+            raise LabError("could not restore links after scenario: " + "; ".join(not_restored))
+        if downed:
+            log(f"Restored {len(downed)} link(s); settling {settle:g}s")
+            time.sleep(settle)
+    return results
