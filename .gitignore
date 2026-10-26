@@ -1,0 +1,8 @@
+__pycache__/
+*.egg-info/
+.venv/
+build/
+dist/
+netdryrun-report.json
+netdryrun-junit.xml
+.pytest_cache/

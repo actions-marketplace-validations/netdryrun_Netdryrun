@@ -1,0 +1,27 @@
+# Checks for the SR Linux + FRR pair. Run: netdryrun run examples/srl-frr
+lab: topology.clab.yml
+timeout: 120   # SR Linux takes longer to boot
+
+checks:
+  - type: bgp_session
+    node: srl1
+    neighbor: 10.0.100.2
+  - type: bgp_session
+    node: frr1
+    neighbor: 10.0.100.1
+  - type: route
+    node: srl1
+    prefix: 192.168.20.0/24
+    protocol: bgp
+  - type: route
+    node: frr1
+    prefix: 192.168.10.1/32
+    protocol: bgp
+  - type: ping
+    node: srl1
+    source: 192.168.10.1
+    target: 192.168.20.1
+  - type: ping
+    node: frr1
+    source: 192.168.20.1
+    target: 192.168.10.1

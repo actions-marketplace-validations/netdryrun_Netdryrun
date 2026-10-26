@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "netdryrun"
+version = "0.1.0"
+description = "Test network changes before they touch production: real virtual labs, behavioral checks, evidence."
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.10"
+authors = [{ name = "NetDryRun" }]
+keywords = ["network", "testing", "containerlab", "frr", "srlinux", "bgp", "netdevops", "ci"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: System Administrators",
+  "Topic :: System :: Networking",
+  "Programming Language :: Python :: 3",
+]
+dependencies = ["pyyaml>=6.0"]
+
+[project.optional-dependencies]
+mcp = ["mcp>=2.0,<3"]
+dev = ["pytest>=8.0", "mcp>=2.0,<3"]
+
+[project.urls]
+Homepage = "https://netdryrun.com"
+Source = "https://github.com/netdryrun/netdryrun"
+
+[project.scripts]
+netdryrun = "netdryrun.cli:main"
+netdryrun-mcp = "netdryrun.mcp_server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/netdryrun"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,29 @@
+# Checks for the FRR triangle. Run: netdryrun run examples/frr-bgp
+lab: topology.clab.yml
+timeout: 90   # seconds each positive check may wait for convergence
+
+checks:
+  - type: bgp_session
+    node: r1
+    neighbor: 10.0.12.2
+  - type: bgp_session
+    node: r1
+    neighbor: 10.0.13.2
+  - type: bgp_prefixes
+    node: r1
+    neighbor: 10.0.12.2
+    min: 1
+    max: 10          # guards against a route leak flooding r1
+  - type: route
+    node: r1
+    prefix: 192.168.3.0/24
+    protocol: bgp
+  - type: ping
+    node: r1
+    source: 192.168.1.1
+    target: 192.168.3.1
+  - type: route        # nothing should send r1 a default route
+    node: r1
+    prefix: 0.0.0.0/0
+    protocol: bgp
+    present: false

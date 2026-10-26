@@ -1,0 +1,29 @@
+{
+  "route": [
+    {
+      "ipv4-prefix": "192.168.20.0/24",
+      "id": 0,
+      "route-type": "bgp",
+      "route-owner": "bgp_mgr",
+      "origin-network-instance": "default",
+      "leakable": false,
+      "leaked": false,
+      "metric": 0,
+      "preference": 170,
+      "active": true,
+      "route-limit-exceeded": false,
+      "last-app-update": "2026-10-26T18:27:42.049Z (a second ago)",
+      "next-hop-group": "44970325",
+      "next-hop-group-network-instance": "default",
+      "resilient-hash": false,
+      "dynamic-load-balancing": false,
+      "fib-programming": {
+        "suppressed": false,
+        "last-successful-operation-type": "add",
+        "last-successful-operation-timestamp": "2026-10-26T18:27:42.050Z (a second ago)",
+        "pending-operation-type": "none",
+        "last-failed-operation-type": "none"
+      }
+    }
+  ]
+}

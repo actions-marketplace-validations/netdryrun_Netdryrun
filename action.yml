@@ -1,0 +1,130 @@
+name: NetDryRun
+description: Test network changes in a real virtual lab (containerlab) before they reach production.
+author: NetDryRun
+branding:
+  icon: shield
+  color: green
+
+inputs:
+  path:
+    description: netdryrun.yml or the folder containing it
+    default: "."
+  containerlab-version:
+    description: containerlab version to install (pinned for reproducible runs; empty = latest)
+    default: "0.81.1"
+  json-report:
+    description: Path for the JSON evidence report
+    default: netdryrun-report.json
+  junit-report:
+    description: Path for the JUnit XML report
+    default: netdryrun-junit.xml
+  upload-artifact:
+    description: Upload the reports as a workflow artifact
+    default: "true"
+  artifact-name:
+    description: Name of the uploaded artifact
+    default: netdryrun-report
+  settle:
+    description: Seconds to wait before negative checks
+    default: "10"
+  hold:
+    description: Seconds a negative check must hold
+    default: "10"
+
+outputs:
+  status:
+    description: passed, failed or error
+    value: ${{ steps.result.outputs.status }}
+  passed:
+    description: Number of passed checks
+    value: ${{ steps.result.outputs.passed }}
+  failed:
+    description: Number of failed checks
+    value: ${{ steps.result.outputs.failed }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install containerlab
+      shell: bash
+      env:
+        CLAB_VERSION: ${{ inputs.containerlab-version }}
+      run: |
+        if command -v containerlab >/dev/null; then
+          have="$(containerlab version | awk '/version:/ {print $2; exit}')"
+          if [ -n "$CLAB_VERSION" ] && [ "$have" != "$CLAB_VERSION" ]; then
+            echo "::warning title=NetDryRun::containerlab $have is installed; requested $CLAB_VERSION"
+          fi
+        elif [ -n "$CLAB_VERSION" ]; then
+          bash -c "$(curl -sL https://get.containerlab.dev)" -- -v "$CLAB_VERSION"
+        else
+          bash -c "$(curl -sL https://get.containerlab.dev)"
+        fi
+        containerlab version | grep -i version
+
+    - name: Install NetDryRun
+      shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+      run: python -m pip install --quiet "$ACTION_PATH"
+
+    - name: Run NetDryRun
+      id: run
+      shell: bash
+      env:
+        NDR_PATH: ${{ inputs.path }}
+        NDR_JSON: ${{ inputs.json-report }}
+        NDR_JUNIT: ${{ inputs.junit-report }}
+        NDR_SETTLE: ${{ inputs.settle }}
+        NDR_HOLD: ${{ inputs.hold }}
+      run: |
+        set +e
+        # containerlab needs root on GitHub-hosted runners. Pass only what netdryrun needs, never
+        # the job's tokens or secrets: the lab under test runs privileged containers.
+        sudo env -i "PATH=$PATH" "HOME=$HOME" "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
+          netdryrun run "$NDR_PATH" \
+          --json "$NDR_JSON" --junit "$NDR_JUNIT" --settle "$NDR_SETTLE" --hold "$NDR_HOLD"
+        echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+    - name: Read result
+      id: result
+      if: always()
+      shell: bash
+      env:
+        NDR_JSON: ${{ inputs.json-report }}
+      run: |
+        python - <<'EOF'
+        import json, os
+        try:
+            rep = json.load(open(os.environ["NDR_JSON"]))
+            out = {"status": rep["status"], "passed": rep["summary"]["passed"], "failed": rep["summary"]["failed"]}
+        except Exception:
+            out = {"status": "error", "passed": 0, "failed": 0}
+        with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+            for k, v in out.items():
+                f.write(f"{k}={v}\n")
+        EOF
+
+    - name: Upload reports
+      if: always() && inputs.upload-artifact == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: |
+          ${{ inputs.json-report }}
+          ${{ inputs.junit-report }}
+        if-no-files-found: ignore
+        retention-days: 14
+
+    - name: Fail on failed checks
+      if: steps.run.outputs.exit_code != '0'
+      shell: bash
+      env:
+        NDR_STATUS: ${{ steps.result.outputs.status }}
+      run: |
+        echo "::error title=NetDryRun::network checks did not pass (status: $NDR_STATUS)"
+        exit 1

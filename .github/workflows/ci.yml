@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.10", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install -e ".[dev]"
+      - run: pytest -q
+
+  e2e:
+    needs: unit
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        example: [frr-bgp, srl-frr]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          path: examples/${{ matrix.example }}
+          artifact-name: report-${{ matrix.example }}
+
+  # Proves the tool catches a real mistake: this run MUST fail.
+  catches-bad-change:
+    needs: unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: ndr
+        uses: ./
+        continue-on-error: true
+        with:
+          path: examples/frr-bgp-broken
+          artifact-name: report-frr-bgp-broken
+      - name: Expect failure
+        run: |
+          echo "status=${{ steps.ndr.outputs.status }} failed=${{ steps.ndr.outputs.failed }}"
+          test "${{ steps.ndr.outputs.status }}" = "failed"
+          test "${{ steps.ndr.outputs.failed }}" -ge 1
