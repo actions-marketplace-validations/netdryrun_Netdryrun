@@ -17,7 +17,7 @@ If you are an AI agent (or building one) that proposes or applies network config
 JSON report: `schema: netdryrun.report/v1`, with `checks[]` of `{name, type, params, passed, detail, attempts, duration_s, history, evidence}`.
 
 ## Rules
-- **Never treat a pass as proof of production safety.** It covers the checks that exist, on the network OSes in the lab (FRR, SR Linux), in steady state and in the defined failure scenarios.
+- **Never treat a pass as proof of production safety.** It covers the checks that exist, on the network OSes in the lab (FRR, SR Linux, Arista EOS), in steady state and in the defined failure scenarios.
 - **Don't weaken checks to make a change pass.** If a check is wrong, say so explicitly to the human.
 - Netdryrun never touches production devices. Only run topologies you were given or created in the lab folder.
 

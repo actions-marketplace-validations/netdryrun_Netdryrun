@@ -389,15 +389,21 @@ Results are reported in the order the checks appear in the file.
 A driver turns device state into a common shape. Netdryrun detects it from the topology:
 
 - `kind: nokia_srlinux` or `kind: srl` uses `srlinux`
+- `kind: arista_ceos` or `kind: ceos` uses `eos`
 - an image whose name contains `frr` uses `frr`
 - anything else is an error unless you set `nodes.<node>.driver`
 
-| Check | FRR | SR Linux |
-|---|---|---|
-| `bgp_session` | yes | yes |
-| `bgp_prefixes` (accepted = received minus rejected by policy) | yes | yes |
-| `route` present / absent | yes | yes |
-| `ping` success / failure | yes | yes |
+| Check | FRR | SR Linux | Arista EOS |
+|---|---|---|---|
+| `bgp_session` | yes | yes | yes |
+| `bgp_prefixes` (accepted = received minus rejected by policy) | yes | yes | yes |
+| `route` present / absent | yes | yes | yes |
+| `ping` success / failure | yes | yes | yes |
+| Failure scenarios on the node's own links | yes | not yet (fail the FRR/Linux side instead) | yes |
+
+**Received-but-not-selected routes:** on SR Linux and Arista EOS, a BGP route that lost to a static or local route lives only in the BGP table, not the routing table. Both drivers read the BGP table too, so such a route still counts as present for `present: false`.
+
+**Arista EOS:** cEOS-lab is free from arista.com (account required) and can't be redistributed. Download it yourself, then `docker import cEOS-lab-<version>.tar ceos:<version>`, and use `kind: arista_ceos` with that image.
 
 | Driver | Source of state |
 |---|---|

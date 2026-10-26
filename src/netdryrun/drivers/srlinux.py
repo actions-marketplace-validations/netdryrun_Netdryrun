@@ -34,7 +34,13 @@ def parse_bgp_neighbors(text: str) -> dict[str, BgpNeighbor]:
     return out
 
 
-def parse_routes(text: str, prefix: str) -> list[Route]:
+def parse_routes(text: str, prefix: str, bgp_rib_text: str = "") -> list[Route]:
+    """Route-table entries for `prefix`, plus BGP-RIB paths that aren't installed.
+
+    SR Linux's route table only holds installed routes. A BGP path that lost to a static or local
+    route (a leak that's received but not selected) only shows in the BGP RIB, and must still count
+    as present for `present: false`.
+    """
     want = ipaddress.ip_network(prefix)
     key = "ipv6-prefix" if want.version == 6 else "ipv4-prefix"
     out = []
@@ -46,6 +52,15 @@ def parse_routes(text: str, prefix: str) -> list[Route]:
             continue
         rtype = str(r.get("route-type", "")).lower()
         out.append(Route(prefix, PROTOCOLS.get(rtype, rtype), bool(r.get("active"))))
+    if not any(r.protocol == "bgp" and r.active for r in out):
+        for r in _json(bgp_rib_text).get("route", []):
+            try:
+                same = ipaddress.ip_network(str(r.get("prefix"))) == want
+            except ValueError:
+                continue
+            if same and r.get("valid-route", True):
+                out.append(Route(prefix, "bgp", False))
+                break
     return out
 
 
@@ -68,7 +83,12 @@ class SrlDriver(Driver):
             "id * route-type * route-owner * origin-network-instance *",
             ev,
         )
-        return Observation(parse_routes(text, prefix), ev)
+        rib = self._cli(
+            f"info from state /network-instance {vrf} bgp-rib afi-safi {table} {table} local-rib route {prefix} "
+            "neighbor * origin-protocol * path-id *",
+            ev,
+        )
+        return Observation(parse_routes(text, prefix, rib), ev)
 
     def all_routes(self, vrf: str = "default", family: int = 4) -> Observation:
         ev: list[dict] = []

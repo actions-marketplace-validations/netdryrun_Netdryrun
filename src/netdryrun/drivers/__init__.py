@@ -3,15 +3,18 @@ from __future__ import annotations
 
 from ..lab import Lab, Node
 from .base import Driver, DriverError
+from .eos import EosDriver
 from .frr import FrrDriver
 from .srlinux import SrlDriver
 
-DRIVERS: dict[str, type[Driver]] = {"frr": FrrDriver, "srlinux": SrlDriver}
+DRIVERS: dict[str, type[Driver]] = {"frr": FrrDriver, "srlinux": SrlDriver, "eos": EosDriver}
 
 
 def detect(node: Node) -> str:
     if node.kind in ("nokia_srlinux", "srl"):
         return "srlinux"
+    if node.kind in ("arista_ceos", "ceos"):
+        return "eos"
     if "frr" in node.image.lower():
         return "frr"
     raise DriverError(

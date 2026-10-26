@@ -23,7 +23,7 @@ FAILED: 5 passed, 1 failed (6 checks)
 
 That run caught a leaked default route that was *received but not selected*. A ping test or a config linter would have missed it.
 
-> Status: **v0.1, early.** Works today with FRR and Nokia SR Linux on Linux and WSL2. Feedback and issues are very welcome.
+> Status: **v0.2, early.** Works today with FRR, Nokia SR Linux and Arista EOS (cEOS-lab, bring your own image) on Linux and WSL2. Feedback and issues are very welcome.
 
 ## Why
 
@@ -96,12 +96,12 @@ scenarios:
 
 Every check also accepts `name`, `timeout` and `vrf`. Ping accepts `expect: failure` and `count`. Drivers are detected from the topology; override them with `nodes: {r1: {driver: frr}}`.
 
-| Check | FRR | SR Linux |
-|---|---|---|
-| `bgp_session` | ✅ | ✅ |
-| `bgp_prefixes` (accepted = received minus rejected by policy) | ✅ | ✅ |
-| `route` present / absent | ✅ | ✅ |
-| `ping` success / failure | ✅ | ✅ |
+| Check | FRR | SR Linux | Arista EOS (cEOS) |
+|---|---|---|---|
+| `bgp_session` | ✅ | ✅ | ✅ |
+| `bgp_prefixes` (accepted = received minus rejected by policy) | ✅ | ✅ | ✅ |
+| `route` present / absent | ✅ | ✅ | ✅ |
+| `ping` success / failure | ✅ | ✅ | ✅ |
 
 ## Commands
 

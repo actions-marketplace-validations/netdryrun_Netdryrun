@@ -2,6 +2,8 @@
 
 ## 0.2.0 (unreleased)
 
+- **Arista EOS driver** (cEOS-lab, bring your own image): sessions, prefix counts, routes (routing table + BGP table), ping, record, failure scenarios. New example: `examples/arista-frr`.
+- **Leak detection fixed on SR Linux and Arista**: a leaked BGP route that is received but not installed (it lost to a static or local route) only appears in the BGP table on those platforms. Both drivers now read it, so `present: false` fails as it should. Found by live leak tests; regression tests use real captured output.
 - **`netdryrun record`**: snapshot a known-good running lab into a `netdryrun.yml` baseline (BGP sessions, exact prefix counts, BGP routes), so you don't write checks by hand.
 - **Failure scenarios**: `scenarios:` with `link_down` and `node_isolated` faults. Links are always restored, and the network settles before the next scenario.
 - **Faster runs**: positive checks are polled together against one shared convergence window, and post-convergence checks hold together. A badly broken change now costs about one timeout instead of one per failing check (the corpus runs 2-3x faster).

@@ -1,0 +1,41 @@
+{
+  "route": [
+    {
+      "prefix": "0.0.0.0/0",
+      "neighbor": "0.0.0.0",
+      "origin-protocol": "static",
+      "path-id": 0,
+      "last-modified": "2026-10-26T22:16:07.400Z (19 seconds ago)",
+      "used-route": true,
+      "unused-weight-only": false,
+      "valid-route": true,
+      "best-route": true,
+      "backup-route": false,
+      "stale-route": false,
+      "fib-disabled": false,
+      "pending-delete": false,
+      "group-best": true,
+      "tie-break-reason": "none",
+      "attr-id": "4"
+    },
+    {
+      "prefix": "0.0.0.0/0",
+      "neighbor": "10.0.100.2",
+      "origin-protocol": "bgp",
+      "path-id": 0,
+      "last-modified": "2026-10-26T22:16:09.500Z (17 seconds ago)",
+      "used-route": false,
+      "unused-weight-only": false,
+      "valid-route": true,
+      "best-route": false,
+      "backup-route": false,
+      "stale-route": false,
+      "fib-disabled": false,
+      "pending-delete": false,
+      "neighbor-as": 65020,
+      "group-best": true,
+      "tie-break-reason": "rtm-pref",
+      "attr-id": "6"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+    "vrfs": {
+        "default": {
+            "vrf": "default",
+            "routerId": "30.30.30.30",
+            "asn": "65030",
+            "peers": {
+                "10.0.200.2": {
+                    "version": 4,
+                    "msgReceived": 108,
+                    "msgSent": 121,
+                    "inMsgQueue": 0,
+                    "outMsgQueue": 0,
+                    "asn": "65020",
+                    "prefixAccepted": 1,
+                    "prefixReceived": 1,
+                    "upDownTime": 1793052487.487955,
+                    "underMaintenance": false,
+                    "peerState": "Established",
+                    "prefixAdvertised": 1
+                }
+            }
+        }
+    }
+}
