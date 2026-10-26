@@ -15,7 +15,7 @@ Several good open-source tools help you test network changes. They answer differ
 | [netlab](https://netlab.tools) | Building a working lab from a short, high-level topology, with generated configs for many platforms and built-in validation tests | Yes, through containerlab or libvirt |
 | [pyATS / Genie](https://developer.cisco.com/pyats/) | A full Python test framework with a large library of device parsers, for testing labs and real (including production) devices, with state snapshots and diffs | Works against any reachable device |
 | [containerlab](https://containerlab.dev) | Running container-based network labs from a YAML topology, for many network operating systems | Yes, it is the lab |
-| Netdryrun | Declarative, convergence-aware checks on a containerlab lab, packaged for CI with a pass/fail verdict and evidence | Yes, through containerlab |
+| Netdryrun™ | Declarative, convergence-aware checks on a containerlab lab, packaged for CI with a pass/fail verdict and evidence | Yes, through containerlab |
 
 ## Batfish
 

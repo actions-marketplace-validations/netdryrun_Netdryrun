@@ -7,7 +7,7 @@
 
 **Test network changes before they touch production.**
 
-Netdryrun boots your topology as a real virtual network ([containerlab](https://containerlab.dev)), applies your configs, and checks how the network actually *behaves*: BGP sessions, prefix counts, routes, reachability. It catches mistakes like route leaks before they reach production, and leaves evidence a reviewer can trust.
+Netdryrun™ boots your topology as a real virtual network ([containerlab](https://containerlab.dev)), applies your configs, and checks how the network actually *behaves*: BGP sessions, prefix counts, routes, reachability. It catches mistakes like route leaks before they reach production, and leaves evidence a reviewer can trust.
 
 <p align="center"><img alt="Netdryrun catching a leaked default route that ping and session checks miss" src=".github/assets/netdryrun-demo.gif" width="820"></p>
 
@@ -178,6 +178,6 @@ What Netdryrun adds: positive checks wait for convergence, negative checks run o
 
 ## License
 
-Apache-2.0
+Apache-2.0. "Netdryrun" and the Netdryrun logo are trademarks; see [TRADEMARKS.md](TRADEMARKS.md).
 
 <!-- mcp-name: io.github.netdryrun/netdryrun -->

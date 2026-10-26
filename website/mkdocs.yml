@@ -5,7 +5,7 @@ site_description: >-
   containerlab virtual lab before they reach production, with a pass/fail
   verdict and evidence.
 site_author: Netdryrun
-copyright: Netdryrun is open source under the Apache-2.0 license.
+copyright: Netdryrun™ is open source under the Apache-2.0 license. Netdryrun and the Netdryrun logo are trademarks.
 
 repo_url: https://github.com/netdryrun/netdryrun
 repo_name: netdryrun/netdryrun

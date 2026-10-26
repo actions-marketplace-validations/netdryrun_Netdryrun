@@ -11,7 +11,7 @@ Source: https://netdryrun.com/
 
 # Fail CI on routing mistakes before they reach production
 
-To test a network change in CI, keep the changed configs and a containerlab topology in Git, describe the expected behavior in a `netdryrun.yml` file, and run `netdryrun run` (or the GitHub Action) on every pull request. Netdryrun deploys the lab, waits for BGP to converge, checks sessions, prefix counts, routes and pings, then destroys the lab. Any failed check exits non-zero and fails the job, with a JSON evidence file showing every command and its raw output.
+To test a network change in CI, keep the changed configs and a containerlab topology in Git, describe the expected behavior in a `netdryrun.yml` file, and run `netdryrun run` (or the GitHub Action) on every pull request. Netdryrun™ deploys the lab, waits for BGP to converge, checks sessions, prefix counts, routes and pings, then destroys the lab. Any failed check exits non-zero and fails the job, with a JSON evidence file showing every command and its raw output.
 
 !!! abstract "What Netdryrun is"
     Netdryrun is an open-source tool that tests network changes in a real virtual lab before they reach production. It boots the topology with containerlab, waits for convergence, checks BGP sessions, prefixes, routes and reachability, and returns a pass/fail verdict with evidence. It runs locally, in GitHub Actions, or as an MCP server for AI agents.
@@ -100,7 +100,7 @@ Source: https://netdryrun.com/getting-started/
 |---|---|
 | Linux or WSL2 | containerlab runs on Linux. On Windows, use WSL2. |
 | Docker | The lab nodes are containers. |
-| [containerlab](https://containerlab.dev/install/) | Netdryrun drives the `containerlab` CLI; it must be on `PATH`. |
+| [containerlab](https://containerlab.dev/install/) | Netdryrun™ drives the `containerlab` CLI; it must be on `PATH`. |
 | Python 3.10+ | |
 
 containerlab needs root (or a user in the right groups) to create the lab. Run Netdryrun the same way you run containerlab on that machine.
@@ -571,7 +571,7 @@ Source: https://netdryrun.com/github-action/
 
 # GitHub Action
 
-The action installs containerlab, installs Netdryrun, runs your checks, writes a summary to the job page, uploads the JSON and JUnit reports as an artifact, and fails the job if any check fails.
+The action installs containerlab, installs Netdryrun™, runs your checks, writes a summary to the job page, uploads the JSON and JUnit reports as an artifact, and fails the job if any check fails.
 
 ```yaml title=".github/workflows/network-dryrun.yml"
 name: Network dry run
@@ -686,11 +686,10 @@ jobs:
 
 ## Security notes
 
-- **The lab runs privileged containers.** containerlab needs root on the runner, and the containers it starts are privileged. Treat the topology and router configs as code that runs with root on the runner.
-- **Secrets are not passed to the lab.** The action runs Netdryrun with a cleared environment (`sudo env -i`), passing only `PATH`, `HOME` and `GITHUB_STEP_SUMMARY`. The job's `GITHUB_TOKEN` and your secrets are not in that environment.
-- **Use it on trusted branches.** A pull request can change the topology, the configs or the images it runs. Prefer the `pull_request` trigger (which gives forks a read-only token and no secrets) over `pull_request_target`, and do not run untrusted fork code on self-hosted runners.
-- **Artifacts are kept for 14 days.** The reports include raw device output from the lab (configs, routes, command output). They are uploaded with `retention-days: 14`. Set `upload-artifact: false` if that is too long or not wanted.
-- **Pin the version.** Use a release tag (`@v0.1.0`) or a commit SHA, not a branch.
+- **A lab is code that runs as root on the runner.** containerlab starts privileged containers with access to the host. Netdryrun passes the lab process a minimal environment (no job tokens, not the runner user's home directory), but that only narrows exposure; it is not a security boundary.
+- **Run labs from untrusted pull requests (forks) only in jobs with no secrets**, a read-only `GITHUB_TOKEN`, and without `id-token: write`. Never run them under `pull_request_target`.
+- `pr-comment` needs `pull-requests: write`; `cloud` needs `id-token: write`. Grant each only when you use it.
+- Uploaded report artifacts contain raw command output from the lab and are kept for 14 days. Don't put real secrets in lab configs.
 
 
 ---
@@ -698,7 +697,7 @@ Source: https://netdryrun.com/ai-agents/
 
 # AI agents (MCP server)
 
-AI agents are starting to change networks. Netdryrun includes an [MCP](https://modelcontextprotocol.io) server that gives an agent a safety gate: it dry-runs the proposed change in a real lab and proceeds only if every check passes.
+AI agents are starting to change networks. Netdryrun™ includes an [MCP](https://modelcontextprotocol.io) server that gives an agent a safety gate: it dry-runs the proposed change in a real lab and proceeds only if every check passes.
 
 ## Install
 
@@ -786,7 +785,7 @@ How much does a typical "ping after the change" test miss? This corpus answers t
 - **Three strategies, same running lab per case:**
     1. **Ping only:** the customer pings the upstream and the peer.
     2. **All BGP sessions up:** every session established.
-    3. **Netdryrun intent checks:** one [intent spec](https://github.com/netdryrun/netdryrun/blob/main/corpus/specs/intent.yml), written once and used unchanged for every case, so it can't be tuned to win.
+    3. **Netdryrun™ intent checks:** one [intent spec](https://github.com/netdryrun/netdryrun/blob/main/corpus/specs/intent.yml), written once and used unchanged for every case, so it can't be tuned to win.
 - **Rerun it:** `python corpus/run.py` on any Linux or WSL2 machine with Docker and containerlab.
 
 ## Results
@@ -807,7 +806,7 @@ Several good open-source tools help you test network changes. They answer differ
 | [netlab](https://netlab.tools) | Building a working lab from a short, high-level topology, with generated configs for many platforms and built-in validation tests | Yes, through containerlab or libvirt |
 | [pyATS / Genie](https://developer.cisco.com/pyats/) | A full Python test framework with a large library of device parsers, for testing labs and real (including production) devices, with state snapshots and diffs | Works against any reachable device |
 | [containerlab](https://containerlab.dev) | Running container-based network labs from a YAML topology, for many network operating systems | Yes, it is the lab |
-| Netdryrun | Declarative, convergence-aware checks on a containerlab lab, packaged for CI with a pass/fail verdict and evidence | Yes, through containerlab |
+| Netdryrun™ | Declarative, convergence-aware checks on a containerlab lab, packaged for CI with a pass/fail verdict and evidence | Yes, through containerlab |
 
 ## Batfish
 
@@ -869,7 +868,7 @@ Source: https://netdryrun.com/trust/
 
 ## License
 
-Netdryrun is open source under the [Apache License 2.0](https://github.com/netdryrun/netdryrun/blob/main/LICENSE). The source is at [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun).
+Netdryrun™ is open source under the [Apache License 2.0](https://github.com/netdryrun/netdryrun/blob/main/LICENSE). The source is at [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun).
 
 ## How releases are published
 
@@ -900,3 +899,7 @@ containerlab runs privileged containers, so a topology and its configs are code 
 ## Privacy
 
 Netdryrun has no telemetry. It does not phone home or send usage data anywhere. Reports are written only to the files you ask for (and to the GitHub Actions step summary when running in Actions). containerlab and Docker may pull images from registries named in your topology, as they normally would.
+
+## Trademarks
+
+"Netdryrun" and the Netdryrun logos are trademarks of the Netdryrun project. The Apache-2.0 license covers the code, not the name: forks are welcome under a different name. See the [trademark policy](https://github.com/netdryrun/netdryrun/blob/main/TRADEMARKS.md).

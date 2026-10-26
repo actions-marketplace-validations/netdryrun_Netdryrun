@@ -5,7 +5,7 @@ description: Run Netdryrun in GitHub Actions with netdryrun/netdryrun@v0.1.0. In
 
 # GitHub Action
 
-The action installs containerlab, installs Netdryrun, runs your checks, writes a summary to the job page, uploads the JSON and JUnit reports as an artifact, and fails the job if any check fails.
+The action installs containerlab, installs Netdryrun™, runs your checks, writes a summary to the job page, uploads the JSON and JUnit reports as an artifact, and fails the job if any check fails.
 
 ```yaml title=".github/workflows/network-dryrun.yml"
 name: Network dry run

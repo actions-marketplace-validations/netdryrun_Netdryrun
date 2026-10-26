@@ -11,7 +11,7 @@ description: Install Netdryrun, check the requirements (Linux or WSL2, Docker, c
 |---|---|
 | Linux or WSL2 | containerlab runs on Linux. On Windows, use WSL2. |
 | Docker | The lab nodes are containers. |
-| [containerlab](https://containerlab.dev/install/) | Netdryrun drives the `containerlab` CLI; it must be on `PATH`. |
+| [containerlab](https://containerlab.dev/install/) | Netdryrun™ drives the `containerlab` CLI; it must be on `PATH`. |
 | Python 3.10+ | |
 
 containerlab needs root (or a user in the right groups) to create the lab. Run Netdryrun the same way you run containerlab on that machine.

@@ -15,7 +15,7 @@ How much does a typical "ping after the change" test miss? This corpus answers t
 - **Three strategies, same running lab per case:**
     1. **Ping only:** the customer pings the upstream and the peer.
     2. **All BGP sessions up:** every session established.
-    3. **Netdryrun intent checks:** one [intent spec](https://github.com/netdryrun/netdryrun/blob/main/corpus/specs/intent.yml), written once and used unchanged for every case, so it can't be tuned to win.
+    3. **Netdryrun™ intent checks:** one [intent spec](https://github.com/netdryrun/netdryrun/blob/main/corpus/specs/intent.yml), written once and used unchanged for every case, so it can't be tuned to win.
 - **Rerun it:** `python corpus/run.py` on any Linux or WSL2 machine with Docker and containerlab.
 
 ## Results

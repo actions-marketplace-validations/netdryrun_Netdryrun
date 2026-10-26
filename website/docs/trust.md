@@ -7,7 +7,7 @@ description: Netdryrun license (Apache-2.0), how releases are published with PyP
 
 ## License
 
-Netdryrun is open source under the [Apache License 2.0](https://github.com/netdryrun/netdryrun/blob/main/LICENSE). The source is at [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun).
+Netdryrun™ is open source under the [Apache License 2.0](https://github.com/netdryrun/netdryrun/blob/main/LICENSE). The source is at [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun).
 
 ## How releases are published
 
@@ -38,3 +38,7 @@ containerlab runs privileged containers, so a topology and its configs are code 
 ## Privacy
 
 Netdryrun has no telemetry. It does not phone home or send usage data anywhere. Reports are written only to the files you ask for (and to the GitHub Actions step summary when running in Actions). containerlab and Docker may pull images from registries named in your topology, as they normally would.
+
+## Trademarks
+
+"Netdryrun" and the Netdryrun logos are trademarks of the Netdryrun project. The Apache-2.0 license covers the code, not the name: forks are welcome under a different name. See the [trademark policy](https://github.com/netdryrun/netdryrun/blob/main/TRADEMARKS.md).
