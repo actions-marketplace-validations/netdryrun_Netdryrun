@@ -85,7 +85,7 @@ Rules:
 - `exact` cannot be combined with `min` or `max`.
 - `min` must not be greater than `max`.
 - All three are non-negative integers.
-- The session must be `established`. Counters reset to 0 when a session drops, so a count from a down session would satisfy `max` by accident; NetDryRun fails the check instead.
+- The session must be `established`. Counters reset to 0 when a session drops, so a count from a down session would satisfy `max` by accident; netdryrun fails the check instead.
 - If the session is established but the address family reports nothing, the count is 0.
 - A check with `max` or `exact` is a post-convergence check. A check with only `min` is a positive check.
 
@@ -144,7 +144,7 @@ Reachability from a node.
 
 ## Convergence semantics
 
-Networks need time to converge, and some checks are trivially true before they do. NetDryRun splits checks into two groups.
+Networks need time to converge, and some checks are trivially true before they do. netdryrun splits checks into two groups.
 
 **Positive checks** (session `established`, prefix count with only `min`, route present, ping expected to succeed):
 
@@ -166,7 +166,7 @@ Results are reported in the order the checks appear in the file.
 
 ## Drivers
 
-A driver turns device state into a common shape. NetDryRun detects it from the topology:
+A driver turns device state into a common shape. netdryrun detects it from the topology:
 
 - `kind: nokia_srlinux` or `kind: srl` uses `srlinux`
 - an image whose name contains `frr` uses `frr`

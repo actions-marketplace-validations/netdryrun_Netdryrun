@@ -1,6 +1,6 @@
 ---
 title: CLI and reports
-description: NetDryRun command-line reference. The run, check and validate commands, every flag, exit codes, and the JSON (netdryrun.report/v1), Markdown and JUnit report formats.
+description: netdryrun command-line reference. The run, check and validate commands, every flag, exit codes, and the JSON (netdryrun.report/v1), Markdown and JUnit report formats.
 ---
 
 # CLI and reports
@@ -55,7 +55,7 @@ OK: examples/frr-bgp/netdryrun.yml (6 checks, lab .../examples/frr-bgp/topology.
 | `--keep` | Leave the lab running afterwards, for debugging |
 | `--keep-on-failure` | Leave the lab running only if the run did not pass |
 
-When a lab is kept, NetDryRun prints the command to destroy it. See [convergence semantics](config.md#convergence-semantics) for what `--settle` and `--hold` control.
+When a lab is kept, netdryrun prints the command to destroy it. See [convergence semantics](config.md#convergence-semantics) for what `--settle` and `--hold` control.
 
 ## Exit codes
 

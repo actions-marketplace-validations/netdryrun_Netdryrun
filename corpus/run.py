@@ -123,7 +123,7 @@ def write_results(rows: list[dict], out: Path, env: dict) -> None:
         "# Verdict Corpus results", "",
         f"Generated {env['generated']} with netdryrun {env['netdryrun']}, containerlab {env['containerlab']}, "
         f"FRR {env['frr_image']}. Rerun with `python corpus/run.py`.", "",
-        "**Conflict of interest:** the NetDryRun maintainers wrote this corpus and the runner. "
+        "**Conflict of interest:** the netdryrun maintainers wrote this corpus and the runner. "
         "Expected verdicts were recorded before running. Losses are kept.", "",
         "## Summary", "",
         "| Strategy | Correct | False passes (bad change approved) | False blocks (good change rejected) | Errors |",
@@ -132,14 +132,14 @@ def write_results(rows: list[dict], out: Path, env: dict) -> None:
     for s in names:
         oc = [outcome(r["expected"], r["strategies"][s]["verdict"]) for r in rows]
         lines.append(f"| {s} | {oc.count('correct')}/{len(rows)} | {oc.count('false pass')} | {oc.count('false block')} | {oc.count('error')} |")
-    lines += ["", "## Cases", "", "| Case | Category | Expected | Ping | Sessions | NetDryRun | What NetDryRun flagged |", "|---|---|---|---|---|---|---|"]
+    lines += ["", "## Cases", "", "| Case | Category | Expected | Ping | Sessions | netdryrun | What netdryrun flagged |", "|---|---|---|---|---|---|---|"]
     mark = {"correct": "✅", "false pass": "❌ false pass", "false block": "⚠️ false block", "error": "💥 error"}
     for r in rows:
         cells = [mark[outcome(r["expected"], r["strategies"][s]["verdict"])] for s in names]
         flagged = "; ".join(r["strategies"]["netdryrun"]["failed_checks"]) or "nothing"
         lines.append(f"| `{r['id']}` {r['title']} | {r['category']} | {r['expected']} | {' | '.join(cells)} | {flagged} |")
     losses = [r for r in rows if outcome(r["expected"], r["strategies"]["netdryrun"]["verdict"]) != "correct"]
-    lines += ["", "## NetDryRun losses", ""]
+    lines += ["", "## netdryrun losses", ""]
     if not losses:
         lines.append("None in this run.")
     for r in losses:

@@ -1,13 +1,13 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset=".github/assets/netdryrun-wordmark-white.svg">
-    <img alt="NetDryRun" src=".github/assets/netdryrun-wordmark-navy.svg" width="360">
+    <img alt="netdryrun" src=".github/assets/netdryrun-wordmark-navy.svg" width="360">
   </picture>
 </p>
 
 **Test network changes before they touch production.**
 
-NetDryRun boots your topology as a real virtual network ([containerlab](https://containerlab.dev)), applies your configs, and checks how the network actually *behaves*: BGP sessions, prefix counts, routes, reachability. It catches mistakes like route leaks before they reach production, and leaves evidence a reviewer can trust.
+netdryrun boots your topology as a real virtual network ([containerlab](https://containerlab.dev)), applies your configs, and checks how the network actually *behaves*: BGP sessions, prefix counts, routes, reachability. It catches mistakes like route leaks before they reach production, and leaves evidence a reviewer can trust.
 
 ```text
 $ netdryrun run examples/frr-bgp-broken
@@ -109,7 +109,7 @@ The action installs containerlab, runs the checks, uploads the JSON and JUnit re
 
 ## For AI agents (MCP)
 
-AI agents are starting to change networks. NetDryRun gives them a safety gate: an [MCP](https://modelcontextprotocol.io) server that lets an agent dry-run its change in a real lab and proceed only if every check passes.
+AI agents are starting to change networks. netdryrun gives them a safety gate: an [MCP](https://modelcontextprotocol.io) server that lets an agent dry-run its change in a real lab and proceed only if every check passes.
 
 ```bash
 pip install "netdryrun[mcp]"
@@ -130,16 +130,16 @@ Safety model:
 
 ## How it compares
 
-NetDryRun complements these tools; it doesn't replace them.
+netdryrun complements these tools; it doesn't replace them.
 
-| Tool | What it does best | Where NetDryRun fits |
+| Tool | What it does best | Where netdryrun fits |
 |---|---|---|
-| [Batfish](https://batfish.org) | Static analysis of configs, without booting anything; fast and broad | NetDryRun runs the real control plane, so it sees runtime behavior: convergence, timers, what actually lands in the RIB |
-| [netlab](https://netlab.tools) | Builds labs from a high-level topology, with built-in validation | Use netlab to build the lab and NetDryRun for convergence-aware CI gates and evidence reports |
-| [pyATS / Genie](https://developer.cisco.com/pyats/) | A full test framework with deep Cisco parsers | NetDryRun is a small declarative YAML file plus one GitHub Action, with no test code to write |
-| [containerlab](https://containerlab.dev) | Runs the lab | NetDryRun drives containerlab; it doesn't replace it |
+| [Batfish](https://batfish.org) | Static analysis of configs, without booting anything; fast and broad | netdryrun runs the real control plane, so it sees runtime behavior: convergence, timers, what actually lands in the RIB |
+| [netlab](https://netlab.tools) | Builds labs from a high-level topology, with built-in validation | Use netlab to build the lab and netdryrun for convergence-aware CI gates and evidence reports |
+| [pyATS / Genie](https://developer.cisco.com/pyats/) | A full test framework with deep Cisco parsers | netdryrun is a small declarative YAML file plus one GitHub Action, with no test code to write |
+| [containerlab](https://containerlab.dev) | Runs the lab | netdryrun drives containerlab; it doesn't replace it |
 
-What NetDryRun adds: positive checks wait for convergence, negative checks run only after convergence and must hold, received-but-not-selected routes count as present, and every run produces one pass/fail plus an evidence file.
+What netdryrun adds: positive checks wait for convergence, negative checks run only after convergence and must hold, received-but-not-selected routes count as present, and every run produces one pass/fail plus an evidence file.
 
 ## Honest limits
 

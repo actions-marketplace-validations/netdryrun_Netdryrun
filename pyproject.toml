@@ -9,7 +9,7 @@ description = "Test network changes before they touch production: real virtual l
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"
-authors = [{ name = "NetDryRun" }]
+authors = [{ name = "netdryrun" }]
 keywords = ["network", "testing", "containerlab", "frr", "srlinux", "bgp", "netdevops", "ci"]
 classifiers = [
   "Development Status :: 3 - Alpha",

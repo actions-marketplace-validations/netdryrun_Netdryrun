@@ -1,6 +1,6 @@
-name: NetDryRun
+name: netdryrun
 description: Test network changes in a real virtual lab (containerlab) before they reach production.
-author: NetDryRun
+author: netdryrun
 branding:
   icon: shield
   color: green
@@ -57,7 +57,7 @@ runs:
         if command -v containerlab >/dev/null; then
           have="$(containerlab version | awk '/version:/ {print $2; exit}')"
           if [ -n "$CLAB_VERSION" ] && [ "$have" != "$CLAB_VERSION" ]; then
-            echo "::warning title=NetDryRun::containerlab $have is installed; requested $CLAB_VERSION"
+            echo "::warning title=netdryrun::containerlab $have is installed; requested $CLAB_VERSION"
           fi
         elif [ -n "$CLAB_VERSION" ]; then
           bash -c "$(curl -sL https://get.containerlab.dev)" -- -v "$CLAB_VERSION"
@@ -66,13 +66,13 @@ runs:
         fi
         containerlab version | grep -i version
 
-    - name: Install NetDryRun
+    - name: Install netdryrun
       shell: bash
       env:
         ACTION_PATH: ${{ github.action_path }}
       run: python -m pip install --quiet "$ACTION_PATH"
 
-    - name: Run NetDryRun
+    - name: Run netdryrun
       id: run
       shell: bash
       env:
@@ -126,5 +126,5 @@ runs:
       env:
         NDR_STATUS: ${{ steps.result.outputs.status }}
       run: |
-        echo "::error title=NetDryRun::network checks did not pass (status: $NDR_STATUS)"
+        echo "::error title=netdryrun::network checks did not pass (status: $NDR_STATUS)"
         exit 1

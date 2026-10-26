@@ -1,6 +1,6 @@
 ---
 title: Getting started
-description: Install NetDryRun, check the requirements (Linux or WSL2, Docker, containerlab, Python 3.10+), and run the three bundled examples with their expected results.
+description: Install netdryrun, check the requirements (Linux or WSL2, Docker, containerlab, Python 3.10+), and run the three bundled examples with their expected results.
 ---
 
 # Getting started
@@ -11,13 +11,13 @@ description: Install NetDryRun, check the requirements (Linux or WSL2, Docker, c
 |---|---|
 | Linux or WSL2 | containerlab runs on Linux. On Windows, use WSL2. |
 | Docker | The lab nodes are containers. |
-| [containerlab](https://containerlab.dev/install/) | NetDryRun drives the `containerlab` CLI; it must be on `PATH`. |
+| [containerlab](https://containerlab.dev/install/) | netdryrun drives the `containerlab` CLI; it must be on `PATH`. |
 | Python 3.10+ | |
 
-containerlab needs root (or a user in the right groups) to create the lab. Run NetDryRun the same way you run containerlab on that machine.
+containerlab needs root (or a user in the right groups) to create the lab. Run netdryrun the same way you run containerlab on that machine.
 
 !!! note "WSL2 and /mnt/c"
-    If your topology lives under `/mnt/...` (a Windows drive), NetDryRun keeps containerlab's lab directory on the Linux filesystem (`~/.cache/netdryrun/labs`) unless you set `CLAB_LABDIR_BASE` yourself. SR Linux cannot save its config on a Windows drive.
+    If your topology lives under `/mnt/...` (a Windows drive), netdryrun keeps containerlab's lab directory on the Linux filesystem (`~/.cache/netdryrun/labs`) unless you set `CLAB_LABDIR_BASE` yourself. SR Linux cannot save its config on a Windows drive.
 
 ## Install
 

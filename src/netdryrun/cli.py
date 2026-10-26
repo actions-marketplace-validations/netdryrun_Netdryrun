@@ -30,7 +30,7 @@ def _cmd_run(args, deploy: bool) -> int:
     except ConfigError as e:
         print(f"config error: {e}", file=sys.stderr)
         return 2
-    print(f"NetDryRun {__version__}: {len(cfg.checks)} checks from {cfg.path}")
+    print(f"netdryrun {__version__}: {len(cfg.checks)} checks from {cfg.path}")
     rep = run(cfg, deploy=deploy, keep=args.keep, keep_on_failure=getattr(args, 'keep_on_failure', False),
               settle=args.settle, hold=args.hold,
               on_result=lambda r: print(report.console_line(r), flush=True),

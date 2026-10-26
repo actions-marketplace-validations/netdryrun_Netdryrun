@@ -1,11 +1,11 @@
-site_name: NetDryRun
+site_name: netdryrun
 site_url: https://netdryrun.com/
 site_description: >-
-  NetDryRun is an open-source tool that tests network changes in a real
+  netdryrun is an open-source tool that tests network changes in a real
   containerlab virtual lab before they reach production, with a pass/fail
   verdict and evidence.
-site_author: NetDryRun
-copyright: NetDryRun is open source under the Apache-2.0 license.
+site_author: netdryrun
+copyright: netdryrun is open source under the Apache-2.0 license.
 
 repo_url: https://github.com/netdryrun/netdryrun
 repo_name: netdryrun/netdryrun
@@ -86,7 +86,7 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/netdryrun/netdryrun
-      name: NetDryRun on GitHub
+      name: netdryrun on GitHub
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/netdryrun/
       name: netdryrun on PyPI

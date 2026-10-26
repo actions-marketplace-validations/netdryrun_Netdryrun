@@ -10,7 +10,7 @@ The corpus network is a small provider, AS65000, with routers `pe1` and `pe2`. I
 
 We originate our own aggregate 192.0.2.0/24.
 
-The written intent, which the NetDryRun checks in `specs/intent.yml` encode:
+The written intent, which the netdryrun checks in `specs/intent.yml` encode:
 
 - **I1:** All four BGP sessions are established.
 - **I2:** The customer route and our aggregate reach both the upstream and the peer.
@@ -22,4 +22,4 @@ The written intent, which the NetDryRun checks in `specs/intent.yml` encode:
 
 Each case's expected verdict is recorded **before anything runs**, by engineering judgment: *would an experienced operator reject this change in review because it causes harm?* It is **not** derived from the intent list above.
 
-So a harmful change that the intent doesn't cover (for example, one that silently shifts traffic to a more expensive path) is still expected **unsafe**. If NetDryRun passes it, that is a published **loss**, with a note on which check would have caught it. The results never quietly claim more coverage than the checks have.
+So a harmful change that the intent doesn't cover (for example, one that silently shifts traffic to a more expensive path) is still expected **unsafe**. If netdryrun passes it, that is a published **loss**, with a note on which check would have caught it. The results never quietly claim more coverage than the checks have.

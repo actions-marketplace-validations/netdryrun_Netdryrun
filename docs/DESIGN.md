@@ -1,4 +1,4 @@
-# NetDryRun v0.1 design
+# netdryrun v0.1 design
 
 ## Goal
 Test a proposed network change in a real virtual lab before it reaches production, and produce evidence a reviewer can trust. v0.1 targets engineers who keep configs in Git and use containerlab.

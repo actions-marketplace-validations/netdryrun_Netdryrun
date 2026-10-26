@@ -1,11 +1,11 @@
 ---
 title: AI agents (MCP server)
-description: The NetDryRun MCP server lets an AI agent dry-run a network change in a real containerlab lab and proceed only if every check passes. Install, tools, verdict field and safety model.
+description: The netdryrun MCP server lets an AI agent dry-run a network change in a real containerlab lab and proceed only if every check passes. Install, tools, verdict field and safety model.
 ---
 
 # AI agents (MCP server)
 
-AI agents are starting to change networks. NetDryRun includes an [MCP](https://modelcontextprotocol.io) server that gives an agent a safety gate: it dry-runs the proposed change in a real lab and proceeds only if every check passes.
+AI agents are starting to change networks. netdryrun includes an [MCP](https://modelcontextprotocol.io) server that gives an agent a safety gate: it dry-runs the proposed change in a real lab and proceeds only if every check passes.
 
 ## Install
 

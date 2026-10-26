@@ -55,7 +55,7 @@ def _md_cell(text: str) -> str:
 
 
 def to_markdown(rep: RunReport) -> str:
-    head = {"passed": "✅ NetDryRun passed", "failed": "❌ NetDryRun failed", "error": "⚠️ NetDryRun could not run"}[rep.status]
+    head = {"passed": "✅ netdryrun passed", "failed": "❌ netdryrun failed", "error": "⚠️ netdryrun could not run"}[rep.status]
     lines = [f"### {head}", ""]
     if rep.error:
         lines += ["```", rep.error, "```"]

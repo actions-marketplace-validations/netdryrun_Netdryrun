@@ -1,11 +1,11 @@
 ---
 title: GitHub Action
-description: Run NetDryRun in GitHub Actions with netdryrun/netdryrun@v0.1.0. Inputs, outputs, example workflows, and security notes for running privileged containerlab labs in CI.
+description: Run netdryrun in GitHub Actions with netdryrun/netdryrun@v0.1.0. Inputs, outputs, example workflows, and security notes for running privileged containerlab labs in CI.
 ---
 
 # GitHub Action
 
-The action installs containerlab, installs NetDryRun, runs your checks, writes a summary to the job page, uploads the JSON and JUnit reports as an artifact, and fails the job if any check fails.
+The action installs containerlab, installs netdryrun, runs your checks, writes a summary to the job page, uploads the JSON and JUnit reports as an artifact, and fails the job if any check fails.
 
 ```yaml title=".github/workflows/network-dryrun.yml"
 name: Network dry run
@@ -71,7 +71,7 @@ jobs:
         with:
           path: network/
       - if: always()
-        run: echo "NetDryRun ${{ steps.ndr.outputs.status }}: ${{ steps.ndr.outputs.passed }} passed, ${{ steps.ndr.outputs.failed }} failed"
+        run: echo "netdryrun ${{ steps.ndr.outputs.status }}: ${{ steps.ndr.outputs.passed }} passed, ${{ steps.ndr.outputs.failed }} failed"
 ```
 
 ### Several labs
@@ -97,7 +97,7 @@ Give each matrix job its own `artifact-name`; artifact names must be unique with
 ## Security notes
 
 - **The lab runs privileged containers.** containerlab needs root on the runner, and the containers it starts are privileged. Treat the topology and router configs as code that runs with root on the runner.
-- **Secrets are not passed to the lab.** The action runs NetDryRun with a cleared environment (`sudo env -i`), passing only `PATH`, `HOME` and `GITHUB_STEP_SUMMARY`. The job's `GITHUB_TOKEN` and your secrets are not in that environment.
+- **Secrets are not passed to the lab.** The action runs netdryrun with a cleared environment (`sudo env -i`), passing only `PATH`, `HOME` and `GITHUB_STEP_SUMMARY`. The job's `GITHUB_TOKEN` and your secrets are not in that environment.
 - **Use it on trusted branches.** A pull request can change the topology, the configs or the images it runs. Prefer the `pull_request` trigger (which gives forks a read-only token and no secrets) over `pull_request_target`, and do not run untrusted fork code on self-hosted runners.
 - **Artifacts are kept for 14 days.** The reports include raw device output from the lab (configs, routes, command output). They are uploaded with `retention-days: 14`. Set `upload-artifact: false` if that is too long or not wanted.
 - **Pin the version.** Use a release tag (`@v0.1.0`) or a commit SHA, not a branch.

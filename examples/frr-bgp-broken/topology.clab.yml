@@ -1,5 +1,5 @@
 # Same triangle as ../frr-bgp, but r2 runs a "bad change": it leaks a default route to its peers.
-# NetDryRun should FAIL this change. CI uses it to prove the tool catches real mistakes.
+# netdryrun should FAIL this change. CI uses it to prove the tool catches real mistakes.
 name: ndr-frr-broken
 
 topology:

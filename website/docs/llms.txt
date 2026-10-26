@@ -1,6 +1,6 @@
-# NetDryRun
+# netdryrun
 
-> NetDryRun is an open-source tool (Python, Apache-2.0) that tests network changes in a real containerlab virtual lab before they reach production. It waits for convergence, checks BGP sessions, prefixes, routes and reachability, and returns a pass/fail verdict with evidence. It runs locally, in GitHub Actions, or as an MCP server for AI agents.
+> netdryrun is an open-source tool (Python, Apache-2.0) that tests network changes in a real containerlab virtual lab before they reach production. It waits for convergence, checks BGP sessions, prefixes, routes and reachability, and returns a pass/fail verdict with evidence. It runs locally, in GitHub Actions, or as an MCP server for AI agents.
 
 Install: `pip install netdryrun` (version 0.1.0). Source: https://github.com/netdryrun/netdryrun
 
@@ -15,6 +15,6 @@ Install: `pip install netdryrun` (version 0.1.0). Source: https://github.com/net
 
 ## Optional
 
-- [When to use what](https://netdryrun.com/when-to-use-what/): Batfish, netlab, pyATS/Genie, containerlab and NetDryRun compared
+- [When to use what](https://netdryrun.com/when-to-use-what/): Batfish, netlab, pyATS/Genie, containerlab and netdryrun compared
 - [Trust and security](https://netdryrun.com/trust/): license, releases, security contact, limits, privacy
 - [Verdict corpus](https://netdryrun.com/corpus/): benchmark of realistic changes (results pending)

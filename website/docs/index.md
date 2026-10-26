@@ -1,14 +1,14 @@
 ---
 title: Fail CI on routing mistakes before they reach production
-description: Test a network change in CI with a containerlab lab. NetDryRun boots the topology, waits for convergence, checks BGP, routes and reachability, and fails the job on mistakes.
+description: Test a network change in CI with a containerlab lab. netdryrun boots the topology, waits for convergence, checks BGP, routes and reachability, and fails the job on mistakes.
 ---
 
 # Fail CI on routing mistakes before they reach production
 
-To test a network change in CI, keep the changed configs and a containerlab topology in Git, describe the expected behavior in a `netdryrun.yml` file, and run `netdryrun run` (or the GitHub Action) on every pull request. NetDryRun deploys the lab, waits for BGP to converge, checks sessions, prefix counts, routes and pings, then destroys the lab. Any failed check exits non-zero and fails the job, with a JSON evidence file showing every command and its raw output.
+To test a network change in CI, keep the changed configs and a containerlab topology in Git, describe the expected behavior in a `netdryrun.yml` file, and run `netdryrun run` (or the GitHub Action) on every pull request. netdryrun deploys the lab, waits for BGP to converge, checks sessions, prefix counts, routes and pings, then destroys the lab. Any failed check exits non-zero and fails the job, with a JSON evidence file showing every command and its raw output.
 
-!!! abstract "What NetDryRun is"
-    NetDryRun is an open-source tool that tests network changes in a real virtual lab before they reach production. It boots the topology with containerlab, waits for convergence, checks BGP sessions, prefixes, routes and reachability, and returns a pass/fail verdict with evidence. It runs locally, in GitHub Actions, or as an MCP server for AI agents.
+!!! abstract "What netdryrun is"
+    netdryrun is an open-source tool that tests network changes in a real virtual lab before they reach production. It boots the topology with containerlab, waits for convergence, checks BGP sessions, prefixes, routes and reachability, and returns a pass/fail verdict with evidence. It runs locally, in GitHub Actions, or as an MCP server for AI agents.
 
 ## A failing run
 
@@ -24,7 +24,7 @@ Deploying lab ndr-frr-broken (3 nodes)...
 FAILED: 5 passed, 1 failed (6 checks)
 ```
 
-The leaked default route was *received but not selected*: r1 kept its own default, so traffic still flowed and the ping passed. A ping test or a config linter would have missed it. NetDryRun counts a route that is in the routing table but not selected as present, so the "must be absent" check fails.
+The leaked default route was *received but not selected*: r1 kept its own default, so traffic still flowed and the ping passed. A ping test or a config linter would have missed it. netdryrun counts a route that is in the routing table but not selected as present, so the "must be absent" check fails.
 
 The check that caught it:
 
