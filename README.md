@@ -1,4 +1,9 @@
-# NetDryRun
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/netdryrun-wordmark-white.svg">
+    <img alt="NetDryRun" src=".github/assets/netdryrun-wordmark-navy.svg" width="360">
+  </picture>
+</p>
 
 **Test network changes before they touch production.**
 
@@ -8,8 +13,8 @@ NetDryRun boots your topology as a real virtual network ([containerlab](https://
 $ netdryrun run examples/frr-bgp-broken
 Deploying lab ndr-frr-broken (3 nodes)...
   [PASS] r1: BGP session to 10.0.12.2 is established -- state is established (6.3s)
-  [PASS] r1: prefixes from 10.0.12.2 >= 1 and <= 10 -- 3 ipv4-unicast prefixes accepted (0.1s)
   [PASS] r1: ping 192.168.3.1 from 192.168.1.1 expects success -- 3/3 replies (2.3s)
+  ... (3 more passing checks trimmed)
   [FAIL] r1: route 0.0.0.0/0 via bgp is absent -- unexpectedly present via bgp (not selected) (0.1s)
 FAILED: 5 passed, 1 failed (6 checks)
 ```

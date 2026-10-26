@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+  {{ super() }}
+  <meta property="og:site_name" content="NetDryRun">
+  {% if page %}
+  <meta property="og:title" content="{{ page.title | striptags }} - NetDryRun">
+  <meta property="og:description" content="{{ page.meta.description or config.site_description }}">
+  <meta property="og:url" content="{{ page.canonical_url }}">
+  {% endif %}
+  <meta property="og:image" content="https://netdryrun.com/assets/netdryrun-social-1280x640.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://netdryrun.com/assets/netdryrun-social-1280x640.png">
+  <link rel="apple-touch-icon" href="{{ 'assets/netdryrun-mark-180.png' | url }}">
+  <meta name="theme-color" content="#041334">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://netdryrun.com/#software",
+        "name": "NetDryRun",
+        "description": "NetDryRun is an open-source tool that tests network changes in a real virtual lab before they reach production. It boots the topology with containerlab, waits for convergence, checks BGP sessions, prefixes, routes and reachability, and returns a pass/fail verdict with evidence. It runs locally, in GitHub Actions, or as an MCP server for AI agents.",
+        "url": "https://netdryrun.com/",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Linux",
+        "softwareVersion": "0.1.0",
+        "license": "https://www.apache.org/licenses/LICENSE-2.0",
+        "downloadUrl": "https://pypi.org/project/netdryrun/",
+        "codeRepository": "https://github.com/netdryrun/netdryrun",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "publisher": { "@id": "https://netdryrun.com/#organization" }
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://netdryrun.com/#organization",
+        "name": "NetDryRun",
+        "url": "https://netdryrun.com/",
+        "logo": "https://netdryrun.com/assets/netdryrun-mark-180.png",
+        "sameAs": [
+          "https://github.com/netdryrun",
+          "https://pypi.org/project/netdryrun/"
+        ]
+      }
+    ]
+  }
+  </script>
+{% endblock %}

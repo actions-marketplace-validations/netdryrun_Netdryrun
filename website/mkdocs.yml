@@ -1,0 +1,92 @@
+site_name: NetDryRun
+site_url: https://netdryrun.com/
+site_description: >-
+  NetDryRun is an open-source tool that tests network changes in a real
+  containerlab virtual lab before they reach production, with a pass/fail
+  verdict and evidence.
+site_author: NetDryRun
+copyright: NetDryRun is open source under the Apache-2.0 license.
+
+repo_url: https://github.com/netdryrun/netdryrun
+repo_name: netdryrun/netdryrun
+edit_uri: edit/main/website/docs/
+
+theme:
+  name: material
+  custom_dir: overrides
+  language: en
+  features:
+    # navigation.instant stays off on purpose: every page is plain HTML for crawlers.
+    - content.code.copy
+    - content.action.edit
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - toc.follow
+
+  # --- Brand ------------------------------------------------------------------
+  # Navy #041334 (from the wordmark) + amber #F59E0B accent ("dry run, not live").
+  # Red/green stay reserved for pass/fail. Colors are set in stylesheets/brand.css.
+  logo: assets/netdryrun-wordmark-white.svg
+  favicon: assets/favicon.ico
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  # --- End brand --------------------------------------------------------------
+
+extra_css:
+  - stylesheets/brand.css
+
+plugins:
+  - search
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Reference:
+      - netdryrun.yml: reference/config.md
+      - CLI and reports: reference/cli.md
+  - GitHub Action: github-action.md
+  - AI agents (MCP): ai-agents.md
+  - Verdict corpus: corpus.md
+  - When to use what: when-to-use-what.md
+  - Trust and security: trust.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/netdryrun/netdryrun
+      name: NetDryRun on GitHub
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/netdryrun/
+      name: netdryrun on PyPI

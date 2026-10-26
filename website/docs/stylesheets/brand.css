@@ -1,0 +1,29 @@
+/* NetDryRun brand: navy #041334 + amber #F59E0B. Red/green are reserved for pass/fail. */
+:root {
+  --md-primary-fg-color: #041334;
+  --md-primary-fg-color--light: #1b2a4a;
+  --md-primary-fg-color--dark: #020a1c;
+  --md-primary-bg-color: #ffffff;
+  --md-accent-fg-color: #f59e0b;
+  --md-accent-fg-color--transparent: rgba(245, 158, 11, 0.12);
+}
+
+[data-md-color-scheme="default"] {
+  --md-typeset-a-color: #1d4ed8;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-hue: 222;
+  --md-default-bg-color: #0a1428;
+  --md-typeset-a-color: #fbbf24;
+}
+
+/* The header logo is a wordmark, not a square icon: give it room */
+.md-header__button.md-logo img {
+  height: 1.15rem;
+  width: auto;
+}
+.md-header__title { margin-left: 0.6rem; }
+
+/* The wordmark already says the name: hide the duplicate site title (page titles still show on scroll) */
+.md-header__title .md-header__topic:first-child { visibility: hidden; }
