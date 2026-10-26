@@ -87,3 +87,28 @@ def test_scenarios(tmp_path):
 def test_scenario_needs_a_fault(tmp_path):
     with pytest.raises(ConfigError, match="at least one fault"):
         load(write(tmp_path, "lab: topo.clab.yml\nchecks:\n  - {type: ping, node: r1, target: 10.0.0.1}\nscenarios:\n  - checks: [{type: ping, node: r1, target: 10.0.0.1}]\n"))
+
+
+def test_node_setup_commands(tmp_path):
+    cfg = load(write(tmp_path, """
+        lab: topo.clab.yml
+        nodes:
+          r1:
+            setup:
+              - config interface ip add Ethernet0 10.0.0.1/30
+              - vtysh -c "show version"
+        checks:
+          - {type: ping, node: r1, target: 10.0.0.2}
+    """))
+    assert cfg.setup == {"r1": ["config interface ip add Ethernet0 10.0.0.1/30", 'vtysh -c "show version"']}
+
+
+def test_node_setup_rejects_non_strings(tmp_path):
+    with pytest.raises(ConfigError, match="setup must be"):
+        load(write(tmp_path, """
+            lab: topo.clab.yml
+            nodes:
+              r1: {setup: [1, ""]}
+            checks:
+              - {type: ping, node: r1, target: 10.0.0.2}
+        """))

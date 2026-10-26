@@ -43,6 +43,7 @@ class Config:
     checks: list[Check]
     drivers: dict[str, str] = field(default_factory=dict)  # node -> driver override
     scenarios: list["Scenario"] = field(default_factory=list)
+    setup: dict[str, list[str]] = field(default_factory=dict)   # node -> commands run after deploy
 
 
 @dataclass
@@ -158,9 +159,17 @@ def load(path: str | Path) -> Config:
     if not raw_checks:
         raise ConfigError(f"{path}: no checks defined")
     checks = [_validate_check(i, c, timeout) for i, c in enumerate(raw_checks)]
-    drivers = {str(k): str(v.get("driver")) for k, v in (data.get("nodes") or {}).items() if isinstance(v, dict) and v.get("driver")}
+    nodes_cfg = data.get("nodes") or {}
+    drivers = {str(k): str(v.get("driver")) for k, v in nodes_cfg.items() if isinstance(v, dict) and v.get("driver")}
+    setup: dict[str, list[str]] = {}
+    for k, v in nodes_cfg.items():
+        if isinstance(v, dict) and v.get("setup") is not None:
+            cmds = v["setup"] if isinstance(v["setup"], list) else [v["setup"]]
+            if not all(isinstance(x, str) and x.strip() for x in cmds):
+                raise ConfigError(f"{path}: nodes.{k}.setup must be a list of shell commands")
+            setup[str(k)] = cmds
     scenarios = [_validate_scenario(i, sc, timeout) for i, sc in enumerate(data.get("scenarios") or [])]
-    return Config(path=path, lab=lab, timeout=timeout, checks=checks, drivers=drivers, scenarios=scenarios)
+    return Config(path=path, lab=lab, timeout=timeout, checks=checks, drivers=drivers, scenarios=scenarios, setup=setup)
 
 
 def _validate_scenario(i: int, raw: Any, default_timeout: float) -> Scenario:

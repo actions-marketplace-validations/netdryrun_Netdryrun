@@ -33,6 +33,9 @@ def record(topology: Path, include_routes: bool = True, exact_prefixes: bool = T
             continue
         drv = for_node(lab, name)
         log(f"recording {name} ({drv.name})")
+        if drv.name == "sonic":
+            warnings.append(f"{name}: SONiC is configured after boot; add its commands under nodes.{name}.setup "
+                            "or the checks will fail on a fresh deploy")
         try:
             neighbors = drv.bgp_neighbors().value
         except DriverError as e:

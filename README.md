@@ -23,7 +23,7 @@ FAILED: 5 passed, 1 failed (6 checks)
 
 That run caught a leaked default route that was *received but not selected*. A ping test or a config linter would have missed it.
 
-> Status: **v0.2, early.** Works today with FRR, Nokia SR Linux and Arista EOS (cEOS-lab, bring your own image) on Linux and WSL2. Feedback and issues are very welcome.
+> Status: **v0.2, early.** Works today with FRR, Nokia SR Linux, SONiC (docker-sonic-vs) and Arista EOS (cEOS-lab, bring your own image) on Linux and WSL2. Feedback and issues are very welcome.
 
 ## Why
 
@@ -94,14 +94,14 @@ scenarios:
       - {type: bgp_session, node: r1, neighbor: 10.0.12.2, state: down}
 ```
 
-Every check also accepts `name`, `timeout` and `vrf`. Ping accepts `expect: failure` and `count`. Drivers are detected from the topology; override them with `nodes: {r1: {driver: frr}}`.
+Every check also accepts `name`, `timeout` and `vrf`. Ping accepts `expect: failure` and `count`. Drivers are detected from the topology; override them with `nodes: {r1: {driver: frr}}`. Nodes that are configured after boot (SONiC) take `setup` commands: `nodes: {sonic1: {setup: [...]}}`.
 
-| Check | FRR | SR Linux | Arista EOS (cEOS) |
-|---|---|---|---|
-| `bgp_session` | ✅ | ✅ | ✅ |
-| `bgp_prefixes` (accepted = received minus rejected by policy) | ✅ | ✅ | ✅ |
-| `route` present / absent | ✅ | ✅ | ✅ |
-| `ping` success / failure | ✅ | ✅ | ✅ |
+| Check | FRR | SR Linux | Arista EOS (cEOS) | SONiC (VS) |
+|---|---|---|---|---|
+| `bgp_session` | ✅ | ✅ | ✅ | ✅ |
+| `bgp_prefixes` (accepted = received minus rejected by policy) | ✅ | ✅ | ✅ | ✅ |
+| `route` present / absent | ✅ | ✅ | ✅ | ✅ |
+| `ping` success / failure | ✅ | ✅ | ✅ | ✅ |
 
 ## Commands
 

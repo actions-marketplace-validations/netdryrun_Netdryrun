@@ -33,7 +33,8 @@ Validation is strict: unknown keys inside a check, missing required keys, bad IP
 | `lab` | yes | | Path to the containerlab topology file, relative to `netdryrun.yml`. The topology must have a `name`. |
 | `timeout` | no | `120` | Seconds a positive check may wait for convergence. Each check can override it. |
 | `checks` | yes | | List of checks. At least one is required. |
-| `nodes.<node>.driver` | no | detected | Force the driver for a node: `frr` or `srlinux`. See [drivers](#drivers). |
+| `nodes.<node>.driver` | no | detected | Force the driver for a node: `frr`, `srlinux`, `eos` or `sonic`. See [drivers](#drivers). |
+| `nodes.<node>.setup` | no | | Shell commands run inside the node after deploy, before any check. Each is retried every 5 s until it succeeds (the NOS may still be booting), within a shared 300 s budget. For NOSes that are configured after boot, such as SONiC. |
 
 ## Keys every check accepts
 
@@ -198,18 +199,21 @@ A driver turns device state into a common shape. Netdryrun detects it from the t
 
 - `kind: nokia_srlinux` or `kind: srl` uses `srlinux`
 - `kind: arista_ceos` or `kind: ceos` uses `eos`
+- `kind: sonic-vs`, or an image whose name contains `sonic`, uses `sonic`
 - an image whose name contains `frr` uses `frr`
 - anything else is an error unless you set `nodes.<node>.driver`
 
-| Check | FRR | SR Linux | Arista EOS |
-|---|---|---|---|
-| `bgp_session` | yes | yes | yes |
-| `bgp_prefixes` (accepted = received minus rejected by policy) | yes | yes | yes |
-| `route` present / absent | yes | yes | yes |
-| `ping` success / failure | yes | yes | yes |
-| Failure scenarios on the node's own links | yes | not yet (fail the FRR/Linux side instead) | yes |
+| Check | FRR | SR Linux | Arista EOS | SONiC |
+|---|---|---|---|---|
+| `bgp_session` | yes | yes | yes | yes |
+| `bgp_prefixes` (accepted = received minus rejected by policy) | yes | yes | yes | yes |
+| `route` present / absent | yes | yes | yes | yes |
+| `ping` success / failure | yes | yes | yes | yes |
+| Failure scenarios on the node's own links | yes | not yet (fail the FRR/Linux side instead) | yes | yes |
 
 **Received-but-not-selected routes:** on SR Linux and Arista EOS, a BGP route that lost to a static or local route lives only in the BGP table, not the routing table. Both drivers read the BGP table too, so such a route still counts as present for `present: false`.
+
+**SONiC:** `docker-sonic-vs` routes with FRR inside the container, so the `sonic` driver reads state through `vtysh` like the FRR driver. The image boots unconfigured; put interface IPs (`config interface ip add ...`) and BGP (`vtysh -c ...`) in `nodes.<node>.setup`. See `examples/sonic-frr`.
 
 **Arista EOS:** cEOS-lab is free from arista.com (account required) and can't be redistributed. Download it yourself, then `docker import cEOS-lab-<version>.tar ceos:<version>`, and use `kind: arista_ceos` with that image.
 

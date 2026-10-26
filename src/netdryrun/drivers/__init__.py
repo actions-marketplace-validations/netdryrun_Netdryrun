@@ -5,9 +5,10 @@ from ..lab import Lab, Node
 from .base import Driver, DriverError
 from .eos import EosDriver
 from .frr import FrrDriver
+from .sonic import SonicDriver
 from .srlinux import SrlDriver
 
-DRIVERS: dict[str, type[Driver]] = {"frr": FrrDriver, "srlinux": SrlDriver, "eos": EosDriver}
+DRIVERS: dict[str, type[Driver]] = {"frr": FrrDriver, "srlinux": SrlDriver, "eos": EosDriver, "sonic": SonicDriver}
 
 
 def detect(node: Node) -> str:
@@ -15,6 +16,8 @@ def detect(node: Node) -> str:
         return "srlinux"
     if node.kind in ("arista_ceos", "ceos"):
         return "eos"
+    if node.kind in ("sonic-vs", "sonic_vs") or "sonic" in node.image.lower():
+        return "sonic"
     if "frr" in node.image.lower():
         return "frr"
     raise DriverError(

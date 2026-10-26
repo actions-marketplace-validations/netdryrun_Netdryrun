@@ -1,0 +1,43 @@
+# Checks for the SONiC + FRR pair. Run: netdryrun run examples/sonic-frr
+# docker-sonic-vs is configured after boot, so the node has setup commands (retried until SONiC is ready).
+lab: topology.clab.yml
+timeout: 180
+
+nodes:
+  sonic1:
+    setup:
+      - supervisorctl status orchagent | grep -q RUNNING && supervisorctl status bgpd | grep -q RUNNING
+      - config interface ip add Ethernet0 10.0.40.1/30 && config interface startup Ethernet0
+      - config loopback add Loopback0; config interface ip add Loopback0 192.168.40.1/32
+      - >-
+        vtysh -c "conf t" -c "router bgp 65040" -c "bgp router-id 40.40.40.40" -c "no bgp ebgp-requires-policy"
+        -c "neighbor 10.0.40.2 remote-as 65020" -c "address-family ipv4 unicast" -c "network 192.168.40.1/32"
+
+checks:
+  - type: bgp_session
+    node: sonic1
+    neighbor: 10.0.40.2
+  - type: route
+    node: sonic1
+    prefix: 192.168.20.0/24
+    protocol: bgp
+  - type: route
+    node: frr1
+    prefix: 192.168.40.1/32
+    protocol: bgp
+  - type: ping
+    node: sonic1
+    source: 192.168.40.1
+    target: 192.168.20.1
+  - type: bgp_prefixes
+    node: frr1
+    neighbor: 10.0.40.1
+    min: 1
+    max: 5
+
+scenarios:
+  - name: SONiC port Ethernet0 goes down
+    link_down: {node: sonic1, interface: Ethernet0}
+    checks:
+      - {type: bgp_session, node: frr1, neighbor: 10.0.40.1, state: down}
+      - {type: route, node: frr1, prefix: 192.168.40.1/32, protocol: bgp, present: false}

@@ -95,3 +95,23 @@ def test_srl_leak_received_but_not_installed():
 
 def test_srl_empty_rib_adds_nothing():
     assert srlinux.parse_routes("", "10.99.0.0/16", read("srl_rib_empty.txt")) == []
+
+
+def test_detect_sonic_and_others():
+    from netdryrun.drivers import detect
+    from netdryrun.lab import Node
+    def n(kind, image):
+        return Node(name="x", kind=kind, image=image, container="c")
+    assert detect(n("sonic-vs", "docker-sonic-vs:latest")) == "sonic"
+    assert detect(n("linux", "docker-sonic-vs:latest")) == "sonic"
+    assert detect(n("arista_ceos", "ceos:4.36.3M")) == "eos"
+    assert detect(n("linux", "quay.io/frrouting/frr:10.4.1")) == "frr"
+
+
+def test_sonic_reads_frr_output():
+    # docker-sonic-vs runs FRR 10.7 inside; output captured from examples/sonic-frr
+    n = frr.parse_bgp_neighbors(read("sonic_bgp_neighbors.txt"))
+    assert n["10.0.40.2"].state == "established"
+    assert n["10.0.40.2"].prefixes["ipv4-unicast"] == 1
+    routes = frr.parse_routes(read("sonic_route.txt"), "192.168.20.0/24")
+    assert any(r.protocol == "bgp" and r.active for r in routes)

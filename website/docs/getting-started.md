@@ -30,13 +30,14 @@ The MCP server for AI agents is included: run `netdryrun mcp`. See [AI agents](a
 
 ## Run the examples
 
-The repository ships three example labs.
+The repository ships these example labs (Arista needs your own cEOS image; SONiC pulls `docker-sonic-vs`).
 
 ```bash
 git clone https://github.com/netdryrun/netdryrun && cd netdryrun
 netdryrun run examples/frr-bgp          # 3 FRR routers, should pass
 netdryrun run examples/srl-frr          # SR Linux + FRR, should pass
 netdryrun run examples/frr-bgp-broken   # a bad change, should fail
+netdryrun run examples/sonic-frr        # SONiC + FRR, should pass
 ```
 
 Each run deploys the lab, runs the checks, prints one line per check and destroys the lab. Images are pulled on first use, so the first run takes longer.
@@ -47,6 +48,7 @@ Each run deploys the lab, runs the checks, prints one line per check and destroy
 |---|---|---|---|---|
 | `examples/frr-bgp` | Triangle of three FRR routers (r1, r2, r3), eBGP | 2 sessions, prefix count 1 to 10, route present via BGP, ping, default route absent | `PASSED: 6 passed, 0 failed` | `0` |
 | `examples/srl-frr` | Nokia SR Linux (`srl1`) peering eBGP with FRR (`frr1`) | 2 sessions, a BGP route on each side, a ping in each direction | `PASSED: 6 passed, 0 failed` | `0` |
+| `examples/sonic-frr` | SONiC VS (`sonic1`, configured by `setup` commands) peering eBGP with FRR (`frr1`) | a session, a BGP route on each side, a ping, a prefix count, a port-down scenario | `PASSED` | `0` |
 | `examples/frr-bgp-broken` | Same triangle, but r2 adds `default-originate` toward r1 | Same 6 checks as `frr-bgp` | `FAILED: 5 passed, 1 failed`; the default route check fails | `1` |
 
 The broken example is the one shown on the [home page](index.md#a-failing-run). r1 receives the leaked default route but does not select it, so the ping still works. The route check catches it because a received-but-not-selected route counts as present.

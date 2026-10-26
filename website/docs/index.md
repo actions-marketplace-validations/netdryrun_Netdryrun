@@ -70,7 +70,7 @@ netdryrun run path/to/folder    # the folder containing netdryrun.yml
 Requirements: Linux or WSL2, Docker, containerlab, Python 3.10+. Walkthrough: [Getting started](getting-started.md).
 
 !!! warning "What a lab cannot prove"
-    A pass means the change behaved correctly in a lab built from open-source router images (FRR, Nokia SR Linux). That is strong evidence for protocol logic and policy intent. It is not proof of:
+    A pass means the change behaved correctly in a lab built from container router images (FRR, Nokia SR Linux, SONiC, Arista cEOS). That is strong evidence for protocol logic and policy intent. It is not proof of:
 
     - vendor-specific behavior on the routers you run in production
     - behavior at production scale (full tables, many peers)
@@ -81,4 +81,4 @@ Requirements: Linux or WSL2, Docker, containerlab, Python 3.10+. Walkthrough: [G
 
 ## Status
 
-Version 0.1.0, early. Works with FRR and Nokia SR Linux on Linux and WSL2. It covers IPv4/IPv6 unicast BGP, routes and ping. Issues and feedback: [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun/issues).
+Version 0.2.0, early. Works with FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image) on Linux and WSL2. It covers IPv4/IPv6 unicast BGP, routes and ping. Issues and feedback: [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun/issues).

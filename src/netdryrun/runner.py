@@ -64,7 +64,7 @@ def run(config: Config, *, deploy: bool = True, keep: bool = False, keep_on_fail
             "nodes": {n.name: {"kind": n.kind, "image": n.image} for n in lab.nodes.values()},
         }
         # Every node a check or a fault names must exist, before anything is deployed
-        wanted = {c.node for c in config.checks} | {c.node for sc in config.scenarios for c in sc.checks}             | {f.node for sc in config.scenarios for f in sc.faults}
+        wanted = {c.node for c in config.checks} | {c.node for sc in config.scenarios for c in sc.checks}             | {f.node for sc in config.scenarios for f in sc.faults} | set(config.setup)
         unknown = sorted(wanted - set(lab.nodes))
         if unknown:
             raise LabError(f"unknown node(s) {', '.join(unknown)}; the topology has {', '.join(lab.nodes)}")
@@ -74,6 +74,10 @@ def run(config: Config, *, deploy: bool = True, keep: bool = False, keep_on_fail
         missing = {n.container for n in lab.nodes.values()} - lab.running_containers()
         if missing:
             raise LabError(f"lab containers not running: {', '.join(sorted(missing))}")
+        if deploy:
+            for node, cmds in config.setup.items():
+                log(f"Running setup on {node}...")
+                lab.run_setup(node, cmds, log=log)
 
         drivers = {}
         for check in config.checks:

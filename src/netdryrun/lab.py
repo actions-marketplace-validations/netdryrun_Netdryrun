@@ -133,5 +133,20 @@ class Lab:
             raise LabError(f"could not set {node} {interface} {'up' if up else 'down'}: {(r.stderr or r.stdout).strip()}")
         return r
 
+    def run_setup(self, node: str, commands: list[str], budget: float = 300, log=lambda _: None) -> None:
+        """Run post-boot setup commands on a node, retrying each until it succeeds (the NOS may still be
+        starting) or the shared time budget runs out."""
+        import time
+        deadline = time.monotonic() + budget
+        for cmd in commands:
+            while True:
+                r = self.exec(node, ["bash", "-lc", cmd], timeout=120)
+                if r.rc == 0:
+                    break
+                if time.monotonic() > deadline:
+                    raise LabError(f"setup on {node} failed: `{cmd}`: {(r.stderr or r.stdout).strip()[-300:]}")
+                time.sleep(5)
+        log(f"setup done on {node} ({len(commands)} commands)")
+
     def exec(self, node: str, cmd: list[str], timeout: float = 60) -> ExecResult:
         return _run(["docker", "exec", self.nodes[node].container, *cmd], timeout=timeout)
