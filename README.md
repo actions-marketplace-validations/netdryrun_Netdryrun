@@ -29,7 +29,7 @@ That run caught a leaked default route that was *received but not selected*. A p
 Requirements: Linux or WSL2, Docker, [containerlab](https://containerlab.dev/install/), Python 3.10+.
 
 ```bash
-pip install git+https://github.com/netdryrun/netdryrun
+pip install netdryrun
 git clone https://github.com/netdryrun/netdryrun && cd netdryrun
 netdryrun run examples/frr-bgp          # 3 FRR routers, should pass
 netdryrun run examples/srl-frr          # SR Linux + FRR, should pass
@@ -95,7 +95,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@main
+      - uses: netdryrun/netdryrun@v0.1.0
         with:
           path: network/        # folder containing netdryrun.yml
 ```
@@ -107,7 +107,7 @@ The action installs containerlab, runs the checks, uploads the JSON and JUnit re
 AI agents are starting to change networks. NetDryRun gives them a safety gate: an [MCP](https://modelcontextprotocol.io) server that lets an agent dry-run its change in a real lab and proceed only if every check passes.
 
 ```bash
-pip install "netdryrun[mcp] @ git+https://github.com/netdryrun/netdryrun"
+pip install "netdryrun[mcp]"
 ```
 
 Add it to your MCP client (for example Claude Code):
