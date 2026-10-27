@@ -28,7 +28,7 @@ async def _call(tool: str, args: dict) -> tuple[list[str], str]:
 
 def test_tools_and_validate_over_stdio():
     tools, text = asyncio.run(_call("validate", {"path": EXAMPLE}))
-    assert {"dry_run", "run_checks", "validate", "check_types", "record_baseline"} <= set(tools)
+    assert {"dry_run", "run_checks", "validate", "check_types", "record_baseline", "verify_change"} <= set(tools)
     data = json.loads(text)
     assert data["valid"] and len(data["checks"]) == 7
 
