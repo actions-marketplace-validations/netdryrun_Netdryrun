@@ -45,7 +45,7 @@ Validation is strict: unknown keys inside a check, missing required keys, bad IP
 | `name` | generated | Label used in reports. The default describes the check, for example `r1: BGP session to 10.0.12.2 is established`. |
 | `timeout` | top-level `timeout` | Seconds this check may wait to pass. Positive number. |
 | `hold` | `--hold` (10) | Seconds a [post-convergence check](#convergence-semantics) must hold. Positive number. |
-| `vrf` | `default` | VRF (FRR) or network-instance (SR Linux) to look in |
+| `vrf` | `default` | VRF (FRR) or network-instance (SR Linux) to look in. Letters, digits and `. _ : -`, at most 64 characters: the name goes into the device's CLI command, so anything else is refused. |
 
 IP addresses and prefixes are normalized, so `2001:db8:0::1` in YAML matches `2001:db8::1` on the device. Prefixes with host bits set are reduced to the network (`10.0.0.1/24` becomes `10.0.0.0/24`).
 
@@ -131,7 +131,7 @@ Attributes of the BGP **best path** for a prefix: communities, AS path, local pr
 | `communities` | no | | The best path must carry **all** of these. Standard (`'65000:100'`), large (`'65000:1:2'`) or well-known names (`no-export`, `no-advertise`, `no-peer`, `blackhole`, `graceful-shutdown`, `accept-own`, `llgr-stale`, `no-llgr`, `no-export-subconfed`) |
 | `without_communities` | no | | The best path must carry **none** of these. Same forms as `communities` |
 | `as_path` | no | | Exact AS path, ASNs separated by spaces: `"65002 65003"`. `""` is the empty path of a locally originated route. AS sets are written `{65004,65005}` |
-| `as_path_regex` | no | | Python regular expression searched in the AS path string, for example `"^65002 "` (learned from 65002) or `"(^| )65666( |$)"` (passes through 65666) |
+| `as_path_regex` | no | | Python regular expression searched in the AS path string, for example `"^65002 "` (learned from 65002) or `"(^| )65666( |$)"` (passes through 65666). It runs with no time limit, so avoid nested repeats such as `(\d+ ?)+$` that can backtrack for minutes |
 | `local_pref` | no | | Exact local preference |
 | `med` | no | | Exact MED. A path without MED counts as `0`, as best-path selection treats it by default |
 | `next_hop` | no | | Exact next hop address |
@@ -218,7 +218,7 @@ scenarios:
 | Key | Meaning |
 |---|---|
 | `name` | Label shown before each check (default: generated from the faults) |
-| `link_down` | `{node, interface}` or a list of them. Interface names as seen inside the node (`eth1` on FRR, `e1-1` on SR Linux) |
+| `link_down` | `{node, interface}` or a list of them. Interface names as seen inside the node (`eth1` on FRR, `e1-1` on SR Linux): a Linux interface name of at most 15 letters, digits and `. _ @ -` |
 | `node_isolated` | A node name (or list): every lab link of that node goes down |
 | `inject_routes` | `{node, prefixes}` or `{node, count}` (or a list of them): the node announces extra routes. See below |
 | `checks` | Same check types as the top level, with the same convergence rules |

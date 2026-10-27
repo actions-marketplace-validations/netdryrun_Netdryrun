@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 from xml.sax.saxutils import escape, quoteattr
 
 from .checks import Result
@@ -54,8 +55,35 @@ def to_json(rep: RunReport) -> str:
     return json.dumps(data, indent=2)
 
 
+def _md_text(text: str) -> str:
+    """Text from a config, a topology or device output, made inert for a PR comment: no HTML (which
+    could hide the rest of the comment), no links or images, and no @mentions or #references that
+    would notify people or link other issues."""
+    t = str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    t = t.replace("[", "\\[").replace("]", "\\]")
+    return re.sub(r"([@#])(?=\w)", "\\1\u200b", t)
+
+
 def _md_cell(text: str) -> str:
-    return str(text).replace("|", "\\|").replace("\n", " ")
+    return " ".join(_md_text(text).replace("|", "\\|").split())
+
+
+def _ticks(text: str) -> int:
+    """Length of the longest run of backticks in `text`."""
+    return max((len(m) for m in re.findall(r"`+", text)), default=0)
+
+
+def _md_code(text: str) -> str:
+    """An inline code span that `text` cannot break out of."""
+    t = " ".join(str(text).split())
+    fence = "`" * (_ticks(t) + 1)
+    return f"{fence} {t} {fence}"
+
+
+def _md_block(text: str) -> list[str]:
+    """A fenced code block that `text` cannot close early."""
+    fence = "`" * max(3, _ticks(str(text)) + 1)
+    return [fence, str(text), fence]
 
 
 def _evidence_excerpt(output: str, params: dict, max_lines: int = 15) -> str:
@@ -77,12 +105,12 @@ def to_markdown(rep: RunReport) -> str:
             "inconclusive": "⏸️ Netdryrun inconclusive: the lab never reached a testable state"}[rep.status]
     lines = [f"### {head}", ""]
     if rep.error:
-        lines += ["```", rep.error, "```"]
+        lines += _md_block(rep.error)
         return "\n".join(lines) + "\n"
     if rep.status == "inconclusive":
         lines += [f"> {_md_cell(rep.inconclusive_reason)}", ">",
                   "> This says nothing about the change, good or bad. Rerun once the lab comes up.", ""]
-    lines += [f"**{rep.passed} passed, {rep.failed} failed** on lab `{rep.lab_name}`", "",
+    lines += [f"**{rep.passed} passed, {rep.failed} failed** on lab {_md_code(rep.lab_name)}", "",
               "| | Check | Result | Time |", "|---|---|---|---|"]
     for r in sorted(rep.results, key=lambda r: r.passed):  # failures first
         lines.append(f"| {'✅' if r.passed else '❌'} | {_md_cell(r.check.name)} | {_md_cell(r.detail)} | {r.duration}s |")
@@ -93,9 +121,10 @@ def to_markdown(rep: RunReport) -> str:
             continue
         out = _evidence_excerpt(ev.get("output") or ev.get("stderr") or "", r.check.params)
         lines += ["", f"<details><summary>Evidence: {_md_cell(r.check.name)}</summary>", "",
-                  f"`{ev['node']}$ {ev['cmd']}`", "", "```", out, "```", "", "</details>"]
+                  _md_code(f"{ev['node']}$ {ev['cmd']}"), "", *_md_block(out), "", "</details>"]
     env = rep.environment
-    lines += ["", f"<sub>netdryrun {env.get('netdryrun', '?')} · containerlab {env.get('containerlab', '?')} · "
+    lines += ["", f"<sub>netdryrun {_md_cell(env.get('netdryrun', '?'))} · "
+              f"containerlab {_md_cell(env.get('containerlab', '?'))} · "
               f"{rep.started} · full evidence in the JSON report</sub>"]
     return "\n".join(lines) + "\n"
 

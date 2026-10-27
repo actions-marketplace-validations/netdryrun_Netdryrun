@@ -106,5 +106,6 @@ def render(data: dict, warnings: list[str]) -> str:
         "# remove anything that is allowed to change, and add negative checks (route present: false,",
         "# ping expect: failure) for things that must never happen. Docs: https://netdryrun.com/reference/config/",
     ]
-    head += [f"# warning: {w}" for w in warnings]
+    # one comment line per warning: device output in a warning must not add YAML (a setup command) to the file
+    head += [f"# warning: {' '.join(str(w).split())}" for w in warnings]
     return "\n".join(head) + "\n" + yaml.safe_dump(data, sort_keys=False, width=200)

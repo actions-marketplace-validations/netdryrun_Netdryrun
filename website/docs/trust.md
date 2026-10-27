@@ -37,6 +37,13 @@ Version 0.3.0 also covers only BGP (IPv4/IPv6 unicast), routes, BGP best-path at
 
 containerlab runs privileged containers, so a topology and its configs are code that runs with root on the host. Only run labs you trust. In CI, see the [GitHub Action security notes](github-action.md#security-notes). For AI agents, see the [MCP safety model](ai-agents.md#safety-model).
 
+What follows from that, by design:
+
+- **`netdryrun.yml` is code too.** `nodes.<node>.setup` commands are shell commands run inside the node, and a `netdryrun.yml` can point at a topology in any folder. Review a `netdryrun.yml` the way you review a topology.
+- **Everything else in `netdryrun.yml` is data.** VRF and interface names are restricted to letters, digits and a few punctuation marks before they reach a device CLI, and addresses and prefixes must parse as IP. A check can't run a device command it doesn't name.
+- **`as_path_regex` runs with no time limit.** A pathological pattern can stall a run until your CI job's timeout; it can't do anything else. Set `timeout-minutes` on the job.
+- **Text from a lab is treated as untrusted** wherever it ends up: escaped in PR comments and step summaries, kept to one comment line in a recorded baseline, and flattened and capped in MCP results.
+
 ## Privacy
 
 **The tool has no telemetry.** The CLI, the GitHub Action and the MCP server do not phone home or send usage data anywhere. Reports are written only to the files you ask for (and to the GitHub Actions step summary when running in Actions). containerlab and Docker may pull images from registries named in your topology, as they normally would.

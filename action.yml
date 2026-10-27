@@ -101,6 +101,9 @@ runs:
         NDR_HOLD: ${{ inputs.hold }}
       run: |
         set +e
+        # Reports left in the workspace (committed in the PR, or from an earlier run on a self-hosted
+        # runner) must never be read, posted or uploaded as this run's result
+        sudo rm -f -- "$NDR_JSON" "$NDR_JUNIT" netdryrun-summary.md netdryrun-comment.json
         # containerlab needs root on GitHub-hosted runners. Pass only what Netdryrun needs (not the
         # job's tokens, not the runner user's home). This only narrows the environment: a lab runs
         # privileged containers, so run untrusted topologies only in jobs without secrets.
@@ -115,15 +118,22 @@ runs:
       shell: bash
       env:
         NDR_JSON: ${{ inputs.json-report }}
+        NDR_EXIT: ${{ steps.run.outputs.exit_code }}
       run: |
         python - <<'EOF'
-        import json, os
+        import json, os, re
+        EXIT = {"passed": "0", "failed": "1", "error": "2", "inconclusive": "3"}
         try:
             rep = json.load(open(os.environ["NDR_JSON"]))
-            out = {"status": rep["status"], "passed": rep["summary"]["passed"], "failed": rep["summary"]["failed"],
+            out = {"status": rep["status"], "passed": int(rep["summary"]["passed"]), "failed": int(rep["summary"]["failed"]),
                    "inconclusive_reason": rep.get("inconclusive_reason") or ""}
+            if EXIT.get(out["status"]) != os.environ.get("NDR_EXIT"):
+                raise ValueError("the report does not match the run's exit code")
         except Exception:
             out = {"status": "error", "passed": 0, "failed": 0, "inconclusive_reason": ""}
+        # The reason can quote lab output: one line, and no quotes, backslashes, $ or backticks, in case
+        # a workflow pastes the output into a shell with ${{ }}
+        out["inconclusive_reason"] = re.sub(r"[`$\\\"']", "", " ".join(str(out["inconclusive_reason"]).split()))[:500]
         with open(os.environ["GITHUB_OUTPUT"], "a") as f:
             for k, v in out.items():
                 f.write(f"{k}={' '.join(str(v).split())}\n")  # one line per output
