@@ -8,6 +8,7 @@ the wrong table, which is how a check passes on state it never looked at. No lab
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 
 import pytest
 
@@ -219,6 +220,20 @@ def test_check_supported(monkeypatch):
     monkeypatch.setattr(FrrDriver, "unsupported_bgp_attributes", frozenset({"med"}))
     with pytest.raises(DriverError):
         drv.check_supported(lab, c)                  # detected as frr
+
+
+def test_check_supported_refuses_evpn_counts_on_sr_linux():
+    """The SR Linux driver has no EVPN prefix count (the family has no received-routes counter, so it is
+    skipped): the count would read 0 and pass max or exact: 0. Refused before deploying, as on EOS."""
+    from netdryrun.config import Check
+    lab = Lab([], nodes={"r1": N("r1", "srl", "x"), "r2": N("r2", "linux", "frr")})
+    evpn = Check("bgp_prefixes", {"node": "r1", "neighbor": "10.0.0.2", "max": 0, "afi": "evpn"}, "c", 30)
+    with pytest.raises(DriverError):
+        drv.check_supported(lab, evpn)
+    with pytest.raises(DriverError):
+        drv.check_supported(lab, replace(evpn, params={**evpn.params, "node": "r2"}), "srlinux")
+    drv.check_supported(lab, replace(evpn, params={**evpn.params, "afi": "ipv6-unicast"}))
+    drv.check_supported(lab, replace(evpn, params={**evpn.params, "node": "r2"}))   # FRR reads EVPN counts
 
 
 def test_check_supported_prefix_counts(monkeypatch):
@@ -558,7 +573,9 @@ def test_srl_bgp_neighbors():
     lab = Lab([("neighbor", SRL_NBR)])
     obs = SrlDriver(lab, "r1").bgp_neighbors()
     assert lab.lines() == ["sr_cli --output-format json info from state /network-instance default protocols bgp neighbor *"]
+    # evpn has no received-routes counter: not in the counts, which is why check_supported refuses afi: evpn here
     assert obs.value["10.0.0.2"] == BgpNeighbor("10.0.0.2", "established", {"ipv4-unicast": 4, "ipv6-unicast": 4})
+    assert "evpn" in SrlDriver.unsupported_afis
     assert obs.value["2001:db8::1"] == BgpNeighbor("2001:db8:0::1", "idle", {})
     lab = Lab([("neighbor", SRL_NBR)])
     SrlDriver(lab, "r1").bgp_neighbors("red")

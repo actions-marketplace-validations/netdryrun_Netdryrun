@@ -55,7 +55,7 @@ def parse_bgp_neighbors(text: str) -> dict[str, BgpNeighbor]:
             raise unexpected(NEIGHBORS_CMD, f"{addr}: no afi-safi list")
         prefixes = {}
         for af in families:
-            if "received-routes" in af:  # families without counters (evpn) are skipped
+            if "received-routes" in af:  # families without counters (evpn) are skipped; see unsupported_afis
                 # accepted = received minus rejected by import policy (matches FRR's acceptedPrefixCounter)
                 prefixes[str(af["afi-safi-name"])] = (as_int(NEIGHBORS_CMD, af["received-routes"])
                                                       - as_int(NEIGHBORS_CMD, af.get("rejected-routes", 0)))
@@ -168,6 +168,9 @@ def unread_path(row: dict) -> BgpPath:
 
 class SrlDriver(Driver):
     name = "srlinux"
+    # bgp_neighbors reads received-routes counters, which SR Linux has for IPv4 and IPv6 unicast but not for
+    # evpn (skipped): an EVPN count would always read 0, which passes max and exact: 0
+    unsupported_afis = frozenset({"evpn"})
 
     def _cli(self, command: str, evidence: list[dict]) -> str:
         return self._exec(["sr_cli", "--output-format", "json", command], evidence)

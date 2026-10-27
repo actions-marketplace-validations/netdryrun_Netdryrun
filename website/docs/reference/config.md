@@ -91,7 +91,7 @@ The number of prefixes accepted from a neighbor is within a range. Accepted mean
 | `min` | one of `min`, `max`, `exact` | | Lower bound, inclusive |
 | `max` | one of `min`, `max`, `exact` | | Upper bound, inclusive |
 | `exact` | one of `min`, `max`, `exact` | | Exact count |
-| `afi` | no | `ipv4-unicast` | Address family: exactly one of `ipv4-unicast`, `ipv6-unicast` or `evpn` (case-insensitive). `evpn` is not supported on Arista EOS |
+| `afi` | no | `ipv4-unicast` | Address family: exactly one of `ipv4-unicast`, `ipv6-unicast` or `evpn` (case-insensitive). `evpn` is supported on FRR and SONiC only, not on SR Linux or Arista EOS |
 
 Rules:
 
@@ -101,7 +101,7 @@ Rules:
 - All three are non-negative integers.
 - `min: 0` on its own is refused: it always passes. Use `min: 1` or more, or add `max`.
 - Any other `afi` is refused (from 0.3.1). An address family the drivers don't report would read as 0 prefixes, which passes `max` and `exact: 0`.
-- `afi: evpn` on an Arista EOS node is refused before the lab deploys (exit code `2`): the EOS driver reads only the IPv4 and IPv6 unicast counts, so an EVPN count would always read 0.
+- `afi: evpn` on an SR Linux or Arista EOS node is refused before the lab deploys (exit code `2`): those drivers read only the IPv4 and IPv6 unicast counts (SR Linux has no received-routes counter for EVPN), so an EVPN count would always read 0. SR Linux refuses it from 0.3.1; before, the count read 0 and passed `max`.
 - The session must be `established`. Counters reset to 0 when a session drops, so a count from a down session would satisfy `max` by accident; Netdryrun fails the check instead.
 - If the session is established but the address family reports nothing, the count is 0.
 - A check with `max` or `exact` is a post-convergence check. A check with only `min` is a positive check.
@@ -339,7 +339,7 @@ A driver turns device state into a common shape. Netdryrun detects it from the t
 | Arista EOS | `Cli -c "show ... \| json"`; `bgp_route` from `show ip bgp <prefix> vrf <vrf>` (the best path is the `active` one) |
 | SONiC | the FRR commands, through `vtysh` inside the container |
 
-If a driver can't read what a check asks for, the run stops before deploying (exit code `2`) instead of guessing: "`<key>` is not supported on `<driver>`" for a `bgp_route` attribute (today every driver reads every attribute), and "afi evpn is not supported on eos" for an EVPN prefix count on Arista EOS.
+If a driver can't read what a check asks for, the run stops before deploying (exit code `2`) instead of guessing: "`<key>` is not supported on `<driver>`" for a `bgp_route` attribute (today every driver reads every attribute), and "afi evpn is not supported on eos" (or `srlinux`) for an EVPN prefix count on Arista EOS or SR Linux.
 
 Every command and its raw output is kept in the [JSON report](cli.md#json).
 
