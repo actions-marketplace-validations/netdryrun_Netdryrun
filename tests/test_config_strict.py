@@ -209,7 +209,7 @@ def test_yaml_merge_keys_still_work():
 
 
 def test_bad_yaml_is_a_config_error(tmp_path):
-    with pytest.raises(ConfigError, match="invalid YAML"):
+    with pytest.raises(ConfigError, match="not valid YAML"):
         load(write(tmp_path, "lab: topo.clab.yml\nchecks: [\n"))
 
 

@@ -433,7 +433,11 @@ def load_yaml(text: str, source: str = "<yaml>") -> Any:
     try:
         return yaml.load(text, Loader=_StrictLoader)  # a SafeLoader subclass: no arbitrary objects
     except yaml.YAMLError as e:
-        raise ConfigError(f"{source}: invalid YAML: {e}") from None
+        # one line, with the position: PyYAML's own message spans several lines with a caret drawing
+        mark = getattr(e, "problem_mark", None)
+        where = f" at line {mark.line + 1}, column {mark.column + 1}" if mark is not None else ""
+        problem = getattr(e, "problem", None) or str(e).splitlines()[0]
+        raise ConfigError(f"{source}: not valid YAML{where}: {' '.join(str(problem).split())}") from None
 
 
 def load(path: str | Path) -> Config:

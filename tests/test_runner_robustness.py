@@ -388,7 +388,7 @@ def test_mcp_server_destroys_running_labs_on_sigterm(monkeypatch):
 @pytest.mark.parametrize("text,message", [
     ("lab: t.clab.yml\nchecks: [\n", "not valid YAML"),
     ("lab: t.clab.yml\ntimeout: 2m\nchecks:\n  - {type: bgp_session, node: r1, neighbor: 10.0.0.2}\n",
-     "timeout must be a number of seconds"),
+     "timeout must be a positive number of seconds"),
     ("lab: t.clab.yml\nnodes: [r1]\nchecks:\n  - {type: bgp_session, node: r1, neighbor: 10.0.0.2}\n",
      "nodes must be a mapping"),
 ])
