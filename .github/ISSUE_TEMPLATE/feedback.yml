@@ -24,6 +24,15 @@ body:
         - It ran, but the result wasn't useful
         - Other
     validations: {required: true}
+  - type: dropdown
+    id: again
+    attributes:
+      label: Will you keep using it?
+      options:
+        - Yes, I added it to CI (it runs on pull requests)
+        - Yes, I'll run it by hand before changes
+        - Maybe, if something changes (say what below)
+        - No
   - type: textarea
     id: friction
     attributes:
