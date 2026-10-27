@@ -1808,23 +1808,44 @@ It deploys the lab with the *before* configs, waits for a stable snapshot, destr
 
 **Explained is not the same as safe.** The report echoes the declared intent at the top, for a human to review: an intent that declares a leak explains the leak. `verify` never prints `SAFE TO PROCEED`. A verdict covers the observed control-plane state of this lab (sessions, RIB, BGP paths and advertisements), nothing else.
 
-**The intent must come from outside the change**: the ticket, the operator, or the base branch. A pass is never earned by copying the undeclared items into the intent.
+**The intent must come from outside the change**: the ticket, the operator, or the base branch. A pass is never earned by copying the undeclared items into the intent. The report says who supplied it (`intent.supplied_by`: `cli` from the command line). When the intent file itself differs between `--before` and `--after` (the change edits its own intent), every report carries the warning "intent edited in the same change: needs a code-owner review".
 
 ## Options
 
 | Option | Default | |
 |---|---|---|
-| `--before`, `--after` | required | The config folder the topology binds, as a directory or a git ref. For a ref, the folder at the same path in that ref's tree is used, and the topology file in the ref must be byte-identical to the one given (exit code `2` otherwise: verify compares configs on one topology). A directory wins over a ref of the same name. |
+| `--before`, `--after` | required | One side each: a git ref or a directory. A **git ref** is the repository's whole tree at that ref, and the topology file in it must be byte-identical to the one given (exit code `2` otherwise: verify compares configs on one topology). A **directory** stands for the folder that holds the topology and every file it binds (for `lab/topo/t.clab.yml` binding `../configs/r1.conf`, a copy of `lab/`, with `configs/r1.conf` in it). A directory wins over a ref of the same name. See [How each side is built](#how-each-side-is-built). |
 | `--intent` | required | The intent file. |
 | `--json FILE` | | Write the `netdryrun.verify/v1` report. |
-| `--guards FILE` | | The standing guards (a `netdryrun.yml`), run on the *after* lab; they must pass. When `--before` is a git ref, the file is read from that ref (the base), never from the change. Its `nodes:` settings (`driver`, `setup`) apply to both labs. |
-| `--config-dir DIR` | detected | The folder `--before`/`--after` replace, relative to the topology. By default, the one folder every relative bind of the topology is in (`.` if they sit next to it). |
-| `--unobserved NODE` | | A node without a routing stack (a host). Repeat for several. A node verify can't classify is an error, never silently skipped. Bridges are never observed. |
-| `--settle` | `15` | Seconds between the two snapshots that must be identical. |
+| `--guards FILE` | see below | The standing guards (a `netdryrun.yml`), run on the *after* lab; they must pass. Its `nodes:` settings (`driver`, `setup`) apply to both labs. See [Standing guards](#standing-guards). |
+| `--config-dir DIR` | | With directory sides: the folder each directory stands for, relative to the topology (for example `configs`), when the directories hold only that folder. Every bind must then resolve inside it. With a git ref, it is only checked to exist in the ref. |
+| `--unobserved NODE` | | A node without a routing stack (a host). Repeat for several. A node verify can't classify is an error, never silently skipped: a `linux` node with no known routing image, and the host kinds (`host`, `ext-container`, `k8s-kind`), are refused unless named here. Bridges are never observed. |
+| `--settle` | `15` | Seconds between the two snapshots that must be identical. Must exceed the slowest MRAI or `update-delay` in the lab. |
 | `--timeout` | `300` | Seconds to reach a stable snapshot, per lab. |
 | `--hold` | `10` | The standing guards' hold window. |
 | `--allow-unhealthy-baseline` | | Compare even when sessions are down in the *before* lab. |
 | `--keep` | | Leave the *after* lab running, to run the `next_diagnostic` commands. |
+
+### Standing guards
+
+The standing guards catch what an intent can't: an intent that declares a leak explains the leak, and only a guard from the base branch fails it. They are read from the *before* side, never from the change:
+
+| `--before` | `--guards` | Guards used | `guards_source` |
+|---|---|---|---|
+| git ref | not given | the `netdryrun.yml` next to the topology in that ref, when one exists | `before-ref` (or `none`) |
+| git ref | given | that path, read from the ref (exit code `2` if it isn't there) | `before-ref` |
+| directory | not given | none: a `netdryrun.yml` in the directory is not used | `none` |
+| directory | given | that path | `explicit` |
+
+With no guards, the report's `warnings` and the verdict line say "no standing guards ran".
+
+### How each side is built
+
+Each side is built in its own temporary folder, never shared with the other side or with your working tree: the whole repository tree at the ref (`git archive`), or the whole directory. Every bind and `startup-config` of the topology is then resolved inside that side's tree, the way containerlab resolves it: relative to the topology's folder, with `${VAR}`, `~`, `..` and symlinks followed.
+
+- **A bind that resolves outside the side's tree is an error** (exit code `2`): an absolute path, `~/...`, a variable pointing elsewhere, or a symlink leading out would be the same file on both sides.
+- A bound file missing from a side is an error. With a git ref, a bound file left out of `git archive` by `export-ignore` in `.gitattributes` is an error too, and the message says so.
+- **Self-check before booting:** verify hashes every bound file on each side, checks that it holds that side's own bytes, and prints which bound files differ between the sides. If the sides differ in bound files but every bound file hashes the same in the two lab folders, it stops with "both sides resolved to the same configs" (exit code `2`).
 
 ## The intent file
 
@@ -1837,14 +1858,14 @@ intent:
   - prefix: 203.0.113.0/24
     best_path_on: edge1
     to: {local_pref: 200}
-  - session: {node: edge1, neighbor: 10.0.9.2}
+  - session: {node: edge1, neighbor: 10.0.9.2, afi: ipv4-unicast}
     goes: down
   - prefix: 192.0.2.128/25
     disappears_from: [cust1]
 allow_anywhere: ["10.200.*.0/24"]
 ```
 
-`intent: []` declares that nothing changes. A file without `intent:`, an unknown key, a wrong type, a prefix with host bits, two lines about the same route on the same node, or a node that is not in the topology is an error (exit code `2`).
+`intent: []` declares that nothing changes. A file without `intent:`, an unknown key, a wrong type, a prefix with host bits, a session line without `afi:`, two lines about the same route on the same node, or a node that is not in the topology is an error (exit code `2`). The whole intent is validated before any lab boots.
 
 ### appears_on
 
@@ -1880,7 +1901,7 @@ intent:
 
 One meaning: **every listed value must equal exactly after the change, and every attribute not listed stays frozen.** If the winner changes to another neighbor's path, `from`, `next_hop` and the AS path change too, and each must be listed. At least one listed value must actually change. `to:` accepts `from`, `next_hop`, `as_path`, `origin`, `local_pref`, `med`, `weight`, `communities`, `ext_communities`, `large_communities`, `cluster_list` and `originator_id`.
 
-It explains, on that node: the best flag moving between paths; changes to the old and new best paths in the listed attributes only; the BGP RIB entry's next hops (when `next_hop` is listed) or metric (when `med` is); and advertisements of the prefix, by the node or to it, that differ only in listed attributes and carry the new best path's values. A downstream node whose best path changes needs its own line. A lost backup path is never explained by a best-path line.
+It explains, on that node: the best flag moving between paths; changes to the new best path in the listed attributes only, to exactly the declared values (every other path, the old best included, stays frozen apart from its best flag); the BGP RIB entry's next hops (when `next_hop` is listed) or metric (when `med` is); and advertisements of the prefix, by the node or to it, that differ only in listed attributes and carry the new best path's values. A downstream node whose best path changes needs its own line. A lost backup path is never explained by a best-path line.
 
 ### session ... goes: down
 
@@ -1890,7 +1911,7 @@ intent:
     goes: down
 ```
 
-The session was established before and isn't after (or is gone). It covers both ends of that one session when both are lab nodes, and **only the routes learned over it**: the paths, received routes and advertisements over the session in its address family, and the RIB entries of prefixes that were learned only over it and are now gone. The report lists them. A failover to a backup path is a best-path change on that node and needs its own line; so does a route disappearing from another node. `afi:` is required when the session carries several address families (one line per family).
+The session was established before, is still configured after, and isn't established. **A neighbor deleted from the config is a different difference, `session removed`**, which `goes: down` never covers (the line doesn't happen, and the removed session is undeclared). It covers both ends of that one session when both are lab nodes, and **only the routes learned over it**: the paths, received routes and advertisements over the session in its address family, and the RIB entries of prefixes that were learned only over it and are now gone. The report lists them. A failover to a backup path is a best-path change on that node and needs its own line; so does a route disappearing from another node. `afi:` is always required (one line per family), so the whole intent is validated before anything boots.
 
 ### advertisement
 
@@ -1905,6 +1926,18 @@ intent:
 
 `to:` follows the `best_path_on` rule (listed exact, the rest frozen); `from` can't be set.
 
+`goes: added` has an attribute limit too. **Without `with:`**, the new advertisement must carry the node's own best path for the prefix: no outbound rewrite. Its AS path, origin, MED, communities (standard, extended and large) and, where it is sent, local preference must equal the best path's. **With `with:`**, the listed attributes must equal the given values, and the rest still equal the best path's:
+
+```yaml
+intent:
+  - prefix: 10.100.0.0/24
+    advertisement: {node: edge1, neighbor: 198.51.100.9}
+    goes: added
+    with: {as_path: "65101 65101 65101", communities: [no-export]}   # an outbound prepend and no-export
+```
+
+`with:` accepts the `to:` attributes and goes with `goes: added` only. A node without a BGP best path for the prefix can't satisfy `goes: added`.
+
 ### allow_anywhere
 
 ```yaml
@@ -1912,7 +1945,13 @@ intent: []
 allow_anywhere: ["10.200.*.0/24", {prefix: 10.9.0.0/16, vrf: cust}]
 ```
 
-Accepts every difference for the listed prefixes, on every node: churn you accept. An entry matches a prefix exactly, or is an explicit glob on the prefix text (`*`, `?`, `[0-3]`) that names at least the first octet and a prefix length. It never matches by containment: `10.0.0.0/8` doesn't cover `10.1.0.0/16`. The report lists every prefix each glob matched. Sessions are never covered.
+Accepts every difference for the listed prefixes, on every node: churn you accept. An entry is an exact prefix, or a glob:
+
+- `*` stands for **one whole octet** (IPv4) or **one whole hextet** (IPv6), never part of one and never across octets. There are no other wildcards.
+- **The prefix length is always explicit** and matched exactly: `10.200.*.0/24` matches `10.200.7.0/24`, not `10.200.7.0/25`.
+- **At most /16 of wildcard reach for IPv4 and /48 for IPv6:** the first two octets (three hextets) are written literally. `10.200.*.0/24` and `2001:db8:1:*::/64` are accepted; `10.*.0.0/16`, `10.*/*` and `2001:db8:*::/48` are errors (exit code `2`).
+
+It never matches by containment: `10.0.0.0/8` doesn't cover `10.1.0.0/16`. The report lists every route each entry explained (node, VRF and prefix, under `allowed[].routes`) and every item. Sessions are never covered.
 
 `allow_anywhere` weakens the verdict, and every report that uses it carries a warning: a change that adds or widens it should need a second approver (CODEOWNERS). The CLI can't enforce that.
 
@@ -1920,7 +1959,8 @@ Accepts every difference for the listed prefixes, on every node: churn you accep
 
 After convergence, for every FRR node, in every VRF:
 
-- **BGP sessions**: (neighbor, VRF) → state, ASNs, address families, local address. Prefix counts are derived and never matched on their own.
+- **BGP sessions**: (neighbor, VRF) → established or not, ASNs, address families, local address. The raw FSM state (`active`, `connect`, `idle`) is kept in the evidence but never compared: a session going from `active` to `idle` is no change. Which address families have `soft-reconfiguration inbound` is compared too. Prefix counts are derived and never matched on their own.
+- **VRFs**: the VRFs each node has. A VRF added or removed is a diff item (`kind: vrf`).
 - **Routes, every protocol** (`kernel`, `connected`, `local`, `static`, `ospf`, `isis`, `bgp` and the rest): (VRF, AFI, SAFI, prefix, protocol) → selected or not, installed in the FIB or not, administrative distance, metric (the OSPF cost, for example), and the next hops with their resolution (recursive next hops keep the next hops that resolve them; IPv6 link-local next hops keep their interface).
 - **Every BGP path per prefix**, not only the best: (neighbor or `local`, add-path ID) → best, multipath, valid, origin, AS path, next hops (accessible, IGP metric), local preference, MED, weight, standard, extended and large communities, cluster list, originator ID, atomic aggregate, aggregator.
 - **Adj-RIB-Out per session**: what each node advertises to each established neighbor, with the advertised attributes, including neighbors that aren't lab nodes.
@@ -1934,7 +1974,9 @@ FRR commands: `show vrf`, `show bgp vrf all neighbors json`, `show ip route vrf 
 
 ### Convergence
 
-A snapshot is taken when two full snapshots `--settle` seconds apart are identical: every session established or stably not, prefix counts stable, every route and path unchanged, and every node's RIB populated. A command that fails while daemons start is retried until `--timeout`; then the snapshot is unreadable (exit code `2`). If the snapshots never match within `--timeout`, the result is `inconclusive`, naming what kept moving.
+A snapshot is taken when two full snapshots `--settle` seconds apart are identical: every configured session established, or stably not established, on both samples (compared as established or not), prefix counts stable, and every route and path unchanged. Until then a node isn't ready while its RIB is empty or, if its config has `router bgp`, while it has no BGP state at all (no session and no BGP path: bgpd is answering but hasn't loaded its config). A session that is not established in the *before* snapshot makes the baseline unhealthy (exit code `3`) unless `--allow-unhealthy-baseline`.
+
+**`--settle` must exceed the slowest MRAI (advertisement interval) or `update-delay` in the lab.** Two snapshots `settle` apart can't see an update that arrives later than that, so a shorter `settle` can take the snapshot before the last update. A command that fails while daemons start is retried until `--timeout`; then the snapshot is unreadable (exit code `2`). If the snapshots never match within `--timeout`, the result is `inconclusive`, naming what kept moving.
 
 ## The report: netdryrun.verify/v1
 
