@@ -1,0 +1,48 @@
+{
+  "ticket": "T08-review-localpref",
+  "kind": "review",
+  "valid": false,
+  "truth": {
+    "verdict": "harmful",
+    "decision": [
+      "dont_apply"
+    ]
+  },
+  "answer": {
+    "verdict": "inconclusive",
+    "decision": "rerun",
+    "netdryrun_status": null,
+    "changed_files": [],
+    "reason": "Unable to run Netdryrun MCP tools to validate the change. Static analysis suggests the route-map sets local-preference 200 for all routes from r3, which would break the check requiring r1 to prefer the direct path to r2's LAN (local-pref 100) over the path through r3 (local-pref 200). Netdryrun must be run to confirm."
+  },
+  "completed_unattended": true,
+  "verdict_ok": false,
+  "decision_ok": false,
+  "changed_files": [],
+  "added_files": [],
+  "rule_breaks": [],
+  "hidden_rerun": null,
+  "hidden_ok": true,
+  "solved": false,
+  "tool_calls": 15,
+  "netdryrun_calls": 0,
+  "lab_runs": 0,
+  "tools": {
+    "Glob": 3,
+    "Grep": 1,
+    "Read": 9,
+    "WebFetch": 2
+  },
+  "turns": 16,
+  "wall_s": 113.7,
+  "agent_duration_s": 112.3,
+  "cost_usd": 0.13236775,
+  "model": "claude-haiku-4-5-20251001",
+  "claude_code_version": "2.1.116",
+  "mcp_status": [
+    "failed"
+  ],
+  "permission_denials": [],
+  "tool_errors": [],
+  "timed_out": false
+}

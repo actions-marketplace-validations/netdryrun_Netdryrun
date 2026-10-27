@@ -1,0 +1,48 @@
+{
+  "ticket": "T03-review-open-filters",
+  "kind": "review",
+  "valid": false,
+  "truth": {
+    "verdict": "harmful",
+    "decision": [
+      "dont_apply"
+    ]
+  },
+  "answer": {
+    "verdict": "harmful",
+    "decision": "dont_apply",
+    "netdryrun_status": null,
+    "changed_files": [],
+    "reason": "The change removes critical route filters that prevent route leaks. While it allows 10.101.0.0/24 through, it also allows the illegitimate 8.8.8.0/24 prefix and causes upstream/peer route leaks that violate explicit netdryrun leak guard checks. The proper fix should update the prefix-list, not remove the match statement."
+  },
+  "completed_unattended": true,
+  "verdict_ok": true,
+  "decision_ok": true,
+  "changed_files": [],
+  "added_files": [],
+  "rule_breaks": [],
+  "hidden_rerun": null,
+  "hidden_ok": true,
+  "solved": false,
+  "tool_calls": 13,
+  "netdryrun_calls": 0,
+  "lab_runs": 0,
+  "tools": {
+    "Glob": 1,
+    "Grep": 2,
+    "Read": 9,
+    "WebFetch": 1
+  },
+  "turns": 14,
+  "wall_s": 74.5,
+  "agent_duration_s": 73.4,
+  "cost_usd": 0.0689408,
+  "model": "claude-haiku-4-5-20251001",
+  "claude_code_version": "2.1.116",
+  "mcp_status": [
+    "failed"
+  ],
+  "permission_denials": [],
+  "tool_errors": [],
+  "timed_out": false
+}

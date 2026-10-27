@@ -1,0 +1,60 @@
+{
+  "ticket": "T02-transit-only",
+  "kind": "implement",
+  "valid": false,
+  "truth": {
+    "verdict": "safe",
+    "decision": [
+      "apply"
+    ]
+  },
+  "answer": {
+    "verdict": "safe",
+    "decision": "rerun",
+    "netdryrun_status": null,
+    "changed_files": [
+      "configs/edge1.conf"
+    ],
+    "reason": "Configuration changes are logically correct and implement the transit-only policy as required. Requires Netdryrun validation (MCP tools unavailable) before application."
+  },
+  "completed_unattended": true,
+  "verdict_ok": true,
+  "decision_ok": false,
+  "changed_files": [
+    "configs/edge1.conf"
+  ],
+  "added_files": [],
+  "rule_breaks": [],
+  "hidden_rerun": null,
+  "hidden_ok": true,
+  "solved": false,
+  "tool_calls": 19,
+  "netdryrun_calls": 0,
+  "lab_runs": 0,
+  "tools": {
+    "Edit": 2,
+    "Glob": 3,
+    "Read": 9,
+    "WebFetch": 2,
+    "dry_run": 2,
+    "netdryrun_dry_run": 1
+  },
+  "turns": 20,
+  "wall_s": 125.5,
+  "agent_duration_s": 124.3,
+  "cost_usd": 0.15663745,
+  "model": "claude-haiku-4-5-20251001",
+  "claude_code_version": "2.1.116",
+  "mcp_status": [
+    "failed"
+  ],
+  "permission_denials": [],
+  "tool_errors": [
+    "EISDIR: illegal operation on a directory, read 'C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku2-fixed\\T02-transit-only'",
+    "<tool_use_error>Error: No such tool available: dry_run</tool_use_error>",
+    "<tool_use_error>Error: No such tool available: netdryrun_dry_run</tool_use_error>",
+    "<tool_use_error>Error: No such tool available: dry_run</tool_use_error>",
+    "EISDIR: illegal operation on a directory, read 'C:\\Users\\manag\\.claude\\projects\\C--Users-manag-AppData-Local-Temp-ndr-eval-haiku2-fixed-T02-transit-only\\memory'"
+  ],
+  "timed_out": false
+}

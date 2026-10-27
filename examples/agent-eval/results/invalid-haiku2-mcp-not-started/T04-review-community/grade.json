@@ -1,0 +1,52 @@
+{
+  "ticket": "T04-review-community",
+  "kind": "review",
+  "valid": false,
+  "truth": {
+    "verdict": "harmful",
+    "decision": [
+      "dont_apply"
+    ]
+  },
+  "answer": {
+    "verdict": "inconclusive",
+    "decision": "rerun",
+    "netdryrun_status": null,
+    "changed_files": [
+      "configs/edge1.conf"
+    ],
+    "reason": "The change appears syntactically correct and logically sound, but Netdryrun MCP tools are not accessible in the current environment. Cannot provide the evidence-based verdict required per AGENTS.md instructions."
+  },
+  "completed_unattended": true,
+  "verdict_ok": false,
+  "decision_ok": false,
+  "changed_files": [],
+  "added_files": [],
+  "rule_breaks": [],
+  "hidden_rerun": null,
+  "hidden_ok": true,
+  "solved": false,
+  "tool_calls": 17,
+  "netdryrun_calls": 0,
+  "lab_runs": 0,
+  "tools": {
+    "Glob": 5,
+    "Read": 9,
+    "WebFetch": 3
+  },
+  "turns": 18,
+  "wall_s": 107.0,
+  "agent_duration_s": 105.7,
+  "cost_usd": 0.12248355000000001,
+  "model": "claude-haiku-4-5-20251001",
+  "claude_code_version": "2.1.116",
+  "mcp_status": [
+    "failed"
+  ],
+  "permission_denials": [],
+  "tool_errors": [
+    "EISDIR: illegal operation on a directory, read 'C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku2-fixed\\T04-review-community'",
+    "Request failed with status code 404"
+  ],
+  "timed_out": false
+}

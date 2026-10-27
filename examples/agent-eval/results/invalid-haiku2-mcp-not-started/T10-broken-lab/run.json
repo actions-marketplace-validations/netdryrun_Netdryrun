@@ -1,0 +1,12 @@
+{
+  "ticket": "T10-broken-lab",
+  "run": "haiku2-fixed",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_s": 69.9,
+  "folder": "C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku2-fixed\\T10-broken-lab",
+  "model_requested": "haiku",
+  "path_style": "windows",
+  "netdryrun": "C:/Program Files/Git/home/dmin/.venvs/ndr-eval-branch/bin/netdryrun",
+  "agents_ref": "0975193"
+}
