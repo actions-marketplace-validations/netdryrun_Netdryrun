@@ -1,0 +1,6 @@
+kind: review
+truth:
+  verdict: safe            # prefix limits above today's counts, logging only
+  decision: [apply]
+editable: []
+netdryrun_status: passed

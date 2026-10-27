@@ -1,0 +1,12 @@
+{
+  "ticket": "T01-new-block",
+  "run": "haiku3-fixed",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_s": 197.3,
+  "folder": "C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\haiku3-fixed\\T01-new-block",
+  "model_requested": "haiku",
+  "path_style": "windows",
+  "netdryrun": "/home/<user>/.venvs/ndr-eval-branch/bin/netdryrun",
+  "agents_ref": "0975193"
+}

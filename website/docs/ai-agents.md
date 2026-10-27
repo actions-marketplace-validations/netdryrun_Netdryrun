@@ -52,6 +52,8 @@ netdryrun:
 
 (Claude Code 2.1.116. Use your own distribution name and path; `which netdryrun` inside WSL prints it.)
 
+From Netdryrun 0.3.1, the tools accept the Windows path of a lab folder (`C:\labs\edge`) as well as the WSL one (`/mnt/c/labs/edge`); with 0.3.0, pass `/mnt/c/...`. That way the agent can pass the path its own file tools use. Before this, an agent on Windows had to translate paths itself, and in the [agent evaluation](#measured-ten-tickets-worked-unattended) a smaller model did not.
+
 `dry_run` takes 30 seconds to several minutes. Start Claude Code with a longer tool timeout, in milliseconds, so it does not give up first:
 
 ```bash
@@ -120,6 +122,28 @@ The repository's [`AGENTS.md`](https://github.com/netdryrun/netdryrun/blob/main/
 
 The agent did not make the tempting leaky change, so this run did not show Netdryrun catching a mistake (`demo.sh` shows that). It shows the workflow end to end: the agent found the tool, ran the network team's checks through MCP, and its proposal came with a verdict from a real lab. It is one run of one model on one ticket.
 
+## Measured: ten tickets worked unattended
+
+One good run is an anecdote, so on 2026-10-27 we measured. [`examples/agent-eval`](https://github.com/netdryrun/netdryrun/tree/main/examples/agent-eval) has ten tickets on the two FRR example labs: changes to make, colleagues' changes to review (some fine, some leaking routes or setting the wrong attribute while sessions and pings stay up), a request that is itself a route leak, and one broken lab. Each has a hidden grader. The expected answers were [pre-registered](https://github.com/netdryrun/netdryrun/blob/main/examples/agent-eval/PREREGISTRATION.md) before anything ran. A fresh headless Claude Code agent worked each ticket alone, with only `AGENTS.md`, this page and the MCP tools: no shell, no project memory, no human.
+
+| Agent (Claude Code 2.1.116) | Netdryrun | Solved | Misses |
+|---|---|---|---|
+| `claude-opus-4-7`, two runs | 0.3.0 | 10 / 10, 10 / 10 | none |
+| `claude-haiku-4-5`, one run (not pre-registered: the prediction covered only the default model) | 0.3.0 | 3 / 10 | 5 ended on a Windows/WSL path mix-up (below); T09, T06 |
+| `claude-haiku-4-5`, two runs (not pre-registered) | with the fixes below | 9 / 10 (8 counted strictly, see T07 in RESULTS.md), 8 / 10 | T09 both times; T10 once |
+
+Solved means: finished unattended, the right verdict (safe, harmful or inconclusive), the right decision (apply, don't apply, rerun), no file changed that the ticket forbids, and, for a change it wrote, an independent rerun with extra hidden checks passes.
+
+What failed, and what changed because of it:
+
+- **Paths on Windows.** Claude Code on Windows with the server in WSL is the setup this page documents. The smaller model passed the WSL path (`/mnt/c/...`) to its Windows file tools and was refused, and Netdryrun 0.3.0 refused the Windows path. The tools now accept both.
+- **A pass that covers too little (T09).** A "pure refactor" to `redistribute connected` also announces r1's link subnets. The given checks don't look at that, so Netdryrun says `passed`. The smaller model trusted the pass every time. The larger one caught it by reading the diff, not with Netdryrun. `record_baseline` would have shown it, and no agent used it. `AGENTS.md` now says a "no behavior change" ticket needs a baseline.
+- **A broken lab that says `failed` (T10).** With `bgpd` off on every router, the result is `failed`, not `inconclusive`: the inconclusive rule is conservative. Failed checks that never got usable state now carry `"unready": true`. Once, the smaller model turned `bgpd` back on in a file the ticket forbade and said apply.
+- **No fix-and-rerun loop.** No agent made a wrong change and then fixed it to a pass: the larger model got every change right first time. So this doesn't measure that loop.
+- **A non-deterministic lab.** One wrong-looking change (a bare `network 192.168.0.0/16`) passed 5 of 8 runs. A single `passed` can be luck when the lab itself varies.
+
+Ten small tickets written by the tool's author, two models, at most two runs each: evidence about the docs and the tool surface, not a rate. Full results, transcripts and every miss: [RESULTS.md](https://github.com/netdryrun/netdryrun/blob/main/examples/agent-eval/RESULTS.md).
+
 ## Gate agent-made pull requests in CI
 
 An agent's own `dry_run` is a claim. Run the same checks again in CI, where the agent cannot change the result:
@@ -177,6 +201,7 @@ The server also exposes the last full JSON report as a resource, `netdryrun://re
   "passed": 5,
   "failed": 1,
   "error": null,
+  "inconclusive_reason": null,
   "lab": "ndr-frr-broken",
   "checks": [
     {"name": "r1: route 0.0.0.0/0 via bgp is absent", "passed": false,
@@ -189,6 +214,8 @@ The server also exposes the last full JSON report as a resource, `netdryrun://re
 
 (`checks` is shortened here; the real result lists every check.)
 
+A failed check also has `"unready": true` when every sample of it failed for lack of state: the command failed on the device, its output could not be read, or BGP had no neighbors at all. That points at the lab as much as at the change. The [inconclusive rule](reference/cli.md#when-a-run-is-inconclusive) is conservative, so a lab where a daemon never started can still come back `failed` when other nodes' route and ping checks read cleanly. If the `unready` failures and details such as `bgpd is not running` sit on nodes the change doesn't explain, report the lab problem; don't rewrite the change, and don't apply it.
+
 `verdict` is a separate field with one of three values:
 
 - `SAFE TO PROCEED` when `status` is `passed`
@@ -197,7 +224,7 @@ The server also exposes the last full JSON report as a resource, `netdryrun://re
 
 Tell the agent what to do with each verdict: propose the change only on `SAFE TO PROCEED`; on `DO NOT APPLY THIS CHANGE`, read the failed checks, fix the config and run again; on `INCONCLUSIVE`, rerun, and if it stays inconclusive, report that the lab does not come up instead of changing the config. [Troubleshooting](troubleshooting.md#inconclusive-the-lab-never-came-up) shows a real inconclusive run.
 
-The full evidence is written to `netdryrun-report.json` next to `netdryrun.yml`.
+The full evidence is written to `netdryrun-report.json` next to `netdryrun.yml`. Its format, `netdryrun.report/v1`, is defined by a JSON Schema: [`report-v1.json`](https://netdryrun.com/schemas/report-v1.json). The test suite validates reports from real lab runs against it.
 
 ## Safety model
 

@@ -1,0 +1,12 @@
+{
+  "ticket": "T07-aggregate",
+  "run": "haiku2-fixed",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_s": 293.2,
+  "folder": "C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\haiku2-fixed\\T07-aggregate",
+  "model_requested": "haiku",
+  "path_style": "windows",
+  "netdryrun": "/home/<user>/.venvs/ndr-eval-branch/bin/netdryrun",
+  "agents_ref": "0975193"
+}

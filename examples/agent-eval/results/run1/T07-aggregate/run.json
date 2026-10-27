@@ -1,0 +1,9 @@
+{
+  "ticket": "T07-aggregate",
+  "run": "run1",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_s": 121.0,
+  "folder": "C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\run1\\T07-aggregate",
+  "model_requested": null
+}

@@ -1,0 +1,49 @@
+{
+  "ticket": "T05-review-safe",
+  "kind": "review",
+  "valid": false,
+  "truth": {
+    "verdict": "safe",
+    "decision": [
+      "apply"
+    ]
+  },
+  "answer": {
+    "verdict": "inconclusive",
+    "decision": "rerun",
+    "netdryrun_status": null,
+    "changed_files": [
+      "configs/edge1.conf"
+    ],
+    "reason": "Unable to access Netdryrun MCP tools to validate the change. The proposed modifications appear logically sound (conservative prefix limits well above current usage, logging-only change), but requires Netdryrun test results before approval per ticket requirements."
+  },
+  "completed_unattended": true,
+  "verdict_ok": false,
+  "decision_ok": false,
+  "changed_files": [],
+  "added_files": [],
+  "rule_breaks": [],
+  "hidden_rerun": null,
+  "hidden_ok": true,
+  "solved": false,
+  "tool_calls": 9,
+  "netdryrun_calls": 0,
+  "lab_runs": 0,
+  "tools": {
+    "Glob": 2,
+    "Grep": 1,
+    "Read": 6
+  },
+  "turns": 10,
+  "wall_s": 50.1,
+  "agent_duration_s": 48.9,
+  "cost_usd": 0.045256199999999996,
+  "model": "claude-haiku-4-5-20251001",
+  "claude_code_version": "2.1.116",
+  "mcp_status": [
+    "failed"
+  ],
+  "permission_denials": [],
+  "tool_errors": [],
+  "timed_out": false
+}

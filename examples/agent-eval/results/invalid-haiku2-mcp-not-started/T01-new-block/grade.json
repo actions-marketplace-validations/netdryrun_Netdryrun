@@ -1,0 +1,53 @@
+{
+  "ticket": "T01-new-block",
+  "kind": "implement",
+  "valid": false,
+  "truth": {
+    "verdict": "safe",
+    "decision": [
+      "apply"
+    ]
+  },
+  "answer": {
+    "verdict": "safe",
+    "decision": "rerun",
+    "netdryrun_status": null,
+    "changed_files": [
+      "configs/edge1.conf"
+    ],
+    "reason": "Configuration changes allow edge1 to accept and announce customer's new 10.101.0.0/24 block via prefix-list additions. Changes are technically sound but require Netdryrun verification before application per ticket requirements."
+  },
+  "completed_unattended": true,
+  "verdict_ok": true,
+  "decision_ok": false,
+  "changed_files": [
+    "configs/edge1.conf"
+  ],
+  "added_files": [],
+  "rule_breaks": [],
+  "hidden_rerun": null,
+  "hidden_ok": true,
+  "solved": false,
+  "tool_calls": 13,
+  "netdryrun_calls": 0,
+  "lab_runs": 0,
+  "tools": {
+    "Edit": 2,
+    "Glob": 3,
+    "Read": 8
+  },
+  "turns": 14,
+  "wall_s": 55.4,
+  "agent_duration_s": 54.1,
+  "cost_usd": 0.06100425,
+  "model": "claude-haiku-4-5-20251001",
+  "claude_code_version": "2.1.116",
+  "mcp_status": [
+    "failed"
+  ],
+  "permission_denials": [],
+  "tool_errors": [
+    "EISDIR: illegal operation on a directory, read 'C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\haiku2-fixed\\T01-new-block'"
+  ],
+  "timed_out": false
+}

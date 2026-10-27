@@ -1,0 +1,12 @@
+{
+  "ticket": "T04-review-community",
+  "run": "haiku2-fixed",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_s": 107.0,
+  "folder": "C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\haiku2-fixed\\T04-review-community",
+  "model_requested": "haiku",
+  "path_style": "windows",
+  "netdryrun": "C:/Program Files/Git/home/<user>/.venvs/ndr-eval-branch/bin/netdryrun",
+  "agents_ref": "0975193"
+}

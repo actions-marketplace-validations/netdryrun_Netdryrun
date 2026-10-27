@@ -1,0 +1,9 @@
+{
+  "ticket": "T10-broken-lab",
+  "run": "run1",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_s": 342.7,
+  "folder": "C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\run1\\T10-broken-lab",
+  "model_requested": null
+}

@@ -1,0 +1,12 @@
+{
+  "ticket": "T05-review-safe",
+  "run": "haiku3-fixed",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_s": 66.3,
+  "folder": "C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\haiku3-fixed\\T05-review-safe",
+  "model_requested": "haiku",
+  "path_style": "windows",
+  "netdryrun": "/home/<user>/.venvs/ndr-eval-branch/bin/netdryrun",
+  "agents_ref": "0975193"
+}

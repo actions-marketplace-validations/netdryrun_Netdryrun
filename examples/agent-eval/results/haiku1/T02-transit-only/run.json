@@ -1,0 +1,9 @@
+{
+  "ticket": "T02-transit-only",
+  "run": "haiku1",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_s": 195.8,
+  "folder": "C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T02-transit-only",
+  "model_requested": "haiku"
+}

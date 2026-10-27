@@ -1,0 +1,46 @@
+{
+  "ticket": "T08-review-localpref",
+  "kind": "review",
+  "truth": {
+    "verdict": "harmful",
+    "decision": [
+      "dont_apply"
+    ]
+  },
+  "answer": {
+    "verdict": "harmful",
+    "decision": "dont_apply",
+    "netdryrun_status": "failed",
+    "changed_files": [],
+    "reason": "The inbound route-map on the r3 session sets local-preference 200 on all prefixes from r3, not just 192.168.3.0/24. Netdryrun shows r1 now reaches r2's LAN (192.168.2.0/24) via the longer path through r3 instead of the direct r2 link, breaking a standing policy check."
+  },
+  "completed_unattended": true,
+  "verdict_ok": true,
+  "decision_ok": true,
+  "changed_files": [],
+  "added_files": [],
+  "rule_breaks": [],
+  "hidden_rerun": null,
+  "hidden_ok": true,
+  "solved": true,
+  "tool_calls": 10,
+  "netdryrun_calls": 1,
+  "lab_runs": 1,
+  "tools": {
+    "Glob": 1,
+    "Read": 8,
+    "mcp__netdryrun__dry_run": 1
+  },
+  "turns": 11,
+  "wall_s": 207.9,
+  "agent_duration_s": 205.2,
+  "cost_usd": 0.20841449999999997,
+  "model": "claude-opus-4-7[1m]",
+  "claude_code_version": "2.1.116",
+  "mcp_status": [
+    "connected"
+  ],
+  "permission_denials": [],
+  "tool_errors": [],
+  "timed_out": false
+}

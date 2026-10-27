@@ -1,0 +1,9 @@
+{
+  "ticket": "T06-peer-wants-transit",
+  "run": "run2",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_s": 76.1,
+  "folder": "C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\run2\\T06-peer-wants-transit",
+  "model_requested": null
+}

@@ -1,0 +1,47 @@
+{
+  "ticket": "T04-review-community",
+  "kind": "review",
+  "valid": true,
+  "truth": {
+    "verdict": "harmful",
+    "decision": [
+      "dont_apply"
+    ]
+  },
+  "answer": {
+    "verdict": "harmful",
+    "decision": "dont_apply",
+    "netdryrun_status": "failed",
+    "changed_files": [],
+    "reason": "The proposed change uses 'set extcommunity rt' (extended community) instead of 'set community' (standard community). Netdryrun confirms routes lack the required 65200:100 community tag entirely. The change will not satisfy the upstream's requirement and would cause a service outage next week when they stop accepting untagged routes."
+  },
+  "completed_unattended": true,
+  "verdict_ok": true,
+  "decision_ok": true,
+  "changed_files": [],
+  "added_files": [],
+  "rule_breaks": [],
+  "hidden_rerun": null,
+  "hidden_ok": true,
+  "solved": true,
+  "tool_calls": 9,
+  "netdryrun_calls": 1,
+  "lab_runs": 1,
+  "tools": {
+    "Glob": 1,
+    "Read": 7,
+    "mcp__netdryrun__dry_run": 1
+  },
+  "turns": 10,
+  "wall_s": 168.6,
+  "agent_duration_s": 167.0,
+  "cost_usd": 0.04317245,
+  "model": "claude-haiku-4-5-20251001",
+  "claude_code_version": "2.1.116",
+  "mcp_status": [
+    "connected"
+  ],
+  "permission_denials": [],
+  "tool_errors": [],
+  "timed_out": false
+}

@@ -36,3 +36,37 @@ def test_tools_and_validate_over_stdio():
 def test_validate_reports_errors():
     _, text = asyncio.run(_call("validate", {"path": "/nonexistent"}))
     assert json.loads(text)["valid"] is False
+
+
+@pytest.mark.skipif(os.name != "posix", reason="the server runs on Linux")
+def test_windows_paths_reach_the_server_in_wsl(tmp_path, monkeypatch):
+    # Claude Code on Windows with the server in WSL: the agent's file tools know C:\lab, the server needs /mnt/c/lab
+    from netdryrun import mcp_server
+    (tmp_path / "c").mkdir()
+    monkeypatch.setattr(mcp_server, "WSL_MOUNTS", tmp_path)
+    assert mcp_server._host_path(r"C:\Users\me\lab") == f"{tmp_path}/c/Users/me/lab"
+    assert mcp_server._host_path("c:/Users/me/lab/netdryrun.yml") == f"{tmp_path}/c/Users/me/lab/netdryrun.yml"
+    assert mcp_server._host_path("/home/me/lab") == "/home/me/lab"
+    assert mcp_server._host_path("lab") == "lab"
+    assert mcp_server._host_path(r"Q:\lab") == r"Q:\lab"  # no such drive mounted: left as it is
+    lab = tmp_path / "c" / "lab"
+    lab.mkdir()
+    (lab / "topology.clab.yml").write_text("name: t\ntopology:\n  nodes:\n    r1: {kind: linux, image: frr}\n")
+    (lab / "netdryrun.yml").write_text("lab: topology.clab.yml\nchecks:\n  - {type: route, node: r1, prefix: 10.0.0.0/24}\n")
+    assert json.loads(mcp_server.validate(r"C:\lab"))["valid"] is True
+
+
+@pytest.mark.skipif(os.name != "posix", reason="the server runs on Linux")
+def test_windows_paths_stay_inside_netdryrun_mcp_root(tmp_path, monkeypatch):
+    # a Windows path is translated first, then held to NETDRYRUN_MCP_ROOT like any other: .. can't step outside
+    from netdryrun import mcp_server
+    monkeypatch.setattr(mcp_server, "WSL_MOUNTS", tmp_path)
+    for name in ("lab", "other"):
+        d = tmp_path / "c" / name
+        d.mkdir(parents=True)
+        (d / "topology.clab.yml").write_text("name: t\ntopology:\n  nodes:\n    r1: {kind: linux, image: frr}\n")
+        (d / "netdryrun.yml").write_text("lab: topology.clab.yml\nchecks:\n  - {type: route, node: r1, prefix: 10.0.0.0/24}\n")
+    monkeypatch.setenv("NETDRYRUN_MCP_ROOT", str(tmp_path / "c" / "lab"))
+    assert json.loads(mcp_server.validate(r"C:\lab"))["valid"] is True
+    out = json.loads(mcp_server.validate(r"C:\lab\..\other"))
+    assert out["valid"] is False and "outside NETDRYRUN_MCP_ROOT" in out["error"]

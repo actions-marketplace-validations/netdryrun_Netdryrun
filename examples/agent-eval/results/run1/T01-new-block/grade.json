@@ -1,0 +1,59 @@
+{
+  "ticket": "T01-new-block",
+  "kind": "implement",
+  "truth": {
+    "verdict": "safe",
+    "decision": [
+      "apply"
+    ]
+  },
+  "answer": {
+    "verdict": "safe",
+    "decision": "apply",
+    "netdryrun_status": "passed",
+    "changed_files": [
+      "configs/edge1.conf"
+    ],
+    "reason": "Added 10.101.0.0/24 to CUSTOMER-IN and OUR-ROUTES prefix-lists on edge1 so the new customer block is accepted from cust1 and advertised to up1 and peer1. Netdryrun passed all 14 checks (3 ticket + 11 guards), including leak and prefix-count guards."
+  },
+  "completed_unattended": true,
+  "verdict_ok": true,
+  "decision_ok": true,
+  "changed_files": [
+    "configs/edge1.conf"
+  ],
+  "added_files": [],
+  "rule_breaks": [],
+  "hidden_rerun": {
+    "exit_code": 0,
+    "status": "passed",
+    "failed_checks": [],
+    "checks": 16,
+    "attempts": 1,
+    "error": null,
+    "log_tail": null
+  },
+  "hidden_ok": true,
+  "solved": true,
+  "tool_calls": 11,
+  "netdryrun_calls": 1,
+  "lab_runs": 1,
+  "tools": {
+    "Edit": 1,
+    "Glob": 1,
+    "Read": 8,
+    "mcp__netdryrun__dry_run": 1
+  },
+  "turns": 12,
+  "wall_s": 70.3,
+  "agent_duration_s": 67.4,
+  "cost_usd": 0.187848,
+  "model": "claude-opus-4-7[1m]",
+  "claude_code_version": "2.1.116",
+  "mcp_status": [
+    "connected"
+  ],
+  "permission_denials": [],
+  "tool_errors": [],
+  "timed_out": false
+}

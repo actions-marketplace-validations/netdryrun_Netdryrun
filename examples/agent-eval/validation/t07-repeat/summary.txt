@@ -1,0 +1,18 @@
+r2 exit=1
+r1 exit=1
+r3 exit=0
+r4 exit=0
+r6 exit=0
+r5 exit=0
+r8 exit=0
+r7 exit=1
+  [FAIL] TICKET r2 gets 192.168.0.0/16 from r1 -- no BGP path (90.1s)
+  [FAIL] TICKET r2 gets 192.168.0.0/16 from r1 -- no BGP path (90.1s)
+  [PASS] TICKET r2 gets 192.168.0.0/16 from r1 -- best path: as-path '65001', next hop 10.
+  [PASS] TICKET r2 gets 192.168.0.0/16 from r1 -- best path: as-path '65001', next hop 10.
+  [PASS] TICKET r2 gets 192.168.0.0/16 from r1 -- best path: as-path '65001', next hop 10.
+  [PASS] TICKET r2 gets 192.168.0.0/16 from r1 -- best path: as-path '65001', next hop 10.
+  [FAIL] TICKET r2 gets 192.168.0.0/16 from r1 -- no BGP path (90.2s)
+  [PASS] TICKET r2 gets 192.168.0.0/16 from r1 -- best path: as-path '65001', next hop 10.
+
+[exited with code 0]

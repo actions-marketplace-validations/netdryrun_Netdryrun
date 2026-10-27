@@ -1,0 +1,47 @@
+{
+  "ticket": "T05-review-safe",
+  "kind": "review",
+  "truth": {
+    "verdict": "safe",
+    "decision": [
+      "apply"
+    ]
+  },
+  "answer": {
+    "verdict": "safe",
+    "decision": "apply",
+    "netdryrun_status": "passed",
+    "changed_files": [
+      "configs/edge1.conf"
+    ],
+    "reason": "Netdryrun passed all 11 checks: BGP sessions up, prefixes propagating, leak guards hold. The maximum-prefix limits (50/100) have ample headroom over current announcements (3/1) and log-neighbor-changes is a safe observability addition."
+  },
+  "completed_unattended": true,
+  "verdict_ok": true,
+  "decision_ok": true,
+  "changed_files": [],
+  "added_files": [],
+  "rule_breaks": [],
+  "hidden_rerun": null,
+  "hidden_ok": true,
+  "solved": true,
+  "tool_calls": 6,
+  "netdryrun_calls": 1,
+  "lab_runs": 1,
+  "tools": {
+    "Read": 5,
+    "mcp__netdryrun__dry_run": 1
+  },
+  "turns": 7,
+  "wall_s": 59.2,
+  "agent_duration_s": 55.8,
+  "cost_usd": 0.137649,
+  "model": "claude-opus-4-7[1m]",
+  "claude_code_version": "2.1.116",
+  "mcp_status": [
+    "connected"
+  ],
+  "permission_denials": [],
+  "tool_errors": [],
+  "timed_out": false
+}

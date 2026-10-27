@@ -1,0 +1,88 @@
+t01ref exit=0
+t02naive exit=1
+t02ref exit=0
+t03 exit=1
+t04 exit=1
+t04fixed exit=0
+t05 exit=0
+t06leak exit=1
+t06none exit=0
+t07naive exit=1
+t07ref exit=0
+t08 exit=1
+t09 exit=0
+t09extra exit=1
+t10fixedlab exit=0
+t10none exit=1
+t10ref exit=1
+== t01ref
+PASSED: 14 passed, 0 failed (14 checks)
+== t02ref
+PASSED: 14 passed, 0 failed (14 checks)
+== t02naive
+  [FAIL] TICKET peer1 must not receive 10.101.0.0/24 (transit only) -- unexpectedly present via bgp (0.2s)
+  [FAIL] LEAK GUARD peer1 gets at most our 2 prefixes -- 3 ipv4-unicast prefixes accepted (0.2s)
+FAILED: 12 passed, 2 failed (14 checks)
+== t03
+  [FAIL] LEAK GUARD peer1 must not get upstream routes -- unexpectedly present via bgp (0.2s)
+  [FAIL] LEAK GUARD peer1 must not get the upstream's default route -- unexpectedly present via bgp (not selected) (0.2s)
+  [FAIL] LEAK GUARD up1 must not get peer routes -- unexpectedly present via bgp (0.2s)
+  [FAIL] LEAK GUARD peer1 gets at most our 3 prefixes -- 6 ipv4-unicast prefixes accepted (0.2s)
+  [FAIL] LEAK GUARD edge1 rejects prefixes the customer doesn't own -- unexpectedly present via bgp (0.2s)
+FAILED: 9 passed, 5 failed (14 checks)
+== t04
+  [FAIL] TICKET up1 gets our block with community 65200:100 -- missing communities 65200:100 (best path: as-path '65000', next hop 10.0.2.1, local-pref 100, MED 0, communities none) (90.4s)
+  [FAIL] TICKET up1 gets the customer's block with community 65200:100 -- missing communities 65200:100 (best path: as-path '65000 65100', next hop 10.0.2.1, local-pref 100, MED 0, communities none) (90.4s)
+FAILED: 11 passed, 2 failed (13 checks)
+== t04fixed
+PASSED: 13 passed, 0 failed (13 checks)
+== t05
+PASSED: 11 passed, 0 failed (11 checks)
+== t06none
+PASSED: 11 passed, 0 failed (11 checks)
+== t06leak
+  [FAIL] LEAK GUARD peer1 must not get upstream routes -- unexpectedly present via bgp (0.2s)
+  [FAIL] LEAK GUARD peer1 gets at most our 2 prefixes -- 3 ipv4-unicast prefixes accepted (0.2s)
+FAILED: 9 passed, 2 failed (11 checks)
+== t07ref
+PASSED: 14 passed, 0 failed (14 checks)
+== t07naive
+  [FAIL] TICKET r2 gets 192.168.0.0/16 from r1 -- no BGP path (90.1s)
+  [FAIL] TICKET r3 gets 192.168.0.0/16 from r1 -- no BGP path (90.1s)
+FAILED: 12 passed, 2 failed (14 checks)
+== t08
+  [FAIL] r1: BGP best path for 192.168.2.0/24 has as-path '65002', next hop 10.0.12.2 -- as-path is '65003 65002', expected '65002'; next hop is 10.0.13.2, expected 10.0.12.2 (best path: as-path '65003 65002', next hop 10.0.13.2, local-pref 200, MED 0, communities none) (90.5s)
+FAILED: 11 passed, 1 failed (12 checks)
+== t09
+PASSED: 5 passed, 0 failed (5 checks)
+== t09extra
+  [FAIL] VALIDATION r2 must not get r1's link subnet -- unexpectedly present via bgp (0.3s)
+FAILED: 5 passed, 1 failed (6 checks)
+== t10none
+  [FAIL] TICKET r2 gets r1's new 192.168.11.0/24 -- not active via bgp; seen: nothing (93.2s)
+  [FAIL] TICKET r3 gets r1's new 192.168.11.0/24 -- not active via bgp; seen: nothing (93.2s)
+  [FAIL] TICKET r2's LAN reaches the new LAN -- 0/3 replies (need 2) (93.2s)
+  [FAIL] r1: BGP session to 10.0.12.2 is established -- error: `vtysh -c show bgp neighbors json` failed on r1 (rc=1): bgpd is not running (93.2s)
+  [FAIL] r1: BGP session to 10.0.13.2 is established -- error: `vtysh -c show bgp neighbors json` failed on r1 (rc=1): bgpd is not running (93.2s)
+  [FAIL] r1: route 192.168.3.0/24 via bgp is present -- not active via bgp; seen: nothing (93.2s)
+  [FAIL] r1: ping 192.168.3.1 from 192.168.1.1 expects success -- 0/3 replies (need 2) (93.2s)
+  [FAIL] r1: BGP best path for 192.168.2.0/24 has as-path '65002', next hop 10.0.12.2 -- error: `vtysh -c show bgp ipv4 unicast 192.168.2.0/24 json` failed on r1 (rc=1): bgpd is not running (93.2s)
+  [FAIL] r1: prefixes from 10.0.12.2 >= 1 and <= 10 -- error: `vtysh -c show bgp neighbors json` failed on r1 (rc=1): bgpd is not running (30.3s)
+  [FAIL] [r1-r2 link fails] r1: route 192.168.2.0/24 via bgp is present -- not active via bgp; seen: nothing (91.5s)
+  [FAIL] [r1-r2 link fails] r1: BGP best path for 192.168.2.0/24 has as-path '65003 65002', next hop 10.0.13.2 -- error: `vtysh -c show bgp ipv4 unicast 192.168.2.0/24 json` failed on r1 (rc=1): bgpd is not running (91.5s)
+  [FAIL] [r1-r2 link fails] r1: ping 192.168.2.1 from 192.168.1.1 expects success -- 0/3 replies (need 2) (91.5s)
+== t10ref
+  [FAIL] TICKET r2 gets r1's new 192.168.11.0/24 -- not active via bgp; seen: nothing (93.2s)
+  [FAIL] TICKET r3 gets r1's new 192.168.11.0/24 -- not active via bgp; seen: nothing (93.2s)
+  [FAIL] TICKET r2's LAN reaches the new LAN -- 0/3 replies (need 2) (93.2s)
+  [FAIL] r1: BGP session to 10.0.12.2 is established -- error: `vtysh -c show bgp neighbors json` failed on r1 (rc=1): bgpd is not running (93.2s)
+  [FAIL] r1: BGP session to 10.0.13.2 is established -- error: `vtysh -c show bgp neighbors json` failed on r1 (rc=1): bgpd is not running (93.2s)
+  [FAIL] r1: route 192.168.3.0/24 via bgp is present -- not active via bgp; seen: nothing (93.2s)
+  [FAIL] r1: ping 192.168.3.1 from 192.168.1.1 expects success -- 0/3 replies (need 2) (93.2s)
+  [FAIL] r1: BGP best path for 192.168.2.0/24 has as-path '65002', next hop 10.0.12.2 -- error: `vtysh -c show bgp ipv4 unicast 192.168.2.0/24 json` failed on r1 (rc=1): bgpd is not running (93.2s)
+  [FAIL] r1: prefixes from 10.0.12.2 >= 1 and <= 10 -- error: `vtysh -c show bgp neighbors json` failed on r1 (rc=1): bgpd is not running (30.2s)
+  [FAIL] [r1-r2 link fails] r1: route 192.168.2.0/24 via bgp is present -- not active via bgp; seen: nothing (93.1s)
+  [FAIL] [r1-r2 link fails] r1: BGP best path for 192.168.2.0/24 has as-path '65003 65002', next hop 10.0.13.2 -- error: `vtysh -c show bgp ipv4 unicast 192.168.2.0/24 json` failed on r1 (rc=1): bgpd is not running (93.1s)
+  [FAIL] [r1-r2 link fails] r1: ping 192.168.2.1 from 192.168.1.1 expects success -- 0/3 replies (need 2) (93.1s)
+== t10fixedlab
+PASSED: 14 passed, 0 failed (14 checks)

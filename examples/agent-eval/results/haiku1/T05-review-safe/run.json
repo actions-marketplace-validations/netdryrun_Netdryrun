@@ -1,0 +1,9 @@
+{
+  "ticket": "T05-review-safe",
+  "run": "haiku1",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_s": 15.1,
+  "folder": "C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T05-review-safe",
+  "model_requested": "haiku"
+}

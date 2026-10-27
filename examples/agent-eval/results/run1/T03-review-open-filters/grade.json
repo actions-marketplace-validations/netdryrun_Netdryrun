@@ -1,0 +1,45 @@
+{
+  "ticket": "T03-review-open-filters",
+  "kind": "review",
+  "truth": {
+    "verdict": "harmful",
+    "decision": [
+      "dont_apply"
+    ]
+  },
+  "answer": {
+    "verdict": "harmful",
+    "decision": "dont_apply",
+    "netdryrun_status": "failed",
+    "changed_files": [],
+    "reason": "Removing the three prefix-list matches opens four leaks (upstream->peer, peer->upstream, upstream default, unowned 8.8.8.0/24 from customer); Netdryrun's five LEAK GUARD checks fail. The author should add 10.101.0.0/24 to CUSTOMER-IN and OUR-ROUTES instead of removing the matches."
+  },
+  "completed_unattended": true,
+  "verdict_ok": true,
+  "decision_ok": true,
+  "changed_files": [],
+  "added_files": [],
+  "rule_breaks": [],
+  "hidden_rerun": null,
+  "hidden_ok": true,
+  "solved": true,
+  "tool_calls": 6,
+  "netdryrun_calls": 1,
+  "lab_runs": 1,
+  "tools": {
+    "Read": 5,
+    "mcp__netdryrun__dry_run": 1
+  },
+  "turns": 7,
+  "wall_s": 59.7,
+  "agent_duration_s": 57.1,
+  "cost_usd": 0.16418524999999998,
+  "model": "claude-opus-4-7[1m]",
+  "claude_code_version": "2.1.116",
+  "mcp_status": [
+    "connected"
+  ],
+  "permission_denials": [],
+  "tool_errors": [],
+  "timed_out": false
+}

@@ -1,0 +1,48 @@
+{
+  "ticket": "T03-review-open-filters",
+  "kind": "review",
+  "valid": true,
+  "truth": {
+    "verdict": "harmful",
+    "decision": [
+      "dont_apply"
+    ]
+  },
+  "answer": {
+    "verdict": "harmful",
+    "decision": "dont_apply",
+    "netdryrun_status": "failed",
+    "changed_files": [
+      "configs/edge1.conf"
+    ],
+    "reason": "Change allows the new customer block to be announced but breaks route leak guards by removing all prefix-list filtering. Upstream routes now leak to peer, peer routes leak to upstream, and invalid customer prefixes are no longer filtered. The change needs to be rewritten to update the filters rather than removing them entirely."
+  },
+  "completed_unattended": true,
+  "verdict_ok": true,
+  "decision_ok": true,
+  "changed_files": [],
+  "added_files": [],
+  "rule_breaks": [],
+  "hidden_rerun": null,
+  "hidden_ok": true,
+  "solved": true,
+  "tool_calls": 5,
+  "netdryrun_calls": 1,
+  "lab_runs": 1,
+  "tools": {
+    "Read": 4,
+    "mcp__netdryrun__dry_run": 1
+  },
+  "turns": 6,
+  "wall_s": 55.0,
+  "agent_duration_s": 53.4,
+  "cost_usd": 0.03016505,
+  "model": "claude-haiku-4-5-20251001",
+  "claude_code_version": "2.1.116",
+  "mcp_status": [
+    "connected"
+  ],
+  "permission_denials": [],
+  "tool_errors": [],
+  "timed_out": false
+}

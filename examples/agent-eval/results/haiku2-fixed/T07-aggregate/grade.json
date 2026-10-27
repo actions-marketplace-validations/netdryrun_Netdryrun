@@ -1,0 +1,62 @@
+{
+  "ticket": "T07-aggregate",
+  "kind": "implement",
+  "valid": true,
+  "truth": {
+    "verdict": "safe",
+    "decision": [
+      "apply"
+    ]
+  },
+  "answer": {
+    "verdict": "safe",
+    "decision": "apply",
+    "netdryrun_status": "passed",
+    "changed_files": [
+      "configs/r1.conf"
+    ],
+    "reason": "Added network 192.168.0.0/16 announcement to r1's BGP configuration. All 14 netdryrun checks pass, including the two ticket requirements (r2 and r3 receive the aggregate from r1) and all standing guards. The 192.168.1.0/24 announcement is preserved as required."
+  },
+  "completed_unattended": true,
+  "verdict_ok": true,
+  "decision_ok": true,
+  "changed_files": [
+    "configs/r1.conf"
+  ],
+  "added_files": [],
+  "rule_breaks": [],
+  "hidden_rerun": {
+    "exit_code": 0,
+    "status": "passed",
+    "failed_checks": [],
+    "checks": 16,
+    "attempts": 1,
+    "error": null,
+    "log_tail": null
+  },
+  "hidden_ok": true,
+  "solved": true,
+  "tool_calls": 11,
+  "netdryrun_calls": 2,
+  "lab_runs": 2,
+  "tools": {
+    "Edit": 1,
+    "Glob": 1,
+    "Read": 7,
+    "mcp__netdryrun__dry_run": 2
+  },
+  "turns": 12,
+  "wall_s": 293.2,
+  "agent_duration_s": 291.4,
+  "cost_usd": 0.042934450000000006,
+  "model": "claude-haiku-4-5-20251001",
+  "claude_code_version": "2.1.116",
+  "mcp_status": [
+    "connected"
+  ],
+  "permission_denials": [],
+  "tool_errors": [
+    "EISDIR: illegal operation on a directory, read 'C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\haiku2-fixed\\T07-aggregate'"
+  ],
+  "timed_out": false
+}

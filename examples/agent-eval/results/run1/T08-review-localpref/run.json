@@ -1,0 +1,9 @@
+{
+  "ticket": "T08-review-localpref",
+  "run": "run1",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_s": 207.9,
+  "folder": "C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\run1\\T08-review-localpref",
+  "model_requested": null
+}

@@ -1,0 +1,9 @@
+{
+  "ticket": "T01-new-block",
+  "run": "haiku1",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_s": 81.0,
+  "folder": "C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T01-new-block",
+  "model_requested": "haiku"
+}

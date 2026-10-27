@@ -1,0 +1,9 @@
+{
+  "ticket": "T09-review-redistribute",
+  "run": "haiku1",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_s": 48.8,
+  "folder": "C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T09-review-redistribute",
+  "model_requested": "haiku"
+}

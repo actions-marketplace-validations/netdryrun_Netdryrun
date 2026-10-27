@@ -1,0 +1,52 @@
+{
+  "ticket": "T07-aggregate",
+  "kind": "implement",
+  "valid": false,
+  "truth": {
+    "verdict": "safe",
+    "decision": [
+      "apply"
+    ]
+  },
+  "answer": {
+    "verdict": "inconclusive",
+    "decision": "dont_apply",
+    "netdryrun_status": null,
+    "changed_files": [
+      "configs/r1.conf"
+    ],
+    "reason": "Configuration change is technically correct but Netdryrun verification could not be performed with available tools. The ticket requires Netdryrun to pass before applying."
+  },
+  "completed_unattended": true,
+  "verdict_ok": false,
+  "decision_ok": false,
+  "changed_files": [
+    "configs/r1.conf"
+  ],
+  "added_files": [],
+  "rule_breaks": [],
+  "hidden_rerun": null,
+  "hidden_ok": true,
+  "solved": false,
+  "tool_calls": 10,
+  "netdryrun_calls": 0,
+  "lab_runs": 0,
+  "tools": {
+    "Edit": 1,
+    "Glob": 3,
+    "Read": 5,
+    "WebFetch": 1
+  },
+  "turns": 11,
+  "wall_s": 60.2,
+  "agent_duration_s": 58.9,
+  "cost_usd": 0.06181815,
+  "model": "claude-haiku-4-5-20251001",
+  "claude_code_version": "2.1.116",
+  "mcp_status": [
+    "failed"
+  ],
+  "permission_denials": [],
+  "tool_errors": [],
+  "timed_out": false
+}
