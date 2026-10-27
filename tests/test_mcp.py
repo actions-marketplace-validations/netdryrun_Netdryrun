@@ -1,6 +1,7 @@
 """MCP server: tools are registered and the no-lab tools work."""
 import asyncio
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -15,7 +16,8 @@ EXAMPLE = str(Path(__file__).parents[1] / "examples" / "frr-bgp")
 
 
 async def _call(tool: str, args: dict) -> tuple[list[str], str]:
-    params = StdioServerParameters(command=sys.executable, args=["-m", "netdryrun", "mcp"])
+    # the same environment as the tests (the MCP client otherwise passes only a minimal one)
+    params = StdioServerParameters(command=sys.executable, args=["-m", "netdryrun", "mcp"], env=dict(os.environ))
     async with stdio_client(params) as (r, w):
         async with ClientSession(r, w) as s:
             await s.initialize()
@@ -28,7 +30,7 @@ def test_tools_and_validate_over_stdio():
     tools, text = asyncio.run(_call("validate", {"path": EXAMPLE}))
     assert {"dry_run", "run_checks", "validate", "check_types", "record_baseline"} <= set(tools)
     data = json.loads(text)
-    assert data["valid"] and len(data["checks"]) == 6
+    assert data["valid"] and len(data["checks"]) == 7
 
 
 def test_validate_reports_errors():

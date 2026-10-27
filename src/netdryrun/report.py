@@ -17,6 +17,9 @@ def console_line(r: Result) -> str:
 def summary_line(rep: RunReport) -> str:
     if rep.error:
         return f"ERROR: {rep.error}"
+    if rep.status == "inconclusive":
+        return (f"INCONCLUSIVE: {rep.inconclusive_reason} ({rep.failed} of {len(rep.results)} checks failed; "
+                "this says nothing about the change)")
     return f"{rep.status.upper()}: {rep.passed} passed, {rep.failed} failed ({len(rep.results)} checks)"
 
 
@@ -29,6 +32,7 @@ def to_json(rep: RunReport) -> str:
         "started": rep.started,
         "finished": rep.finished,
         "error": rep.error or None,
+        "inconclusive_reason": rep.inconclusive_reason,
         "environment": rep.environment,
         "summary": {"passed": rep.passed, "failed": rep.failed, "total": len(rep.results)},
         "checks": [
@@ -69,11 +73,15 @@ def _evidence_excerpt(output: str, params: dict, max_lines: int = 15) -> str:
 
 
 def to_markdown(rep: RunReport) -> str:
-    head = {"passed": "✅ Netdryrun passed", "failed": "❌ Netdryrun failed", "error": "⚠️ Netdryrun could not run"}[rep.status]
+    head = {"passed": "✅ Netdryrun passed", "failed": "❌ Netdryrun failed", "error": "⚠️ Netdryrun could not run",
+            "inconclusive": "⏸️ Netdryrun inconclusive: the lab never reached a testable state"}[rep.status]
     lines = [f"### {head}", ""]
     if rep.error:
         lines += ["```", rep.error, "```"]
         return "\n".join(lines) + "\n"
+    if rep.status == "inconclusive":
+        lines += [f"> {_md_cell(rep.inconclusive_reason)}", ">",
+                  "> This says nothing about the change, good or bad. Rerun once the lab comes up.", ""]
     lines += [f"**{rep.passed} passed, {rep.failed} failed** on lab `{rep.lab_name}`", "",
               "| | Check | Result | Time |", "|---|---|---|---|"]
     for r in sorted(rep.results, key=lambda r: r.passed):  # failures first
@@ -94,14 +102,20 @@ def to_markdown(rep: RunReport) -> str:
 
 def to_junit(rep: RunReport) -> str:
     cases = []
+    # inconclusive: the checks could not run meaningfully, which JUnit calls an error, not a failure
+    tag = "error" if rep.status == "inconclusive" else "failure"
     for r in rep.results:
-        body = "" if r.passed else f"<failure message={quoteattr(r.detail)}>{escape(json.dumps(r.evidence, indent=1)[:20000])}</failure>"
+        body = "" if r.passed else f"<{tag} message={quoteattr(r.detail)}>{escape(json.dumps(r.evidence, indent=1)[:20000])}</{tag}>"
         cases.append(f'  <testcase classname="netdryrun.{r.check.type}" name={quoteattr(r.check.name)} time="{r.duration}">{body}</testcase>')
     errors = 1 if rep.error else 0
     if rep.error:
         cases.append(f'  <testcase classname="netdryrun" name="lab"><error message={quoteattr(rep.error)}/></testcase>')
+    tests = len(rep.results) + errors
+    failures = rep.failed
+    if tag == "error":
+        errors, failures = rep.failed, 0
     return (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
-        f'<testsuite name="netdryrun" tests="{len(rep.results) + errors}" failures="{rep.failed}" errors="{errors}">\n'
+        f'<testsuite name="netdryrun" tests="{tests}" failures="{failures}" errors="{errors}">\n'
         + "\n".join(cases) + "\n</testsuite>\n"
     )

@@ -50,7 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.2.0
+      - uses: netdryrun/netdryrun@v0.3.0
         with:
           path: network/        # folder containing netdryrun.yml
 ```
@@ -82,5 +82,5 @@ Requirements: Linux or WSL2, Docker, containerlab, Python 3.10+. Walkthrough: [G
 ## Status
 
 <!-- facts:site_status -->
-Version 0.2.0, early. Works with FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image) on Linux and WSL2. Check types: `bgp_session`, `bgp_prefixes`, `route` and `ping` (IPv4/IPv6 unicast BGP, routes and ping), plus link-down and node-isolation failure scenarios. On the [verdict corpus](corpus.md) (30 realistic BGP changes, expected verdicts committed before any run), Netdryrun judged 24/30 correctly, ping-only checks 20/30 and all-sessions-up checks 15/30. Issues and feedback: [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun/issues).
+Version 0.3.0, early. Works with FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image) on Linux and WSL2. Check types: `bgp_session`, `bgp_prefixes`, `route`, `bgp_route` and `ping` (IPv4/IPv6 unicast BGP sessions, prefix counts, routes, BGP best-path attributes and ping), plus link-down and node-isolation failure scenarios. On the [verdict corpus](corpus.md) (30 realistic BGP changes, expected verdicts committed before any run), Netdryrun judged 24/30 correctly, ping-only checks 20/30 and all-sessions-up checks 15/30. Issues and feedback: [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun/issues).
 <!-- /facts:site_status -->

@@ -35,4 +35,15 @@ def for_node(lab: Lab, node: str, override: str | None = None) -> Driver:
     return DRIVERS[name](lab, node)
 
 
-__all__ = ["Driver", "DriverError", "DRIVERS", "detect", "for_node"]
+def check_supported(lab: Lab, check, override: str | None = None) -> None:
+    """Refuse, before deploying, a bgp_route key the node's driver cannot read (never guess a value)."""
+    if check.type != "bgp_route" or check.node not in lab.nodes:
+        return
+    name = override or detect(lab.nodes[check.node])
+    cls = DRIVERS.get(name)
+    keys = sorted(set(check.params) & set(cls.unsupported_bgp_attributes)) if cls else []
+    if keys:
+        raise DriverError(f"{check.name}: {', '.join(keys)} is not supported on {name}")
+
+
+__all__ = ["Driver", "DriverError", "DRIVERS", "check_supported", "detect", "for_node"]

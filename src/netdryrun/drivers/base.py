@@ -25,6 +25,52 @@ class Route:
 
 
 @dataclass
+class BgpPath:
+    """One path for a prefix in the BGP table. None means the attribute could not be read."""
+    best: bool
+    as_path: str | None             # ASNs separated by spaces, sets as {a,b}; "" for a locally originated route
+    next_hop: str | None
+    local_pref: int | None          # effective value: the default local preference when the path carries none
+    med: int | None                 # a path without MED counts as 0, as best-path selection treats it by default
+    communities: list[str] = field(default_factory=list)        # canonical (config.parse_community), standard
+    large_communities: list[str] = field(default_factory=list)  # canonical a:b:c
+    neighbor: str | None = None
+
+    def all_communities(self) -> list[str]:
+        return self.communities + self.large_communities
+
+
+def canon_communities(tokens) -> list[str]:
+    """Device community strings in the canonical form used by netdryrun.yml; unknown names kept as printed."""
+    from ..config import parse_community
+    out = []
+    for t in tokens or []:
+        try:
+            out.append(parse_community(t))
+        except ValueError:
+            out.append(str(t).strip().lower())
+    return out
+
+
+def render_as_path(segments: list[tuple[str, list]]) -> str:
+    """(segment type, ASNs) pairs to the netdryrun.yml form: sequences space-separated, sets {a,b},
+    confederation sequences (a b), confederation sets [a,b]."""
+    parts = []
+    for kind, members in segments:
+        asns = [str(int(a)) for a in members]
+        kind = kind.lower().replace("_", "-")
+        if kind in ("as-set", "set"):
+            parts.append("{" + ",".join(asns) + "}")
+        elif "confed" in kind and "set" in kind:
+            parts.append("[" + ",".join(asns) + "]")
+        elif "confed" in kind:
+            parts.append("(" + " ".join(asns) + ")")
+        else:
+            parts += asns
+    return " ".join(parts)
+
+
+@dataclass
 class Observation:
     """What a driver saw, with the raw command output kept as evidence."""
     value: object
@@ -54,6 +100,13 @@ class Driver:
         raise NotImplementedError
 
     def ping(self, target: str, source: str | None, count: int, vrf: str = "default") -> Observation:
+        raise NotImplementedError
+
+    # bgp_route keys this driver cannot read; a check that uses one is a setup error, never a guess
+    unsupported_bgp_attributes: frozenset[str] = frozenset()
+
+    def bgp_paths(self, prefix: str, vrf: str = "default") -> Observation:
+        """Every path for exactly `prefix` in the BGP table (list[BgpPath]), best path flagged."""
         raise NotImplementedError
 
     def all_routes(self, vrf: str = "default", family: int = 4) -> Observation:

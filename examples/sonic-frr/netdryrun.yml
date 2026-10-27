@@ -34,6 +34,12 @@ checks:
     neighbor: 10.0.40.1
     min: 1
     max: 5
+  - type: bgp_route    # BGP attributes of the best path: AS path, local preference, next hop
+    node: sonic1
+    prefix: 192.168.20.0/24
+    as_path: "65020"
+    local_pref: 100
+    next_hop: 10.0.40.2
 
 scenarios:
   - name: SONiC port Ethernet0 goes down

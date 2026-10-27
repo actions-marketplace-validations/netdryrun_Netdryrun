@@ -45,8 +45,11 @@ inputs:
 
 outputs:
   status:
-    description: passed, failed or error
+    description: "passed, failed, error or inconclusive (the lab never reached a testable state: says nothing about the change)"
     value: ${{ steps.result.outputs.status }}
+  inconclusive-reason:
+    description: Why the run was inconclusive (empty otherwise)
+    value: ${{ steps.result.outputs.inconclusive_reason }}
   passed:
     description: Number of passed checks
     value: ${{ steps.result.outputs.passed }}
@@ -117,12 +120,13 @@ runs:
         import json, os
         try:
             rep = json.load(open(os.environ["NDR_JSON"]))
-            out = {"status": rep["status"], "passed": rep["summary"]["passed"], "failed": rep["summary"]["failed"]}
+            out = {"status": rep["status"], "passed": rep["summary"]["passed"], "failed": rep["summary"]["failed"],
+                   "inconclusive_reason": rep.get("inconclusive_reason") or ""}
         except Exception:
-            out = {"status": "error", "passed": 0, "failed": 0}
+            out = {"status": "error", "passed": 0, "failed": 0, "inconclusive_reason": ""}
         with open(os.environ["GITHUB_OUTPUT"], "a") as f:
             for k, v in out.items():
-                f.write(f"{k}={v}\n")
+                f.write(f"{k}={' '.join(str(v).split())}\n")  # one line per output
         EOF
 
     - name: Upload reports
@@ -186,5 +190,9 @@ runs:
       env:
         NDR_STATUS: ${{ steps.result.outputs.status }}
       run: |
-        echo "::error title=Netdryrun::network checks did not pass (status: $NDR_STATUS)"
+        if [ "$NDR_STATUS" = "inconclusive" ]; then
+          echo "::error title=Netdryrun::inconclusive: the lab never reached a testable state, so this says nothing about the change. Rerun it (or raise the timeout)"
+        else
+          echo "::error title=Netdryrun::network checks did not pass (status: $NDR_STATUS)"
+        fi
         exit 1

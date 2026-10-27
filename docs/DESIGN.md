@@ -11,7 +11,7 @@ Test a proposed network change in a real virtual lab before it reaches productio
    - **Positive checks** (session established, prefix count in range, route present, ping succeeds) are polled until they pass or time out, because networks need time to converge.
    - **Negative checks** (route absent, ping must fail) run only after all positive checks finish plus a settle delay, and must hold across a short window. Otherwise "route absent" passes at second 0 before BGP even converged (a false pass).
 4. Report: console summary, JSON evidence file (every command run, raw output, timestamps, tool and image versions), Markdown for the PR / `$GITHUB_STEP_SUMMARY`, JUnit XML for CI.
-5. Destroy the lab (unless `--keep`). Exit code: 0 all passed, 1 a check failed, 2 config/lab error.
+5. Destroy the lab (unless `--keep`). Exit code: 0 all passed, 1 a check failed, 2 config/lab error, 3 inconclusive (the lab never reached a testable state; rules in checks.inconclusive_reason).
 
 ## Drivers (normalize device state)
 | Driver | Source of truth | Notes |

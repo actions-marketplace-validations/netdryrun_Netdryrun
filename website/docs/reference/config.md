@@ -1,6 +1,6 @@
 ---
 title: netdryrun.yml reference
-description: Reference for netdryrun.yml. Top-level keys, every check type and key (bgp_session, bgp_prefixes, route, ping), convergence semantics, drivers and protocol names.
+description: Reference for netdryrun.yml. Top-level keys, every check type and key (bgp_session, bgp_prefixes, route, bgp_route, ping), convergence semantics, drivers and protocol names.
 ---
 
 # netdryrun.yml reference
@@ -40,7 +40,7 @@ Validation is strict: unknown keys inside a check, missing required keys, bad IP
 
 | Key | Default | Meaning |
 |---|---|---|
-| `type` | required | `bgp_session`, `bgp_prefixes`, `route` or `ping` |
+| `type` | required | `bgp_session`, `bgp_prefixes`, `route`, `bgp_route` or `ping` |
 | `node` | required | Node name from the topology (for example `r1`) |
 | `name` | generated | Label used in reports. The default describes the check, for example `r1: BGP session to 10.0.12.2 is established`. |
 | `timeout` | top-level `timeout` | Seconds this check may wait to pass. Positive number. |
@@ -121,6 +121,48 @@ A route is present in (or absent from) the routing table.
   protocol: bgp
 ```
 
+### bgp_route
+
+Attributes of the BGP **best path** for a prefix: communities, AS path, local preference, MED, next hop. Many real policy bugs live here: a route that is still present but lost its community, got the wrong local preference, or now goes the long way. `route` reads the routing table; `bgp_route` reads the BGP table.
+
+| Key | Required | Default | Meaning |
+|---|---|---|---|
+| `prefix` | yes | | IPv4 or IPv6 prefix, matched exactly |
+| `communities` | no | | The best path must carry **all** of these. Standard (`'65000:100'`), large (`'65000:1:2'`) or well-known names (`no-export`, `no-advertise`, `no-peer`, `blackhole`, `graceful-shutdown`, `accept-own`, `llgr-stale`, `no-llgr`, `no-export-subconfed`) |
+| `without_communities` | no | | The best path must carry **none** of these. Same forms as `communities` |
+| `as_path` | no | | Exact AS path, ASNs separated by spaces: `"65002 65003"`. `""` is the empty path of a locally originated route. AS sets are written `{65004,65005}` |
+| `as_path_regex` | no | | Python regular expression searched in the AS path string, for example `"^65002 "` (learned from 65002) or `"(^| )65666( |$)"` (passes through 65666) |
+| `local_pref` | no | | Exact local preference |
+| `med` | no | | Exact MED. A path without MED counts as `0`, as best-path selection treats it by default |
+| `next_hop` | no | | Exact next hop address |
+| `present` | no | `true` | `false` means no path at all for the prefix in the BGP table, best or not |
+| `vrf` | no | `default` | VRF or network-instance |
+
+Rules:
+
+- Without attribute keys, the check passes when a best path exists.
+- **Quote communities.** YAML reads some unquoted values as numbers (`65000:10` is a base-60 number to YAML 1.1), so an unquoted community that YAML turns into a number is a config error.
+- A community can't be in both `communities` and `without_communities`.
+- `present: false` can't be combined with attribute keys. To forbid a community on the best path, use `without_communities`.
+- The check fails if there is no path, or no best path (for example when the next hop is unreachable). The failure detail shows what the best path actually carries.
+- **Local preference** is the effective value: a path without a LOCAL_PREF attribute (eBGP-learned or local) gets the device's default (FRR and SONiC: `bgp default local-preference`; SR Linux: the neighbor's `local-preference`; Arista EOS reports it directly). The exception is a locally originated path on Arista EOS, which reports no local preference; asserting `local_pref` on it fails with "not set".
+- **Next hop** is the address the device reports. For an IPv6 path FRR may list only the link-local next hop.
+- `present: false` and `without_communities` make it a post-convergence check: a "must not carry" check could pass on a transient best path before the real one arrives, so it must hold instead.
+
+```yaml
+- type: bgp_route         # customer routes are tagged and preferred
+  node: r1
+  prefix: 192.168.20.0/24
+  communities: ["65000:100", no-export]
+  local_pref: 200
+  as_path: "65020"
+
+- type: bgp_route         # the internal tag must never reach the peer
+  node: peer1
+  prefix: 192.168.20.0/24
+  without_communities: ["65000:666"]
+```
+
 ### ping
 
 Reachability from a node.
@@ -182,7 +224,8 @@ Networks need time to converge, and some checks are trivially true before they d
 
 **Post-convergence checks** are the ones that would pass on a network that has not come up yet:
 
-- routes that must be absent (`present: false`)
+- routes that must be absent (`present: false` on `route` or `bgp_route`)
+- best paths that must not carry a community (`without_communities`)
 - pings that must fail (`expect: failure`)
 - sessions expected in a state other than `established`
 - prefix counts with an upper bound (`max` or `exact`), since 0 prefixes satisfies `max: 10` while BGP is still starting
@@ -208,6 +251,7 @@ A driver turns device state into a common shape. Netdryrun detects it from the t
 | `bgp_session` | yes | yes | yes | yes |
 | `bgp_prefixes` (accepted = received minus rejected by policy) | yes | yes | yes | yes |
 | `route` present / absent | yes | yes | yes | yes |
+| `bgp_route`: communities (standard, large, well-known), AS path, local preference, MED, next hop, absent | yes | yes | yes | yes |
 | `ping` success / failure | yes | yes | yes | yes |
 | Failure scenarios on the node's own links | yes | not yet (fail the FRR/Linux side instead) | yes | yes |
 
@@ -219,8 +263,12 @@ A driver turns device state into a common shape. Netdryrun detects it from the t
 
 | Driver | Source of state |
 |---|---|
-| FRR | `vtysh -c "show ... json"`; accepted prefixes from `acceptedPrefixCounter` |
-| SR Linux | `sr_cli --output-format json "info from state ..."`; accepted = `received-routes` minus `rejected-routes` |
+| FRR | `vtysh -c "show ... json"`; accepted prefixes from `acceptedPrefixCounter`; `bgp_route` from `show bgp <afi> unicast <prefix> json` |
+| SR Linux | `sr_cli --output-format json "info from state ..."`; accepted = `received-routes` minus `rejected-routes`; `bgp_route` from the `bgp-rib` local RIB and its `attr-sets` |
+| Arista EOS | `Cli -c "show ... \| json"`; `bgp_route` from `show ip bgp <prefix> vrf <vrf>` (the best path is the `active` one) |
+| SONiC | the FRR commands, through `vtysh` inside the container |
+
+If a driver can't read a `bgp_route` attribute, the run stops before deploying with "`<key>` is not supported on `<driver>`" (exit code `2`) instead of guessing. Today every driver reads every attribute.
 
 Every command and its raw output is kept in the [JSON report](cli.md#json).
 

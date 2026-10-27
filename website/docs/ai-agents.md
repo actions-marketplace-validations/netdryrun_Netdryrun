@@ -68,10 +68,11 @@ The server also exposes the last full JSON report as a resource, `netdryrun://re
 
 (`checks` is shortened here; the real result lists every check.)
 
-`verdict` is a separate field with one of two values:
+`verdict` is a separate field with one of three values:
 
 - `SAFE TO PROCEED` when `status` is `passed`
 - `DO NOT APPLY THIS CHANGE` for `failed` or `error`, including config errors
+- `INCONCLUSIVE: the lab did not reach a testable state; this says nothing about your change. Do not apply it until a run passes.` when `status` is `inconclusive`: the lab never came up far enough for the checks to mean anything ([rules](reference/cli.md#when-a-run-is-inconclusive)). `inconclusive_reason` says what was seen. Rerun it, perhaps with a longer `timeout`; don't rewrite the change because of it.
 
 The full evidence is written to `netdryrun-report.json` next to `netdryrun.yml`.
 

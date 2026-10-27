@@ -115,3 +115,78 @@ def test_sonic_reads_frr_output():
     assert n["10.0.40.2"].prefixes["ipv4-unicast"] == 1
     routes = frr.parse_routes(read("sonic_route.txt"), "192.168.20.0/24")
     assert any(r.protocol == "bgp" and r.active for r in routes)
+
+
+# --- BGP path attributes (bgp_route), captured from a live lab: an FRR source in AS 65020 sends each
+# device 192.168.20.0/24 twice. Primary session: communities 65020:100 65020:200, large 65020:1:1 65020:2:2,
+# MED 50, local-pref 200 set by the device's import policy. Backup: 65020:999, MED 10, path prepended twice.
+# 192.168.22.0/24 carries 65020:300 and no-export.
+
+def _best(paths):
+    best = [p for p in paths if p.best]
+    assert len(best) == 1
+    return best[0]
+
+
+@pytest.mark.parametrize("fixture", ["frr_bgp_paths.txt", "sonic_bgp_paths.txt"])
+def test_frr_and_sonic_bgp_paths(fixture):
+    # frr 10.4.1 and the FRR 10.7.1 inside docker-sonic-vs print the same shape
+    paths = frr.parse_bgp_paths(read(fixture), "192.168.20.0/24", default_local_pref=100)
+    assert len(paths) == 2
+    b = _best(paths)
+    assert b.as_path == "65020" and b.med == 50 and b.local_pref == 200
+    assert b.communities == ["65020:100", "65020:200"]
+    assert b.large_communities == ["65020:1:1", "65020:2:2"]
+    backup = next(p for p in paths if not p.best)
+    assert backup.as_path == "65020 65020 65020" and backup.med == 10
+    assert backup.local_pref == 100  # no LOCAL_PREF attribute: the instance default applies
+    assert backup.communities == ["65020:999"] and backup.large_communities == []
+
+
+def test_frr_bgp_paths_details():
+    assert frr.parse_bgp_paths(read("frr_bgp_paths.txt"), "192.168.20.0/24")[0].next_hop == "10.1.1.2"
+    noexp = frr.parse_bgp_paths(read("frr_bgp_paths_noexport.txt"), "192.168.22.0/24")
+    assert noexp[0].communities == ["65020:300", "65535:65281"]  # "no-export" by its value
+    local = frr.parse_bgp_paths(read("frr_bgp_paths_local.txt"), "192.168.21.0/24")
+    assert local[0].best and local[0].as_path == ""  # FRR prints "Local" as the string; segments are empty
+    v6 = frr.parse_bgp_paths(read("frr_bgp_paths_v6.txt"), "2001:db8:20::/48")
+    assert v6[0].med == 60 and v6[0].large_communities == ["65020:6:6"]
+    assert v6[0].next_hop.startswith("fe80::")  # FRR lists only the link-local next hop here
+    assert frr.parse_bgp_paths("{}", "10.99.0.0/16") == []
+    assert frr.parse_bgp_paths("{\n}", "10.99.0.0/16") == []
+    assert frr.parse_default_local_pref(read("frr_bgp_table_header.txt")) == 100
+    with pytest.raises(DriverError):
+        frr.parse_bgp_paths('{"warning":"View/Vrf is unknown"}', "10.0.0.0/8")
+
+
+def test_eos_bgp_paths():
+    paths = eos.parse_bgp_paths(read("eos_bgp_paths.txt"), "192.168.20.0/24")
+    b = _best(paths)
+    assert (b.as_path, b.med, b.local_pref, b.next_hop) == ("65020", 50, 200, "10.3.1.2")
+    assert b.communities == ["65020:100", "65020:200"] and b.large_communities == ["65020:1:1", "65020:2:2"]
+    backup = next(p for p in paths if not p.best)
+    assert (backup.as_path, backup.med, backup.local_pref) == ("65020 65020 65020", 10, 100)
+    noexp = eos.parse_bgp_paths(read("eos_bgp_paths_noexport.txt"), "192.168.22.0/24")
+    assert noexp[0].communities == ["65020:300", "65535:65281"]
+    local = eos.parse_bgp_paths(read("eos_bgp_paths_local.txt"), "192.168.30.1/32")
+    assert local[0].best and local[0].as_path == "" and local[0].next_hop is None and local[0].local_pref is None
+    assert eos.parse_bgp_paths(read("eos_bgp_paths_empty.txt"), "10.99.0.0/16") == []
+    assert eos.parse_bgp_paths(read("eos_bgp_paths.txt"), "192.168.20.0/25") == []
+
+
+def test_srl_bgp_paths():
+    rows = srlinux.parse_rib_paths(read("srl_bgp_rib_paths.txt"), "192.168.20.0/24")
+    assert [r["attr-id"] for r in rows] == ["7", "12"]  # best path first
+    b = srlinux.parse_attr_set(read("srl_attr_set_best.txt"), rows[0])
+    assert b.best and (b.as_path, b.med, b.local_pref, b.next_hop) == ("65020", 50, 200, "10.2.1.2")
+    assert b.communities == ["65020:100", "65020:200"] and b.large_communities == ["65020:1:1", "65020:2:2"]
+    # no local-pref in the attr-set: the neighbor's local-preference (state) applies
+    lp = srlinux._json(read("srl_neighbor_local_pref.txt"))["local-preference"]
+    backup = srlinux.parse_attr_set(read("srl_attr_set_backup.txt"), rows[1], lp)
+    assert not backup.best and (backup.as_path, backup.med, backup.local_pref) == ("65020 65020 65020", 10, 100)
+    noexp_row = srlinux.parse_rib_paths(read("srl_bgp_rib_paths_noexport.txt"), "192.168.22.0/24")[0]
+    noexp = srlinux.parse_attr_set(read("srl_attr_set_noexport.txt"), noexp_row)
+    assert noexp.communities == ["65020:300", "65535:65281"] and noexp.med == 0
+    assert srlinux.parse_rib_paths(read("srl_rib_empty.txt"), "10.99.0.0/16") == []
+    with pytest.raises(DriverError):
+        srlinux.parse_attr_set("{\n}", rows[0])  # attr-set vanished between the two reads

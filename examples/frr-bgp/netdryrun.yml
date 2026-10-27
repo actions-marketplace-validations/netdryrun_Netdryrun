@@ -22,6 +22,11 @@ checks:
     node: r1
     source: 192.168.1.1
     target: 192.168.3.1
+  - type: bgp_route    # r1 prefers r2's direct path to r2's LAN over the longer path via r3
+    node: r1
+    prefix: 192.168.2.0/24
+    as_path: "65002"
+    next_hop: 10.0.12.2
   - type: route        # nothing should send r1 a default route
     node: r1
     prefix: 0.0.0.0/0
@@ -37,6 +42,11 @@ scenarios:
         node: r1
         prefix: 192.168.2.0/24
         protocol: bgp
+      - type: bgp_route    # the best path now goes the long way, through r3
+        node: r1
+        prefix: 192.168.2.0/24
+        as_path: "65003 65002"
+        next_hop: 10.0.13.2
       - type: ping
         node: r1
         source: 192.168.1.1

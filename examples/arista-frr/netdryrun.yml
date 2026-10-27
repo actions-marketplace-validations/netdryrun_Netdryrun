@@ -32,6 +32,12 @@ checks:
     prefix: 0.0.0.0/0
     protocol: bgp
     present: false
+  - type: bgp_route    # BGP attributes of the best path: AS path, local preference, next hop
+    node: ceos1
+    prefix: 192.168.20.0/24
+    as_path: "65020"
+    local_pref: 100
+    next_hop: 10.0.200.2
 
 scenarios:
   - name: link to the Arista fails

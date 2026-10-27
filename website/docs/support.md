@@ -21,13 +21,13 @@ These are the interfaces other tools and agents rely on:
 
 | Interface | Stable contract |
 |---|---|
-| CLI | command names, flags, and exit codes (`0` passed, `1` failed, `2` error) |
+| CLI | command names, flags, and exit codes (`0` passed, `1` failed, `2` error, `3` inconclusive) |
 | `netdryrun.yml` | check types and keys; a file that validated keeps validating |
 | JSON report | the `schema` field (`netdryrun.report/v1`); fields are only added within a schema version, never removed or renamed |
 | GitHub Action | input and output names and their meaning; pin a tag or a commit SHA |
 | MCP server | tool names, their arguments, and the `status` and `verdict` fields |
 
-Removing or renaming any of these, or changing their meaning, is a breaking change.
+Removing or renaming any of these, or changing their meaning, is a breaking change. Adding is not: a new check type, a new report field, or a new `status` value (`inconclusive` was added after 0.2.0). Treat any status you don't know as not passed.
 
 ## Deprecation
 

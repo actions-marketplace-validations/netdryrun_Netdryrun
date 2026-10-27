@@ -13,15 +13,18 @@ from pathlib import Path
 import yaml
 
 from . import __version__
+from .config import community_name
 from .drivers import DriverError, detect, for_node
 from .lab import Lab
 
 MAX_ROUTES_PER_NODE = 50
 
 
-def record(topology: Path, include_routes: bool = True, exact_prefixes: bool = True,
+def record(topology: Path, include_routes: bool = True, exact_prefixes: bool = True, attributes: bool = False,
            log=lambda _: None) -> tuple[dict, list[str]]:
-    """Return (netdryrun.yml data, warnings) for the running lab described by `topology`."""
+    """Return (netdryrun.yml data, warnings) for the running lab described by `topology`.
+    With `attributes`, each recorded BGP route also gets a bgp_route check pinning its best path's
+    AS path, local preference and communities (not MED or next hop, which follow the topology)."""
     lab = Lab(topology)
     warnings: list[str] = []
     checks: list[dict] = []
@@ -69,8 +72,30 @@ def record(topology: Path, include_routes: bool = True, exact_prefixes: bool = T
                     warnings.append(f"{name}: {len(routes)} BGP routes (IPv{fam}); recorded the first {MAX_ROUTES_PER_NODE}")
                 for r in sorted(routes, key=lambda r: r.prefix)[:MAX_ROUTES_PER_NODE]:
                     checks.append({"type": "route", "node": name, "prefix": r.prefix, "protocol": "bgp"})
+                    if attributes:
+                        try:
+                            c = _attribute_check(drv, name, r.prefix)
+                        except DriverError as e:
+                            warnings.append(f"{name}: could not read BGP attributes of {r.prefix} ({e})")
+                            continue
+                        if c:
+                            checks.append(c)
     data = {"lab": topology.name, "timeout": 120, "checks": checks}
     return data, warnings
+
+
+def _attribute_check(drv, node: str, prefix: str) -> dict | None:
+    best = next((p for p in drv.bgp_paths(prefix).value if p.best), None)
+    if best is None:
+        return None
+    c: dict = {"type": "bgp_route", "node": node, "prefix": prefix}
+    if best.as_path is not None:
+        c["as_path"] = best.as_path
+    if best.local_pref is not None:
+        c["local_pref"] = best.local_pref
+    if best.all_communities():
+        c["communities"] = [community_name(x) for x in best.all_communities()]
+    return c
 
 
 def render(data: dict, warnings: list[str]) -> str:

@@ -1,6 +1,6 @@
 ---
 title: GitHub Action
-description: Run Netdryrun in GitHub Actions with netdryrun/netdryrun@v0.2.0. Inputs, outputs, example workflows, and security notes for running privileged containerlab labs in CI.
+description: Run Netdryrun in GitHub Actions with netdryrun/netdryrun@v0.3.0. Inputs, outputs, example workflows, and security notes for running privileged containerlab labs in CI.
 ---
 
 # GitHub Action
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.2.0
+      - uses: netdryrun/netdryrun@v0.3.0
         with:
           path: network/        # folder containing netdryrun.yml
 ```
@@ -43,7 +43,8 @@ It needs a Linux runner with Docker. GitHub-hosted `ubuntu-latest` runners work.
 
 | Output | Meaning |
 |---|---|
-| `status` | `passed`, `failed` or `error` |
+| `status` | `passed`, `failed`, `error` or `inconclusive` (the lab never reached a testable state, so the run says nothing about the change; the job still fails) |
+| `inconclusive-reason` | Why the run was inconclusive; empty otherwise |
 | `passed` | Number of passed checks |
 | `failed` | Number of failed checks |
 | `evidence-url` | Link to the evidence page, when `cloud` is `true` |
@@ -63,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.2.0
+      - uses: netdryrun/netdryrun@v0.3.0
         with:
           path: network/
 ```
@@ -71,7 +72,7 @@ jobs:
 ### Use the outputs in a later step
 
 ```yaml
-      - uses: netdryrun/netdryrun@v0.2.0
+      - uses: netdryrun/netdryrun@v0.3.0
         id: ndr
         with:
           path: network/
@@ -91,7 +92,7 @@ jobs:
         lab: [network/core, network/edge]
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.2.0
+      - uses: netdryrun/netdryrun@v0.3.0
         with:
           path: ${{ matrix.lab }}
           artifact-name: netdryrun-${{ strategy.job-index }}
@@ -112,7 +113,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.2.0
+      - uses: netdryrun/netdryrun@v0.3.0
         with:
           path: network/
           pr-comment: true

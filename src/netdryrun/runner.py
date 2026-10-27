@@ -8,9 +8,9 @@ from datetime import datetime, timezone
 from typing import Callable
 
 from . import __version__
-from .checks import Result, hold_together, is_post_convergence, run_round_robin
+from .checks import Result, hold_together, inconclusive_reason, is_post_convergence, run_round_robin
 from .config import Config, Scenario
-from .drivers import DriverError, for_node
+from .drivers import DriverError, check_supported, for_node
 from .lab import Lab, LabError
 
 
@@ -36,11 +36,18 @@ class RunReport:
     def status(self) -> str:
         if self.error:
             return "error"
-        return "passed" if self.results and self.failed == 0 else "failed"
+        if self.results and self.failed == 0:
+            return "passed"
+        return "inconclusive" if self.inconclusive_reason else "failed"
+
+    @property
+    def inconclusive_reason(self) -> str | None:
+        """Set when the lab never reached a testable state (see checks.inconclusive_reason)."""
+        return None if self.error else inconclusive_reason(self.results)
 
     @property
     def exit_code(self) -> int:
-        return {"passed": 0, "failed": 1}.get(self.status, 2)
+        return {"passed": 0, "failed": 1, "inconclusive": 3}.get(self.status, 2)
 
 
 def _now() -> str:
@@ -69,6 +76,8 @@ def run(config: Config, *, deploy: bool = True, keep: bool = False, keep_on_fail
         unknown = sorted(wanted - set(lab.nodes))
         if unknown:
             raise LabError(f"unknown node(s) {', '.join(unknown)}; the topology has {', '.join(lab.nodes)}")
+        for c in config.checks + [c for sc in config.scenarios for c in sc.checks]:
+            check_supported(lab, c, config.drivers.get(c.node))
         if deploy:
             log(f"Deploying lab {lab.name} ({len(lab.nodes)} nodes)...")
             lab.deploy()

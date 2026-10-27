@@ -30,7 +30,7 @@ Loads and validates `netdryrun.yml` and prints the parsed checks. It does not ne
 
 ```text
 $ netdryrun validate examples/frr-bgp
-OK: examples/frr-bgp/netdryrun.yml (6 checks, lab .../examples/frr-bgp/topology.clab.yml)
+OK: examples/frr-bgp/netdryrun.yml (7 checks, lab .../examples/frr-bgp/topology.clab.yml)
   - [bgp_session] r1: BGP session to 10.0.12.2 is established
   ...
 ```
@@ -50,6 +50,7 @@ Snapshots a known-good lab into a `netdryrun.yml` baseline: every established BG
 | `--wait SECONDS` | With `--deploy`: time for BGP to converge before recording (default 45) |
 | `--min-prefixes` | Record prefix counts as minimums instead of exact |
 | `--no-routes` | Don't record individual routes |
+| `--attributes` | Also record a `bgp_route` check per BGP route, pinning its best path's AS path, local preference and communities (not MED or next hop, which follow the topology) |
 | `--force` | Overwrite an existing file |
 
 ## Options
@@ -81,6 +82,24 @@ When a lab is kept, Netdryrun prints the command to destroy it. See [convergence
 | `0` | `passed` | Every check passed |
 | `1` | `failed` | At least one check failed |
 | `2` | `error` | Config error, or the lab could not be deployed or reached (containerlab or Docker missing, deploy failed, containers not running, unknown driver) |
+| `3` | `inconclusive` | Checks failed, but the lab never reached a state where they mean anything: the result says nothing about the change. Rules below |
+
+### When a run is inconclusive
+
+A run is `inconclusive` instead of `failed` only when **all** of these hold. The rules are deliberately conservative: when in doubt, the run is `failed`.
+
+1. At least one check failed, and there was no lab or config error (that is `error`).
+2. No positive check passed on **any** sample, anywhere in the run, scenarios included. One passing sample anywhere shows a working network, so the failures are findings.
+3. No post-convergence check failed with readable state. A leaked route, or a session that is up but must be down, proves a working control plane.
+4. Every failed check is on a node that never gave usable state. That means every sample of every `bgp_session` and `bgp_prefixes` check on the node was *unready*: the state command failed or its output could not be read (a CLI that isn't up yet), or BGP had no neighbors at all on the node. A node with no session or prefix checks qualifies only if every sample of every check on it was unready.
+
+A configured BGP session that is down (`idle`, `active`, `connect`, ...) is never unready. An ASN typo, a wrong neighbor address or a shutdown look exactly like a slow lab from the outside, so they stay `failed`. A routing table without the route, and a ping with no replies, are findings for the same reason. So a `timeout` that is merely too short for configured sessions to establish gives `failed`, not `inconclusive`; `inconclusive` is for a node whose CLI or BGP never came up at all.
+
+Known limit: a change that deletes a node's entire BGP configuration looks like a NOS that never started BGP, so it is reported `inconclusive`. It is still never `passed`.
+
+What to do: rerun, raise `timeout`, or check that the lab boots (`containerlab inspect`). Don't change the network change because of an inconclusive run.
+
+The JSON report says why in `inconclusive_reason`, and each unready sample in `history` has `"unready": true`.
 
 ## GitHub Actions step summary
 
@@ -104,11 +123,12 @@ FAILED: 5 passed, 1 failed (6 checks)
 | Field | Type | Meaning |
 |---|---|---|
 | `schema` | string | Always `netdryrun.report/v1` |
-| `status` | string | `passed`, `failed` or `error` |
+| `status` | string | `passed`, `failed`, `error` or `inconclusive` (new after 0.2.0; a reader should treat any status it does not know as not passed) |
 | `lab` | string | containerlab lab name |
 | `config` | string | Path of the `netdryrun.yml` that was run |
 | `started`, `finished` | string | UTC timestamps (ISO 8601) |
 | `error` | string or null | Lab or driver error, if the run could not complete |
+| `inconclusive_reason` | string or null | Why the run is `inconclusive` ([rules](#when-a-run-is-inconclusive)); null otherwise |
 | `environment` | object | `netdryrun`, `containerlab` and `python` versions, `host` platform, and `nodes` (each with `kind` and `image`) |
 | `summary` | object | `passed`, `failed`, `total` |
 | `checks` | array | One object per check, in file order (below) |
@@ -125,14 +145,14 @@ Each entry in `checks`:
 | `attempts` | integer | Number of samples taken |
 | `duration_s` | number | Seconds spent on the check |
 | `started` | string | UTC timestamp |
-| `history` | array | Every sample (last 50): `t` (seconds since start), `passed`, `detail` |
+| `history` | array | Every sample (last 50): `t` (seconds since start), `passed`, `detail`, and `unready: true` on a failing sample where the node gave no usable state |
 | `evidence` | array | Raw commands from the final sample: `node`, `cmd`, `rc`, `output`, `stderr` |
 
 Long outputs are truncated (the last 20,000 characters of command output are kept).
 
 ### Markdown
 
-`--markdown FILE` writes a short summary: a heading (passed, failed, or could not run), the pass/fail counts and lab name, a table of checks with failures first, and a footer with the Netdryrun and containerlab versions. This is the same text appended to the GitHub Actions step summary.
+`--markdown FILE` writes a short summary: a heading (passed, failed, inconclusive, or could not run), the reason when inconclusive, the pass/fail counts and lab name, a table of checks with failures first, and a footer with the Netdryrun and containerlab versions. This is the same text appended to the GitHub Actions step summary.
 
 ### JUnit XML
 
@@ -140,4 +160,5 @@ Long outputs are truncated (the last 20,000 characters of command output are kep
 
 - `classname` is `netdryrun.<type>`, for example `netdryrun.route`
 - a failed check has a `<failure>` whose `message` is the detail and whose body is the evidence as JSON
+- in an `inconclusive` run, failed checks have an `<error>` instead of a `<failure>` (they could not run meaningfully), and they count as `errors`, not `failures`
 - a lab error adds a testcase named `lab` with an `<error>` element

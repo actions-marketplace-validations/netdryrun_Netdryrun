@@ -1,0 +1,54 @@
+{
+  "prefix":"192.168.21.0/24",
+  "version":2,
+  "advertisedTo":{
+    "10.1.1.1":{
+      "hostname":"r1"
+    },
+    "10.2.1.1":{},
+    "10.3.1.1":{},
+    "10.4.1.1":{
+      "hostname":"sonic1"
+    }
+  },
+  "pathCount":1,
+  "paths":[
+    {
+      "aspath":{
+        "string":"Local",
+        "segments":[],
+        "length":0
+      },
+      "origin":"IGP",
+      "metric":0,
+      "weight":32768,
+      "valid":true,
+      "version":2,
+      "sourced":true,
+      "local":true,
+      "bestpath":{
+        "bestpathFromAs":0,
+        "overall":true,
+        "selectionReason":"First path received"
+      },
+      "lastUpdate":{
+        "epoch":1793073298,
+        "string":"Tue Oct 27 03:54:58 2026"
+      },
+      "nexthops":[
+        {
+          "ip":"0.0.0.0",
+          "hostname":"src",
+          "afi":"ipv4",
+          "metric":0,
+          "accessible":true,
+          "used":true
+        }
+      ],
+      "peer":{
+        "peerId":"0.0.0.0",
+        "routerId":"20.20.20.20"
+      }
+    }
+  ]
+}

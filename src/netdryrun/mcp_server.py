@@ -18,16 +18,24 @@ from .runner import run
 mcp = MCPServer("netdryrun", version=__version__, website_url="https://netdryrun.com")
 
 
+VERDICTS = {
+    "passed": "SAFE TO PROCEED",
+    "inconclusive": ("INCONCLUSIVE: the lab did not reach a testable state; this says nothing about your change. "
+                     "Do not apply it until a run passes."),
+}
+
+
 def _summary(rep, evidence_path: str | None) -> dict:
     return {
         "status": rep.status,
         "passed": rep.passed,
         "failed": rep.failed,
         "error": rep.error or None,
+        "inconclusive_reason": rep.inconclusive_reason,
         "lab": rep.lab_name,
         "checks": [{"name": r.check.name, "passed": r.passed, "detail": r.detail} for r in rep.results],
         "evidence_file": evidence_path,
-        "verdict": "SAFE TO PROCEED" if rep.status == "passed" else "DO NOT APPLY THIS CHANGE",
+        "verdict": VERDICTS.get(rep.status, "DO NOT APPLY THIS CHANGE"),
     }
 
 
@@ -47,6 +55,7 @@ def dry_run(path: str, keep_lab: bool = False) -> str:
     """Deploy the containerlab lab described by netdryrun.yml at `path`, run every behavioral check
     (BGP sessions, prefix counts, routes, reachability), then destroy the lab.
     Returns status, per-check results and a verdict. Only apply a network change if status is "passed".
+    "inconclusive" means the lab never came up, not that the change is wrong: rerun before changing anything.
     Takes 1-5 minutes."""
     return _execute(path, deploy=True, keep=keep_lab)
 
@@ -58,10 +67,11 @@ def run_checks(path: str) -> str:
 
 
 @mcp.tool()
-def record_baseline(topology: str, deploy: bool = True, wait_seconds: float = 45) -> str:
+def record_baseline(topology: str, deploy: bool = True, wait_seconds: float = 45, attributes: bool = False) -> str:
     """Snapshot a known-good lab (containerlab topology file) into netdryrun.yml check text: every
     established BGP session, prefix count and BGP route. Use it BEFORE proposing a change, then dry-run
-    the change against this baseline. Returns the YAML; it is not written to disk."""
+    the change against this baseline. With attributes=true, also pin each BGP route's AS path, local
+    preference and communities. Returns the YAML; it is not written to disk."""
     import time
 
     from .lab import Lab, LabError
@@ -73,7 +83,7 @@ def record_baseline(topology: str, deploy: bool = True, wait_seconds: float = 45
         if deploy:
             lab.deploy()
             time.sleep(wait_seconds)
-        data, warnings = record(topo)
+        data, warnings = record(topo, attributes=attributes)
     except LabError as e:
         return json.dumps({"error": str(e)})
     finally:

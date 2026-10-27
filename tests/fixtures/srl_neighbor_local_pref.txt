@@ -1,0 +1,4 @@
+{
+  "peer-address": "10.2.2.2",
+  "local-preference": 100
+}

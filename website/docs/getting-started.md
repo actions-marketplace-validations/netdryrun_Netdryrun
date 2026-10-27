@@ -61,10 +61,10 @@ Each run deploys the lab, runs the checks, prints one line per check and destroy
 
 | Example | Topology | Checks | Expected | Exit code |
 |---|---|---|---|---|
-| `examples/frr-bgp` | Triangle of three FRR routers (r1, r2, r3), eBGP | 2 sessions, prefix count 1 to 10, route present via BGP, ping, default route absent | `PASSED: 6 passed, 0 failed` | `0` |
-| `examples/srl-frr` | Nokia SR Linux (`srl1`) peering eBGP with FRR (`frr1`) | 2 sessions, a BGP route on each side, a ping in each direction | `PASSED: 6 passed, 0 failed` | `0` |
-| `examples/sonic-frr` | SONiC VS (`sonic1`, configured by `setup` commands) peering eBGP with FRR (`frr1`) | a session, a BGP route on each side, a ping, a prefix count, a port-down scenario | `PASSED` | `0` |
-| `examples/frr-bgp-broken` | Same triangle, but r2 adds `default-originate` toward r1 | Same 6 checks as `frr-bgp` | `FAILED: 5 passed, 1 failed`; the default route check fails | `1` |
+| `examples/frr-bgp` | Triangle of three FRR routers (r1, r2, r3), eBGP | 2 sessions, prefix count 1 to 10, route present via BGP, ping, best-path AS path and next hop, default route absent, and a link-failure scenario (reroute via r3) | `PASSED: 11 passed, 0 failed` | `0` |
+| `examples/srl-frr` | Nokia SR Linux (`srl1`) peering eBGP with FRR (`frr1`) | 2 sessions, a BGP route on each side, a ping in each direction, best-path attributes on `srl1` | `PASSED: 7 passed, 0 failed` | `0` |
+| `examples/sonic-frr` | SONiC VS (`sonic1`, configured by `setup` commands) peering eBGP with FRR (`frr1`) | a session, a BGP route on each side, a ping, a prefix count, best-path attributes, a port-down scenario | `PASSED` | `0` |
+| `examples/frr-bgp-broken` | Same triangle, but r2 adds `default-originate` toward r1 | The first 6 checks of `frr-bgp`, without the scenario | `FAILED: 5 passed, 1 failed`; the default route check fails | `1` |
 
 The broken example is the one shown on the [home page](index.md#a-failing-run). r1 receives the leaked default route but does not select it, so the ping still works. The route check catches it because a received-but-not-selected route counts as present.
 
