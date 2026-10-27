@@ -55,12 +55,14 @@ def test_every_status_validates(results, error, status):
 
 
 def test_report_of_a_run_that_could_not_start_validates(tmp_path):
-    # the real code path, no lab started: a check names a node the topology doesn't have, so the run ends in error
+    # the real code path, no lab started: the run ends in error before any check runs. Where containerlab is
+    # installed, the error is the unknown node r9; on CI's unit runners (no containerlab) it's the missing tool.
+    # Either way the report of a run that couldn't start must match the schema.
     topo = tmp_path / "topology.clab.yml"
     topo.write_text("name: t\ntopology:\n  nodes:\n    r1: {kind: linux, image: frr}\n", encoding="utf-8")
     check = Check(type="route", params={"node": "r9", "prefix": "10.0.0.0/24"}, name="r9 route", timeout=90)
     data = json.loads(report.to_json(run(Config(tmp_path / "netdryrun.yml", topo, 90, [check]), deploy=False)))
-    assert data["status"] == "error" and "r9" in data["error"]
+    assert data["status"] == "error" and ("r9" in data["error"] or "not found" in data["error"])
     _validate(data)
 
 
