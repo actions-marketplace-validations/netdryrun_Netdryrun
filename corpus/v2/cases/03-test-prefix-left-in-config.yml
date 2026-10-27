@@ -1,0 +1,13 @@
+id: 03-test-prefix-left-in-config
+title: pe1 originates 1.1.1.0/24 left over from a lab test
+category: hijack
+expected: unsafe
+rationale: A network statement for 1.1.1.0/24 (often used as junk space in tests) is left in the production config. Our customer's traffic to the public resolver at 1.1.1.1 is now blackholed by us. Export filters keep it from the upstream and the peer. (Re-expresses v1 case 23 with a prefix on the I7 sentinel list.)
+edits:
+- node: pe1
+  append: |-
+    ip route 1.1.1.0/24 blackhole
+    router bgp 65000
+     address-family ipv4 unicast
+      network 1.1.1.0/24
+     exit-address-family

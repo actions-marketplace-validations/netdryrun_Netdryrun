@@ -1,0 +1,11 @@
+id: 14-customer-gets-default-only
+title: Customer export policy restricted to the default route
+category: policy-bug
+expected: unsafe
+rationale: A default-only template is applied to a customer that pays for full routes. The customer still has connectivity through the default but loses the specific routes it needs for its own traffic engineering, which breaks its contract.
+edits:
+- node: pe1
+  append: ip prefix-list DEFAULT-ONLY seq 10 permit 0.0.0.0/0
+- node: pe1
+  replace: "route-map TO-CUSTOMER permit 10\n"
+  with: "route-map TO-CUSTOMER permit 10\n match ip address prefix-list DEFAULT-ONLY\n"

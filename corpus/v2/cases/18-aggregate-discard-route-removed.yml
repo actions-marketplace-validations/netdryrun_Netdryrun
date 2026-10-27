@@ -1,0 +1,9 @@
+id: 18-aggregate-discard-route-removed
+title: Discard route for our aggregate deleted as unused
+category: hygiene
+expected: unsafe
+rationale: "The blackhole static for 192.0.2.0/24 looks unused and is cleaned up. Either the aggregate stops being announced (if BGP requires a matching route), or it is still announced with nothing to absorb traffic for unused addresses in it: that traffic follows the upstream's default straight back to the upstream, a routing loop. Both are harmful."
+edits:
+- node: pe1
+  replace: "ip route 192.0.2.0/24 blackhole\n"
+  with: ''

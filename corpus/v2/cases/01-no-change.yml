@@ -1,0 +1,6 @@
+id: 01-no-change
+title: No change (control)
+category: control
+expected: safe
+rationale: The base lab runs unchanged. Every strategy must call it safe, including while the two misbehaving-neighbor scenarios run.
+edits: []

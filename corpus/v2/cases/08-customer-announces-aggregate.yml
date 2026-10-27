@@ -1,0 +1,13 @@
+id: 08-customer-announces-aggregate
+title: Customer also announces its covering /16
+category: customer-growth
+expected: safe
+rationale: The customer starts announcing 10.100.0.0/16, its registered block, alongside the /24. The import filter allows it (le 24 includes the /16 itself), and a customer announcing its own allocation is normal.
+edits:
+- node: ce1
+  append: |-
+    ip route 10.100.0.0/16 blackhole
+    router bgp 65100
+     address-family ipv4 unicast
+      network 10.100.0.0/16
+     exit-address-family

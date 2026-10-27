@@ -1,0 +1,14 @@
+id: 04-redundant-aggregate-typo
+title: Aggregate added on pe2 for redundancy, mistyped as 192.0.12.0/24
+category: hijack
+expected: unsafe
+rationale: The operator meant to originate our 192.0.2.0/24 from pe2 too, but typed 192.0.12.0/24, someone else's space. The peer export filter only allows our real aggregate, so the peer does not see it, but pe1 sends it to the customer, whose traffic to that network is now blackholed. (v1 case 23 class with a prefix that is not on any sentinel list.)
+note: Expected to be missed. I7 only spot-checks a few well-known prefixes, and nothing bounds what the customer receives.
+edits:
+- node: pe2
+  append: |-
+    ip route 192.0.12.0/24 blackhole
+    router bgp 65000
+     address-family ipv4 unicast
+      network 192.0.12.0/24
+     exit-address-family

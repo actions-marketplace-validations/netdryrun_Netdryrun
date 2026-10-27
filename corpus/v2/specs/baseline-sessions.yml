@@ -1,0 +1,8 @@
+# Baseline B: what a typical "all BGP sessions are up" monitor sees.
+lab: topology.clab.yml
+timeout: 90
+checks:
+  - {type: bgp_session, node: pe1, neighbor: 10.0.1.2, name: "pe1-ce1 up"}
+  - {type: bgp_session, node: pe1, neighbor: 10.0.2.2, name: "pe1-up1 up"}
+  - {type: bgp_session, node: pe1, neighbor: 10.0.3.2, name: "pe1-pe2 up"}
+  - {type: bgp_session, node: pe2, neighbor: 10.0.4.2, name: "pe2-peer1 up"}

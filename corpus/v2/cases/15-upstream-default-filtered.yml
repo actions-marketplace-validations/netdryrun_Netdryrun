@@ -1,0 +1,11 @@
+id: 15-upstream-default-filtered
+title: Default route from the upstream filtered on import
+category: policy-bug
+expected: unsafe
+rationale: A deny clause for 0.0.0.0/0 is added to FROM-UPSTREAM ("we don't need a default from transit"). In this network the upstream's default is how the customer reaches everything beyond the two lab prefixes, so the customer loses most of the internet.
+edits:
+- node: pe1
+  append: |-
+    ip prefix-list DEFAULT-ONLY seq 10 permit 0.0.0.0/0
+    route-map FROM-UPSTREAM deny 5
+     match ip address prefix-list DEFAULT-ONLY

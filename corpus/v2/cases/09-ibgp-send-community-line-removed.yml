@@ -1,0 +1,9 @@
+id: 09-ibgp-send-community-line-removed
+title: Explicit send-community line removed on the pe1 to pe2 iBGP session
+category: vendor-default
+expected: safe
+rationale: FRR sends communities to every neighbor by default, so deleting the explicit line is a no-op and pe2 still sees the customer community. Labeled from v1's measured post-run finding on case 12, not from fresh judgment (see INTENT.md). On platforms that do not send communities by default, the same edit would be harmful.
+edits:
+- node: pe1
+  replace: "  neighbor 10.0.3.2 send-community\n"
+  with: ''

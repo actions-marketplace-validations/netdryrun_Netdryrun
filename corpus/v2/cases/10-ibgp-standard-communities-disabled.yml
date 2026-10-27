@@ -1,0 +1,9 @@
+id: 10-ibgp-standard-communities-disabled
+title: Standard communities explicitly disabled on the pe1 to pe2 iBGP session
+category: policy-bug
+expected: unsafe
+rationale: "pe1 stops sending standard communities to pe2, so the customer route arrives at pe2 without 65000:100. pe2's peer export policy matches on that community, so the customer route stops reaching the peer: the customer loses the peering path it pays for."
+edits:
+- node: pe1
+  replace: "  neighbor 10.0.3.2 send-community\n"
+  with: "  no neighbor 10.0.3.2 send-community standard\n"
