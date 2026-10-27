@@ -4,6 +4,6 @@
   "exit_code": 0,
   "timed_out": false,
   "wall_s": 87.9,
-  "folder": "C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\run1\\T02-transit-only",
+  "folder": "C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\run1\\T02-transit-only",
   "model_requested": null
 }

@@ -47,7 +47,7 @@
   ],
   "permission_denials": [],
   "tool_errors": [
-    "EISDIR: illegal operation on a directory, read 'C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku2-fixed\\T01-new-block'"
+    "EISDIR: illegal operation on a directory, read 'C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\haiku2-fixed\\T01-new-block'"
   ],
   "timed_out": false
 }

@@ -4,6 +4,6 @@
   "exit_code": 0,
   "timed_out": false,
   "wall_s": 24.0,
-  "folder": "C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T03-review-open-filters",
+  "folder": "C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T03-review-open-filters",
   "model_requested": "haiku"
 }

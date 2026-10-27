@@ -39,14 +39,14 @@
       "tool_name": "Read",
       "tool_use_id": "toolu_019hXSCEuY9d25VZLN51d2EX",
       "tool_input": {
-        "file_path": "\\mnt\\c\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T05-review-safe\\TICKET.md"
+        "file_path": "\\mnt\\c\\Users\\user\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T05-review-safe\\TICKET.md"
       }
     },
     {
       "tool_name": "Read",
       "tool_use_id": "toolu_01RqrZkYKqrei61W4AGK7qZH",
       "tool_input": {
-        "file_path": "\\mnt\\c\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T05-review-safe\\AGENTS.md"
+        "file_path": "\\mnt\\c\\Users\\user\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T05-review-safe\\AGENTS.md"
       }
     },
     {
@@ -63,7 +63,7 @@
   "tool_errors": [
     "Permission to use Read has been denied because Claude Code is running in don't ask mode. IMPORTANT: You *may* attempt to accomplish this action using other tools that might naturally be used to accomplish this goal, e.g. using head instead of cat. But you *should not* attempt to work around this den",
     "Permission to use Read has been denied because Claude Code is running in don't ask mode. IMPORTANT: You *may* attempt to accomplish this action using other tools that might naturally be used to accomplish this goal, e.g. using head instead of cat. But you *should not* attempt to work around this den",
-    "<tool_use_error>Path does not exist: /mnt/c/Users/manag/AppData/Local/Temp/ndr-eval/haiku1/T05-review-safe. Note: your current working directory is C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T05-review-safe.</tool_use_error>",
+    "<tool_use_error>Path does not exist: /mnt/c/Users/<user>/AppData/Local/Temp/ndr-eval/haiku1/T05-review-safe. Note: your current working directory is C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T05-review-safe.</tool_use_error>",
     "Permission to use Grep has been denied because Claude Code is running in don't ask mode. IMPORTANT: You *may* attempt to accomplish this action using other tools that might naturally be used to accomplish this goal, e.g. using head instead of cat. But you *should not* attempt to work around this den"
   ],
   "timed_out": false

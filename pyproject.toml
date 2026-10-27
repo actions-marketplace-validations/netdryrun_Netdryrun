@@ -51,5 +51,9 @@ netdryrun-mcp = "netdryrun.mcp_server:main"
 [tool.hatch.build.targets.wheel]
 packages = ["src/netdryrun"]
 
+[tool.hatch.build.targets.sdist]
+# The agent-eval transcripts and run folders (about 9 MB) are evidence for the repository, not part of the package
+exclude = ["examples/agent-eval/results", "examples/agent-eval/validation"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]

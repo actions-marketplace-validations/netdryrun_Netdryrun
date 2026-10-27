@@ -2,7 +2,7 @@
   "schema": "netdryrun.report/v1",
   "status": "failed",
   "lab": "ndr-eval-t04",
-  "config": "/mnt/c/Users/manag/AppData/Local/Temp/ndr-eval/haiku3-fixed/T04-review-community/netdryrun.yml",
+  "config": "/mnt/c/Users/<user>/AppData/Local/Temp/ndr-eval/haiku3-fixed/T04-review-community/netdryrun.yml",
   "started": "2026-10-27T09:51:15+00:00",
   "finished": "2026-10-27T09:53:14+00:00",
   "error": null,

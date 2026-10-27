@@ -4,6 +4,6 @@
   "exit_code": 0,
   "timed_out": false,
   "wall_s": 209.4,
-  "folder": "C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T08-review-localpref",
+  "folder": "C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T08-review-localpref",
   "model_requested": "haiku"
 }

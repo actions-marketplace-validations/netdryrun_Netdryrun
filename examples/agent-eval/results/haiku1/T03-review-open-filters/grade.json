@@ -47,14 +47,14 @@
       "tool_name": "Read",
       "tool_use_id": "toolu_01Hyorh2JZw3NEtoM8QgYHx7",
       "tool_input": {
-        "file_path": "\\mnt\\c\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T03-review-open-filters\\TICKET.md"
+        "file_path": "\\mnt\\c\\Users\\user\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T03-review-open-filters\\TICKET.md"
       }
     },
     {
       "tool_name": "Read",
       "tool_use_id": "toolu_01DAn2ktpnYqSwWNY3tkhJio",
       "tool_input": {
-        "file_path": "\\mnt\\c\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T03-review-open-filters\\AGENTS.md"
+        "file_path": "\\mnt\\c\\Users\\user\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T03-review-open-filters\\AGENTS.md"
       }
     },
     {
@@ -71,7 +71,7 @@
   "tool_errors": [
     "Permission to use Read has been denied because Claude Code is running in don't ask mode. IMPORTANT: You *may* attempt to accomplish this action using other tools that might naturally be used to accomplish this goal, e.g. using head instead of cat. But you *should not* attempt to work around this den",
     "Permission to use Read has been denied because Claude Code is running in don't ask mode. IMPORTANT: You *may* attempt to accomplish this action using other tools that might naturally be used to accomplish this goal, e.g. using head instead of cat. But you *should not* attempt to work around this den",
-    "<tool_use_error>Directory does not exist: /mnt/c/Users/manag/AppData/Local/Temp/ndr-eval/haiku1/T03-review-open-filters. Note: your current working directory is C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T03-review-open-filters.</tool_use_error>",
+    "<tool_use_error>Directory does not exist: /mnt/c/Users/<user>/AppData/Local/Temp/ndr-eval/haiku1/T03-review-open-filters. Note: your current working directory is C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T03-review-open-filters.</tool_use_error>",
     "Permission to use Grep has been denied because Claude Code is running in don't ask mode. IMPORTANT: You *may* attempt to accomplish this action using other tools that might naturally be used to accomplish this goal, e.g. using head instead of cat. But you *should not* attempt to work around this den"
   ],
   "timed_out": false

@@ -4,7 +4,7 @@
   "exit_code": 0,
   "timed_out": false,
   "wall_s": 197.3,
-  "folder": "C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku3-fixed\\T01-new-block",
+  "folder": "C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\haiku3-fixed\\T01-new-block",
   "model_requested": "haiku",
   "path_style": "windows",
   "netdryrun": "/home/dmin/.venvs/ndr-eval-branch/bin/netdryrun",

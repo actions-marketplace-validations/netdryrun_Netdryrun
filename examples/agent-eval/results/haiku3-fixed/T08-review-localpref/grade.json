@@ -45,7 +45,7 @@
   ],
   "permission_denials": [],
   "tool_errors": [
-    "EISDIR: illegal operation on a directory, read 'C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku3-fixed\\T08-review-localpref'"
+    "EISDIR: illegal operation on a directory, read 'C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\haiku3-fixed\\T08-review-localpref'"
   ],
   "timed_out": false
 }

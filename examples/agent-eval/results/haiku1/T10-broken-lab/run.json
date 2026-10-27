@@ -4,6 +4,6 @@
   "exit_code": 0,
   "timed_out": false,
   "wall_s": 101.6,
-  "folder": "C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T10-broken-lab",
+  "folder": "C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T10-broken-lab",
   "model_requested": "haiku"
 }

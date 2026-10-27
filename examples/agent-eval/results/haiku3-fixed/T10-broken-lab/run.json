@@ -4,7 +4,7 @@
   "exit_code": 0,
   "timed_out": false,
   "wall_s": 697.0,
-  "folder": "C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku3-fixed\\T10-broken-lab",
+  "folder": "C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\haiku3-fixed\\T10-broken-lab",
   "model_requested": "haiku",
   "path_style": "windows",
   "netdryrun": "/home/dmin/.venvs/ndr-eval-branch/bin/netdryrun",

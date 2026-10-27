@@ -37,14 +37,14 @@
       "tool_name": "Read",
       "tool_use_id": "toolu_01CgE6pq4zHHvEYNeTz6on3F",
       "tool_input": {
-        "file_path": "\\mnt\\c\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T07-aggregate\\TICKET.md"
+        "file_path": "\\mnt\\c\\Users\\user\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T07-aggregate\\TICKET.md"
       }
     },
     {
       "tool_name": "Read",
       "tool_use_id": "toolu_01P1jpDDmPjEW4d475zZcjE2",
       "tool_input": {
-        "file_path": "\\mnt\\c\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T07-aggregate\\AGENTS.md"
+        "file_path": "\\mnt\\c\\Users\\user\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T07-aggregate\\AGENTS.md"
       }
     }
   ],

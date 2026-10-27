@@ -49,7 +49,7 @@
   ],
   "permission_denials": [],
   "tool_errors": [
-    "EISDIR: illegal operation on a directory, read 'C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku2-fixed\\T10-broken-lab\\configs'"
+    "EISDIR: illegal operation on a directory, read 'C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\haiku2-fixed\\T10-broken-lab\\configs'"
   ],
   "timed_out": false
 }

@@ -4,7 +4,7 @@
   "exit_code": 0,
   "timed_out": false,
   "wall_s": 66.3,
-  "folder": "C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku3-fixed\\T05-review-safe",
+  "folder": "C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\haiku3-fixed\\T05-review-safe",
   "model_requested": "haiku",
   "path_style": "windows",
   "netdryrun": "/home/dmin/.venvs/ndr-eval-branch/bin/netdryrun",

@@ -2,7 +2,7 @@
   "schema": "netdryrun.report/v1",
   "status": "passed",
   "lab": "ndr-eval-t09",
-  "config": "/mnt/c/Users/manag/AppData/Local/Temp/ndr-eval/run2/T09-review-redistribute/netdryrun.yml",
+  "config": "/mnt/c/Users/<user>/AppData/Local/Temp/ndr-eval/run2/T09-review-redistribute/netdryrun.yml",
   "started": "2026-10-27T08:48:48+00:00",
   "finished": "2026-10-27T08:49:03+00:00",
   "error": null,

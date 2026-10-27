@@ -2,7 +2,7 @@
   "schema": "netdryrun.report/v1",
   "status": "failed",
   "lab": "ndr-eval-t08",
-  "config": "/mnt/c/Users/manag/AppData/Local/Temp/ndr-eval/run2/T08-review-localpref/netdryrun.yml",
+  "config": "/mnt/c/Users/<user>/AppData/Local/Temp/ndr-eval/run2/T08-review-localpref/netdryrun.yml",
   "started": "2026-10-27T08:47:00+00:00",
   "finished": "2026-10-27T08:49:48+00:00",
   "error": null,

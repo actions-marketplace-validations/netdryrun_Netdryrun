@@ -2,7 +2,7 @@
   "schema": "netdryrun.report/v1",
   "status": "failed",
   "lab": "ndr-eval-t10",
-  "config": "/mnt/c/Users/manag/AppData/Local/Temp/ndr-eval/haiku2-fixed/T10-broken-lab/netdryrun.yml",
+  "config": "/mnt/c/Users/<user>/AppData/Local/Temp/ndr-eval/haiku2-fixed/T10-broken-lab/netdryrun.yml",
   "started": "2026-10-27T09:37:49+00:00",
   "finished": "2026-10-27T09:42:22+00:00",
   "error": null,

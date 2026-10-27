@@ -50,11 +50,11 @@
   ],
   "permission_denials": [],
   "tool_errors": [
-    "EISDIR: illegal operation on a directory, read 'C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku2-fixed\\T02-transit-only'",
+    "EISDIR: illegal operation on a directory, read 'C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\haiku2-fixed\\T02-transit-only'",
     "<tool_use_error>Error: No such tool available: dry_run</tool_use_error>",
     "<tool_use_error>Error: No such tool available: netdryrun_dry_run</tool_use_error>",
     "<tool_use_error>Error: No such tool available: dry_run</tool_use_error>",
-    "EISDIR: illegal operation on a directory, read 'C:\\Users\\manag\\.claude\\projects\\C--Users-manag-AppData-Local-Temp-ndr-eval-haiku2-fixed-T02-transit-only\\memory'"
+    "EISDIR: illegal operation on a directory, read 'C:\\Users\\<user>\\.claude\\projects\\C--Users-user-AppData-Local-Temp-ndr-eval-haiku2-fixed-T02-transit-only\\memory'"
   ],
   "timed_out": false
 }
