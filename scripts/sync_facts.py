@@ -70,8 +70,14 @@ def facts() -> dict:
               "generated": results["environment"]["generated"][:10], "netdryrun": results["environment"]["netdryrun"]}
     for strategy in ("netdryrun", "ping", "sessions"):
         corpus[strategy] = sum(bool(c["strategies"][strategy]["correct"]) for c in cases)
+    corpus["losses"] = [{"id": c["id"], "title": c["title"], "expected": c["expected"]}
+                        for c in cases if not c["strategies"]["netdryrun"]["correct"]]
     return {"version": version, "platforms": [PLATFORMS[d] for d in PLATFORMS], "drivers": list(PLATFORMS),
             "check_types": check_types, "mcp_tools": mcp_tools, "corpus": corpus}
+
+
+def _count(n: int, noun: str) -> str:
+    return f"{n} {noun}{'' if n == 1 else 's'}"
 
 
 def blocks(f: dict) -> dict[str, str]:
@@ -81,6 +87,8 @@ def blocks(f: dict) -> dict[str, str]:
     corpus_sentence = (f"On the {{link}} ({c['cases']} realistic BGP changes, expected verdicts committed before any run), "
                        f"Netdryrun judged {c['netdryrun']}/{c['cases']} correctly, ping-only checks {c['ping']}/{c['cases']} "
                        f"and all-sessions-up checks {c['sessions']}/{c['cases']}.")
+    losses = {kind: [x for x in c["losses"] if x["expected"] == kind] for kind in ("unsafe", "safe")}
+    loss_links = {kind: _join([f"[`{x['id'][:2]}` {x['title']}](corpus/{x['id']}.md)" for x in xs]) for kind, xs in losses.items()}
     checks = _join([f"`{t}`" for t in f["check_types"]])
     tools = _join([f"`{t}`" for t in f["mcp_tools"]])
     v = f["version"]
@@ -105,6 +113,11 @@ def blocks(f: dict) -> dict[str, str]:
                         f"verdicts; {scores} correct"),
         "trust_scope": (f"Version {v} also covers only BGP (IPv4/IPv6 unicast), routes and ping, plus link-down and node-isolation "
                         "failure scenarios. OSPF/IS-IS adjacencies, path checks and policy attributes are not covered yet."),
+        "built_losses": (f"- **Netdryrun is wrong on {len(c['losses'])} of {c['cases']} cases**: it approved "
+                         f"{_count(len(losses['unsafe']), 'harmful change')} and blocked {_count(len(losses['safe']), 'safe one')} "
+                         f"([RESULTS.md](https://github.com/netdryrun/netdryrun/blob/main/corpus/RESULTS.md)). They are shown in the same table as the catches.\n"
+                         f"    - Approved although harmful: {loss_links['unsafe'] or 'none'}.\n"
+                         f"    - Blocked although safe: {loss_links['safe'] or 'none'}."),
         "agents_platforms": short,
         "mcp_tools": tools,
     }
@@ -148,7 +161,8 @@ def main() -> int:
     values, problems, changed = blocks(f), [], {}
 
     for rel in ("README.md", "AGENTS.md", "website/docs/index.md", "website/docs/when-to-use-what.md",
-                "website/docs/llms.txt", "website/docs/github-action.md", "website/docs/trust.md"):
+                "website/docs/llms.txt", "website/docs/github-action.md", "website/docs/trust.md",
+                "website/docs/how-its-built.md"):
         path = ROOT / rel
         old = path.read_text(encoding="utf-8")
         new = sync_blocks(old, values, rel, problems)
