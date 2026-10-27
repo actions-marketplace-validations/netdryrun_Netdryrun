@@ -503,3 +503,17 @@ def test_a_bound_file_left_out_by_export_ignore_is_exit_2(tmp_path):
                       side_fn=side)
     assert res.exit_code == 2 and "export-ignore" in res.error and "configs/edge1.conf" in res.error
     assert not side.calls
+
+
+def test_the_report_lists_every_route_an_allow_entry_explained(tmp_path):
+    after = base()
+    after.learn("cust1", "10.200.5.0/24", "10.0.1.1", "65000 65002")
+    after.learn("up1", "10.200.6.0/24", "10.0.2.1", "65000 65002")
+    res, _ = run_verify(tmp_path, base().snap(), after.snap(),
+                        intent_text="intent: []\nallow_anywhere: ['10.200.*.0/24']\n")
+    assert res.status == "matched"
+    (entry,) = validate(res)["allowed"]
+    assert entry["routes"] == [{"node": "cust1", "vrf": "default", "prefix": "10.200.5.0/24"},
+                               {"node": "up1", "vrf": "default", "prefix": "10.200.6.0/24"}]
+    text = vreport.console(res)
+    assert "cust1 10.200.5.0/24" in text and "up1 10.200.6.0/24" in text

@@ -141,7 +141,13 @@ intent: []
 allow_anywhere: ["10.200.*.0/24", {prefix: 10.9.0.0/16, vrf: cust}]
 ```
 
-Accepts every difference for the listed prefixes, on every node: churn you accept. An entry matches a prefix exactly, or is an explicit glob on the prefix text (`*`, `?`, `[0-3]`) that names at least the first octet and a prefix length. It never matches by containment: `10.0.0.0/8` doesn't cover `10.1.0.0/16`. The report lists every prefix each glob matched. Sessions are never covered.
+Accepts every difference for the listed prefixes, on every node: churn you accept. An entry is an exact prefix, or a glob:
+
+- `*` stands for **one whole octet** (IPv4) or **one whole hextet** (IPv6), never part of one and never across octets. There are no other wildcards.
+- **The prefix length is always explicit** and matched exactly: `10.200.*.0/24` matches `10.200.7.0/24`, not `10.200.7.0/25`.
+- **At most /16 of wildcard reach for IPv4 and /48 for IPv6:** the first two octets (three hextets) are written literally. `10.200.*.0/24` and `2001:db8:1:*::/64` are accepted; `10.*.0.0/16`, `10.*/*` and `2001:db8:*::/48` are errors (exit code `2`).
+
+It never matches by containment: `10.0.0.0/8` doesn't cover `10.1.0.0/16`. The report lists every route each entry explained (node, VRF and prefix, under `allowed[].routes`) and every item. Sessions are never covered.
 
 `allow_anywhere` weakens the verdict, and every report that uses it carries a warning: a change that adds or widens it should need a second approver (CODEOWNERS). The CLI can't enforce that.
 

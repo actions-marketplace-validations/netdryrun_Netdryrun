@@ -430,7 +430,7 @@ def test_allow_anywhere_exact_and_glob_expanded_never_supernet():
     assert {d.key.prefix for d in m.allowed[0]} == {"10.200.5.0/24"}
     assert run(base(), after, allow=["10.0.0.0/8"]).status == "failed"            # no containment
     assert run(base(), after, allow=["10.200.5.0/24", "10.201.0.0/24"]).status == "matched"
-    assert run(base(), after, allow=[{"prefix": "10.20?.*.0/24", "vrf": "cust"}]).status == "failed"
+    assert run(base(), after, allow=[{"prefix": "10.200.*.0/24", "vrf": "cust"}]).status == "failed"
 
 
 def test_allow_anywhere_never_covers_sessions():

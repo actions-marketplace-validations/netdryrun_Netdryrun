@@ -15,7 +15,7 @@
       - prefix: 198.51.100.0/24
         advertisement: {node: edge1, neighbor: 192.0.2.9}
         goes: added                           # or removed, or to: {...}
-    allow_anywhere: ["10.200.*.0/24"]
+    allow_anywhere: ["10.200.*.0/24"]          # `*` = one whole octet; /16 reach at most; explicit length
 
 Validation is strict: an unknown key, a wrong type, a prefix with host bits, two lines about the same
 thing, or a node that is not in the topology is an IntentError (exit 2). A line without `vrf` means the
@@ -76,19 +76,39 @@ class Line:
         return self.nodes[0]
 
 
+# How far an allow_anywhere glob may reach: its wildcards only stand for octets (hextets) past this many bits
+GLOB_REACH = {4: 16, 6: 48}
+
+
+def _groups(net) -> tuple[int, ...]:
+    """A network address as its octets (IPv4) or hextets (IPv6)."""
+    b = net.network_address.packed
+    return tuple(b) if net.version == 4 else tuple(int.from_bytes(b[i:i + 2], "big") for i in range(0, 16, 2))
+
+
 @dataclass(frozen=True)
 class Allow:
     pattern: str
     vrf: str
     glob: bool
+    version: int = 0
+    groups: tuple = ()        # a glob: per octet (hextet) its value, or None for `*`
+    length: int = 0           # a glob: the prefix length, always explicit
 
     def matches(self, prefix: str, vrf: str) -> bool:
-        """Exact prefix, or an explicit glob on the prefix text. Never supernet containment."""
+        """Exact prefix, or a glob whose `*` stands for one whole octet (hextet) with the same explicit
+        prefix length. Never supernet containment."""
         if vrf != self.vrf:
             return False
         if not self.glob:
             return prefix == self.pattern
-        return re.fullmatch(_glob_regex(self.pattern), prefix) is not None
+        try:
+            net = ipaddress.ip_network(prefix, strict=True)
+        except ValueError:
+            return False
+        if net.version != self.version or net.prefixlen != self.length:
+            return False
+        return all(w is None or w == g for w, g in zip(self.groups, _groups(net), strict=True))
 
 
 @dataclass
@@ -104,25 +124,6 @@ class Intent:
 
     def nodes(self) -> set[str]:
         return {n for ln in self.lines for n in ln.nodes}
-
-
-def _glob_regex(pattern: str) -> str:
-    out = []
-    i = 0
-    while i < len(pattern):
-        c = pattern[i]
-        if c == "*":
-            out.append(r"[0-9A-Fa-f:.]*")
-        elif c == "?":
-            out.append(r"[0-9A-Fa-f:.]")
-        elif c == "[":
-            j = pattern.index("]", i)
-            out.append("[" + re.escape(pattern[i + 1:j]).replace(r"\-", "-") + "]")
-            i = j
-        else:
-            out.append(re.escape(c))
-        i += 1
-    return "".join(out)
 
 
 def _where(i: int) -> str:
@@ -325,17 +326,54 @@ def _allow(i: int, raw) -> Allow:
     if not isinstance(raw, str) or not raw.strip():
         raise IntentError(f"{where}: an entry is a prefix or a glob such as 10.200.*.0/24")
     text = raw.strip()
-    if not re.search(r"[*?\[]", text):
+    if re.search(r"[?\[\]{}]", text):
+        raise IntentError(f"{where}: {text!r}: the only wildcard is `*`, standing for one whole octet (or hextet)")
+    if "*" not in text:
         return Allow(_prefix(where, text), vrf, False)
-    # A glob must be explicit: at least the first octet (or hextet) and a separator written out, and a
-    # prefix length; `*`, `*/*` or `10.*` would quietly accept anything.
-    head = re.split(r"[*?\[]", text, maxsplit=1)[0]
-    if not re.fullmatch(r"[0-9A-Fa-f:.\[\]\-*?]+/[0-9*?\[\]\-]+", text) or not re.search(r"[0-9A-Fa-f]+[.:]", head):
-        raise IntentError(f"{where}: glob {text!r} is too broad or malformed; write at least the first octet and a "
-                          "separator literally, and a prefix length (e.g. 10.200.*.0/24)")
-    if text.count("[") != text.count("]"):
-        raise IntentError(f"{where}: glob {text!r} has an unclosed [")
-    return Allow(text, vrf, True)
+    return _glob(where, text, vrf)
+
+
+def _glob(where: str, text: str, vrf: str) -> Allow:
+    """A glob: an address with `*` for whole octets (IPv4) or hextets (IPv6) and an explicit prefix length.
+    The wildcards may only stand past the first 16 bits (IPv4) or 48 bits (IPv6), and inside the length."""
+    hint = "e.g. 10.200.*.0/24 or 2001:db8:1:*::/64"
+    m = re.fullmatch(r"([0-9A-Fa-f:.*]+)/([0-9]{1,3})", text)
+    if not m:
+        raise IntentError(f"{where}: glob {text!r} needs an explicit numeric prefix length ({hint})")
+    addr, length = m.group(1), int(m.group(2))
+    if ":" not in addr:
+        version, bits, parts = 4, 8, addr.split(".")
+        ok = len(parts) == 4 and all(p == "*" or re.fullmatch(r"[0-9]{1,3}", p) and int(p) <= 255 for p in parts)
+    else:
+        version, bits = 6, 16
+        if addr.count("::") > 1:
+            raise IntentError(f"{where}: glob {text!r}: `::` appears twice")
+        if "::" in addr:
+            left, right = addr.split("::")
+            lp, rp = (left.split(":") if left else []), (right.split(":") if right else [])
+            parts = lp + ["0"] * (8 - len(lp) - len(rp)) + rp if len(lp) + len(rp) < 8 else []
+        else:
+            parts = addr.split(":")
+        ok = len(parts) == 8 and all(p == "*" or re.fullmatch(r"[0-9A-Fa-f]{1,4}", p) for p in parts)
+    if not ok:
+        raise IntentError(f"{where}: glob {text!r} is malformed: `*` stands for one whole octet (hextet) ({hint})")
+    if length > (32 if version == 4 else 128):
+        raise IntentError(f"{where}: glob {text!r}: prefix length /{length} is too long")
+    wild = [i for i, p in enumerate(parts) if p == "*"]
+    for i in wild:
+        if i * bits < GLOB_REACH[version]:
+            raise IntentError(f"{where}: glob {text!r} reaches wider than /{GLOB_REACH[version]}: write the first "
+                              f"{GLOB_REACH[version] // bits} {'octets' if version == 4 else 'hextets'} literally "
+                              f"({hint})")
+        if i * bits >= length:
+            raise IntentError(f"{where}: glob {text!r}: a `*` past the prefix length /{length} matches nothing")
+    groups = tuple(None if p == "*" else int(p, 10 if version == 4 else 16) for p in parts)
+    filled = ".".join(str(g or 0) for g in groups) if version == 4 else ":".join(f"{g or 0:x}" for g in groups)
+    try:
+        ipaddress.ip_network(f"{filled}/{length}", strict=True)
+    except ValueError:
+        raise IntentError(f"{where}: glob {text!r} has host bits set past /{length}") from None
+    return Allow(text, vrf, True, version, groups, length)
 
 
 def _identity(ln: Line) -> list[tuple]:

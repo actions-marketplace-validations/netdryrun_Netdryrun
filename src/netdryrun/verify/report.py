@@ -137,8 +137,11 @@ def to_dict(r: VerifyResult) -> dict:
                 declared.append({"intent": lr.line.index, "line": lr.line.text, "details": lr.details,
                                  "items": [_summary(by_key[k]) for k in sorted(lr.explained) if k in by_key]})
         for i, ds in sorted(m.allowed.items()):
+            routes = sorted({(d.key.node, d.key.vrf, d.key.prefix) for d in ds})
             allowed.append({"pattern": r.intent.allow[i].pattern, "vrf": r.intent.allow[i].vrf,
-                            "expanded": sorted({d.key.prefix for d in ds}), "items": [_summary(d) for d in ds]})
+                            "expanded": sorted({d.key.prefix for d in ds}),
+                            "routes": [{"node": n, "vrf": v, "prefix": p} for n, v, p in routes],
+                            "items": [_summary(d) for d in ds]})
     inc = None
     if r.inconclusive is not None:
         inc = {"side": r.inconclusive_side, "reason": r.inconclusive.reason, "moving": r.inconclusive.moving,
@@ -214,7 +217,9 @@ def console(r: VerifyResult, max_items: int = 40) -> str:
         for x in d["declared"]:
             lines.append(f"  - [{x['intent']}] {x['line']} ({len(x['items'])} item(s))")
     for a in d["allowed"]:
-        lines.append(f"  allowed by {a['pattern']}: {', '.join(a['expanded'])}")
+        lines.append(f"Allowed by {a['pattern']} (allow_anywhere), {len(a['routes'])} route(s):")
+        lines += [f"  - {x['node']}{'' if x['vrf'] == 'default' else ' vrf ' + x['vrf']} {x['prefix']}"
+                  for x in a["routes"]]
     if r.guards is not None:
         lines.append(f"Standing guards ({r.guards.get('source')}): {r.guards.get('status')}, "
                      f"{r.guards.get('passed', 0)} passed, {r.guards.get('failed', 0)} failed")

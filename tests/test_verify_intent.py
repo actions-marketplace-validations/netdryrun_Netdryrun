@@ -96,13 +96,13 @@ def test_malformed_intents_are_errors(data):
 
 
 def test_allow_anywhere_matches_exactly_or_by_explicit_glob_never_by_containment():
-    it = parse(allow=["10.200.*.0/24", "10.0.0.0/8", "2001:db8:[0-3]::/48"])
+    it = parse(allow=["10.200.*.0/24", "10.0.0.0/8", "2001:db8:1:*::/64"])
     glob, exact, v6 = it.allow
     assert glob.matches("10.200.7.0/24", "default") and not glob.matches("10.200.7.0/25", "default")
     assert not glob.matches("10.200.7.0/24", "cust")                      # default VRF only
     assert exact.matches("10.0.0.0/8", "default")
     assert not exact.matches("10.1.0.0/16", "default")                     # no supernet containment
-    assert v6.matches("2001:db8:2::/48", "default") and not v6.matches("2001:db8:4::/48", "default")
+    assert v6.matches("2001:db8:1:2::/64", "default") and not v6.matches("2001:db8:4::/64", "default")
 
 
 def test_load_intent_reads_yaml_strictly(tmp_path):
@@ -126,3 +126,30 @@ def test_check_nodes_refuses_unknown_and_unobserved_nodes():
         check_nodes(it, {"r1": "frr"})
     with pytest.raises(IntentError):
         check_nodes(it, {"r1": "frr", "r2": ""})
+
+
+# --- allow_anywhere breadth (review finding 3) ---------------------------------------------------------------
+
+@pytest.mark.parametrize("entry", [
+    "10.*/*", "10.*.0.0/16", "10.*.*.0/24", "*.0.0.0/8", "10.*.0.0/24",        # wider than /16 of reach
+    "10.200.*.0/*", "10.200.*.0/2?", "10.200.*.0",                            # the length is always explicit
+    "10.2*.0.0/24", "10.200.1*.0/24", "10.200.*1.0/24",                        # `*` is one whole octet
+    "10.20?.1.0/24", "10.200.[0-3].0/24",                                      # no other wildcards
+    "10.200.0.*/24",                                                          # a wildcard past the length
+    "10.200.*.1/24",                                                          # host bits
+    "2001:db8:*::/48", "2001:*::/32", "2001:db8:1:*::/*", "2001:db8:1:5*::/64", "2001:db8:1:*::/48",
+])
+def test_allow_anywhere_globs_are_bounded(entry):
+    with pytest.raises(IntentError):
+        parse(allow=[entry])
+
+
+def test_allow_anywhere_glob_reach_and_matching():
+    v4, v4b, v6 = parse(allow=["10.200.*.0/24", "10.200.*.*/32", "2001:db8:1:*::/64"]).allow
+    assert v4.matches("10.200.7.0/24", "default") and v4.matches("10.200.255.0/24", "default")
+    assert not v4.matches("10.200.7.0/25", "default") and not v4.matches("10.201.7.0/24", "default")
+    assert not v4.matches("10.200.7.128/25", "default")
+    assert v4b.matches("10.200.1.9/32", "default") and not v4b.matches("10.200.1.0/24", "default")
+    assert v6.matches("2001:db8:1:5::/64", "default") and v6.matches("2001:0db8:0001:ffff::/64", "default")
+    assert not v6.matches("2001:db8:2:5::/64", "default") and not v6.matches("2001:db8:1:5::/80", "default")
+    assert not v6.matches("10.200.7.0/24", "default") and not v4.matches("2001:db8:1:5::/64", "default")
