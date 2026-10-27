@@ -171,7 +171,7 @@ jobs:
           path: network/sonic/
 ```
 
-On other CI systems: load the image the same way, then install containerlab and Netdryrun and run `sudo netdryrun run <folder>`, as in the [FRR guide](frr-ci.md#4-run-it-on-every-pull-request).
+On other CI systems: load the image the same way, then install containerlab and Netdryrun and run `sudo env "PATH=$PATH" netdryrun run <folder>`, as in the [FRR guide](frr-ci.md#4-run-it-on-every-pull-request).
 
 This workflow is a recipe, not something Netdryrun's own CI runs yet: SONiC isn't in the project's CI, and the workflow hasn't been run on a hosted runner. The runs on this page are local.
 
@@ -183,7 +183,7 @@ Wall-clock for `netdryrun run`, including deploying the lab, the `setup` lines, 
 |---|---|---|---|
 | `examples/sonic-frr` (6 checks and a port-down scenario) | `PASSED: 8 passed, 0 failed` | `0` | 97 s |
 
-The checks passed 13.5 s after `setup` finished. In CI, add the time to download the 230 MB image, which depends on the runner's network; caching the file avoids it.
+The checks passed 13.5 s after `setup` finished. The [examples page](../examples.md) shows 90 s from an earlier run on the same machine and date; runs differ by a few seconds. In CI, add the time to download the 230 MB image, which depends on the runner's network; caching the file avoids it.
 
 ## Gotchas
 

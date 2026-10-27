@@ -54,7 +54,7 @@ The outbound route-map only permits `192.168.20.0/24`, and the default goes out 
 
 Meant to export one customer's static route, it exports every static, the default included.
 
-To try one, copy it over the good config and redeploy. `git checkout configs/` puts the good ones back.
+To try one, copy it over the good config and redeploy, from `examples/srl-hidden-leak`. `git checkout configs/` puts the good ones back.
 
 ```bash
 cp leaks/frr1.conf configs/frr1.conf
@@ -124,7 +124,7 @@ srl1# show network-instance default protocols bgp neighbor
 | default  | 10.0.100.2 | ebgp  | S     | 65020   | established | 0d:0h:1m:56s | ipv4-unicast [2/1/1]    |
 ```
 
-(Spacing trimmed.) The route table shows nothing at all: on SR Linux it only holds the route that won.
+(Spacing trimmed.) The route table shows no trace of the leak: on SR Linux it only holds the route that won.
 
 ```text
 srl1# show network-instance default ipv4 route 0.0.0.0/0
@@ -165,7 +165,7 @@ Received Paths: 2
 
 ## One failure away
 
-Take away the static default and the leak takes over, with no BGP update and no log line. On SR Linux:
+Take away the static default and the leak takes over, with no BGP update and no log line. On SR Linux, with `leaks/frr1.conf` applied:
 
 ```text
 srl1# enter candidate
@@ -176,7 +176,7 @@ Prefix               Route Type   Metric   Pref    Flags    Next-Hop(s)
 0.0.0.0/0            bgp          0        170     >        10.0.100.2(route:local)
 ```
 
-On FRR, `conf t` then `no ip route 0.0.0.0/0 blackhole`:
+On FRR, with `leaks/srl1.cli` applied: `conf t`, then `no ip route 0.0.0.0/0 blackhole`:
 
 ```text
 frr1# show ip route 0.0.0.0/0
@@ -202,8 +202,8 @@ The check that catches this asks the BGP table, not the routing table: **there i
 `bgp_route` reads the BGP table (FRR: `show bgp ... json`; SR Linux: the BGP RIB, counting only paths learned over BGP, so the router's own static isn't mistaken for a leak). A `present: false` check runs after the network has converged and must hold for 10 seconds.
 
 ```bash
-pip install netdryrun        # see "Version" below
-netdryrun run examples/srl-hidden-leak
+pip install git+https://github.com/netdryrun/netdryrun   # see "Version" below
+netdryrun run examples/srl-hidden-leak                      # from the repository root
 ```
 
 The good configs pass all 9 checks:
@@ -222,6 +222,14 @@ Convergence checks done; settling 10s before post-convergence checks...
 PASSED: 9 passed, 0 failed (9 checks)
 ```
 
+To run a leak, copy its file over the good config, run, and put the good config back:
+
+```bash
+cp examples/srl-hidden-leak/leaks/frr1.conf examples/srl-hidden-leak/configs/frr1.conf
+netdryrun run examples/srl-hidden-leak
+git checkout examples/srl-hidden-leak/configs/
+```
+
 With the FRR leak, everything monitoring would watch still passes, and the guard on srl1 fails:
 
 ```text
@@ -230,7 +238,7 @@ With the FRR leak, everything monitoring would watch still passes, and the guard
 FAILED: 8 passed, 1 failed (9 checks)
 ```
 
-With the SR Linux leak, it's the guard on frr1:
+With the SR Linux leak (`leaks/srl1.cli` over `configs/srl1.cli`), it's the guard on frr1:
 
 ```text
   [PASS] srl1: no BGP path for 0.0.0.0/0 -- no BGP path (held 11s, 4 samples) (10.8s)
@@ -238,17 +246,17 @@ With the SR Linux leak, it's the guard on frr1:
 FAILED: 8 passed, 1 failed (9 checks)
 ```
 
-Exit code `0` for the pass, `1` for each fail, so a CI job fails on the leak. Measured on 2026-10-27 on WSL2 (20 cores, 16 GB), containerlab 0.81.1, images already pulled, including deploying and destroying the lab:
+Exit code `0` for the pass, `1` for each fail, so a CI job fails on the leak. Wall-clock for `netdryrun run`, including deploying and destroying the lab, with images already pulled. Measured on 2026-10-27 on WSL2 (20 cores, 16 GB), containerlab 0.81.1, SR Linux 26.7.2, FRR 10.4.1, Netdryrun 0.3.0 plus the unreleased SR Linux fix. Two rounds: the first from the development worktree, the second from a fresh clone following this README:
 
-| Run | Result | Exit | Time |
+| Run | Result | Exit | Times |
 |---|---|---|---|
-| Good configs | `PASSED: 9 passed, 0 failed` | `0` | 84 s |
-| FRR leak (`leaks/frr1.conf`) | `FAILED: 8 passed, 1 failed` | `1` | 80 s |
-| SR Linux leak (`leaks/srl1.cli`) | `FAILED: 8 passed, 1 failed` | `1` | 55 s |
+| Good configs | `PASSED: 9 passed, 0 failed` | `0` | 84 s; 60 s and 58 s |
+| FRR leak (`leaks/frr1.conf`) | `FAILED: 8 passed, 1 failed` | `1` | 80 s; 57 s |
+| SR Linux leak (`leaks/srl1.cli`) | `FAILED: 8 passed, 1 failed` | `1` | 55 s; 59 s |
 
-The difference between runs is mostly how long SR Linux takes to bring BGP up (14 to 34 s here).
+Most of the difference between runs is how long SR Linux takes to bring BGP up (14 to 34 s in these runs).
 
-**Version:** on SR Linux this lab needs the fix that ignores the router's own static and local routes in the BGP RIB (see the changelog's Unreleased section). Netdryrun 0.3.0 from PyPI counts srl1's own static default as a BGP path, so the good configs fail the srl1 guard. Until the next release, install from the repository: `pip install git+https://github.com/netdryrun/netdryrun`.
+**Version:** on SR Linux this lab needs a fix that is not in a release yet (see the changelog's Unreleased section): SR Linux lists the router's own static default in its BGP RIB, and Netdryrun 0.3.0 from PyPI counts it as a BGP path, so the good configs fail the srl1 guard. That's why the install line above installs from the repository. After the next release, `pip install netdryrun` is enough.
 
 Other ways to guard this: a `bgp_prefixes` check with `exact: 1` also fails here, but it breaks on every legitimate new prefix. And the config-side fix belongs on both ends: export only what you mean to (the sender), and reject a default from peers that should never send one (an import policy at the receiver).
 

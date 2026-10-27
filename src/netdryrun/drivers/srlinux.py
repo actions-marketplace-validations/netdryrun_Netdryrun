@@ -35,9 +35,9 @@ def parse_bgp_neighbors(text: str) -> dict[str, BgpNeighbor]:
 
 
 def _bgp_learned(row: dict) -> bool:
-    """SR Linux lists every static, local and other route in its BGP local-RIB as a locally
-    originated path (neighbor 0.0.0.0, origin-protocol static/local/...), whether or not an export
-    policy advertises it. Only paths with origin-protocol bgp are BGP paths."""
+    """SR Linux lists the router's own static and interface routes in its BGP local-RIB as locally
+    originated paths (neighbor 0.0.0.0, origin-protocol static, ...), whether or not an export policy
+    advertises them. Only paths with origin-protocol bgp were learned over BGP."""
     return str(row.get("origin-protocol", "bgp")).lower() == "bgp"
 
 
@@ -73,12 +73,12 @@ def parse_routes(text: str, prefix: str, bgp_rib_text: str = "") -> list[Route]:
 
 
 def parse_rib_paths(text: str, prefix: str) -> list[dict]:
-    """BGP-learned local-RIB entries for exactly `prefix`, best path first: neighbor, best-route, attr-id."""
+    """Local-RIB entries for exactly `prefix`, best path first: neighbor, best-route, attr-id."""
     want = ipaddress.ip_network(prefix)
     rows = []
     for r in _json(text).get("route", []):
         try:
-            if ipaddress.ip_network(str(r.get("prefix"))) == want and _bgp_learned(r):
+            if ipaddress.ip_network(str(r.get("prefix"))) == want:
                 rows.append(r)
         except ValueError:
             continue
@@ -103,6 +103,7 @@ def parse_attr_set(text: str, row: dict, default_local_pref: int | None = None) 
         communities=canon_communities(comms.get("community")),
         large_communities=canon_communities(comms.get("large-community")),
         neighbor=row.get("neighbor"),
+        local_candidate=not _bgp_learned(row),
     )
 
 
@@ -116,7 +117,7 @@ def _ip_or_none(addr) -> str | None:
 def unread_path(row: dict) -> BgpPath:
     """A path whose attributes were not read (only the first path's are: the best one if any)."""
     return BgpPath(best=bool(row.get("best-route")), as_path=None, next_hop=None, local_pref=None, med=None,
-                   neighbor=row.get("neighbor"))
+                   neighbor=row.get("neighbor"), local_candidate=not _bgp_learned(row))
 
 
 class SrlDriver(Driver):

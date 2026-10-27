@@ -90,15 +90,31 @@ scenarios:
   - name: r1-r2 link fails
     link_down: {node: r1, interface: eth1}
     checks:
-      # r2's LAN still reachable via r3, best path now "65003 65002", the session over the link down
+      - type: route        # r2's LAN is still reachable, now via r3
+        node: r1
+        prefix: 192.168.2.0/24
+        protocol: bgp
+      - type: bgp_route    # the best path now goes the long way, through r3
+        node: r1
+        prefix: 192.168.2.0/24
+        as_path: "65003 65002"
+        next_hop: 10.0.13.2
+      - type: ping
+        node: r1
+        source: 192.168.1.1
+        target: 192.168.2.1
+      - type: bgp_session  # and the session over the failed link is really down
+        node: r1
+        neighbor: 10.0.12.2
+        state: down        # any state except established
 ```
 
 On FRR, each check type reads a different part of the router, and the differences are where changes go wrong:
 
 | Check | Reads | Why it matters on FRR |
 |---|---|---|
-| `bgp_session` | `show bgp summary json` | An `Established` session can still carry nothing. Never use it alone |
-| `bgp_prefixes` | `acceptedPrefixCounter` | Counts prefixes after your inbound policy. A filter that drops everything shows here first. `max` is a cheap leak guard |
+| `bgp_session` | `show bgp neighbors json` | An `Established` session can still carry nothing. Never use it alone |
+| `bgp_prefixes` | `acceptedPrefixCounter` in `show bgp neighbors json` | Counts prefixes after your inbound policy. A filter that drops everything shows here first. `max` is a cheap leak guard |
 | `route` | `show ip route <prefix> json` (zebra) | Selected and installed. zebra keeps the losing entries too, so `present: false` also fails on a route that was received but lost |
 | `bgp_route` | `show bgp ipv4 unicast <prefix> json` (bgpd) | The best path's AS path, next hop, local preference, MED, communities. Catches a change that still delivers the route, but the long way |
 | `ping` | `ping -I <source>` in the container | The data plane, from the source address you give |
@@ -179,12 +195,12 @@ jobs:
 
 The job installs containerlab and Netdryrun, pulls the FRR image, runs the checks, uploads the JSON and JUnit reports, and fails if a check fails. With `pr-comment: true` it also posts the verdict and the evidence for each failed check on the pull request. See [GitHub Action](../github-action.md) for every input, and the security notes before running labs from forks.
 
-**Other CI systems:** any Linux runner that can start privileged Docker containers works. The steps are the same three commands:
+**Other CI systems:** any Linux runner that can start privileged Docker containers works. The steps are the same three commands. `env "PATH=$PATH"` keeps the `netdryrun` that `pip` installed on the path under `sudo`:
 
 ```bash
 bash -c "$(curl -sL https://get.containerlab.dev)" -- -v 0.81.1
 pip install netdryrun
-sudo netdryrun run network/ --junit netdryrun-junit.xml --json netdryrun-report.json
+sudo env "PATH=$PATH" netdryrun run network/ --junit netdryrun-junit.xml --json netdryrun-report.json
 ```
 
 Exit codes: `0` passed, `1` a check failed, `2` a setup problem (bad YAML, the lab didn't start), `3` inconclusive (the lab never reached a testable state; rerun it).
@@ -198,7 +214,7 @@ Wall-clock for `netdryrun run`, including deploying and destroying the lab, with
 | `examples/frr-bgp` (7 checks and a link-failure scenario) | `PASSED: 11 passed, 0 failed` | `0` | 88 s |
 | `examples/frr-bgp-broken` | `FAILED: 5 passed, 1 failed` | `1` | 38 s |
 
-The failing run is shorter because it has no failure scenario. On GitHub-hosted `ubuntu-latest` runners, the whole job (installing containerlab and Netdryrun, pulling FRR, running) took 100 to 107 s for `frr-bgp` and 54 to 66 s for `frr-bgp-broken`, over three runs measured before 0.3.0 added a check or two; see [the FAQ](../faq.md#how-long-does-a-run-take-and-what-does-ci-cost). On a private repository, jobs are billed by the minute, rounded up: the `frr-bgp` job uses 2.
+The failing run is shorter because it has no failure scenario. The [examples page](../examples.md) shows 84 s and 45 s for the same two labs from earlier runs on the same machine and date; runs differ by several seconds. On GitHub-hosted `ubuntu-latest` runners, the whole job (installing containerlab and Netdryrun, pulling FRR, running) took 100 to 107 s for `frr-bgp` and 54 to 66 s for `frr-bgp-broken`, over three CI runs on `main` on 2026-10-27, before the 0.3.0 release added a `bgp_route` check to `frr-bgp`; see [the FAQ](../faq.md#how-long-does-a-run-take-and-what-does-ci-cost). On a private repository, jobs are billed by the minute, rounded up: the `frr-bgp` job uses 2.
 
 ## Gotchas
 

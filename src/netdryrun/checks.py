@@ -122,7 +122,9 @@ def _bgp_route(d: Driver, p: dict) -> tuple[bool, str, list]:
     obs = d.bgp_paths(p["prefix"], p.get("vrf", "default"))
     paths = obs.value
     if p.get("present", True) is False:
-        # Absent means no path at all in the BGP table, best or not
+        # Absent means no path at all in the BGP table, best or not. The router's own non-BGP routes
+        # that a NOS lists there (SR Linux, whether exported or not) aren't BGP paths.
+        paths = [x for x in paths if not x.local_candidate]
         if paths:
             return False, f"unexpectedly in the BGP table ({len(paths)} path(s); {_describe_path(paths[0])})", obs.evidence
         return True, "no BGP path", obs.evidence
