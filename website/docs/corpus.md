@@ -7,6 +7,8 @@ description: 30 realistic BGP changes with expected verdicts committed before an
 
 How much does a typical "ping after the change" test miss? This corpus answers that with data anyone can rerun.
 
+There are two runs. The v1 results below are frozen as first published. [Corpus v2](#corpus-v2) is a second, separately pre-registered run that makes v1's misses testable, including scenarios where a customer or peer misbehaves.
+
 ## Method
 
 - **The network:** a small provider (AS65000, two routers) with a customer, an upstream transit and a settlement-free peer, running FRR in containerlab. Its written intent is in [INTENT.md](https://github.com/netdryrun/netdryrun/blob/main/corpus/INTENT.md).
@@ -86,3 +88,70 @@ These findings came after the run. The table above is left exactly as pre-regist
 **Case 12 was labeled wrong.** The case expected that removing `neighbor 10.0.3.2 send-community` on pe1 stops pe2 from seeing the customer community. In FRR (verified on 10.4.1) communities are sent to every neighbor by default, so deleting the explicit line is a no-op: `show running-config` no longer shows it, but pe1 still advertises `10.100.0.0/24` to pe2 with community `65000:100`, and pe2 still matches it (`show bgp ipv4 unicast community 65000:100` lists the route). Reproduce with `scripts/corpus_case12_verify.sh`. The change is actually safe, so all three strategies answered case 12 correctly. With that one label corrected the scores would be: ping only 21/30, sessions up 16/30, Netdryrun 25/30. The headline numbers stay at the pre-registered values. The mistake would have been real on platforms that do not send communities by default (Cisco IOS, for example); a vendor-specific version of this case belongs in a future corpus.
 
 **Cases 18, 23, 21 and 30 are real misses.** 18 and 23 are gaps in the intent spec (no check for unexpected routes reaching the customer or the upstream). 21 and 30 are latent risks that no steady-state check can see; they need a failure-injection scenario where the customer or peer actually misbehaves. These stay as losses.
+
+<!-- CORPUS-V2 -->
+
+## Corpus v2
+
+The v1 results above are frozen. Corpus v2 is a separate, second run with its own pre-registered cases. It turns v1's misses into things a test can see:
+
+- **Unexpected routes** (v1 cases 18 and 23): the v2 intent spec says infrastructure prefixes and a sentinel list of well-known third-party prefixes must never be BGP routes at the customer, the upstream or the peer. These are `route` checks with `present: false`; no new check type is needed.
+- **Latent risks** (v1 cases 21 and 30): two failure scenarios use the new [`inject_routes`](reference/config.md#injecting-routes) fault to make a neighbor misbehave. The customer floods 200 more-specifics from its own /16, and the peer announces a more-specific of our customer's space and a third-party /24. The checks then verify that the max-prefix limit and the import filter actually hold.
+- **Rigid counts** (v1 case 06): announced-prefix counts are a range (2 to 51), so customer growth inside its block is not blocked.
+- **Vendor defaults** (v1 case 12): the FRR no-op is labeled safe, and the genuinely harmful variant is a separate case.
+
+v2 changes two lines in the base lab so the customer's max-prefix limit can actually trip: in v1 the customer filter allowed at most 7 prefixes, so a limit of 100 could never be reached. The differences, the written intent (I1 to I9) and the disclosures are in [v2/INTENT.md](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/INTENT.md). The spec is [v2/specs/intent.yml](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/specs/intent.yml).
+
+**Pre-registration:** all 18 cases and their expected verdicts were committed and pushed in [`322cc4e`](https://github.com/netdryrun/netdryrun/commit/322cc4ede21492c3914a0a53b67268bea7abf7d6) (2026-10-27 04:02 UTC), before any v2 case was deployed. Rerun it with `python corpus/run.py --corpus v2`.
+
+Generated 2026-10-27T04:02:42+00:00 with netdryrun 0.2.0, containerlab 0.81.1, FRR quay.io/frrouting/frr:10.4.1, commit `unknown`. Rerun everything with `python corpus/run.py --corpus v2`.
+
+**Conflict of interest:** the Netdryrun maintainers wrote this corpus and the runner. Expected verdicts were committed before any run (see the git history of [`corpus/v2/cases/`](https://github.com/netdryrun/netdryrun/tree/main/corpus/v2/cases)). Losses are kept and shown at the same size as the catches.
+
+### Summary (18 cases: 11 harmful, 7 safe)
+
+| Strategy | Correct | Harmful changes caught | Approved a bad change | Blocked a good change | Errors |
+|---|---|---|---|---|---|
+| Ping only | **9/18** | 2/11 | 9 | 0 | 0 |
+| All BGP sessions up | **7/18** | 0/11 | 11 | 0 | 0 |
+| Netdryrun intent checks | **16/18** | 9/11 | 2 | 0 | 0 |
+
+### Every case
+
+| Case | Category | Expected | Ping only | Sessions up | Netdryrun | What Netdryrun flagged |
+|---|---|---|---|---|---|---|
+| `01-no-change` [No change (control)](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/01-no-change.yml) | control | safe | ✅ | ✅ | ✅ | nothing |
+| `02-redistribute-connected-pe2` [redistribute connected added on pe2](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/02-redistribute-connected-pe2.yml) | hygiene | unsafe | ❌ approved a bad change | ❌ approved a bad change | ✅ | I6 customer has no BGP route for link 10.0.3.0/30; I6 customer has no BGP route for link 10.0.4.0/30; I6 customer has no BGP route for pe2 loopback |
+| `03-test-prefix-left-in-config` [pe1 originates 1.1.1.0/24 left over from a lab test](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/03-test-prefix-left-in-config.yml) | hijack | unsafe | ❌ approved a bad change | ❌ approved a bad change | ✅ | I7 customer has no route for 1.1.1.0/24 |
+| `04-redundant-aggregate-typo` [Aggregate added on pe2 for redundancy, mistyped as 192.0.12.0/24](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/04-redundant-aggregate-typo.yml) | hijack | unsafe | ❌ approved a bad change | ❌ approved a bad change | ❌ approved a bad change | nothing |
+| `05-customer-max-prefix-removed` [Customer maximum-prefix safety limit removed](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/05-customer-max-prefix-removed.yml) | latent-risk | unsafe | ❌ approved a bad change | ❌ approved a bad change | ✅ | [customer floods 200 prefixes] I8 upstream still receives at most 51 prefixes; [customer floods 200 prefixes] I8 peer still receives at most 51 prefixes |
+| `06-peer-import-filter-permit-all` [Peer inbound filter replaced with permit-all](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/06-peer-import-filter-permit-all.yml) | latent-risk | unsafe | ❌ approved a bad change | ❌ approved a bad change | ✅ | [peer announces routes it does not own] I9 pe2 accepts only the peer's own prefix; [peer announces routes it does not own] I9 customer gets no hijacking more-specific; [peer announces routes it does not own] I9 pe1 has no third-party route from the peer |
+| `07-customer-adds-prefixes` [Customer announces two more /24s from its /16](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/07-customer-adds-prefixes.yml) | customer-growth | safe | ✅ | ✅ | ✅ | nothing |
+| `08-customer-announces-aggregate` [Customer also announces its covering /16](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/08-customer-announces-aggregate.yml) | customer-growth | safe | ✅ | ✅ | ✅ | nothing |
+| `09-ibgp-send-community-line-removed` [Explicit send-community line removed on the pe1 to pe2 iBGP session](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/09-ibgp-send-community-line-removed.yml) | vendor-default | safe | ✅ | ✅ | ✅ | nothing |
+| `10-ibgp-standard-communities-disabled` [Standard communities explicitly disabled on the pe1 to pe2 iBGP session](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/10-ibgp-standard-communities-disabled.yml) | policy-bug | unsafe | ✅ | ❌ approved a bad change | ✅ | I2 peer has customer route; I3 customer reaches peer; I5 peer receives 2 to 51 prefixes from us |
+| `11-customer-max-prefix-warning-only` [Customer maximum-prefix changed to warning-only](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/11-customer-max-prefix-warning-only.yml) | latent-risk | unsafe | ❌ approved a bad change | ❌ approved a bad change | ✅ | [customer floods 200 prefixes] I8 upstream still receives at most 51 prefixes; [customer floods 200 prefixes] I8 peer still receives at most 51 prefixes |
+| `12-customer-max-prefix-raised` [Customer maximum-prefix raised from 50 to 100](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/12-customer-max-prefix-raised.yml) | hygiene | safe | ✅ | ✅ | ✅ | nothing |
+| `13-upstream-routes-tagged-as-customer` [Upstream import policy tags routes with the customer community (copy-paste error)](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/13-upstream-routes-tagged-as-customer.yml) | route-leak | unsafe | ❌ approved a bad change | ❌ approved a bad change | ✅ | I4 no upstream route leaked to peer; I4 no default leaked to peer |
+| `14-customer-gets-default-only` [Customer export policy restricted to the default route](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/14-customer-gets-default-only.yml) | policy-bug | unsafe | ✅ | ❌ approved a bad change | ✅ | I3 customer has upstream route; I3 customer has peer route; I3 customer reaches upstream; I3 customer reaches peer |
+| `15-upstream-default-filtered` [Default route from the upstream filtered on import](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/15-upstream-default-filtered.yml) | policy-bug | unsafe | ❌ approved a bad change | ❌ approved a bad change | ✅ | I3 customer has default |
+| `16-customer-session-peer-group` [Customer session moved into a CUSTOMERS peer-group](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/16-customer-session-peer-group.yml) | refactor | safe | ✅ | ✅ | ✅ | nothing |
+| `17-customer-region-community` [Add an informational region community to customer routes](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/17-customer-region-community.yml) | hygiene | safe | ✅ | ✅ | ✅ | nothing |
+| `18-aggregate-discard-route-removed` [Discard route for our aggregate deleted as unused](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/18-aggregate-discard-route-removed.yml) | hygiene | unsafe | ❌ approved a bad change | ❌ approved a bad change | ❌ approved a bad change | nothing |
+
+### Netdryrun's losses
+
+- **`04-redundant-aggregate-typo` Aggregate added on pe2 for redundancy, mistyped as 192.0.12.0/24** (false pass). Expected to be missed. I7 only spot-checks a few well-known prefixes, and nothing bounds what the customer receives.
+- **`18-aggregate-discard-route-removed` Discard route for our aggregate deleted as unused** (false pass). The blackhole static for 192.0.2.0/24 looks unused and is cleaned up. Either the aggregate stops being announced (if BGP requires a matching route), or it is still announced with nothing to absorb traffic for unused addresses in it: that traffic follows the upstream's default straight back to the upstream, a routing loop. Both are harmful.
+
+### Findings after the run
+
+These findings came after the v2 run. The table above is left exactly as pre-registered in commit `322cc4e`; nothing in [`corpus/v2/cases/`](https://github.com/netdryrun/netdryrun/tree/main/corpus/v2/cases) was edited.
+
+**Run provenance.** `results.json` records the commit as `unknown`: the run used git inside WSL on a Windows git worktree, and that git could not read the worktree. The run started at 04:02:42 UTC, 16 seconds after the pre-registration commit `322cc4e`. `src/` and `corpus/run.py` were not changed during the run. The renderer, the docs and the unit tests were edited during the run, and none of them affect verdicts.
+
+**Case 04 is a real miss, as predicted.** pe2 announced the mistyped 192.0.12.0/24 to pe1 and on to the customer, and no check looked for it. I7 only spot-checks a few well-known prefixes, and nothing bounds what the customer receives. Catching this class needs a check that the customer receives only routes from known origins, or only expected prefixes from our own AS. No such check type exists yet.
+
+**Case 18 is a real miss.** With the discard route deleted, FRR (traditional defaults, no `bgp network import-check`) kept announcing 192.0.2.0/24, so I2 passed. The harm is the routing loop for unused addresses inside the aggregate, which no check probes. A `ping` with `expect: failure` to an unused address in 192.0.2.0/24 from the upstream would not show the loop either, because ping fails both with and without it. Catching it needs a path or traceroute check (TTL exceeded versus a clean discard).
+
+**Ping only's catch of case 14 is partly a lab artifact.** In the lab, the customer's BGP default is not active, because containerlab's management default route outranks it (the spec checks the default with `active: false` for this reason). Once the customer lost its specific routes, its pings had no path at all. A real customer with a working default would still ping, and the ping baseline would pass the change. The result stays as measured.
