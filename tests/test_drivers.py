@@ -1,4 +1,5 @@
 """Parsers against real device output captured from live labs (tests/fixtures)."""
+import json
 from pathlib import Path
 
 import pytest
@@ -91,6 +92,19 @@ def test_srl_leak_received_but_not_installed():
     routes = srlinux.parse_routes(read("srl_leak_route.txt"), "0.0.0.0/0", read("srl_leak_rib.txt"))
     assert ("static", True) in [(r.protocol, r.active) for r in routes]
     assert ("bgp", False) in [(r.protocol, r.active) for r in routes]
+
+
+def test_srl_local_static_in_rib_is_not_bgp():
+    """Regression (live-found): SR Linux lists its own static default in the BGP local-RIB (neighbor
+    0.0.0.0, origin-protocol static) even when no export policy advertises it. That is not a BGP path:
+    a `present: false` check must not fail on it, and the best path is the one learned over BGP."""
+    rib = srlinux._json(read("srl_leak_rib.txt"))
+    static_only = json.dumps({"route": [r for r in rib["route"] if r["origin-protocol"] == "static"]})
+    routes = srlinux.parse_routes(read("srl_leak_route.txt"), "0.0.0.0/0", static_only)
+    assert [(r.protocol, r.active) for r in routes] == [("static", True)]
+    assert srlinux.parse_rib_paths(static_only, "0.0.0.0/0") == []
+    rows = srlinux.parse_rib_paths(read("srl_leak_rib.txt"), "0.0.0.0/0")
+    assert [(r["neighbor"], r["best-route"]) for r in rows] == [("10.0.100.2", False)]
 
 
 def test_srl_empty_rib_adds_nothing():

@@ -34,12 +34,20 @@ def parse_bgp_neighbors(text: str) -> dict[str, BgpNeighbor]:
     return out
 
 
+def _bgp_learned(row: dict) -> bool:
+    """SR Linux lists every static, local and other route in its BGP local-RIB as a locally
+    originated path (neighbor 0.0.0.0, origin-protocol static/local/...), whether or not an export
+    policy advertises it. Only paths with origin-protocol bgp are BGP paths."""
+    return str(row.get("origin-protocol", "bgp")).lower() == "bgp"
+
+
 def parse_routes(text: str, prefix: str, bgp_rib_text: str = "") -> list[Route]:
     """Route-table entries for `prefix`, plus BGP-RIB paths that aren't installed.
 
     SR Linux's route table only holds installed routes. A BGP path that lost to a static or local
     route (a leak that's received but not selected) only shows in the BGP RIB, and must still count
-    as present for `present: false`.
+    as present for `present: false`. The static itself also shows there, as a locally originated
+    path: that one is not a BGP route.
     """
     want = ipaddress.ip_network(prefix)
     key = "ipv6-prefix" if want.version == 6 else "ipv4-prefix"
@@ -58,19 +66,19 @@ def parse_routes(text: str, prefix: str, bgp_rib_text: str = "") -> list[Route]:
                 same = ipaddress.ip_network(str(r.get("prefix"))) == want
             except ValueError:
                 continue
-            if same and r.get("valid-route", True):
+            if same and r.get("valid-route", True) and _bgp_learned(r):
                 out.append(Route(prefix, "bgp", False))
                 break
     return out
 
 
 def parse_rib_paths(text: str, prefix: str) -> list[dict]:
-    """Local-RIB entries for exactly `prefix`, best path first: neighbor, best-route, attr-id."""
+    """BGP-learned local-RIB entries for exactly `prefix`, best path first: neighbor, best-route, attr-id."""
     want = ipaddress.ip_network(prefix)
     rows = []
     for r in _json(text).get("route", []):
         try:
-            if ipaddress.ip_network(str(r.get("prefix"))) == want:
+            if ipaddress.ip_network(str(r.get("prefix"))) == want and _bgp_learned(r):
                 rows.append(r)
         except ValueError:
             continue
