@@ -7,7 +7,7 @@ here="$(cd "$(dirname "$0")/.." && pwd)"
 venv="$HOME/.venvs/netdryrun"
 if [ ! -x "$venv/bin/netdryrun" ]; then
   uv venv -q "$venv"
-  VIRTUAL_ENV="$venv" uv pip install -q -e "$here[dev]"
+  VIRTUAL_ENV="$venv" uv pip install -q -e "${here}[dev]"
 fi
 cd "$here"
 exec "$venv/bin/${NDR_BIN:-netdryrun}" "$@"

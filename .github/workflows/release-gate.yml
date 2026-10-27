@@ -1,0 +1,96 @@
+name: Release gate
+
+# The automatic layers of the release gate (RELEASING.md, scripts/release_gate.py) on every pull
+# request: static checks, and the unit tests on every supported Python plus a plain container.
+# Mutation testing takes longer, so it runs only when started by hand (workflow_dispatch).
+# The live layer needs the lab machine and never runs here.
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      mutation:
+        description: "Also run mutation testing (mutmut on the verdict modules)"
+        type: boolean
+        default: true
+      modules:
+        description: "Modules to mutate (comma-separated: checks, config, runner, drivers)"
+        type: string
+        default: "checks,config,runner,drivers"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ACTIONLINT_VERSION: "1.7.7"
+  ACTIONLINT_SHA256: "023070a287cd8cccd71515fedc843f1985bf96c436b7effaecce67290e7e0757"
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --quiet -e ".[dev]"
+      - name: Install actionlint (checksum verified; shellcheck ships with the runner)
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/actionlint.tgz" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          echo "${ACTIONLINT_SHA256}  $RUNNER_TEMP/actionlint.tgz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/actionlint.tgz" -C "$RUNNER_TEMP" actionlint
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+      - name: Static layer
+        run: python scripts/release_gate.py static --strict --out "$RUNNER_TEMP/gate"
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: release-gate-static
+          path: ${{ runner.temp }}/gate/
+          if-no-files-found: ignore
+
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: "3.12"
+      # uv creates a fresh venv on each of Python 3.10 to 3.14 (downloading interpreters as needed);
+      # the gate also runs the suite in a plain python:3.12-slim container.
+      - run: python -m pip install --quiet "uv==0.13.5"
+      - name: Unit layer
+        run: python scripts/release_gate.py unit --strict --out "$RUNNER_TEMP/gate"
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: release-gate-unit
+          path: ${{ runner.temp }}/gate/
+          if-no-files-found: ignore
+
+  mutation:
+    if: github.event_name == 'workflow_dispatch' && inputs.mutation
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --quiet -e ".[dev]"
+      - name: Mutation layer
+        env:
+          MODULES: ${{ inputs.modules }}
+        run: python scripts/release_gate.py mutation --strict --modules "$MODULES" --out "$RUNNER_TEMP/gate"
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: release-gate-mutation
+          path: ${{ runner.temp }}/gate/
+          if-no-files-found: ignore

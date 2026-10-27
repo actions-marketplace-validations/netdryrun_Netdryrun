@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Keep the SONiC lab up, record a baseline from it, capture driver fixtures, then destroy.
 set -u
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 2
 bash scripts/dev.sh run examples/sonic-frr --keep > /tmp/sonic-keep.log 2>&1; tail -1 /tmp/sonic-keep.log
 bash scripts/dev.sh record examples/sonic-frr/topology.clab.yml --out /tmp/sonic-baseline.yml --force 2>&1 | tail -3
 echo "--- baseline:"; cat /tmp/sonic-baseline.yml

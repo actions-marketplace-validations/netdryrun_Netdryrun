@@ -2,7 +2,7 @@
 # Run every example lab end to end and check each one's expected outcome.
 # frr-bgp-broken contains a deliberate bad change and must FAIL.
 set -uo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 2
 rc=0
 for ex in examples/*/; do
   ex="${ex%/}"; name="${ex##*/}"
