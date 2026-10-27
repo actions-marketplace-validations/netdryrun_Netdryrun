@@ -72,7 +72,7 @@ def snapshot(folder: Path) -> dict[str, bytes]:
 
 # ---------------------------------------------------------------------------------------------- run
 
-def run_one(tdir: Path, run: str, model: str | None) -> dict:
+def run_one(tdir: Path, run: str, model: str | None, path_style: str = "wsl") -> dict:
     name = tdir.name
     out = RESULTS / run / name
     out.mkdir(parents=True, exist_ok=True)
@@ -88,7 +88,9 @@ def run_one(tdir: Path, run: str, model: str | None) -> dict:
         "-d", DISTRO, "--", "env", f"NETDRYRUN_MCP_ROOT={wsl_path(folder)}", NDR, "mcp"]}}}
     mcp_file = WORK / run / f"{name}.mcp.json"
     mcp_file.write_text(json.dumps(mcp))
-    cmd = [CLAUDE, "-p", PROMPT.format(folder=wsl_path(folder)),
+    # "wsl": the path as the server sees it (the pre-registered prompt). "windows": the agent's own path, which
+    # the MCP server accepts after the Windows-path fix on this branch (unreleased).
+    cmd = [CLAUDE, "-p", PROMPT.format(folder=wsl_path(folder) if path_style == "wsl" else str(folder)),
            "--output-format", "stream-json", "--verbose",
            "--mcp-config", str(mcp_file), "--strict-mcp-config",
            "--setting-sources", "",
@@ -111,7 +113,8 @@ def run_one(tdir: Path, run: str, model: str | None) -> dict:
             subprocess.run(["taskkill", "/T", "/F", "/PID", str(p.pid)], capture_output=True)
             rc = None
     meta = {"ticket": name, "run": run, "exit_code": rc, "timed_out": timed_out,
-            "wall_s": round(time.time() - started, 1), "folder": str(folder), "model_requested": model}
+            "wall_s": round(time.time() - started, 1), "folder": str(folder), "model_requested": model,
+            "path_style": path_style, "netdryrun": NDR, "agents_ref": AGENTS_REF}
     (out / "run.json").write_text(json.dumps(meta, indent=2))
     destroy_labs(folder)  # a lab left behind by keep_lab or a killed run
     final = out / "final"
@@ -269,11 +272,12 @@ def main() -> None:
     ap.add_argument("--parallel", type=int, default=3)
     ap.add_argument("--model")
     ap.add_argument("--no-rerun", action="store_true")
+    ap.add_argument("--path-style", choices=["wsl", "windows"], default="wsl")
     a = ap.parse_args()
     tds = ticket_dirs(a.tickets)
     if a.action == "run":
         with cf.ThreadPoolExecutor(a.parallel) as ex:
-            for meta in ex.map(lambda d: run_one(d, a.run, a.model), tds):
+            for meta in ex.map(lambda d: run_one(d, a.run, a.model, a.path_style), tds):
                 print(json.dumps(meta), flush=True)
     if a.action in ("run", "grade"):
         with cf.ThreadPoolExecutor(a.parallel) as ex:

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from pathlib import Path
 
 from mcp.server import MCPServer
@@ -58,6 +59,23 @@ def _summary(rep, evidence_path: str | None) -> dict:
     }
 
 
+WSL_MOUNTS = Path("/mnt")  # where WSL mounts the Windows drives
+_WINDOWS_PATH = re.compile(r"^([A-Za-z]):[\\/](.*)$")
+
+
+def _host_path(path: str) -> str:
+    r"""A Windows path (C:\lab or C:/lab) as this server sees it. With Claude Code on Windows and the server in
+    WSL, the agent's file tools use C:\... while the server needs /mnt/c/...; accepting both lets the agent
+    pass the one path it knows. Other paths are returned unchanged."""
+    m = _WINDOWS_PATH.match(str(path))
+    if os.name != "posix" or not m:
+        return path
+    mount = WSL_MOUNTS / m.group(1).lower()
+    if not mount.is_dir():
+        return path
+    return str(mount / m.group(2).replace("\\", "/"))
+
+
 def _roots() -> list[Path]:
     raw = os.environ.get("NETDRYRUN_MCP_ROOT", "")
     return [Path(r).expanduser().resolve() for r in raw.split(os.pathsep) if r.strip()]
@@ -74,6 +92,7 @@ def _outside_root(*paths) -> str | None:
 
 def _load(path: str):
     """load() with the NETDRYRUN_MCP_ROOT check on both netdryrun.yml and the lab it points to."""
+    path = _host_path(path)
     err = _outside_root(path)
     if err:
         raise ConfigError(err)
@@ -127,7 +146,7 @@ def record_baseline(topology: str, deploy: bool = True, wait_seconds: float = 45
     from .lab import Lab, LabError
     from .record import record, render
 
-    topo = Path(topology).resolve()
+    topo = Path(_host_path(topology)).resolve()
     err = _outside_root(topo)
     if err:
         return json.dumps({"error": err})
@@ -171,7 +190,7 @@ def check_types() -> str:
 @mcp.resource("netdryrun://report/{path}")
 def last_report(path: str) -> str:
     """The last full JSON evidence report written next to netdryrun.yml at `path`."""
-    p = Path(path)
+    p = Path(_host_path(path))
     p = (p if p.is_dir() else p.parent) / "netdryrun-report.json"
     if _outside_root(p):
         return "{}"

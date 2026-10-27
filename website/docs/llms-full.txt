@@ -1417,6 +1417,8 @@ netdryrun:
 
 (Claude Code 2.1.116. Use your own distribution name and path; `which netdryrun` inside WSL prints it.)
 
+The tools accept the Windows path of a lab folder (`C:\labs\edge`) as well as the WSL one (`/mnt/c/labs/edge`), so the agent can pass the path its own file tools use. Before this, an agent on Windows had to translate paths itself, and in the [agent evaluation](#measured-ten-tickets-worked-unattended) a smaller model did not.
+
 `dry_run` takes 30 seconds to several minutes. Start Claude Code with a longer tool timeout, in milliseconds, so it does not give up first:
 
 ```bash
