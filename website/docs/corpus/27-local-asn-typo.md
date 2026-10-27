@@ -37,7 +37,7 @@ The expected verdict was committed to git before any run. All three strategies t
 |---|---|---|---|
 | Ping only | unsafe | ✅ | customer reaches peer |
 | All BGP sessions up | unsafe | ✅ | pe1-pe2 up, pe2-peer1 up |
-| Netdryrun intent checks | unsafe | ✅ | I1 pe1-pe2 iBGP up, I1 pe2-peer1 session up, I2 peer has customer route, I2 peer has our aggregate, I3 customer has peer route, I3 customer reaches peer, I5 peer receives exactly our 2 prefixes |
+| Netdryrun intent checks | unsafe | ✅ | I1 pe1-pe2 iBGP up, I1 pe2-peer1 session up, I2 peer has customer route, I2 peer has our aggregate, I3 customer has peer route, I3 customer reaches peer, I4 no upstream route leaked to peer, I4 no default leaked to peer, I5 peer receives exactly our 2 prefixes |
 
 ## What Netdryrun flagged
 
@@ -49,6 +49,8 @@ These checks from the [intent spec](https://github.com/netdryrun/netdryrun/blob/
 - **I2 peer has our aggregate**: 192.0.2.0/24 must be in peer1's routing table as a bgp route
 - **I3 customer has peer route**: 198.51.100.0/24 must be in ce1's routing table as a bgp route
 - **I3 customer reaches peer**: ce1 can ping 198.51.100.1 from 10.100.0.1
+- **I4 no upstream route leaked to peer**: 203.0.113.0/24 must not be in peer1's routing table as a bgp route
+- **I4 no default leaked to peer**: 0.0.0.0/0 must not be in peer1's routing table as a bgp route
 - **I5 peer receives exactly our 2 prefixes**: peer1 receives exactly 2 prefixes from 10.0.4.1
 
 ## Reproduce it
@@ -59,4 +61,4 @@ On Linux or WSL2 with Docker and containerlab, from a checkout of the repository
 python corpus/run.py --case 27
 ```
 
-Case file: [`corpus/cases/27-local-asn-typo.yml`](https://github.com/netdryrun/netdryrun/blob/main/corpus/cases/27-local-asn-typo.yml). Published result: netdryrun 0.2.0, containerlab 0.81.1, FRR `quay.io/frrouting/frr:10.4.1`, commit `ec23379`, run on 2026-10-26.
+Case file: [`corpus/cases/27-local-asn-typo.yml`](https://github.com/netdryrun/netdryrun/blob/main/corpus/cases/27-local-asn-typo.yml). Published result: netdryrun 0.3.1, containerlab 0.81.1, FRR `quay.io/frrouting/frr:10.4.1`, commit `08059de`, run on 2026-10-27.
