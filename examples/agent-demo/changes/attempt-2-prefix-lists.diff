@@ -1,0 +1,15 @@
+--- a/configs/edge1.conf
++++ b/configs/edge1.conf
+@@ -20,10 +20,12 @@
+ !
+ ! Prefixes the customer may announce to us
+ ip prefix-list CUSTOMER-IN seq 10 permit 10.100.0.0/24
++ip prefix-list CUSTOMER-IN seq 20 permit 10.101.0.0/24
+ !
+ ! Prefixes we announce to the upstream and the peer: our block and our customer's
+ ip prefix-list OUR-ROUTES seq 10 permit 192.0.2.0/24
+ ip prefix-list OUR-ROUTES seq 20 permit 10.100.0.0/24
++ip prefix-list OUR-ROUTES seq 30 permit 10.101.0.0/24
+ !
+ route-map CUSTOMER-IN permit 10
+  match ip address prefix-list CUSTOMER-IN

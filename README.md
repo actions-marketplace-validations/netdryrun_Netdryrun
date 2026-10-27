@@ -149,6 +149,10 @@ claude mcp add netdryrun -- netdryrun mcp
 
 Tools: `dry_run` (deploy, check, destroy, verdict), `run_checks` (against a running lab), `validate`, `check_types`. Each result carries a separate `verdict` field: `SAFE TO PROCEED` or `DO NOT APPLY THIS CHANGE`.
 
+**Demo** ([examples/agent-demo](examples/agent-demo)): the ticket says the customer's new block must reach the upstream and the peer. The tempting change passes every ticket check, session and ping, but leaks routes; Netdryrun rejects it. The two-line fix passes the same checks.
+
+<p align="center"><img alt="Attempt 1 passes the ticket checks but fails four leak guards; attempt 2 passes all 13 checks" src=".github/assets/netdryrun-agent-demo.gif" width="820"></p>
+
 Safety model:
 - The server **never touches production**. It has no tool that pushes config anywhere; it only builds and tests labs.
 - Tool results contain normalized check results, not raw device output, so text inside a lab (a banner, a route description) can't inject instructions into the agent. Raw evidence goes to the JSON report file.

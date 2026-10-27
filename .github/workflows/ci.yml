@@ -56,3 +56,20 @@ jobs:
           echo "status=${{ steps.ndr.outputs.status }} failed=${{ steps.ndr.outputs.failed }}"
           test "${{ steps.ndr.outputs.status }}" = "failed"
           test "${{ steps.ndr.outputs.failed }}" -ge 1
+
+  # The agent demo: Netdryrun MUST reject attempt 1 (opens the filters, leaks routes) and accept
+  # attempt 2 (two prefix-list lines). demo.sh exits non-zero otherwise.
+  agent-demo:
+    needs: unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install containerlab and Netdryrun
+        run: |
+          bash -c "$(curl -sL https://get.containerlab.dev)" -- -v 0.81.1
+          python -m pip install --quiet .
+      - name: Replay the agent demo
+        run: sudo env -i "PATH=$PATH" "HOME=/root" bash examples/agent-demo/demo.sh

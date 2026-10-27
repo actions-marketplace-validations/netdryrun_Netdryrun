@@ -15,7 +15,7 @@ from . import __version__, report
 from .config import CHECK_TYPES, ConfigError, load
 from .runner import run
 
-mcp = MCPServer("netdryrun")
+mcp = MCPServer("netdryrun", version=__version__, website_url="https://netdryrun.com")
 
 
 def _summary(rep, evidence_path: str | None) -> dict:

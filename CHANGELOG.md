@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **Agent demo** (`examples/agent-demo`): a ticket, a tempting change that passes the ticket checks but leaks routes (rejected), and the proper fix (accepted). `demo.sh` replays it; CI runs it on every push.
+- MCP server reports its version and website in `serverInfo`.
+
 ## 0.2.0 (2026-10-27)
 
 - **Fix: a change that breaks a baseline check no longer turns a scenario run into `error`.** The recovery check after a scenario now only requires the checks that passed before it; a network that really doesn't recover is reported as failed `[after <scenario>] recovers: ...` checks (exit 1), not a lab error (exit 2). Found by running the edge-guard pack against the Verdict Corpus.
