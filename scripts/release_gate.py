@@ -911,6 +911,8 @@ def live_corpora(live: Live, args) -> None:
         committed = ROOT / "corpus" / sub / "results" / "results.json"
         fresh = copy / sub / "results" / "results.json"
         diffs = []
+        if fresh.exists():   # kept beside GATE.md: the corpus results of this exact release, for the docs
+            write_out(args, f"corpus-{version}-results.json", fresh.read_text(encoding="utf-8"))
         if p.code == 0:
             old = {c["id"]: c for c in json.loads(committed.read_text(encoding="utf-8"))["cases"]}
             new = {c["id"]: c for c in json.loads(fresh.read_text(encoding="utf-8"))["cases"]}
