@@ -2,6 +2,7 @@
 
 ## 0.2.0 (unreleased)
 
+- **Fix: a change that breaks a baseline check no longer turns a scenario run into `error`.** The recovery check after a scenario now only requires the checks that passed before it; a network that really doesn't recover is reported as failed `[after <scenario>] recovers: ...` checks (exit 1), not a lab error (exit 2). Found by running the edge-guard pack against the Verdict Corpus.
 - **SONiC driver** (docker-sonic-vs): sessions, prefix counts, routes, ping, record, failure scenarios. New `nodes.<node>.setup` key runs post-boot configuration commands (retried until the NOS is ready). New example: `examples/sonic-frr`.
 - **Arista EOS driver** (cEOS-lab, bring your own image): sessions, prefix counts, routes (routing table + BGP table), ping, record, failure scenarios. New example: `examples/arista-frr`.
 - **Leak detection fixed on SR Linux and Arista**: a leaked BGP route that is received but not installed (it lost to a static or local route) only appears in the BGP table on those platforms. Both drivers now read it, so `present: false` fails as it should. Found by live leak tests; regression tests use real captured output.

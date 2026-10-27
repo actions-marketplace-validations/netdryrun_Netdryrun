@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import platform
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from typing import Callable
 
@@ -64,7 +64,8 @@ def run(config: Config, *, deploy: bool = True, keep: bool = False, keep_on_fail
             "nodes": {n.name: {"kind": n.kind, "image": n.image} for n in lab.nodes.values()},
         }
         # Every node a check or a fault names must exist, before anything is deployed
-        wanted = {c.node for c in config.checks} | {c.node for sc in config.scenarios for c in sc.checks}             | {f.node for sc in config.scenarios for f in sc.faults} | set(config.setup)
+        wanted = {c.node for c in config.checks} | {c.node for sc in config.scenarios for c in sc.checks} \
+            | {f.node for sc in config.scenarios for f in sc.faults} | set(config.setup)
         unknown = sorted(wanted - set(lab.nodes))
         if unknown:
             raise LabError(f"unknown node(s) {', '.join(unknown)}; the topology has {', '.join(lab.nodes)}")
@@ -103,10 +104,20 @@ def run(config: Config, *, deploy: bool = True, keep: bool = False, keep_on_fail
                 if check.node not in drivers:
                     drivers[check.node] = for_node(lab, check.node, config.drivers.get(check.node))
             report.results += run_scenario(lab, sc, drivers, settle=settle, hold=hold, on_result=on_result, log=log)
-            # Before the next scenario, prove the network recovered (not just slept): the main
-            # positive checks must pass again.
-            if positives and not all(r.passed for r in run_round_robin(positives, drivers)):
-                raise LabError(f"the network did not recover after scenario '{sc.name}'; later scenarios skipped")
+            # Prove the network recovered (not just slept): the positive checks that passed before
+            # the scenario must pass again. Checks the change already broke can't recover, so they
+            # don't count. Not recovering is a finding about the network, reported as failed checks.
+            baseline_ok = [r.check for r in report.results if r.passed and r.check in positives]
+            stuck = [r for r in run_round_robin(baseline_ok, drivers) if not r.passed]
+            if stuck:
+                for r in stuck:
+                    r.check = replace(r.check, name=f"[after {sc.name}] recovers: {r.check.name}")
+                    report.results.append(r)
+                    if on_result:
+                        on_result(r)
+                if sc is not config.scenarios[-1]:
+                    log(f"The network did not recover after scenario '{sc.name}'; later scenarios skipped")
+                break
     except (LabError, DriverError) as e:
         report.error = str(e)
     finally:
