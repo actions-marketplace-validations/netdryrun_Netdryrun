@@ -1,0 +1,62 @@
+{
+  "ticket": "T02-transit-only",
+  "kind": "implement",
+  "valid": true,
+  "truth": {
+    "verdict": "safe",
+    "decision": [
+      "apply"
+    ]
+  },
+  "answer": {
+    "verdict": "safe",
+    "decision": "apply",
+    "netdryrun_status": "passed",
+    "changed_files": [
+      "configs/edge1.conf"
+    ],
+    "reason": "Configuration adds transit-only announcement of 10.101.0.0/24 to upstream only, blocking it from peer. All 14 checks passed including ticket requirements and standing guards."
+  },
+  "completed_unattended": true,
+  "verdict_ok": true,
+  "decision_ok": true,
+  "changed_files": [
+    "configs/edge1.conf"
+  ],
+  "added_files": [],
+  "rule_breaks": [],
+  "hidden_rerun": {
+    "exit_code": 0,
+    "status": "passed",
+    "failed_checks": [],
+    "checks": 16,
+    "attempts": 1,
+    "error": null,
+    "log_tail": null
+  },
+  "hidden_ok": true,
+  "solved": true,
+  "tool_calls": 15,
+  "netdryrun_calls": 2,
+  "lab_runs": 2,
+  "tools": {
+    "Edit": 2,
+    "Glob": 1,
+    "Read": 10,
+    "mcp__netdryrun__dry_run": 2
+  },
+  "turns": 16,
+  "wall_s": 207.0,
+  "agent_duration_s": 205.4,
+  "cost_usd": 0.064516,
+  "model": "claude-haiku-4-5-20251001",
+  "claude_code_version": "2.1.116",
+  "mcp_status": [
+    "connected"
+  ],
+  "permission_denials": [],
+  "tool_errors": [
+    "EISDIR: illegal operation on a directory, read 'C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku2-fixed\\T02-transit-only'"
+  ],
+  "timed_out": false
+}

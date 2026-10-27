@@ -1,0 +1,12 @@
+{
+  "ticket": "T08-review-localpref",
+  "run": "haiku2-fixed",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_s": 193.4,
+  "folder": "C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku2-fixed\\T08-review-localpref",
+  "model_requested": "haiku",
+  "path_style": "windows",
+  "netdryrun": "/home/dmin/.venvs/ndr-eval-branch/bin/netdryrun",
+  "agents_ref": "0975193"
+}

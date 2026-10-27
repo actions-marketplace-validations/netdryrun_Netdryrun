@@ -1,0 +1,49 @@
+{
+  "ticket": "T05-review-safe",
+  "kind": "review",
+  "valid": true,
+  "truth": {
+    "verdict": "safe",
+    "decision": [
+      "apply"
+    ]
+  },
+  "answer": {
+    "verdict": "safe",
+    "decision": "apply",
+    "netdryrun_status": "passed",
+    "changed_files": [
+      "configs/edge1.conf"
+    ],
+    "reason": "All 11 Netdryrun checks pass. Change adds only safety guards (prefix limits and logging) with no behavior changes; limits are conservative relative to current traffic."
+  },
+  "completed_unattended": true,
+  "verdict_ok": true,
+  "decision_ok": true,
+  "changed_files": [],
+  "added_files": [],
+  "rule_breaks": [],
+  "hidden_rerun": null,
+  "hidden_ok": true,
+  "solved": true,
+  "tool_calls": 9,
+  "netdryrun_calls": 1,
+  "lab_runs": 1,
+  "tools": {
+    "Glob": 2,
+    "Read": 6,
+    "mcp__netdryrun__dry_run": 1
+  },
+  "turns": 10,
+  "wall_s": 63.8,
+  "agent_duration_s": 61.9,
+  "cost_usd": 0.0304009,
+  "model": "claude-haiku-4-5-20251001",
+  "claude_code_version": "2.1.116",
+  "mcp_status": [
+    "connected"
+  ],
+  "permission_denials": [],
+  "tool_errors": [],
+  "timed_out": false
+}
