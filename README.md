@@ -149,7 +149,7 @@ claude mcp add netdryrun -- netdryrun mcp
 
 Tools: `dry_run` (deploy, check, destroy, verdict), `run_checks` (against a running lab), `validate`, `check_types`. Each result carries a separate `verdict` field: `SAFE TO PROCEED` or `DO NOT APPLY THIS CHANGE`.
 
-**Demo** ([examples/agent-demo](examples/agent-demo)): the ticket says the customer's new block must reach the upstream and the peer. The tempting change passes every ticket check, session and ping, but leaks routes; Netdryrun rejects it. The two-line fix passes the same checks.
+**Demo** ([examples/agent-demo](examples/agent-demo)): the ticket says the customer's new block must reach the upstream and the peer. The tempting change passes every ticket check, session and ping, but leaks routes; Netdryrun rejects it. The two-line fix passes the same checks. (A scripted replay of the two attempts; CI runs it.)
 
 <p align="center"><img alt="Attempt 1 passes the ticket checks but fails four leak guards; attempt 2 passes all 13 checks" src=".github/assets/netdryrun-agent-demo.gif" width="820"></p>
 

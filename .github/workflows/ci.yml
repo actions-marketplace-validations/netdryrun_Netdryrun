@@ -57,11 +57,12 @@ jobs:
           test "${{ steps.ndr.outputs.status }}" = "failed"
           test "${{ steps.ndr.outputs.failed }}" -ge 1
 
-  # The agent demo: Netdryrun MUST reject attempt 1 (opens the filters, leaks routes) and accept
-  # attempt 2 (two prefix-list lines). demo.sh exits non-zero otherwise.
+  # The agent demo: Netdryrun MUST reject attempt 1 on the leak guards only (it opens the filters)
+  # and accept attempt 2 (two prefix-list lines). demo.sh exits non-zero otherwise.
   agent-demo:
     needs: unit
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -72,4 +73,11 @@ jobs:
           bash -c "$(curl -sL https://get.containerlab.dev)" -- -v 0.81.1
           python -m pip install --quiet .
       - name: Replay the agent demo
-        run: sudo env -i "PATH=$PATH" "HOME=/root" bash examples/agent-demo/demo.sh
+        run: sudo env -i "PATH=$PATH" "HOME=/root" "OUT=$RUNNER_TEMP/agent-demo" bash examples/agent-demo/demo.sh
+      - name: Upload the reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-demo-reports
+          path: ${{ runner.temp }}/agent-demo/
+          if-no-files-found: ignore

@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- **Agent demo** (`examples/agent-demo`): a ticket, a tempting change that passes the ticket checks but leaks routes (rejected), and the proper fix (accepted). `demo.sh` replays it; CI runs it on every push.
+- **Agent demo** (`examples/agent-demo`): a ticket, a tempting change that passes the ticket checks but leaks routes (rejected), and the proper fix (accepted). `demo.sh` replays it and checks that attempt 1 fails only on the leak guards; CI runs it on pushes to `main` and on pull requests.
 - MCP server reports its version and website in `serverInfo`.
 
 ## 0.2.0 (2026-10-27)

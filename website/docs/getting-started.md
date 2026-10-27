@@ -38,7 +38,7 @@ netdryrun run examples/frr-bgp          # 3 FRR routers, should pass
 netdryrun run examples/srl-frr          # SR Linux + FRR, should pass
 netdryrun run examples/frr-bgp-broken   # a bad change, should fail
 netdryrun run examples/sonic-frr        # SONiC + FRR, should pass
-examples/agent-demo/demo.sh             # an agent's bad change rejected, the fix accepted
+examples/agent-demo/demo.sh             # replay: a leaky change rejected, the fix accepted
 ```
 
 Each run deploys the lab, runs the checks, prints one line per check and destroys the lab. Images are pulled on first use, so the first run takes longer.
