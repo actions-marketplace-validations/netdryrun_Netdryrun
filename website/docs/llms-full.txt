@@ -1795,6 +1795,8 @@ netdryrun verify topology.clab.yml --before <dir|git-ref> --after <dir|git-ref> 
 
 It deploys the lab with the *before* configs, waits for a stable snapshot, destroys the lab, then does the same with the *after* configs (and runs the standing guards on that lab). Then it compares the two snapshots and matches every difference against the intent. Two cold boots: about 2 × 60 to 120 seconds.
 
+The same engine runs in three places: this command, the MCP tool [`verify_change`](#over-mcp-verify_change) for AI agents, and the GitHub Action's [`mode: verify`](#in-ci-the-actions-mode-verify) on pull requests.
+
 ## The verdict
 
 | Status | Verdict | Exit code | Meaning |
@@ -1808,7 +1810,7 @@ It deploys the lab with the *before* configs, waits for a stable snapshot, destr
 
 **Explained is not the same as safe.** The report echoes the declared intent at the top, for a human to review: an intent that declares a leak explains the leak. `verify` never prints `SAFE TO PROCEED`. A verdict covers the observed control-plane state of this lab (sessions, RIB, BGP paths and advertisements), nothing else.
 
-**The intent must come from outside the change**: the ticket, the operator, or the base branch. A pass is never earned by copying the undeclared items into the intent. The report says who supplied it (`intent.supplied_by`: `cli` from the command line). When the intent file itself differs between `--before` and `--after` (the change edits its own intent), every report carries the warning "intent edited in the same change: needs a code-owner review".
+**The intent must come from outside the change**: the ticket, the operator, or the base branch. A pass is never earned by copying the undeclared items into the intent. The report says who supplied it (`intent.supplied_by`: `cli` from the command line, `mcp` from an MCP caller, `action` from the GitHub Action). When the intent file itself differs between `--before` and `--after` (the change edits its own intent), every report carries the warning "intent edited in the same change: needs a code-owner review".
 
 ## Options
 
@@ -1817,6 +1819,8 @@ It deploys the lab with the *before* configs, waits for a stable snapshot, destr
 | `--before`, `--after` | required | One side each: a git ref or a directory. A **git ref** is the repository's whole tree at that ref, and the topology file in it must be byte-identical to the one given (exit code `2` otherwise: verify compares configs on one topology). A **directory** stands for the folder that holds the topology and every file it binds (for `lab/topo/t.clab.yml` binding `../configs/r1.conf`, a copy of `lab/`, with `configs/r1.conf` in it). A directory wins over a ref of the same name. See [How each side is built](#how-each-side-is-built). |
 | `--intent` | required | The intent file. |
 | `--json FILE` | | Write the `netdryrun.verify/v1` report. |
+| `--markdown FILE` | | Write a Markdown summary: the verdict, the declared intent, the undeclared items with their next diagnostics, the declarations that didn't happen and the guards. Lab text in it is inert (no HTML, links or mentions). The Action posts it as the PR comment. |
+| `--intent-source` | `cli` | Who supplied the intent, echoed next to it (`cli` or `action`; the Action passes `action`). |
 | `--guards FILE` | see below | The standing guards (a `netdryrun.yml`), run on the *after* lab; they must pass. Its `nodes:` settings (`driver`, `setup`) apply to both labs. See [Standing guards](#standing-guards). |
 | `--config-dir DIR` | | With directory sides: the folder each directory stands for, relative to the topology (for example `configs`), when the directories hold only that folder. Every bind must then resolve inside it. With a git ref, it is only checked to exist in the ref. |
 | `--unobserved NODE` | | A node without a routing stack (a host). Repeat for several. A node verify can't classify is an error, never silently skipped: a `linux` node with no known routing image, and the host kinds (`host`, `ext-container`, `k8s-kind`), are refused unless named here. Bridges are never observed. |
@@ -1997,9 +2001,23 @@ JSON Schema: [verify-v1.json](https://netdryrun.com/schemas/verify-v1.json).
 
 (Abridged: every item also has `fields`, `before` and `after`, and the report has `run_id`, `warnings`, `baseline`, `timings` and more.) Undeclared items come first; each has one `next_diagnostic`, a read-only command for its node (run it on a lab kept with `--keep`). `not_happened` lists every declared change that didn't happen, with the reason. `declared` lists what each line explained.
 
+## Over MCP: verify_change
+
+AI agents call `verify_change(topology, before, after, intent, guards=None)` on the [MCP server](../ai-agents.md#verify-a-change-against-the-tickets-intent). It runs this same engine, nothing copied:
+
+- `topology`, `before`, `after` and `guards` as on the command line (`C:\...` paths are accepted, as by every Netdryrun tool; use absolute paths). With `NETDRYRUN_MCP_ROOT` set, the topology, directory sides, the intent file and the guards must lie inside it.
+- `intent` is the intent as YAML or JSON text (several lines, a JSON object, or text starting with `intent:` or `allow_anywhere:`), or the path of an intent file. The report records `intent_source: "mcp"` (and `intent.supplied_by: "mcp"`).
+- The result is typed by [`mcp-result-v1.json`](https://netdryrun.com/schemas/mcp-result-v1.json) (`$defs/verify_result`): the verdict, status, the echoed intent, the warnings, up to 50 undeclared items with their `next_diagnostic` (`undeclared_total` counts all of them), what didn't happen, the guards, and `evidence_file`, the full `netdryrun.verify/v1` report written as `netdryrun-verify-report.json` next to the topology.
+
+The intent should come from the ticket or the operator. An agent must never write it from the diff, or widen it (or add `allow_anywhere`) to make a change pass. Two lab boots: about 2 to 4 minutes.
+
+## In CI: the Action's mode: verify
+
+On a pull request, [the Action](../github-action.md#verify-a-change-against-its-intent-mode-verify) with `mode: verify` runs `verify` with the PR's base commit as *before* and its head as *after*, the intent file from the PR (`intent-file`, default `netdryrun-intent.yml`), and the base commit's `netdryrun.yml` as standing guards. **A PR that adds or edits the intent file fails** ("intent edited in this PR: requires a code-owner approval") unless the workflow sets `allow-intent-edit: true`, which it should do only where branch protection requires a code-owner review of that file. The PR comment shows the verdict, the echoed intent, the undeclared items and their next diagnostics.
+
 ## Not in 0.4
 
-Topology changes; SR Linux, SONiC and Arista EOS nodes; EVPN, VPN and labeled-unicast address families; unnumbered BGP sessions; the data plane beyond the standing guards' ping checks; the MCP tool and the GitHub Action's `mode: verify` (next).
+Topology changes; SR Linux, SONiC and Arista EOS nodes; EVPN, VPN and labeled-unicast address families; unnumbered BGP sessions; the data plane beyond the standing guards' ping checks.
 
 
 ---
@@ -2171,7 +2189,11 @@ It needs a Linux runner with Docker. GitHub-hosted `ubuntu-latest` runners work.
 
 | Input | Default | Meaning |
 |---|---|---|
-| `path` | `.` | `netdryrun.yml` or the folder containing it |
+| `mode` | `run` | `run`: deploy the lab of `netdryrun.yml` and run its checks. `verify` (0.4, FRR only): on a pull request, compare the lab with the base commit's configs and with the head's against an intent file. See [mode: verify](#verify-a-change-against-its-intent-mode-verify) |
+| `path` | `.` | `netdryrun.yml` or the folder containing it (`mode: run`) |
+| `topology` | | The containerlab topology file (`mode: verify`); it must be the same in the base and the head |
+| `intent-file` | `netdryrun-intent.yml` | The intent file (`mode: verify`): what the change is meant to do |
+| `allow-intent-edit` | `false` | `mode: verify`: let a PR that adds or edits the intent file run. Set it only when branch protection requires a code-owner review of that file |
 | `containerlab-version` | `0.81.1` | containerlab version to install, pinned for reproducible runs. Empty means latest. If containerlab is already installed, it is used as is, with a warning if the version differs. |
 | `json-report` | `netdryrun-report.json` | Path for the JSON evidence report |
 | `junit-report` | `netdryrun-junit.xml` | Path for the JUnit XML report |
@@ -2188,10 +2210,11 @@ It needs a Linux runner with Docker. GitHub-hosted `ubuntu-latest` runners work.
 
 | Output | Meaning |
 |---|---|
-| `status` | `passed`, `failed`, `error` or `inconclusive` (the lab never reached a testable state, so the run says nothing about the change; the job still fails) |
+| `status` | `passed`, `failed`, `error` or `inconclusive` (the lab never reached a testable state, so the run says nothing about the change; the job still fails). With `mode: verify`: `matched`, `no_change`, `failed`, `error`, `inconclusive` or `unhealthy_baseline` |
+| `verdict` | `SAFE TO PROCEED`, `DO NOT APPLY THIS CHANGE` or `INCONCLUSIVE`. With `mode: verify`: `INTENT MATCHED`, `NO BEHAVIOR CHANGE`, `UNDECLARED CHANGES: DO NOT APPLY`, `INCONCLUSIVE`, `INCONCLUSIVE: UNHEALTHY BASELINE` or `ERROR: NO VERDICT` (never `SAFE TO PROCEED`) |
 | `inconclusive-reason` | Why the run was inconclusive; empty otherwise |
-| `passed` | Number of passed checks |
-| `failed` | Number of failed checks |
+| `passed` | Number of passed checks (`mode: verify`: declared intent lines observed, plus standing guards passed) |
+| `failed` | Number of failed checks (`mode: verify`: undeclared differences, declared lines that didn't happen, plus standing guards failed) |
 | `evidence-url` | Reserved for Netdryrun Cloud; always empty today |
 
 ## Examples
@@ -2267,6 +2290,45 @@ jobs:
           path: network/
           pr-comment: true
 ```
+
+### Verify a change against its intent (mode: verify)
+
+New in 0.4, FRR only. Instead of running checks, the Action boots the topology twice, with the PR's base commit (`github.event.pull_request.base.sha`) and with its head, and fails on every difference in routing behavior that the intent file doesn't declare. It runs [`netdryrun verify`](reference/verify.md): the verdict is `INTENT MATCHED`, `NO BEHAVIOR CHANGE`, `UNDECLARED CHANGES: DO NOT APPLY` or `INCONCLUSIVE`, never `SAFE TO PROCEED`. The standing guards are the `netdryrun.yml` next to the topology **in the base commit**, never the PR's copy, so a PR can't weaken them.
+
+```yaml title=".github/workflows/network-verify.yml"
+name: Network verify
+on: pull_request
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # verify reads the base and head commits
+      - uses: netdryrun/netdryrun@v0.3.1
+        with:
+          mode: verify
+          topology: network/topology.clab.yml
+          intent-file: network/netdryrun-intent.yml
+          pr-comment: true
+```
+
+**The intent comes from outside the change.** It states what the ticket asks for, so the PR that makes the change must not also write its intent: a change that writes its own allowlist explains whatever it does. If the PR adds or edits the intent file, the job fails with "intent edited in this PR: requires a code-owner approval", before any lab boots. Two ways to work with that:
+
+- Merge the intent from the ticket first, in its own reviewed PR, then open the change against it.
+- Or let one PR carry both, with `allow-intent-edit: true`, **only if branch protection requires a code-owner review** on the intent file. Then a human from the network team approves every intent, and the job prints a warning that the intent was edited.
+
+Either way, list the intent file and `netdryrun.yml` in `CODEOWNERS` and turn on "Require review from Code Owners" for the default branch:
+
+```text title=".github/CODEOWNERS"
+network/netdryrun-intent.yml  @your-org/network-team
+network/netdryrun.yml         @your-org/network-team
+```
+
+The PR comment (with `pr-comment: true`) and the job summary show the verdict, the declared intent echoed for the reviewer, every undeclared difference with the read-only command that shows it on its node, the declarations that didn't happen and the standing guards. The same protections as in `mode: run` apply: report files already in the workspace are deleted before the run, the `status` and `verdict` outputs come from this run's report only (and must match its exit code), and lab text in the comment and outputs is made inert.
 
 ## Security notes
 
@@ -2573,7 +2635,7 @@ The PR comment lists failures first with their evidence, so the reviewer sees wh
 
 ## Tools
 
-The server has these tools: `dry_run`, `run_checks`, `record_baseline`, `validate` and `check_types`.
+The server has these tools: `dry_run`, `verify_change`, `run_checks`, `record_baseline`, `validate` and `check_types`.
 
 
 | Tool | Arguments | What it does |
@@ -2583,10 +2645,26 @@ The server has these tools: `dry_run`, `run_checks`, `record_baseline`, `validat
 | `record_baseline` | `topology`, `deploy` (default `true`), `wait_seconds` (default `45`) | Deploy the lab, snapshot its BGP sessions, prefix counts and routes as `netdryrun.yml` text, destroy the lab. Returns the YAML; nothing is written to disk. Like [`netdryrun record`](reference/cli.md#record) |
 | `validate` | `path` | Validate `netdryrun.yml` and its topology without starting a lab: node names, drivers and supported keys, as `dry_run` checks them before deploying (0.3.1 and later) |
 | `check_types` | | List supported check types and their keys, to help write `netdryrun.yml` |
+| `verify_change` | `topology`, `before`, `after`, `intent`, `guards` (optional) | 0.4, FRR only. Boot the topology with the *before* and the *after* configs, diff routing behavior, and fail on every difference the intent doesn't declare. No checks needed. Two lab boots: about 2–4 minutes. See [below](#verify-a-change-against-the-tickets-intent) |
 
 The server also exposes the last full JSON report as a resource, `netdryrun://report/{path}`.
 
-From 0.3.2, every tool description carries the same rules, so an agent that reads only one tool still gets them: use it before proposing or applying a routing or policy change; ping is not a test; a dry run takes about 60–120 s; it needs Linux or WSL2, Docker and containerlab with root-equivalent rights and won't run on macOS or in sandboxes without Docker-in-Docker; inconclusive means stop, don't retry more than once; never invent or weaken checks, and call `record_baseline` if no checks exist.
+From 0.3.2, every tool description carries the same rules, so an agent that reads only one tool still gets them: use it before proposing or applying a routing or policy change; ping is not a test; a dry run takes about 60–120 s; it needs Linux or WSL2, Docker and containerlab with root-equivalent rights and won't run on macOS or in sandboxes without Docker-in-Docker; inconclusive means stop, don't retry more than once; never invent or weaken checks, and call `record_baseline` if no checks exist (from 0.4: or `verify_change` with the intent the ticket states).
+
+## Verify a change against the ticket's intent
+
+New in 0.4, FRR only. Checks cover what someone thought of; an agent asked to make a change tends to check only what it meant to change, and so misses what it broke. `verify_change` inverts that: the agent passes the intent, and **every other difference in the network's behavior fails**. When a repository has no `netdryrun.yml` and the ticket says what the change should do, prefer `verify_change` over writing checks.
+
+```json
+{"topology": "C:\\net\\lab\\topology.clab.yml", "before": "main", "after": "C:\\net\\lab-after",
+ "intent": "intent:\n  - prefix: 10.101.0.0/24\n    appears_on: [edge1, up1, peer1]\n"}
+```
+
+- `before` and `after` are each a git ref or a directory holding the lab's tree, as for [`netdryrun verify`](reference/verify.md). The topology file must be the same on both sides.
+- `intent` is the [intent](reference/verify.md#the-intent-file) as YAML or JSON text, or the path of an intent file. **It comes from the ticket or the operator**: never write it from the diff, and never widen it (or add `allow_anywhere`) to make a change pass. The result records `intent_source: "mcp"`.
+- `guards` is an optional `netdryrun.yml` run on the *after* lab. With a git ref as `before`, the `netdryrun.yml` next to the topology in that ref runs by default, so the base branch's leak guards fail a change even when the intent declares the leak.
+
+The `verdict` is `INTENT MATCHED`, `UNDECLARED CHANGES: DO NOT APPLY` or `INCONCLUSIVE`, plus `NO BEHAVIOR CHANGE` (nothing changed and nothing was declared), `INCONCLUSIVE: UNHEALTHY BASELINE` and `ERROR: NO VERDICT`. It never says `SAFE TO PROCEED`: explained is not the same as safe, so show the echoed `intent` to the human with the verdict. On `UNDECLARED CHANGES`, `undeclared` lists each difference nobody declared (up to 50; `undeclared_total` counts them) with one read-only `next_diagnostic` command, and `not_happened` the declarations that didn't happen. Fix the change, not the intent. The full report, both snapshots included, is in `evidence_file`. The result format is `$defs/verify_result` in [`mcp-result-v1.json`](https://netdryrun.com/schemas/mcp-result-v1.json).
 
 ## Result and verdict
 

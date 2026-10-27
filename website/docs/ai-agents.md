@@ -182,7 +182,7 @@ The PR comment lists failures first with their evidence, so the reviewer sees wh
 
 ## Tools
 
-The server has these tools: <!-- facts:mcp_tools -->`dry_run`, `run_checks`, `record_baseline`, `validate` and `check_types`<!-- /facts:mcp_tools -->.
+The server has these tools: <!-- facts:mcp_tools -->`dry_run`, `verify_change`, `run_checks`, `record_baseline`, `validate` and `check_types`<!-- /facts:mcp_tools -->.
 
 
 | Tool | Arguments | What it does |
@@ -192,10 +192,26 @@ The server has these tools: <!-- facts:mcp_tools -->`dry_run`, `run_checks`, `re
 | `record_baseline` | `topology`, `deploy` (default `true`), `wait_seconds` (default `45`) | Deploy the lab, snapshot its BGP sessions, prefix counts and routes as `netdryrun.yml` text, destroy the lab. Returns the YAML; nothing is written to disk. Like [`netdryrun record`](reference/cli.md#record) |
 | `validate` | `path` | Validate `netdryrun.yml` and its topology without starting a lab: node names, drivers and supported keys, as `dry_run` checks them before deploying (0.3.1 and later) |
 | `check_types` | | List supported check types and their keys, to help write `netdryrun.yml` |
+| `verify_change` | `topology`, `before`, `after`, `intent`, `guards` (optional) | 0.4, FRR only. Boot the topology with the *before* and the *after* configs, diff routing behavior, and fail on every difference the intent doesn't declare. No checks needed. Two lab boots: about 2–4 minutes. See [below](#verify-a-change-against-the-tickets-intent) |
 
 The server also exposes the last full JSON report as a resource, `netdryrun://report/{path}`.
 
-From 0.3.2, every tool description carries the same rules, so an agent that reads only one tool still gets them: use it before proposing or applying a routing or policy change; ping is not a test; a dry run takes about 60–120 s; it needs Linux or WSL2, Docker and containerlab with root-equivalent rights and won't run on macOS or in sandboxes without Docker-in-Docker; inconclusive means stop, don't retry more than once; never invent or weaken checks, and call `record_baseline` if no checks exist.
+From 0.3.2, every tool description carries the same rules, so an agent that reads only one tool still gets them: use it before proposing or applying a routing or policy change; ping is not a test; a dry run takes about 60–120 s; it needs Linux or WSL2, Docker and containerlab with root-equivalent rights and won't run on macOS or in sandboxes without Docker-in-Docker; inconclusive means stop, don't retry more than once; never invent or weaken checks, and call `record_baseline` if no checks exist (from 0.4: or `verify_change` with the intent the ticket states).
+
+## Verify a change against the ticket's intent
+
+New in 0.4, FRR only. Checks cover what someone thought of; an agent asked to make a change tends to check only what it meant to change, and so misses what it broke. `verify_change` inverts that: the agent passes the intent, and **every other difference in the network's behavior fails**. When a repository has no `netdryrun.yml` and the ticket says what the change should do, prefer `verify_change` over writing checks.
+
+```json
+{"topology": "C:\\net\\lab\\topology.clab.yml", "before": "main", "after": "C:\\net\\lab-after",
+ "intent": "intent:\n  - prefix: 10.101.0.0/24\n    appears_on: [edge1, up1, peer1]\n"}
+```
+
+- `before` and `after` are each a git ref or a directory holding the lab's tree, as for [`netdryrun verify`](reference/verify.md). The topology file must be the same on both sides.
+- `intent` is the [intent](reference/verify.md#the-intent-file) as YAML or JSON text, or the path of an intent file. **It comes from the ticket or the operator**: never write it from the diff, and never widen it (or add `allow_anywhere`) to make a change pass. The result records `intent_source: "mcp"`.
+- `guards` is an optional `netdryrun.yml` run on the *after* lab. With a git ref as `before`, the `netdryrun.yml` next to the topology in that ref runs by default, so the base branch's leak guards fail a change even when the intent declares the leak.
+
+The `verdict` is `INTENT MATCHED`, `UNDECLARED CHANGES: DO NOT APPLY` or `INCONCLUSIVE`, plus `NO BEHAVIOR CHANGE` (nothing changed and nothing was declared), `INCONCLUSIVE: UNHEALTHY BASELINE` and `ERROR: NO VERDICT`. It never says `SAFE TO PROCEED`: explained is not the same as safe, so show the echoed `intent` to the human with the verdict. On `UNDECLARED CHANGES`, `undeclared` lists each difference nobody declared (up to 50; `undeclared_total` counts them) with one read-only `next_diagnostic` command, and `not_happened` the declarations that didn't happen. Fix the change, not the intent. The full report, both snapshots included, is in `evidence_file`. The result format is `$defs/verify_result` in [`mcp-result-v1.json`](https://netdryrun.com/schemas/mcp-result-v1.json).
 
 ## Result and verdict
 

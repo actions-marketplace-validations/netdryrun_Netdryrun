@@ -26,7 +26,11 @@ It needs a Linux runner with Docker. GitHub-hosted `ubuntu-latest` runners work.
 
 | Input | Default | Meaning |
 |---|---|---|
-| `path` | `.` | `netdryrun.yml` or the folder containing it |
+| `mode` | `run` | `run`: deploy the lab of `netdryrun.yml` and run its checks. `verify` (0.4, FRR only): on a pull request, compare the lab with the base commit's configs and with the head's against an intent file. See [mode: verify](#verify-a-change-against-its-intent-mode-verify) |
+| `path` | `.` | `netdryrun.yml` or the folder containing it (`mode: run`) |
+| `topology` | | The containerlab topology file (`mode: verify`); it must be the same in the base and the head |
+| `intent-file` | `netdryrun-intent.yml` | The intent file (`mode: verify`): what the change is meant to do |
+| `allow-intent-edit` | `false` | `mode: verify`: let a PR that adds or edits the intent file run. Set it only when branch protection requires a code-owner review of that file |
 | `containerlab-version` | `0.81.1` | containerlab version to install, pinned for reproducible runs. Empty means latest. If containerlab is already installed, it is used as is, with a warning if the version differs. |
 | `json-report` | `netdryrun-report.json` | Path for the JSON evidence report |
 | `junit-report` | `netdryrun-junit.xml` | Path for the JUnit XML report |
@@ -43,10 +47,11 @@ It needs a Linux runner with Docker. GitHub-hosted `ubuntu-latest` runners work.
 
 | Output | Meaning |
 |---|---|
-| `status` | `passed`, `failed`, `error` or `inconclusive` (the lab never reached a testable state, so the run says nothing about the change; the job still fails) |
+| `status` | `passed`, `failed`, `error` or `inconclusive` (the lab never reached a testable state, so the run says nothing about the change; the job still fails). With `mode: verify`: `matched`, `no_change`, `failed`, `error`, `inconclusive` or `unhealthy_baseline` |
+| `verdict` | `SAFE TO PROCEED`, `DO NOT APPLY THIS CHANGE` or `INCONCLUSIVE`. With `mode: verify`: `INTENT MATCHED`, `NO BEHAVIOR CHANGE`, `UNDECLARED CHANGES: DO NOT APPLY`, `INCONCLUSIVE`, `INCONCLUSIVE: UNHEALTHY BASELINE` or `ERROR: NO VERDICT` (never `SAFE TO PROCEED`) |
 | `inconclusive-reason` | Why the run was inconclusive; empty otherwise |
-| `passed` | Number of passed checks |
-| `failed` | Number of failed checks |
+| `passed` | Number of passed checks (`mode: verify`: declared intent lines observed, plus standing guards passed) |
+| `failed` | Number of failed checks (`mode: verify`: undeclared differences, declared lines that didn't happen, plus standing guards failed) |
 | `evidence-url` | Reserved for Netdryrun Cloud; always empty today |
 
 ## Examples
@@ -122,6 +127,45 @@ jobs:
           path: network/
           pr-comment: true
 ```
+
+### Verify a change against its intent (mode: verify)
+
+New in 0.4, FRR only. Instead of running checks, the Action boots the topology twice, with the PR's base commit (`github.event.pull_request.base.sha`) and with its head, and fails on every difference in routing behavior that the intent file doesn't declare. It runs [`netdryrun verify`](reference/verify.md): the verdict is `INTENT MATCHED`, `NO BEHAVIOR CHANGE`, `UNDECLARED CHANGES: DO NOT APPLY` or `INCONCLUSIVE`, never `SAFE TO PROCEED`. The standing guards are the `netdryrun.yml` next to the topology **in the base commit**, never the PR's copy, so a PR can't weaken them.
+
+```yaml title=".github/workflows/network-verify.yml"
+name: Network verify
+on: pull_request
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # verify reads the base and head commits
+      - uses: netdryrun/netdryrun@v0.3.1
+        with:
+          mode: verify
+          topology: network/topology.clab.yml
+          intent-file: network/netdryrun-intent.yml
+          pr-comment: true
+```
+
+**The intent comes from outside the change.** It states what the ticket asks for, so the PR that makes the change must not also write its intent: a change that writes its own allowlist explains whatever it does. If the PR adds or edits the intent file, the job fails with "intent edited in this PR: requires a code-owner approval", before any lab boots. Two ways to work with that:
+
+- Merge the intent from the ticket first, in its own reviewed PR, then open the change against it.
+- Or let one PR carry both, with `allow-intent-edit: true`, **only if branch protection requires a code-owner review** on the intent file. Then a human from the network team approves every intent, and the job prints a warning that the intent was edited.
+
+Either way, list the intent file and `netdryrun.yml` in `CODEOWNERS` and turn on "Require review from Code Owners" for the default branch:
+
+```text title=".github/CODEOWNERS"
+network/netdryrun-intent.yml  @your-org/network-team
+network/netdryrun.yml         @your-org/network-team
+```
+
+The PR comment (with `pr-comment: true`) and the job summary show the verdict, the declared intent echoed for the reviewer, every undeclared difference with the read-only command that shows it on its node, the declarations that didn't happen and the standing guards. The same protections as in `mode: run` apply: report files already in the workspace are deleted before the run, the `status` and `verdict` outputs come from this run's report only (and must match its exit code), and lab text in the comment and outputs is made inert.
 
 ## Security notes
 

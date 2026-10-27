@@ -16,6 +16,8 @@ netdryrun verify topology.clab.yml --before <dir|git-ref> --after <dir|git-ref> 
 
 It deploys the lab with the *before* configs, waits for a stable snapshot, destroys the lab, then does the same with the *after* configs (and runs the standing guards on that lab). Then it compares the two snapshots and matches every difference against the intent. Two cold boots: about 2 × 60 to 120 seconds.
 
+The same engine runs in three places: this command, the MCP tool [`verify_change`](#over-mcp-verify_change) for AI agents, and the GitHub Action's [`mode: verify`](#in-ci-the-actions-mode-verify) on pull requests.
+
 ## The verdict
 
 | Status | Verdict | Exit code | Meaning |
@@ -29,7 +31,7 @@ It deploys the lab with the *before* configs, waits for a stable snapshot, destr
 
 **Explained is not the same as safe.** The report echoes the declared intent at the top, for a human to review: an intent that declares a leak explains the leak. `verify` never prints `SAFE TO PROCEED`. A verdict covers the observed control-plane state of this lab (sessions, RIB, BGP paths and advertisements), nothing else.
 
-**The intent must come from outside the change**: the ticket, the operator, or the base branch. A pass is never earned by copying the undeclared items into the intent. The report says who supplied it (`intent.supplied_by`: `cli` from the command line). When the intent file itself differs between `--before` and `--after` (the change edits its own intent), every report carries the warning "intent edited in the same change: needs a code-owner review".
+**The intent must come from outside the change**: the ticket, the operator, or the base branch. A pass is never earned by copying the undeclared items into the intent. The report says who supplied it (`intent.supplied_by`: `cli` from the command line, `mcp` from an MCP caller, `action` from the GitHub Action). When the intent file itself differs between `--before` and `--after` (the change edits its own intent), every report carries the warning "intent edited in the same change: needs a code-owner review".
 
 ## Options
 
@@ -38,6 +40,8 @@ It deploys the lab with the *before* configs, waits for a stable snapshot, destr
 | `--before`, `--after` | required | One side each: a git ref or a directory. A **git ref** is the repository's whole tree at that ref, and the topology file in it must be byte-identical to the one given (exit code `2` otherwise: verify compares configs on one topology). A **directory** stands for the folder that holds the topology and every file it binds (for `lab/topo/t.clab.yml` binding `../configs/r1.conf`, a copy of `lab/`, with `configs/r1.conf` in it). A directory wins over a ref of the same name. See [How each side is built](#how-each-side-is-built). |
 | `--intent` | required | The intent file. |
 | `--json FILE` | | Write the `netdryrun.verify/v1` report. |
+| `--markdown FILE` | | Write a Markdown summary: the verdict, the declared intent, the undeclared items with their next diagnostics, the declarations that didn't happen and the guards. Lab text in it is inert (no HTML, links or mentions). The Action posts it as the PR comment. |
+| `--intent-source` | `cli` | Who supplied the intent, echoed next to it (`cli` or `action`; the Action passes `action`). |
 | `--guards FILE` | see below | The standing guards (a `netdryrun.yml`), run on the *after* lab; they must pass. Its `nodes:` settings (`driver`, `setup`) apply to both labs. See [Standing guards](#standing-guards). |
 | `--config-dir DIR` | | With directory sides: the folder each directory stands for, relative to the topology (for example `configs`), when the directories hold only that folder. Every bind must then resolve inside it. With a git ref, it is only checked to exist in the ref. |
 | `--unobserved NODE` | | A node without a routing stack (a host). Repeat for several. A node verify can't classify is an error, never silently skipped: a `linux` node with no known routing image, and the host kinds (`host`, `ext-container`, `k8s-kind`), are refused unless named here. Bridges are never observed. |
@@ -218,6 +222,20 @@ JSON Schema: [verify-v1.json](https://netdryrun.com/schemas/verify-v1.json).
 
 (Abridged: every item also has `fields`, `before` and `after`, and the report has `run_id`, `warnings`, `baseline`, `timings` and more.) Undeclared items come first; each has one `next_diagnostic`, a read-only command for its node (run it on a lab kept with `--keep`). `not_happened` lists every declared change that didn't happen, with the reason. `declared` lists what each line explained.
 
+## Over MCP: verify_change
+
+AI agents call `verify_change(topology, before, after, intent, guards=None)` on the [MCP server](../ai-agents.md#verify-a-change-against-the-tickets-intent). It runs this same engine, nothing copied:
+
+- `topology`, `before`, `after` and `guards` as on the command line (`C:\...` paths are accepted, as by every Netdryrun tool; use absolute paths). With `NETDRYRUN_MCP_ROOT` set, the topology, directory sides, the intent file and the guards must lie inside it.
+- `intent` is the intent as YAML or JSON text (several lines, a JSON object, or text starting with `intent:` or `allow_anywhere:`), or the path of an intent file. The report records `intent_source: "mcp"` (and `intent.supplied_by: "mcp"`).
+- The result is typed by [`mcp-result-v1.json`](https://netdryrun.com/schemas/mcp-result-v1.json) (`$defs/verify_result`): the verdict, status, the echoed intent, the warnings, up to 50 undeclared items with their `next_diagnostic` (`undeclared_total` counts all of them), what didn't happen, the guards, and `evidence_file`, the full `netdryrun.verify/v1` report written as `netdryrun-verify-report.json` next to the topology.
+
+The intent should come from the ticket or the operator. An agent must never write it from the diff, or widen it (or add `allow_anywhere`) to make a change pass. Two lab boots: about 2 to 4 minutes.
+
+## In CI: the Action's mode: verify
+
+On a pull request, [the Action](../github-action.md#verify-a-change-against-its-intent-mode-verify) with `mode: verify` runs `verify` with the PR's base commit as *before* and its head as *after*, the intent file from the PR (`intent-file`, default `netdryrun-intent.yml`), and the base commit's `netdryrun.yml` as standing guards. **A PR that adds or edits the intent file fails** ("intent edited in this PR: requires a code-owner approval") unless the workflow sets `allow-intent-edit: true`, which it should do only where branch protection requires a code-owner review of that file. The PR comment shows the verdict, the echoed intent, the undeclared items and their next diagnostics.
+
 ## Not in 0.4
 
-Topology changes; SR Linux, SONiC and Arista EOS nodes; EVPN, VPN and labeled-unicast address families; unnumbered BGP sessions; the data plane beyond the standing guards' ping checks; the MCP tool and the GitHub Action's `mode: verify` (next).
+Topology changes; SR Linux, SONiC and Arista EOS nodes; EVPN, VPN and labeled-unicast address families; unnumbered BGP sessions; the data plane beyond the standing guards' ping checks.
