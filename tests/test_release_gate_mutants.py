@@ -43,3 +43,23 @@ def test_only_a_pinned_matching_entry_is_accepted():
 def test_reason_reads_both_formats():
     assert gate.reason("text") == "text"
     assert gate.reason({"reason": "text", "diff": "x"}) == "text"
+
+
+def test_every_verdict_module_is_mutated_and_has_a_coverage_floor():
+    """Meta-test: a module that joins VERDICT_MODULES (verify.engine and verify.intent in 0.4) is in mutmut's
+    only_mutate, exists, has a coverage floor, and its mutant names match the gate's glob and prefix."""
+    import fnmatch
+    import re
+
+    text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    block = re.search(r"only_mutate = \[(.*?)\]", text, re.S).group(1)
+    only = re.findall(r'"([^"]+)"', block)
+    assert set(gate.COVERAGE_FLOORS) == set(gate.VERDICT_MODULES)
+    assert {"verify.engine", "verify.intent"} <= set(gate.VERDICT_MODULES)
+    for name, path in gate.VERDICT_MODULES.items():
+        assert (ROOT / path).exists(), path
+        assert any(fnmatch.fnmatch(path, pat) or path.rstrip("/") + "/*" == pat for pat in only), (name, only)
+        dotted = path.removeprefix("src/").removesuffix(".py").rstrip("/").replace("/", ".")
+        assert dotted == f"netdryrun.{name}", (name, dotted)        # the gate's glob and survivor prefix
+        assert 0 < gate.COVERAGE_FLOORS[name] <= 100
+    assert gate.mutant_function("netdryrun.verify.engine.x_match__mutmut_3") == "verify.engine.match"

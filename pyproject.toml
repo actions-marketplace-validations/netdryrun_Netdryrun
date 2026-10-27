@@ -102,9 +102,11 @@ only_mutate = [
   "src/netdryrun/config.py",
   "src/netdryrun/runner.py",
   "src/netdryrun/drivers/*",
+  "src/netdryrun/verify/engine.py",
+  "src/netdryrun/verify/intent.py",
 ]
 pytest_add_cli_args_test_selection = ["tests/"]
 also_copy = [
-  "examples/", "website/", "scripts/", "corpus/", "advisories/", ".github/", "action.yml", "server.json",
+  "examples/", "website/", "scripts/", "corpus/", "advisories/", "skills/", ".github/", "action.yml", "server.json",
   "README.md", "AGENTS.md", "CHANGELOG.md",
 ]

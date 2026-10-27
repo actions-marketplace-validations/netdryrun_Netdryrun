@@ -563,3 +563,315 @@ def test_a_removed_session_is_its_own_diff_kind_not_goes_down():
     removed = [d for d in m.undeclared if d.key.kind == "session"]
     assert sorted((d.key.node, d.change, d.kind) for d in removed) == [("edge1", "removed", "session removed"),
                                                                     ("peer1", "changed", "session")]
+
+
+# --- every way a declaration can fail to happen (meta-tested per intent form) ---------------------------------
+# Each case: the line didn't happen, so it explains nothing and the verdict fails, whatever else changed. These
+# pin the `happened` flag and the reason on every early return of every evaluator (mutation testing found
+# returns whose flag could flip to "happened" unnoticed on a lab where nothing else changed).
+
+def _edit(*fns):
+    def make():
+        lab = base()
+        for fn in fns:
+            fn(lab)
+        return lab
+    return make
+
+
+def _lp(lab, value, med=None):
+    lab.learn("edge1", "203.0.113.0/24", "10.0.2.2", "65002", local_pref=value, med=med)
+
+
+def _drop_best(lab):
+    lab.drop("edge1", "path", "203.0.113.0/24")
+    lab.drop("edge1", "rib", "203.0.113.0/24")
+
+
+def _adj_in(lab):
+    lab.adj_in("edge1", "10.0.1.2", "10.100.0.0/24", attrs(as_path="65101", next_hop="10.0.1.2"))
+
+
+def _gone_but_received(lab):
+    _adj_in(lab)
+    lab.drop("edge1", "path", "10.100.0.0/24")
+    lab.drop("edge1", "rib", "10.100.0.0/24")
+
+
+def _session_down(lab):
+    lab.session("edge1", "10.0.2.2", session(None, state="active", remote_as=65002))
+
+
+def _adv_out(lab, **kw):
+    lab.adj_out("edge1", "198.51.100.9", "10.100.0.0/24", attrs(**{"as_path": "65101", "next_hop": "198.51.100.8", **kw}))
+
+
+OUT = {"node": "edge1", "neighbor": "198.51.100.9"}
+S_LINE = {"session": {"node": "edge1", "neighbor": "10.0.2.2", "afi": "ipv4-unicast"}, "goes": "down"}
+NEW = {"prefix": "10.101.0.0/24"}
+CUST = {"prefix": "10.100.0.0/24"}
+UP = {"prefix": "203.0.113.0/24", "best_path_on": "edge1"}
+OWN = {"prefix": "192.0.2.0/24", "advertisement": OUT}
+DID_NOT_HAPPEN = [
+    # appears_on
+    ("appears_on on an unchanged lab", base, base, {**NEW, "appears_on": ["up1"]}),
+    ("appears_on of a route already there", base, base, {**CUST, "appears_on": ["up1"]}),
+    ("appears_on where it stopped short", base, lambda: add_new_customer_block(base(), nodes=("edge1",)),
+     {**NEW, "appears_on": ["edge1", "up1"]}),
+    ("appears_on with a pin that doesn't match", base, lambda: add_new_customer_block(base()),
+     {**NEW, "appears_on": ["edge1"], "with": {"as_path": "65999"}}),
+    # disappears_from
+    ("disappears_from on an unchanged lab", base, base, {**CUST, "disappears_from": ["up1"]}),
+    ("disappears_from of a route never there", base, base, {**NEW, "disappears_from": ["up1"]}),
+    ("disappears_from of a route now static", base,
+     _edit(lambda lab: lab.drop("up1", "path", "10.100.0.0/24"), lambda lab: lab.drop("up1", "rib", "10.100.0.0/24"),
+           lambda lab: lab.rib("up1", "10.100.0.0/24", rib("static", hops=(), distance=1))),
+     {**CUST, "disappears_from": ["up1"]}),
+    ("disappears_from while still received", _edit(_adj_in), _edit(_gone_but_received),
+     {**CUST, "disappears_from": ["edge1"], "including_received_only": True}),
+    # best_path_on
+    ("best_path_on on an unchanged lab", base, base, {**UP, "to": {"local_pref": 200}}),
+    ("best_path_on to another value", base, _edit(lambda lab: _lp(lab, 150)), {**UP, "to": {"local_pref": 200}}),
+    ("best_path_on without a best path before", base, base, {**NEW, "best_path_on": "edge1", "to": {"local_pref": 200}}),
+    ("best_path_on without a best path after", base, _edit(_drop_best), {**UP, "to": {"local_pref": 200}}),
+    ("best_path_on to the value it already had", base, base, {**UP, "to": {"local_pref": 100}}),
+    ("best_path_on with an unlisted attribute changed", base, _edit(lambda lab: _lp(lab, 200, med=5)),
+     {**UP, "to": {"local_pref": 200}}),
+    # session ... goes: down
+    ("session that stayed up", base, base, S_LINE),
+    ("session that never existed", base, base, {**S_LINE, "session": {**S_LINE["session"], "neighbor": "10.0.9.9"}}),
+    ("session that was down before", _edit(_session_down), _edit(_session_down), S_LINE),
+    ("session in an address family it doesn't carry", base, _edit(_session_down),
+     {**S_LINE, "session": {**S_LINE["session"], "afi": "ipv6-unicast"}}),
+    ("session removed from the config", base, _edit(lambda lab: lab.drop("edge1", "session", neighbor="10.0.2.2")),
+     S_LINE),
+    # advertisement
+    ("advertisement added that didn't appear", base, base, {**CUST, "advertisement": OUT, "goes": "added"}),
+    ("advertisement added that already existed", base, base, {**OWN, "goes": "added"}),
+    ("advertisement added with a rewritten attribute", base, _edit(lambda lab: _adv_out(lab, med=50)),
+     {**CUST, "advertisement": OUT, "goes": "added"}),
+    ("advertisement removed that is still there", base, base, {**OWN, "goes": "removed"}),
+    ("advertisement removed that never existed", base, base, {**CUST, "advertisement": OUT, "goes": "removed"}),
+    ("advertisement changed that doesn't exist", base, base, {**CUST, "advertisement": OUT, "to": {"med": 50}}),
+    ("advertisement changed to another value", _edit(_adv_out), _edit(lambda lab: _adv_out(lab, med=40)),
+     {**CUST, "advertisement": OUT, "to": {"med": 50}}),
+    ("advertisement changed in nothing listed", _edit(_adv_out), _edit(_adv_out),
+     {**CUST, "advertisement": OUT, "to": {"med": None}}),
+    ("advertisement changed in an unlisted attribute", _edit(_adv_out), _edit(lambda lab: _adv_out(lab, med=50, origin="incomplete")),
+     {**CUST, "advertisement": OUT, "to": {"med": 50}}),
+]
+
+
+@pytest.mark.parametrize("before,after,line", [pytest.param(b, a, ln, id=label) for label, b, a, ln in DID_NOT_HAPPEN])
+def test_a_declaration_that_did_not_happen_fails(before, after, line):
+    from netdryrun.verify.report import VerifyResult, to_dict
+
+    b, a = before(), after()
+    m = run(b, a, [line])
+    (lr,) = m.lines
+    assert lr.happened is False and lr.explained == set()
+    assert lr.line is not None and lr.line.index == 0 and isinstance(lr.reason, str) and lr.reason
+    assert m.status == "failed" and m.not_happened == [lr]
+    # and the report lists it (the line and its reason)
+    res = VerifyResult(status=m.status, match=m, before=b.snap(), after=a.snap(), intent=intent([line]))
+    assert to_dict(res)["not_happened"] == [{"intent": 0, "line": lr.line.text, "reason": lr.reason}]
+
+
+@pytest.mark.parametrize("form", sorted(__import__("netdryrun.verify.intent", fromlist=["FORMS"]).FORMS))
+def test_meta_every_intent_form_has_did_not_happen_cases(form):
+    """Meta-test: a new intent form (intent.FORMS) needs an evaluator and at least two cases above where its
+    declaration doesn't happen and the verdict fails."""
+    from netdryrun.verify.engine import EVALUATORS
+    from netdryrun.verify.intent import FORMS
+
+    assert set(EVALUATORS) == set(FORMS)
+    cases = [label for label, _b, _a, ln in DID_NOT_HAPPEN if form in ln]
+    assert len(cases) >= 2, f"intent form {form!r} has no did-not-happen cases in DID_NOT_HAPPEN"
+
+
+# --- what each form may explain, and nothing more (found by mutation testing) --------------------------------
+
+def test_advertisement_removed_and_changed_when_they_happen():
+    assert run(_edit(_adv_out)(), base(), [{**CUST, "advertisement": OUT, "goes": "removed"}]).status == "matched"
+    m = run(_edit(lambda lab: _adv_out(lab, med=40))(), _edit(lambda lab: _adv_out(lab, med=50))(),
+            [{**CUST, "advertisement": OUT, "to": {"med": 50}}])
+    assert m.status == "matched" and m.lines[0].explained
+
+
+def _withdrawn_by_edge1(lab):
+    lab.drop("edge1", "path", "10.100.0.0/24")
+    lab.drop("edge1", "rib", "10.100.0.0/24")
+
+
+def test_disappears_from_with_received_only_explains_the_rib_and_the_received_route():
+    line = {**CUST, "disappears_from": ["edge1"], "including_received_only": True}
+    m = run(_edit(_adj_in)(), _edit(_withdrawn_by_edge1)(), [line])
+    assert m.status == "matched", undeclared(m)
+    assert {d.key.kind for d in m.items} == {"rib", "path", "adj_in"}
+    # without including_received_only, the route received before inbound policy is not covered
+    m = run(_edit(_adj_in)(), _edit(_withdrawn_by_edge1)(), [{**CUST, "disappears_from": ["edge1"]}])
+    assert m.status == "failed" and undeclared(m) == {("adj_in", "edge1", "10.100.0.0/24")}
+
+
+def test_disappears_from_several_nodes_explains_every_one():
+    def gone(lab):
+        for node in ("up1", "peer1"):
+            lab.drop(node, "path", "10.100.0.0/24")
+            lab.drop(node, "rib", "10.100.0.0/24")
+        lab.drop("edge1", "adj_out", "10.100.0.0/24", neighbor="10.0.2.2")
+        lab.drop("edge1", "adj_out", "10.100.0.0/24", neighbor="10.0.3.2")
+    m = run(base(), _edit(gone)(), [{**CUST, "disappears_from": ["up1", "peer1"]}])
+    assert m.status == "matched", undeclared(m)
+
+
+def test_appears_on_does_not_explain_another_prefix_advertised_to_the_same_nodes():
+    after = add_new_customer_block(base())
+    after.adj_out("edge1", "10.0.2.2", "10.77.0.0/24", attrs(as_path="65101", next_hop="10.0.1.2"))
+    m = run(base(), after, [{**NEW, "appears_on": ["edge1", "up1", "peer1"]}])
+    assert m.status == "failed" and undeclared(m) == {("adj_out", "edge1", "10.77.0.0/24")}
+
+
+def test_session_goes_down_does_not_explain_a_route_learned_elsewhere():
+    after = _peer1_down(base())
+    _withdrawn_by_edge1(after)            # learned from cust1, not over the session that went down
+    line = {"session": {"node": "edge1", "neighbor": "10.0.3.2", "afi": "ipv4-unicast"}, "goes": "down"}
+    m = run(base(), after, [line])
+    assert {("path", "edge1", "10.100.0.0/24"), ("rib", "edge1", "10.100.0.0/24")} <= undeclared(m)
+
+
+def test_best_path_on_med_explains_the_rib_metric():
+    def med(lab):
+        lab.learn("edge1", "203.0.113.0/24", "10.0.2.2", "65002", local_pref=100, med=50)
+        lab.rib("edge1", "203.0.113.0/24", rib("bgp", hops=("10.0.2.2",), metric=50))
+    m = run(base(), _edit(med)(), [{**UP, "to": {"med": 50}}])
+    assert m.status == "matched", undeclared(m)
+    assert ("rib", "edge1", "203.0.113.0/24") in {(d.key.kind, d.key.node, d.key.prefix) for d in m.items}
+    # the rib metric alone, declared as a local_pref change, is not explained
+    def lp(lab):
+        _lp(lab, 200)
+        lab.rib("edge1", "203.0.113.0/24", rib("bgp", hops=("10.0.2.2",), metric=50))
+    assert ("rib", "edge1", "203.0.113.0/24") in undeclared(run(base(), _edit(lp)(), [{**UP, "to": {"local_pref": 200}}]))
+
+
+def test_two_best_paths_for_one_prefix_are_refused():
+    after = base()
+    after.path("edge1", "203.0.113.0/24", "10.0.3.2", path(as_path="65003 65002", next_hop="10.0.3.2"))
+    with pytest.raises(VerifyError):
+        run(base(), after, [{**UP, "to": {"local_pref": 200}}])
+
+
+def _cust1_sees(lab, adj_as_path, cust1_as_path, communities=()):
+    lab.adj_out("edge1", "10.0.1.2", "203.0.113.0/24", attrs(as_path=adj_as_path, next_hop="10.0.2.2",
+                                                             communities=list(communities)))
+    lab.learn("cust1", "203.0.113.0/24", "10.0.1.1", cust1_as_path, communities=list(communities))
+
+
+def test_best_path_on_the_receiver_explains_the_advertisement_it_receives():
+    """Only a cust1 line: edge1's advertisement to cust1 changed, and cust1's new best path carries it."""
+    line = {"prefix": "203.0.113.0/24", "best_path_on": "cust1", "to": {"communities": ["65000:9"]}}
+    after = _edit(lambda lab: _cust1_sees(lab, "65002", "65000 65002", ["65000:9"]))()
+    assert run(base(), after, [line]).status == "matched"
+    # the advertisement carries a value cust1's best path doesn't have: not what cust1 received
+    after.adj_out("edge1", "10.0.1.2", "203.0.113.0/24",
+                  attrs(as_path="65002", next_hop="10.0.2.2", communities=["65000:9", "65000:66"]))
+    m = run(base(), after, [line])
+    assert m.status == "failed" and undeclared(m) == {("adj_out", "edge1", "203.0.113.0/24")}
+    # the same change declared on another node explains nothing on edge1's advertisement to cust1
+    after = _edit(lambda lab: _cust1_sees(lab, "65002", "65000 65002", ["65000:9"]))()
+    m = run(base(), after, [{**line, "best_path_on": "edge1"}])
+    assert ("adj_out", "edge1", "203.0.113.0/24") in undeclared(m)
+
+
+def test_best_path_on_the_receiver_with_an_as_path_change():
+    line = {"prefix": "203.0.113.0/24", "best_path_on": "cust1", "to": {"as_path": "65000 65000 65002"}}
+    after = _edit(lambda lab: _cust1_sees(lab, "65000 65002", "65000 65000 65002"))()
+    assert run(base(), after, [line]).status == "matched"
+    # cust1 adds one more ASN than the advertisement explains
+    after = _edit(lambda lab: _cust1_sees(lab, "65000 65002", "65000 65000 65000 65002"))()
+    m = run(base(), after, [{**line, "to": {"as_path": "65000 65000 65000 65002"}}])
+    assert ("adj_out", "edge1", "203.0.113.0/24") in undeclared(m)
+
+
+def test_best_path_on_the_sender_propagates_an_as_path_change_with_the_same_outbound_prefix():
+    def before_fn(lab):
+        _cust1_sees(lab, "65000 65002", "65000 65000 65002")
+
+    def after_fn(adj, cust1):
+        def make(lab):
+            lab.learn("edge1", "203.0.113.0/24", "10.0.2.2", "65002 65002", local_pref=100)   # inbound prepend
+            _cust1_sees(lab, adj, cust1)
+        return make
+    lines = [{"prefix": "203.0.113.0/24", "best_path_on": "edge1", "to": {"as_path": "65002 65002"}},
+             {"prefix": "203.0.113.0/24", "best_path_on": "cust1", "to": {"as_path": "65000 65000 65002 65002"}}]
+    m = run(_edit(before_fn)(), _edit(after_fn("65000 65002 65002", "65000 65000 65002 65002"))(), lines)
+    assert m.status == "matched", undeclared(m)
+    # an extra outbound prepend on top is not the propagated path: edge1's line doesn't explain it
+    m = run(_edit(before_fn)(), _edit(after_fn("65000 65000 65002 65002", "65000 65000 65000 65002 65002"))(),
+            lines[:1])
+    assert ("adj_out", "edge1", "203.0.113.0/24") in undeclared(m)
+
+
+def test_session_goes_down_explains_the_routes_received_over_it():
+    def received(lab):
+        lab.adj_in("edge1", "10.0.3.2", "198.18.0.0/24", attrs(as_path="65003", next_hop="10.0.3.2"))
+    line = {"session": {"node": "edge1", "neighbor": "10.0.3.2", "afi": "ipv4-unicast"}, "goes": "down"}
+    m = run(_edit(received)(), _peer1_down(base()), [line, {"prefix": "198.18.0.0/24", "disappears_from": ["cust1"]}])
+    assert m.status == "matched", undeclared(m)
+    assert ("adj_in", "edge1", "198.18.0.0/24") in {(d.key.kind, d.key.node, d.key.prefix) for d in m.items}
+
+
+def test_disappears_from_a_route_selected_but_not_in_the_fib():
+    def not_in_fib(lab):
+        lab.rib("up1", "10.100.0.0/24", rib("bgp", hops=("10.0.2.1",), fib=False))
+
+    def gone(lab):
+        lab.drop("up1", "path", "10.100.0.0/24")
+        lab.drop("up1", "rib", "10.100.0.0/24")
+    assert run(_edit(not_in_fib)(), _edit(gone)(), [{**CUST, "disappears_from": ["up1"]}]).status == "matched"
+
+
+def test_advertisement_added_checks_local_pref_and_every_pinned_attribute():
+    line = {**CUST, "advertisement": OUT, "goes": "added"}
+    # a LOCAL_PREF the best path doesn't have is a rewrite
+    m = run(base(), _edit(lambda lab: _adv_out(lab, local_pref=300))(), [line])
+    assert m.status == "failed" and m.not_happened
+    # a pinned attribute outside the advertised set (the next hop) is compared too
+    m = run(base(), _edit(_adv_out)(), [{**line, "with": {"next_hop": "198.51.100.99"}}])
+    assert m.status == "failed" and m.not_happened
+    assert run(base(), _edit(_adv_out)(), [{**line, "with": {"next_hop": "198.51.100.8"}}]).status == "matched"
+
+
+def test_advertisement_to_next_hop_may_change_its_resolution():
+    before = _edit(_adv_out)()
+    after = _edit(lambda lab: _adv_out(lab, next_hop="198.51.100.7"))()
+    m = run(before, after, [{**CUST, "advertisement": OUT, "to": {"next_hop": ["198.51.100.7"]}}])
+    assert m.status == "matched", (m.lines[0].reason, undeclared(m))
+
+
+MATCHED_BY_FORM = [
+    ("appears_on", base, lambda: add_new_customer_block(base()), {**NEW, "appears_on": ["edge1", "up1", "peer1"]},
+     {"node", "state"}),
+    ("disappears_from", base, _edit(lambda lab: lab.drop("up1", "path", "10.100.0.0/24"),
+                                    lambda lab: lab.drop("up1", "rib", "10.100.0.0/24"),
+                                    lambda lab: lab.drop("edge1", "adj_out", "10.100.0.0/24", neighbor="10.0.2.2")),
+     {**CUST, "disappears_from": ["up1"]}, {"node", "before"}),
+    ("best_path_on", base, _edit(lambda lab: _lp(lab, 200)), {**UP, "to": {"local_pref": 200}}, {"node", "before", "after"}),
+    ("session", base, lambda: _peer1_down(base()),
+     {"session": {"node": "edge1", "neighbor": "10.0.3.2", "afi": "ipv4-unicast"}, "goes": "down"},
+     {"node", "neighbor", "routes_learned_over_it"}),
+    ("advertisement", base, _edit(_adv_out), {**CUST, "advertisement": OUT, "goes": "added"}, {"node", "neighbor"}),
+]
+
+
+@pytest.mark.parametrize("before,after,line,keys", [pytest.param(b, a, ln, k, id=f) for f, b, a, ln, k in MATCHED_BY_FORM])
+def test_the_report_shows_what_each_declared_line_explained(before, after, line, keys):
+    from netdryrun.verify.report import VerifyResult, to_dict
+
+    b, a = before(), after()
+    m = run(b, a, [line])
+    (lr,) = m.lines
+    assert lr.happened is True and lr.explained and lr.line is not None
+    res = VerifyResult(status=m.status, match=m, before=b.snap(), after=a.snap(), intent=intent([line]))
+    (declared,) = to_dict(res)["declared"]
+    assert declared["intent"] == 0 and declared["line"] == lr.line.text and declared["items"]
+    assert declared["details"] and all(keys <= set(d) for d in declared["details"]), declared["details"]

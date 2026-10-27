@@ -65,6 +65,10 @@ VERDICT_MODULES = {
     "config": "src/netdryrun/config.py",
     "runner": "src/netdryrun/runner.py",
     "drivers": "src/netdryrun/drivers/",
+    # verify (0.4): the diff and the match against the intent decide its verdict; the intent parser decides
+    # what a declaration may explain
+    "verify.engine": "src/netdryrun/verify/engine.py",
+    "verify.intent": "src/netdryrun/verify/intent.py",
 }
 
 # Coverage floors (percent of lines and branches). A ratchet: raise a floor when coverage rises,
@@ -72,7 +76,9 @@ VERDICT_MODULES = {
 # coverage measured then (Python 3.12, rounded down; drivers measured 100, floored at 99 so that one
 # platform-specific branch does not fail the gate): checks 99.5, config 99.2, runner 98.3, drivers 100.
 # The runner's deploy, scenario and gate paths run on a fake lab and a fake clock (tests/test_verdict_runner.py).
-COVERAGE_FLOORS = {"checks": 99, "config": 99, "runner": 98, "drivers": 99}
+# verify.engine and verify.intent joined in 0.4 at the coverage measured then (Python 3.10, rounded down):
+# engine 95.9, intent 93.3.
+COVERAGE_FLOORS = {"checks": 99, "config": 99, "runner": 98, "drivers": 99, "verify.engine": 95, "verify.intent": 93}
 
 # Files that are evidence of past runs, and advisories about past versions (which name those versions on
 # purpose; tests/test_advisory_fixtures.py keeps their fixtures honest): never rewritten, so never linted or
