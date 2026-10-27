@@ -1,0 +1,60 @@
+{
+  "ticket": "T02-transit-only",
+  "kind": "implement",
+  "valid": true,
+  "truth": {
+    "verdict": "safe",
+    "decision": [
+      "apply"
+    ]
+  },
+  "answer": {
+    "verdict": "safe",
+    "decision": "apply",
+    "netdryrun_status": "passed",
+    "changed_files": [
+      "configs/edge1.conf"
+    ],
+    "reason": "All 14 checks passed including the three ticket requirements: new block reaches upstream, reaches internet, and is blocked from peer. No standing guards or leak guards violated."
+  },
+  "completed_unattended": true,
+  "verdict_ok": true,
+  "decision_ok": true,
+  "changed_files": [
+    "configs/edge1.conf"
+  ],
+  "added_files": [],
+  "rule_breaks": [],
+  "hidden_rerun": {
+    "exit_code": 0,
+    "status": "passed",
+    "failed_checks": [],
+    "checks": 16,
+    "attempts": 2,
+    "error": null,
+    "log_tail": null
+  },
+  "hidden_ok": true,
+  "solved": true,
+  "tool_calls": 14,
+  "netdryrun_calls": 1,
+  "lab_runs": 1,
+  "tools": {
+    "Edit": 3,
+    "Glob": 1,
+    "Read": 9,
+    "mcp__netdryrun__dry_run": 1
+  },
+  "turns": 15,
+  "wall_s": 85.1,
+  "agent_duration_s": 83.1,
+  "cost_usd": 0.058043250000000005,
+  "model": "claude-haiku-4-5-20251001",
+  "claude_code_version": "2.1.116",
+  "mcp_status": [
+    "connected"
+  ],
+  "permission_denials": [],
+  "tool_errors": [],
+  "timed_out": false
+}
