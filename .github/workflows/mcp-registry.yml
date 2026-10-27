@@ -1,0 +1,39 @@
+# Publish server.json to the official MCP Registry (registry.modelcontextprotocol.io).
+# Runs on release tags and whenever server.json changes on main. GitHub Actions OIDC proves we own
+# io.github.netdryrun/*, so no personal login or stored token is needed.
+name: MCP Registry
+
+on:
+  push:
+    tags: ["v*"]
+    branches: [main]
+    paths: [server.json]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      MCP_PUBLISHER_VERSION: v1.8.5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - name: Wait until the PyPI package in server.json exists
+        run: |
+          v="$(python3 -c "import json;print(json.load(open('server.json'))['version'])")"
+          for i in $(seq 1 40); do
+            if curl -sf "https://pypi.org/pypi/netdryrun/$v/json" >/dev/null; then echo "netdryrun $v is on PyPI"; exit 0; fi
+            sleep 30
+          done
+          echo "::error::netdryrun $v never appeared on PyPI"; exit 1
+      - name: Install mcp-publisher
+        run: curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+      - name: Log in with GitHub Actions OIDC
+        run: ./mcp-publisher login github-oidc
+      - name: Publish
+        run: ./mcp-publisher publish

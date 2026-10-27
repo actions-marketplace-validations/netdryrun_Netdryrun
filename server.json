@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.netdryrun/netdryrun",
   "title": "netdryrun",
-  "description": "Dry-run network changes in a real containerlab lab before applying them: BGP, routes, reachability, verdict with evidence.",
+  "description": "Dry-run network changes in a real containerlab lab: BGP, routes, reachability, with evidence.",
   "repository": {
     "url": "https://github.com/netdryrun/netdryrun",
     "source": "github"
