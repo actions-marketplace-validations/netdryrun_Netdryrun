@@ -57,6 +57,11 @@ exclude_docs: |
   # Draft until the owner has a postal address to publish. Never publish placeholders.
   legal-notice.md
 
+# One page per Verdict Corpus case, written by corpus/render.py. Linked from the corpus table and in the
+# sitemap, but kept out of the sidebar so 30 pages don't crowd it.
+not_in_nav: |
+  /corpus/*.md
+
 plugins:
   - search
   # Self-host fonts and other external assets at build time: visitors' browsers never contact Google.
