@@ -1311,7 +1311,7 @@ The number of prefixes accepted from a neighbor is within a range. Accepted mean
 | `min` | one of `min`, `max`, `exact` | | Lower bound, inclusive |
 | `max` | one of `min`, `max`, `exact` | | Upper bound, inclusive |
 | `exact` | one of `min`, `max`, `exact` | | Exact count |
-| `afi` | no | `ipv4-unicast` | Address family: exactly one of `ipv4-unicast`, `ipv6-unicast` or `evpn` (case-insensitive). `evpn` is not supported on Arista EOS |
+| `afi` | no | `ipv4-unicast` | Address family: exactly one of `ipv4-unicast`, `ipv6-unicast` or `evpn` (case-insensitive). `evpn` is supported on FRR and SONiC only, not on SR Linux or Arista EOS |
 
 Rules:
 
@@ -1321,7 +1321,7 @@ Rules:
 - All three are non-negative integers.
 - `min: 0` on its own is refused: it always passes. Use `min: 1` or more, or add `max`.
 - Any other `afi` is refused (from 0.3.1). An address family the drivers don't report would read as 0 prefixes, which passes `max` and `exact: 0`.
-- `afi: evpn` on an Arista EOS node is refused before the lab deploys (exit code `2`): the EOS driver reads only the IPv4 and IPv6 unicast counts, so an EVPN count would always read 0.
+- `afi: evpn` on an SR Linux or Arista EOS node is refused before the lab deploys (exit code `2`): those drivers read only the IPv4 and IPv6 unicast counts (SR Linux has no received-routes counter for EVPN), so an EVPN count would always read 0. SR Linux refuses it from 0.3.1; before, the count read 0 and passed `max`.
 - The session must be `established`. Counters reset to 0 when a session drops, so a count from a down session would satisfy `max` by accident; Netdryrun fails the check instead.
 - If the session is established but the address family reports nothing, the count is 0.
 - A check with `max` or `exact` is a post-convergence check. A check with only `min` is a positive check.
@@ -1384,7 +1384,7 @@ Rules:
 - The check fails if there is no path, or no best path (for example when the next hop is unreachable). The failure detail shows what the best path actually carries.
 - **Local preference** is the effective value: a path without a LOCAL_PREF attribute (eBGP-learned or local) gets the device's default (FRR and SONiC: `bgp default local-preference`; SR Linux: the neighbor's `local-preference`; Arista EOS reports it directly). The exception is a locally originated path on Arista EOS, which reports no local preference; asserting `local_pref` on it fails with "not set".
 - **Next hop** is the address the device reports. For an IPv6 path FRR may list only the link-local next hop.
-- `present: false` and `without_communities` make it a post-convergence check: a "must not carry" check could pass on a transient best path before the real one arrives, so it must hold instead.
+- `present: false`, and any attribute key (`communities`, `without_communities`, `as_path`, `as_path_regex`, `local_pref`, `med`, `next_hop`), make it a post-convergence check. The best path can change when a slower session comes up, so an attribute check could pass on a temporary best path before the real one arrives; it is judged only after every BGP session on the node is up and the settle delay, and must hold (0.3.1 and later; 0.3.0 judged attribute checks other than `without_communities` on 2 early samples). A `bgp_route` with no attribute keys (the best path exists) is a positive check.
 
 ```yaml
 - type: bgp_route         # customer routes are tagged and preferred
@@ -1467,13 +1467,13 @@ A scenario needs at least one fault and at least one check, and accepts no other
 
 A scenario's positive checks ("the route is still there", "ping still works") are already true before the network notices the failure, so Netdryrun makes sure they are never judged on the state from before the fault (0.3.1 and later):
 
-1. Before taking links down, it notes the established BGP sessions that run over them, on both ends of each link (looking through bridges), in the default VRF and the VRFs the scenario's checks use.
+1. Before taking links down, it notes the established BGP sessions that run over them, on both ends of each link (looking through bridges), in the default VRF and the VRFs the scenario's checks use. If that BGP state, or the addresses of the downed interfaces, can't be read, the run stops with exit code `2` naming the node, before any link goes down: "couldn't read it" is never taken for "there are none". A node no driver can read (a Linux host) and a VRF the node doesn't have have no sessions to note.
 2. After applying the faults, it waits until every one of those sessions is down **on both ends**: proof that the network saw the fault. The wait is capped at the largest `timeout` of the scenario's checks. If the fault still isn't visible by then, the run stops with exit code `2` and "the fault did not take effect", never a verdict. Without BFD, BGP can take its hold time (up to 180 s) to notice a failure: raise the checks' `timeout`, or lower the hold timers in the lab.
 3. It waits the settle delay (`--settle`), so withdrawals propagate beyond the adjacent routers.
 4. Positive checks must pass on 2 consecutive samples **and** keep passing for the hold window (`--hold`; a positive check can't set its own `hold`): a redundancy claim is about the whole failure, not one instant. A check that passes at first and then fails within the window fails.
-5. Post-convergence checks then run and must hold, as everywhere else.
+5. Post-convergence checks then wait for the same [BGP gate](#convergence-semantics) as at the top level: every BGP session on their node up, with unchanged prefix counts on 2 consecutive samples, capped at their `timeout`. Sessions over the downed links don't count (the fault took them down), nor do sessions a `bgp_session` check in the scenario or at the top level expects in another state. If another session on the node stays down, the checks fail as **not evaluated**; a session the fault takes down indirectly (for example iBGP between loopbacks whose only path was the downed link) needs a `bgp_session` check with `state: down` in the scenario. Then the checks must hold, as everywhere else. 0.3.1 and later.
 
-When no BGP session runs over the downed links (static routing, a link without BGP, iBGP between loopbacks over an IGP), step 2 has nothing to observe; steps 3 to 5 still apply, so give such scenarios a `--settle` that covers the failure detection time. `inject_routes` faults have no step 2: Netdryrun instead waits until the injected prefixes are in the node's own BGP table.
+When the state was read and no BGP session runs over the downed links (static routing, a link without BGP, iBGP between loopbacks over an IGP), step 2 has nothing to observe; steps 3 to 5 still apply, so give such scenarios a `--settle` that covers the failure detection time. `inject_routes` faults have no step 2: Netdryrun instead waits until the injected prefixes are in the node's own BGP table. That alone doesn't show they reached the node under test; the BGP gate in step 5 does, for post-convergence checks: their node's prefix counts must stop changing first. The limit: a peer with a long advertisement interval (for example eBGP with a 30-second `advertisement-interval`) can hold the routes back for longer than 2 samples 3 seconds apart, so they can still arrive after the gate. Raise `--settle` above the advertisement interval for such labs.
 
 ### Injecting routes
 
@@ -1489,7 +1489,7 @@ New in 0.3.1: Netdryrun 0.3.0 rejects the key as unknown.
 | `from` | no | First prefix for `count`; its length is used for all of them. Default `100.64.0.0/24` |
 | `as_path` | no | List of AS numbers prepended to the injected routes, so they look learned from those networks |
 
-On the node, Netdryrun adds a blackhole static route and a BGP `network` statement per prefix (with `as_path`, through a route-map named `NDR-INJECT`). It applies them with `vtysh -f` and waits until every prefix is in the node's own BGP table before running the scenario's checks. Afterwards it removes exactly what it added and waits until the prefixes are gone. What the node's neighbors do with the routes is up to the policy under test: an outbound filter on the node itself can still stop them.
+On the node, Netdryrun adds a blackhole static route and a BGP `network` statement per prefix (with `as_path`, through a route-map named `NDR-INJECT`). It applies them with `vtysh -f` and waits until every prefix is in the node's own BGP table before running the scenario's checks (whose post-convergence checks then wait for the BGP gate on their own node; see [scenario timing](#scenario-timing)). Afterwards it removes exactly what it added and waits until the prefixes are gone. What the node's neighbors do with the routes is up to the policy under test: an outbound filter on the node itself can still stop them.
 
 Limits: only FRR nodes are supported. Any other node is refused before the lab deploys; inject the routes from an FRR neighbor instead. A prefix that is already a `network` statement or a static route on the node is refused, because removing it afterwards would delete real config. IPv6 prefixes need the BGP sessions to carry IPv6 unicast.
 
@@ -1497,7 +1497,7 @@ Limits: only FRR nodes are supported. Any other node is refused before the lab d
 
 Networks need time to converge, and some checks are trivially true before they do. Netdryrun splits checks into two groups.
 
-**Positive checks** (session `established`, prefix count with only `min`, route present, ping expected to succeed):
+**Positive checks** (session `established`, prefix count with only `min`, route present, a `bgp_route` best path that exists with no attribute asserted, ping expected to succeed):
 
 - Polled every 3 seconds until they pass on **2 consecutive samples**, or until `timeout` expires.
 - A single lucky sample is not enough. If the last sample passed but the streak was too short, the result says "not stable". If the check passed some samples but not consistently, the result says "flapping".
@@ -1505,7 +1505,7 @@ Networks need time to converge, and some checks are trivially true before they d
 **Post-convergence checks** are the ones that would pass on a network that has not come up yet:
 
 - routes that must be absent (`present: false` on `route` or `bgp_route`)
-- best paths that must not carry a community (`without_communities`)
+- best-path attributes (`bgp_route` with any of `communities`, `without_communities`, `as_path`, `as_path_regex`, `local_pref`, `med`, `next_hop`): a best path seen while a slower session is still coming up can be replaced when it arrives
 - pings that must fail (`expect: failure`)
 - sessions expected in a state other than `established`
 - prefix counts with an upper bound (`max` or `exact`), since 0 prefixes satisfies `max: 10` while BGP is still starting
@@ -1513,11 +1513,15 @@ Networks need time to converge, and some checks are trivially true before they d
 They run in this order:
 
 1. Every positive check has finished.
-2. **Every BGP session on the node is up.** Positive checks only prove convergence for the sessions and routes you happened to check, and a leak can arrive later over a session nobody checked. So for each node (and VRF) that carries a post-convergence check, Netdryrun waits until every configured BGP neighbor there is `established`, with unchanged prefix counts, on 2 consecutive samples. Neighbors that a `bgp_session` check expects in another state (for example `state: down`) don't count. The wait is capped at the largest `timeout` of that node's post-convergence checks. If a session there never comes up, those checks fail as **not evaluated**, naming the session: a down session is a finding, as everywhere else. If a session is down on purpose, add a `bgp_session` check with `state: down` for it. (A node that never answers with BGP state, or whose positive checks never got usable state, is not waited for; prefix counts still changing at the cap don't block.) 0.3.1 and later.
+2. **Every BGP session on the node is up.** Positive checks only prove convergence for the sessions and routes you happened to check, and a leak can arrive later over a session nobody checked. So for each node (and VRF) that carries a post-convergence check, Netdryrun waits until every configured BGP neighbor there is `established`, with unchanged prefix counts, on 2 consecutive samples. Neighbors that a `bgp_session` check expects in another state (for example `state: down`) don't count. The wait is capped at the largest `timeout` of that node's post-convergence checks. If a session there never comes up, those checks fail as **not evaluated**, naming the session: a down session is a finding, as everywhere else. If a session is down on purpose, add a `bgp_session` check with `state: down` for it. (A node that never answers with BGP state, or whose positive checks never got usable state, is not waited for; prefix counts still changing at the cap don't block.) A node that answers with **no BGP neighbors at all** is not converged: that is what a node answers before its BGP config is applied, and a leak can arrive once it is. Netdryrun keeps waiting, up to the cap; if the node still reports no neighbors then, its post-convergence checks run anyway, each with a warning in its result ("reported no BGP neighbors for N s; the check was evaluated without BGP convergence"), and the verdict is unchanged. So a node that doesn't run BGP adds one `timeout` of waiting before its post-convergence checks. 0.3.1 and later.
 3. A settle delay (`--settle`, default 10 seconds; at least 30 seconds if the file has no positive checks, because nothing else has shown that the network converged).
 4. Each one must then hold for the hold window (`--hold` or the check's `hold`, default 10 seconds), sampled every 3 seconds. A violation at any sample fails the check immediately.
 
-Prefix counts with an upper bound first wait (up to `timeout`) for the count to enter the range, because counters ramp up, and then must hold.
+Prefix counts with an upper bound start like this (step 4), because counters ramp up and the BGP gate has already waited for stable counts:
+
+- `max` only: no wait. The count must be within `max` from the first sample of the hold window to the last (0 prefixes is within any `max`).
+- `exact: N` (N at least 1) and `min` with `max`: first a short wait, up to 30 seconds (or `timeout` if shorter), for the count to reach at least N (or `min`); a count that never gets there fails. Then the full condition (`exact`, or the whole range) must hold on every sample of the hold window, so a count that overshoots fails.
+- `exact: 0`: no wait; it must hold like `max: 0`.
 
 `hold` is accepted only on post-convergence checks. A positive check passes after 2 consecutive passing samples, so a `hold` on it would be ignored; that is an error rather than a silent no-op. (Inside a scenario, positive checks do hold for `--hold`; see [scenario timing](#scenario-timing).)
 
@@ -1559,7 +1563,7 @@ A driver turns device state into a common shape. Netdryrun detects it from the t
 | Arista EOS | `Cli -c "show ... \| json"`; `bgp_route` from `show ip bgp <prefix> vrf <vrf>` (the best path is the `active` one) |
 | SONiC | the FRR commands, through `vtysh` inside the container |
 
-If a driver can't read what a check asks for, the run stops before deploying (exit code `2`) instead of guessing: "`<key>` is not supported on `<driver>`" for a `bgp_route` attribute (today every driver reads every attribute), and "afi evpn is not supported on eos" for an EVPN prefix count on Arista EOS.
+If a driver can't read what a check asks for, the run stops before deploying (exit code `2`) instead of guessing: "`<key>` is not supported on `<driver>`" for a `bgp_route` attribute (today every driver reads every attribute), and "afi evpn is not supported on eos" (or `srlinux`) for an EVPN prefix count on Arista EOS or SR Linux.
 
 Every command and its raw output is kept in the [JSON report](cli.md#json).
 
@@ -1615,7 +1619,7 @@ Runs the checks against a lab that is already up, for example one left running w
 
 Loads and validates `netdryrun.yml` and prints the parsed checks. It does not need Docker or containerlab.
 
-From 0.3.1 it also reads the topology (strictly: malformed YAML and duplicate keys are errors) and checks what `run` checks before deploying: every node a check, fault or `setup` names exists; the driver can read every key the checks use (for example no `afi: evpn` on Arista EOS); and `inject_routes` names an FRR node. It also checks two things `run` finds out only after deploying: every node a check reads has a driver (detected from its kind and image, or set with `nodes.<node>.driver`), and no `link_down` or `node_isolated` fault targets an SR Linux node. Any of these is an error with exit code `2`. What it can't check without containerlab: whether containerlab accepts the topology itself (a misspelled `kind:`, a missing image).
+From 0.3.1 it also reads the topology (strictly: malformed YAML and duplicate keys are errors) and checks what `run` checks before deploying: every node a check, fault or `setup` names exists; the driver can read every key the checks use (for example no `afi: evpn` on SR Linux or Arista EOS); and `inject_routes` names an FRR node. It also checks two things `run` finds out only after deploying: every node a check reads has a driver (detected from its kind and image, or set with `nodes.<node>.driver`), and no `link_down` or `node_isolated` fault targets an SR Linux node. Any of these is an error with exit code `2`. What it can't check without containerlab: whether containerlab accepts the topology itself (a misspelled `kind:`, a missing image).
 
 ```text
 $ netdryrun validate examples/frr-bgp
@@ -1683,8 +1687,9 @@ When a lab is kept, Netdryrun prints the command to destroy it. See [convergence
 - a bad topology, an unknown node, or a check a driver can't read;
 - a bad option, for example a negative `--settle`;
 - a lab problem: containerlab or Docker missing, deploy failed, containers not running, unknown driver, a lab with the same name already running;
-- a scenario whose fault did not take effect within the checks' timeout (see [scenario timing](config.md#scenario-timing));
+- a scenario whose fault did not take effect within the checks' timeout, or whose BGP state or interface addresses could not be read before the fault, so Netdryrun can't tell when it took effect (see [scenario timing](config.md#scenario-timing));
 - a link or injected route that could not be restored after a scenario;
+- a report that could not be written (`--json`, `--markdown`, `--junit`, or the GitHub Actions step summary), for example a path in a folder that doesn't exist. The verdict line is still printed and every other report is still written, but the evidence you asked for is missing, so the run exits `2`, with one line per report on stderr: `could not write <path>: <reason>; the verdict was <status>` (0.3.1 and later; 0.3.0 reported an internal error). The status inside the reports that were written is the verdict;
 - an internal error (a Netdryrun bug). It is reported on one line, never as a bare traceback, and never as exit code `1`, which would read as "the change broke something". Rerun with `--debug` or `NETDRYRUN_DEBUG=1` for the traceback, and please report it.
 
 The message is one line on stderr. With `--json` on `run` or `check`, a report with `status: error` and the message in `error` is written, including for a config error before anything starts and for an interrupted run.
@@ -2387,7 +2392,7 @@ The prefix check is a post-convergence check (it has `max`), so it reports `not 
   [FAIL] r1: prefixes from 10.0.12.2 >= 2 and <= 10 -- not evaluated: BGP session(s) on r1 not established: 10.0.12.2 (idle) after waiting 30s. A post-convergence check only means something once every BGP session on its node is up (a leak can arrive over any of them). If a session is down on purpose, add a bgp_session check with state: down for it
 ```
 
-Exit code `1`. From 0.3.1, a post-convergence check (a route that must be absent, a ping that must fail, a prefix count with `max` or `exact`) starts only once every configured BGP neighbor on its node is up with stable prefix counts. A leak can arrive over any session, so a check that passed while one was still down would prove nothing. Netdryrun waits up to the largest `timeout` of the node's post-convergence checks; if a session is still down then, those checks fail as `not evaluated` and name the session.
+Exit code `1`. From 0.3.1, a post-convergence check (a route that must be absent, a ping that must fail, a prefix count with `max` or `exact`, a `bgp_route` attribute) starts only once every configured BGP neighbor on its node is up with stable prefix counts. A leak can arrive over any session, so a check that passed while one was still down would prove nothing. Netdryrun waits up to the largest `timeout` of the node's post-convergence checks; if a session is still down then, those checks fail as `not evaluated` and name the session.
 
 Fix: if the session should be up, it's a finding: look at it as in [the lab never converges](#the-lab-never-converges-timeout), or raise `timeout` for a slow NOS. If it is down on purpose (a shut neighbor, a peer that isn't in the lab), add a check that says so, and the wait leaves it out:
 
@@ -2398,6 +2403,14 @@ Fix: if the session should be up, it's a finding: look at it as in [the lab neve
   state: down
 ```
 
+## A node without BGP waits a whole timeout
+
+```text
+warning: h1 reported no BGP neighbors for 30s; the check was evaluated without BGP convergence
+```
+
+From 0.3.1, a node that answers with no BGP neighbors at all is treated as not converged yet, because that is also what a router answers before its BGP config is applied. Its post-convergence checks (a ping that must fail, for example) wait up to their `timeout`, then run with this warning in their result; the verdict is unchanged. On a node that really doesn't run BGP, lower the `timeout` of those checks to shorten the wait. If the node should have BGP neighbors, its BGP config was never applied: check its startup config or `setup` commands.
+
 ## The fault did not take effect
 
 ```text
@@ -2407,6 +2420,14 @@ ERROR: scenario 'r1-r2 link fails': the fault did not take effect within 30s: BG
 Exit code `2`. From 0.3.1, after taking links down a scenario waits until every BGP session that ran over them is down on both ends, so its checks are never judged on the state from before the failure. The wait is capped at the largest `timeout` of the scenario's checks. Here the far end, r2, still had the session up when the time ran out: without BFD, a router notices a dead link only when its BGP hold timer expires (180 s on FRR by default).
 
 Fix: give the scenario's checks a `timeout` above the hold time (for example `timeout: 200` on them, or at the top of the file), lower the hold timers in the lab configs (`timers bgp 3 9` on FRR), or enable BFD. The links are restored and the lab destroyed as usual. See [scenario timing](reference/config.md#scenario-timing).
+
+## Could not read BGP state to find the sessions over the links
+
+```text
+ERROR: could not read BGP state on r2 to find the BGP sessions over the links the scenario takes down: unexpected output from `show bgp neighbors json`: no output. Netdryrun won't judge the scenario without knowing when the fault took effect
+```
+
+Exit code `2`. From 0.3.1, before a scenario takes links down, Netdryrun reads the BGP state of the nodes on both ends of each link (and the addresses of the downed interfaces) to know which sessions the fault must bring down. If that state can't be read, it can't tell when the fault took effect, so it stops before changing anything instead of judging the scenario on the settle delay alone (0.3.0 read it as "no sessions"). Usually the node's routing daemon is still starting or has crashed: check the node (`docker exec <container> vtysh -c "show bgp summary"`), raise the main checks' `timeout` so the lab is fully up before the scenarios start, and rerun. A node no driver can read (a Linux host) and a VRF the node doesn't have count as "no sessions", as before.
 
 ## SR Linux fails on a Windows drive (/mnt/c)
 
