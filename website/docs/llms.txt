@@ -15,6 +15,8 @@ Facts (generated from the source): version 0.3.0; check types `bgp_session`, `bg
 - [netdryrun.yml reference](https://netdryrun.com/reference/config/): every check type and key, convergence semantics
 - [CLI and reports](https://netdryrun.com/reference/cli/): commands, flags, exit codes, JSON/Markdown/JUnit reports
 - [GitHub Action](https://netdryrun.com/github-action/): inputs, outputs, security notes
+- [Test an FRR change in CI](https://netdryrun.com/guides/frr-ci/): the lab folder, the checks that matter for FRR, a GitHub workflow, gotchas, measured times
+- [Test a SONiC change in CI](https://netdryrun.com/guides/sonic-ci/): getting docker-sonic-vs, configuring it after boot with setup lines, the checks that matter for SONiC, gotchas, measured times
 - [AI agents (MCP)](https://netdryrun.com/ai-agents/): MCP server tools and safety model
 
 ## Optional

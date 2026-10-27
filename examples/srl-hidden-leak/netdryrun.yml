@@ -1,0 +1,44 @@
+# Checks for the hidden-leak lab. Run: netdryrun run examples/srl-hidden-leak
+# The good configs pass. Each change in leaks/ fails exactly one check: the
+# "no BGP default" check on the router that receives the leak. See README.md.
+lab: topology.clab.yml
+timeout: 120   # SR Linux takes longer to boot
+
+checks:
+  # What monitoring usually watches. All of these pass with or without a leak.
+  - type: bgp_session
+    node: srl1
+    neighbor: 10.0.100.2
+  - type: bgp_session
+    node: frr1
+    neighbor: 10.0.100.1
+  - type: route
+    node: srl1
+    prefix: 192.168.20.0/24
+    protocol: bgp
+  - type: route
+    node: frr1
+    prefix: 192.168.10.1/32
+    protocol: bgp
+  - type: ping
+    node: srl1
+    source: 192.168.10.1
+    target: 192.168.20.1
+  - type: route        # each router's own default route is in place and selected
+    node: srl1
+    prefix: 0.0.0.0/0
+    protocol: static
+  - type: route
+    node: frr1
+    prefix: 0.0.0.0/0
+    protocol: static
+
+  # The leak guards: no BGP path for 0.0.0.0/0 at all, selected or not.
+  - type: bgp_route
+    node: srl1
+    prefix: 0.0.0.0/0
+    present: false
+  - type: bgp_route
+    node: frr1
+    prefix: 0.0.0.0/0
+    present: false

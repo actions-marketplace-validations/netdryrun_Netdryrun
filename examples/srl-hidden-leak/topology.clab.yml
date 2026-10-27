@@ -1,0 +1,24 @@
+# "The route leak ping can't see": an SR Linux router and an FRR router peering eBGP.
+# Each router has its own static default route, so a default route leaked by the peer
+# is received but never selected. See README.md.
+name: hidden-leak
+
+topology:
+  nodes:
+    srl1:
+      kind: nokia_srlinux
+      image: ghcr.io/nokia/srlinux:26.7.2
+      startup-config: configs/srl1.cli
+    frr1:
+      kind: linux
+      image: quay.io/frrouting/frr:10.4.1
+      binds:
+        - configs/daemons:/etc/frr/daemons
+        - configs/vtysh.conf:/etc/frr/vtysh.conf
+        - configs/frr1.conf:/etc/frr/frr.conf
+      exec:
+        # containerlab gives linux nodes a default route via the management network. FRR sees it as a
+        # kernel route with distance 0, which would beat the static default. Remove it (see README.md).
+        - ip route del default
+  links:
+    - endpoints: ["srl1:e1-1", "frr1:eth1"]
