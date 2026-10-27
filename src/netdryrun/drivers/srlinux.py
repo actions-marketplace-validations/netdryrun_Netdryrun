@@ -154,14 +154,21 @@ class SrlDriver(Driver):
             "neighbor * origin-protocol * path-id *", ev), prefix)
         if not rows:
             return Observation([], ev)
-        first = rows[0]  # best path first: one attr-set read per sample, not one per path
+        # Best path first: one attr-set read per sample, not one per path. When the best is the router's own
+        # route (a local candidate), also read the first path learned over BGP: that's the one a
+        # `present: false` failure describes.
+        learned = next((r for r in rows if _bgp_learned(r)), None)
+        read = {0} | ({rows.index(learned)} if learned is not None and not _bgp_learned(rows[0]) else set())
+        return Observation([self._read_path(r, vrf, ev) if n in read else unread_path(r) for n, r in enumerate(rows)], ev)
+
+    def _read_path(self, row: dict, vrf: str, ev: list[dict]) -> BgpPath:
         # attr-id and neighbor come from device output and go back into a CLI string: only a number and an IP
-        attr_id = str(first.get("attr-id"))
+        attr_id = str(row.get("attr-id"))
         if not attr_id.isdigit():
-            raise DriverError(f"unexpected attr-id {attr_id[:40]!r} for {prefix}")
+            raise DriverError(f"unexpected attr-id {attr_id[:40]!r} for {row.get('prefix')}")
         attrs = self._cli(f"info from state /network-instance {vrf} bgp-rib attr-sets attr-set {attr_id}", ev)
         default_lp = None
-        neighbor = _ip_or_none(first.get("neighbor"))
+        neighbor = _ip_or_none(row.get("neighbor"))
         if "local-pref" not in _json(attrs) and neighbor:
             try:
                 lp = _json(self._cli(f"info from state /network-instance {vrf} protocols bgp neighbor "
@@ -169,7 +176,7 @@ class SrlDriver(Driver):
                 default_lp = int(lp) if lp is not None else None
             except DriverError:
                 pass  # not a configured neighbor (a local route): local-pref stays unknown
-        return Observation([parse_attr_set(attrs, first, default_lp)] + [unread_path(r) for r in rows[1:]], ev)
+        return parse_attr_set(attrs, row, default_lp)
 
     def all_routes(self, vrf: str = "default", family: int = 4) -> Observation:
         ev: list[dict] = []

@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from netdryrun.drivers import DriverError, frr, srlinux
+from netdryrun.lab import ExecResult
 
 FIX = Path(__file__).parent / "fixtures"
 
@@ -204,3 +205,30 @@ def test_srl_bgp_paths():
     assert srlinux.parse_rib_paths(read("srl_rib_empty.txt"), "10.99.0.0/16") == []
     with pytest.raises(DriverError):
         srlinux.parse_attr_set("{\n}", rows[0])  # attr-set vanished between the two reads
+
+
+class _SrlLeakLab:
+    """srl1 with its own static default (best) and a leaked one from 10.0.100.2, from the live capture."""
+
+    def __init__(self):
+        self.calls = []
+
+    def exec(self, node, cmd, timeout=60, input=None):
+        self.calls.append(cmd[-1])
+        if "local-rib" in cmd[-1]:
+            return ExecResult(cmd, 0, read("srl_leak_rib.txt"), "")
+        if cmd[-1].endswith("attr-set 6"):
+            return ExecResult(cmd, 0, json.dumps({"as-path": {"segment": [{"type": "as-sequence", "member": [65020]}]},
+                                                  "next-hop": "10.0.100.2"}), "")
+        if "attr-set" in cmd[-1]:
+            return ExecResult(cmd, 0, json.dumps({"as-path": {"segment": []}, "next-hop": "0.0.0.0"}), "")
+        return ExecResult(cmd, 0, json.dumps({"local-preference": 100}), "")
+
+
+def test_srl_leak_behind_own_static_is_described():
+    """When the best path is the router's own route, the leaked path's attributes are read too, so a
+    `present: false` failure says where the leak came from (live-found: it said 'as-path ?')."""
+    paths = srlinux.SrlDriver(_SrlLeakLab(), "srl1").bgp_paths("0.0.0.0/0").value
+    assert [(p.local_candidate, p.as_path, p.next_hop) for p in paths] == [
+        (True, "", "0.0.0.0"), (False, "65020", "10.0.100.2")]
+    assert paths[1].local_pref == 100
