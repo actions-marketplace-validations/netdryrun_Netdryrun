@@ -455,11 +455,13 @@ def test_internal_error_in_the_cli_exits_2_and_debug_shows_the_traceback(tmp_pat
         raise RuntimeError("boom")
 
     monkeypatch.setattr(cli, "run", crash)
+    # setenv records the variable's old state, so the "1" that --debug writes below is undone after the test
+    # (delenv on an unset variable records nothing, and the "1" would leak into every later test)
+    monkeypatch.setenv("NETDRYRUN_DEBUG", "")
     folder = _lab_folder(tmp_path)
     assert main(["run", str(folder), "--no-step-summary"]) == 2
     err = capsys.readouterr().err
     assert "internal error: RuntimeError: boom" in err and "Traceback" not in err
-    monkeypatch.delenv("NETDRYRUN_DEBUG", raising=False)
     assert main(["run", str(folder), "--no-step-summary", "--debug"]) == 2
     assert "Traceback" in capsys.readouterr().err
 

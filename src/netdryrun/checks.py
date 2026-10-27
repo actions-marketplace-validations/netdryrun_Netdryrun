@@ -292,7 +292,7 @@ def run_round_robin(checks: list[Check], drivers: dict, interval: float = 3.0, c
     done: dict[int, Result] = {}
     while len(done) < len(checks):
         pending = [c for c in checks if id(c) not in done]
-        for c, (ok, detail, evidence) in zip(pending, _evaluate_all(pending, drivers)):
+        for c, (ok, detail, evidence) in zip(pending, _evaluate_all(pending, drivers), strict=True):
             st = state[id(c)]
             elapsed = clock() - t0
             st["history"].append(_sample(elapsed, ok, detail))
@@ -347,7 +347,7 @@ def hold_together(checks: list[Check], drivers: dict, hold: float = 10.0, interv
     reach = [(c, v) for c in checks if (v := views.get(id(c)))]
     if reach:
         for (orig, _), r in zip(reach, run_round_robin([v for _, v in reach], drivers, interval=interval,
-                                                       confirm=1, clock=clock, sleep=sleep)):
+                                                       confirm=1, clock=clock, sleep=sleep), strict=True):
             if not r.passed:
                 r.check = orig
                 failed[id(orig)] = r
@@ -359,7 +359,7 @@ def hold_together(checks: list[Check], drivers: dict, hold: float = 10.0, interv
     last: dict[int, tuple] = {}
     finished_ok: dict[int, float] = {}
     while live:
-        for c, (ok, detail, evidence) in zip(list(live), _evaluate_all(live, drivers)):
+        for c, (ok, detail, evidence) in zip(list(live), _evaluate_all(live, drivers), strict=True):
             t = clock() - t0
             hist[id(c)].append(_sample(t, ok, detail))
             last[id(c)] = (detail, evidence)
