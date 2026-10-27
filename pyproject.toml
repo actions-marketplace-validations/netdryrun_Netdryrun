@@ -10,12 +10,26 @@ readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"
 authors = [{ name = "Netdryrun" }]
-keywords = ["network", "testing", "containerlab", "frr", "srlinux", "bgp", "netdevops", "ci"]
+keywords = [
+  "network testing", "network automation", "bgp", "containerlab", "frr", "srlinux",
+  "netdevops", "network change validation", "mcp", "ci",
+]
+# The license is the SPDX expression above (PEP 639); a License classifier alongside it is rejected by the build.
 classifiers = [
   "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
   "Intended Audience :: System Administrators",
-  "Topic :: System :: Networking",
+  "Intended Audience :: Telecommunications Industry",
+  "Operating System :: POSIX :: Linux",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Quality Assurance",
+  "Topic :: Software Development :: Testing",
+  "Topic :: System :: Networking",
 ]
 dependencies = ["pyyaml>=6.0", "mcp>=2.0,<3"]
 
@@ -25,6 +39,9 @@ dev = ["pytest>=8.0"]
 
 [project.urls]
 Homepage = "https://netdryrun.com"
+Documentation = "https://netdryrun.com/getting-started/"
+Changelog = "https://github.com/netdryrun/netdryrun/blob/main/CHANGELOG.md"
+Issues = "https://github.com/netdryrun/netdryrun/issues"
 Source = "https://github.com/netdryrun/netdryrun"
 
 [project.scripts]

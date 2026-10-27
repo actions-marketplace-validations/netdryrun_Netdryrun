@@ -1,0 +1,65 @@
+---
+title: "pe1 accidentally originates 8.8.8.0/24: BGP change test (case 23)"
+description: "pe1 accidentally originates 8.8.8.0/24. Expected unsafe: A fat-fingered network statement hijacks 8.8.8.0/24 for our own customer. Export filters keep it..."
+---
+
+# pe1 accidentally originates 8.8.8.0/24
+
+Case 23 of the [Network Change Verdict Corpus](../corpus.md). Category: **hijack**. Expected verdict: **unsafe** (an experienced operator would reject it).
+
+## Why it is expected unsafe
+
+A fat-fingered network statement hijacks 8.8.8.0/24 for our own customer. Export filters keep it from the upstream and the peer.
+
+Note: Not covered by the intent spec, which has no check for unexpected routes at the customer.
+
+## The config change
+
+Against the FRR configs of the [base lab](https://github.com/netdryrun/netdryrun/tree/main/corpus/base/configs):
+
+```diff
+--- a/pe1.conf
++++ b/pe1.conf
+@@ -60,3 +60,9 @@
+   neighbor 10.0.3.2 send-community
+  exit-address-family
+ !
++ip route 8.8.8.0/24 blackhole
++router bgp 65000
++ address-family ipv4 unicast
++  network 8.8.8.0/24
++ exit-address-family
++!
+```
+
+## What each strategy said
+
+The expected verdict was committed to git before any run. All three strategies tested the same running lab ([method](../corpus.md#method)).
+
+| Strategy | Verdict | Result | Checks that failed |
+|---|---|---|---|
+| Ping only | safe | ❌ approved a bad change | none |
+| All BGP sessions up | safe | ❌ approved a bad change | none |
+| Netdryrun intent checks | safe | ❌ approved a bad change | none |
+
+## What Netdryrun flagged
+
+Nothing: every check in the [intent spec](https://github.com/netdryrun/netdryrun/blob/main/corpus/specs/intent.yml) passed, so Netdryrun called the change safe.
+
+Against the pre-registered verdict this counts as one of Netdryrun's losses (false pass).
+
+## Finding after the run
+
+The pre-registered verdict above is unchanged. From [AMENDMENTS.md](https://github.com/netdryrun/netdryrun/blob/main/corpus/AMENDMENTS.md):
+
+**Cases 18, 23, 21 and 30 are real misses.** 18 and 23 are gaps in the intent spec (no check for unexpected routes reaching the customer or the upstream). 21 and 30 are latent risks that no steady-state check can see; they need a failure-injection scenario where the customer or peer actually misbehaves. These stay as losses.
+
+## Reproduce it
+
+On Linux or WSL2 with Docker and containerlab, from a checkout of the repository:
+
+```bash
+python corpus/run.py --case 23
+```
+
+Case file: [`corpus/cases/23-fat-finger-third-party-origin.yml`](https://github.com/netdryrun/netdryrun/blob/main/corpus/cases/23-fat-finger-third-party-origin.yml). Published result: netdryrun 0.2.0, containerlab 0.81.1, FRR `quay.io/frrouting/frr:10.4.1`, commit `ec23379`, run on 2026-10-26.
