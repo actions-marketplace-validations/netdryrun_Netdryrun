@@ -25,6 +25,10 @@ python corpus/run.py --case 10   # one corpus case
 - **Keep the config format small.** New keys need a reason a network engineer would recognize.
 - Commits are signed off by real people; be kind in reviews.
 
+## Licensing of contributions
+
+Netdryrun is licensed under Apache-2.0, and so are contributions: by opening a pull request you agree that your contribution is licensed under the Apache License 2.0 (section 5 of the license), and you confirm you have the right to submit it. There is no separate CLA. Please don't submit code you copied from somewhere with an incompatible license, or vendor material (images, configs, documentation) you aren't allowed to redistribute.
+
 ## Releasing (maintainers)
 
 Bump `__version__` in `src/netdryrun/__init__.py` and `server.json`, update CHANGELOG.md, then tag `vX.Y.Z`. GitHub Actions publishes to PyPI with Trusted Publishing.

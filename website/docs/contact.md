@@ -1,0 +1,16 @@
+---
+title: Contact
+description: How to reach Netdryrun - questions and permissions, security reports, bugs and feature requests - and how fast to expect an answer.
+---
+
+# Contact
+
+| What | Where | Expect an answer |
+|---|---|---|
+| Bugs, questions, feature requests | [GitHub issues](https://github.com/netdryrun/netdryrun/issues) | best effort, usually within a few days |
+| Security vulnerabilities (please don't open a public issue) | [security@netdryrun.com](mailto:security@netdryrun.com) or [GitHub private vulnerability reporting](https://github.com/netdryrun/netdryrun/security/advisories/new) | acknowledgment within 3 days |
+| Everything else: trademark permission, paid work, press | [hello@netdryrun.com](mailto:hello@netdryrun.com) | best effort, usually within a few days |
+
+Netdryrun is a small, independent open-source project. There is no phone line and no sales team. Free use comes with best-effort support; see the [support and versioning policy](support.md).
+
+Security researchers: our [security.txt](https://netdryrun.com/.well-known/security.txt) follows RFC 9116, and the [security policy](https://github.com/netdryrun/netdryrun/blob/main/SECURITY.md) explains how reports are handled.

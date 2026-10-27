@@ -5,7 +5,7 @@ site_description: >-
   containerlab virtual lab before they reach production, with a pass/fail
   verdict and evidence.
 site_author: Netdryrun
-copyright: Netdryrun™ is open source under the Apache-2.0 license. Netdryrun and the Netdryrun logo are trademarks.
+copyright: 'Netdryrun™ is open source under the Apache-2.0 license. Netdryrun and the Netdryrun logo are trademarks. <a href="/trust/">Trust and privacy</a> · <a href="/support/">Support</a> · <a href="/contact/">Contact</a>'
 
 repo_url: https://github.com/netdryrun/netdryrun
 repo_name: netdryrun/netdryrun
@@ -51,8 +51,14 @@ theme:
 extra_css:
   - stylesheets/brand.css
 
+# Publish /.well-known/security.txt (MkDocs skips dot-folders by default)
+exclude_docs: |
+  !.well-known/
+
 plugins:
   - search
+  # Self-host fonts and other external assets at build time: visitors' browsers never contact Google.
+  - privacy
 
 markdown_extensions:
   - abbr
@@ -81,6 +87,8 @@ nav:
   - Verdict corpus: corpus.md
   - When to use what: when-to-use-what.md
   - Trust and security: trust.md
+  - Support and versioning: support.md
+  - Contact: contact.md
 
 extra:
   social:
