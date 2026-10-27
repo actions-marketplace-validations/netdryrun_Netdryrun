@@ -14,6 +14,7 @@ Several good open-source tools help you test network changes. They answer differ
 | [Batfish](https://batfish.org) | Analyzing configs of many vendors without booting anything: reachability, ACLs and firewall rules, routing, differences between two snapshots | No, it models them |
 | [pyATS / Genie](https://developer.cisco.com/pyats/) | A full Python test framework with a large library of device parsers, for testing labs and real (including production) devices, with state snapshots and diffs | Works against any reachable device |
 | [containerlab](https://containerlab.dev) | Running container-based network labs from a YAML topology, for many network operating systems | Yes, it is the lab |
+| Your own scripts | Exactly the checks your team needs, around a lab you already run, with no new dependency | Yes, through containerlab |
 | Netdryrun™ | Declarative, convergence-aware checks on a containerlab lab, packaged for CI with a pass/fail verdict and evidence | Yes, through containerlab |
 
 ## Batfish
@@ -37,6 +38,19 @@ Netdryrun is much smaller: a YAML file and a GitHub Action, with no test code to
 containerlab runs network labs from a YAML topology: container-native network operating systems (such as Nokia SR Linux, Arista cEOS, Juniper cRPD, FRR) and, through vrnetlab, many VM-based ones. It handles wiring, management addresses and lifecycle.
 
 Use it whenever you want a real lab on a laptop or a CI runner. Netdryrun does not replace it; Netdryrun drives it.
+
+## Your own scripts around containerlab
+
+Many teams already run containerlab in CI with a script that deploys the lab, sleeps, runs a few `show` commands or pings, and tears down. That is free, flexible, and needs no new tool. If your checks are few and your lab rarely changes, keep it.
+
+Scripts tend to get harder in the same places, and those are what Netdryrun packages:
+
+- **Timing.** A fixed `sleep` either wastes minutes or fails while BGP is still converging. Netdryrun polls until each check passes twice in a row, and runs "must never happen" checks only after convergence, for a hold window.
+- **Routes that hide.** A leaked route that was received but not selected doesn't show in the main routing table output on every network OS. Netdryrun's drivers read where each one keeps it (FRR, SR Linux, SONiC, cEOS).
+- **Evidence.** One verdict, an exit code, JUnit, a PR comment, and a JSON file with every command and its raw output, instead of a log to read.
+- **Scenarios and agents.** Link-down and node-isolation scenarios with recovery checks, and an MCP server so an AI agent can run the same checks.
+
+The two mix well: keep a script for anything Netdryrun doesn't check, and call `netdryrun check` from it for the rest.
 
 ## Netdryrun
 
