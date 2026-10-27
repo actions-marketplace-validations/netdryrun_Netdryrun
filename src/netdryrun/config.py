@@ -22,6 +22,10 @@ CHECK_TYPES = {
 BGP_ATTRIBUTES = ("communities", "without_communities", "as_path", "as_path_regex", "local_pref", "med", "next_hop")
 COMMON_KEYS = ("type", "name", "timeout", "hold")
 BGP_STATES = ("idle", "connect", "active", "opensent", "openconfirm", "established", "down")  # down = any state except established
+# Names that end up inside device CLI strings (vtysh -c, sr_cli, Cli -c) or command arguments: letters,
+# digits and . _ : - only, so a name can never carry a newline, a pipe or a second command
+VRF_NAME = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.:-]{0,63}")
+INTERFACE_NAME = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.@-]{0,14}")   # Linux: at most 15 characters, no / or :
 
 
 class ConfigError(ValueError):
@@ -194,6 +198,8 @@ def _validate_check(i: int, raw: Any, default_timeout: float) -> Check:
             raise ConfigError(f"{where}: {key} must be a positive number of seconds")
     if "vrf" in params:
         params["vrf"] = str(params["vrf"])
+        if not VRF_NAME.fullmatch(params["vrf"]):
+            raise ConfigError(f"{where}: bad vrf {params['vrf']!r}: use letters, digits and . _ : - (at most 64)")
     if ctype == "bgp_session":
         params["state"] = str(params.get("state", "established")).lower()
         if params["state"] not in BGP_STATES:
@@ -294,6 +300,8 @@ def _validate_scenario(i: int, raw: Any, default_timeout: float) -> Scenario:
     for item in _as_list(raw.get("link_down")):
         if not isinstance(item, dict) or not {"node", "interface"} <= set(item):
             raise ConfigError(f"{where}: link_down needs node and interface")
+        if not INTERFACE_NAME.fullmatch(str(item["interface"])):
+            raise ConfigError(f"{where}: bad interface {item['interface']!r}: use a Linux interface name such as eth1")
         faults.append(Fault("link_down", str(item["node"]), str(item["interface"])))
     for item in _as_list(raw.get("node_isolated")):
         node = item.get("node") if isinstance(item, dict) else item

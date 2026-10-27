@@ -98,6 +98,13 @@ def parse_attr_set(text: str, row: dict, default_local_pref: int | None = None) 
     )
 
 
+def _ip_or_none(addr) -> str | None:
+    try:
+        return str(ipaddress.ip_address(str(addr)))
+    except ValueError:
+        return None
+
+
 def unread_path(row: dict) -> BgpPath:
     """A path whose attributes were not read (only the first path's are: the best one if any)."""
     return BgpPath(best=bool(row.get("best-route")), as_path=None, next_hop=None, local_pref=None, med=None,
@@ -139,12 +146,17 @@ class SrlDriver(Driver):
         if not rows:
             return Observation([], ev)
         first = rows[0]  # best path first: one attr-set read per sample, not one per path
-        attrs = self._cli(f"info from state /network-instance {vrf} bgp-rib attr-sets attr-set {first.get('attr-id')}", ev)
+        # attr-id and neighbor come from device output and go back into a CLI string: only a number and an IP
+        attr_id = str(first.get("attr-id"))
+        if not attr_id.isdigit():
+            raise DriverError(f"unexpected attr-id {attr_id[:40]!r} for {prefix}")
+        attrs = self._cli(f"info from state /network-instance {vrf} bgp-rib attr-sets attr-set {attr_id}", ev)
         default_lp = None
-        if "local-pref" not in _json(attrs) and first.get("neighbor"):
+        neighbor = _ip_or_none(first.get("neighbor"))
+        if "local-pref" not in _json(attrs) and neighbor:
             try:
                 lp = _json(self._cli(f"info from state /network-instance {vrf} protocols bgp neighbor "
-                                     f"{first['neighbor']} local-preference", ev)).get("local-preference")
+                                     f"{neighbor} local-preference", ev)).get("local-preference")
                 default_lp = int(lp) if lp is not None else None
             except DriverError:
                 pass  # not a configured neighbor (a local route): local-pref stays unknown
