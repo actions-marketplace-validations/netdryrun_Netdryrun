@@ -1,0 +1,65 @@
+{
+  "ticket": "T02-transit-only",
+  "kind": "implement",
+  "truth": {
+    "verdict": "safe",
+    "decision": [
+      "apply"
+    ]
+  },
+  "answer": {},
+  "completed_unattended": false,
+  "verdict_ok": false,
+  "decision_ok": false,
+  "changed_files": [],
+  "added_files": [],
+  "rule_breaks": [],
+  "hidden_rerun": null,
+  "hidden_ok": true,
+  "solved": false,
+  "tool_calls": 19,
+  "netdryrun_calls": 2,
+  "lab_runs": 2,
+  "tools": {
+    "Edit": 1,
+    "Glob": 5,
+    "Grep": 8,
+    "Read": 2,
+    "Write": 1,
+    "mcp__netdryrun__dry_run": 2
+  },
+  "turns": 20,
+  "wall_s": 195.8,
+  "agent_duration_s": 194.2,
+  "cost_usd": 0.08150535000000002,
+  "model": "claude-haiku-4-5-20251001",
+  "claude_code_version": "2.1.116",
+  "mcp_status": [
+    "connected"
+  ],
+  "permission_denials": [
+    {
+      "tool_name": "Read",
+      "tool_use_id": "toolu_01QEqsxUH7581tmQQKnbtp5X",
+      "tool_input": {
+        "file_path": "\\mnt\\c\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T02-transit-only\\TICKET.md"
+      }
+    },
+    {
+      "tool_name": "Read",
+      "tool_use_id": "toolu_015K8TfhLFuhCsckd5XH35f2",
+      "tool_input": {
+        "file_path": "\\mnt\\c\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T02-transit-only\\AGENTS.md"
+      }
+    }
+  ],
+  "tool_errors": [
+    "Permission to use Read has been denied because Claude Code is running in don't ask mode. IMPORTANT: You *may* attempt to accomplish this action using other tools that might naturally be used to accomplish this goal, e.g. using head instead of cat. But you *should not* attempt to work around this den",
+    "Permission to use Read has been denied because Claude Code is running in don't ask mode. IMPORTANT: You *may* attempt to accomplish this action using other tools that might naturally be used to accomplish this goal, e.g. using head instead of cat. But you *should not* attempt to work around this den",
+    "<tool_use_error>Directory does not exist: /mnt/c/Users/manag/AppData/Local/Temp/ndr-eval/haiku1/T02-transit-only. Note: your current working directory is C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T02-transit-only.</tool_use_error>",
+    "<tool_use_error>Directory does not exist: /mnt/c/Users/manag/AppData/Local/Temp/ndr-eval/haiku1/T02-transit-only. Note: your current working directory is C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T02-transit-only.</tool_use_error>",
+    "<tool_use_error>File has not been read yet. Read it first before writing to it.</tool_use_error>",
+    "<tool_use_error>File has not been read yet. Read it first before writing to it.</tool_use_error>"
+  ],
+  "timed_out": false
+}

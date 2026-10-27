@@ -1,0 +1,60 @@
+{
+  "ticket": "T04-review-community",
+  "kind": "review",
+  "truth": {
+    "verdict": "harmful",
+    "decision": [
+      "dont_apply"
+    ]
+  },
+  "answer": {
+    "verdict": "harmful",
+    "decision": "dont_apply",
+    "netdryrun_status": "failed",
+    "changed_files": [
+      "configs/edge1.conf"
+    ],
+    "reason": "The change fails to add the required 65200:100 community to routes advertised to upstream. Both critical checks failed: routes lack the community tag that upstream now requires. The author should review whether extended communities vs. regular communities is the right choice."
+  },
+  "completed_unattended": true,
+  "verdict_ok": true,
+  "decision_ok": true,
+  "changed_files": [],
+  "added_files": [],
+  "rule_breaks": [],
+  "hidden_rerun": null,
+  "hidden_ok": true,
+  "solved": true,
+  "tool_calls": 12,
+  "netdryrun_calls": 2,
+  "lab_runs": 2,
+  "tools": {
+    "Glob": 4,
+    "Grep": 5,
+    "Read": 1,
+    "mcp__netdryrun__dry_run": 2
+  },
+  "turns": 13,
+  "wall_s": 157.1,
+  "agent_duration_s": 155.1,
+  "cost_usd": 0.04200135,
+  "model": "claude-haiku-4-5-20251001",
+  "claude_code_version": "2.1.116",
+  "mcp_status": [
+    "connected"
+  ],
+  "permission_denials": [
+    {
+      "tool_name": "Read",
+      "tool_use_id": "toolu_01C6JJg8bbvz366djbuXikb8",
+      "tool_input": {
+        "file_path": "\\mnt\\c\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T04-review-community\\TICKET.md"
+      }
+    }
+  ],
+  "tool_errors": [
+    "Permission to use Read has been denied because Claude Code is running in don't ask mode. IMPORTANT: You *may* attempt to accomplish this action using other tools that might naturally be used to accomplish this goal, e.g. using head instead of cat. But you *should not* attempt to work around this den",
+    "<tool_use_error>Path does not exist: /mnt/c/Users/manag/AppData/Local/Temp/ndr-eval/haiku1/T04-review-community/TICKET.md. Note: your current working directory is C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T04-review-community.</tool_use_error>"
+  ],
+  "timed_out": false
+}

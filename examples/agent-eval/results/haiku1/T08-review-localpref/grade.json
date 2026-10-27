@@ -1,0 +1,69 @@
+{
+  "ticket": "T08-review-localpref",
+  "kind": "review",
+  "truth": {
+    "verdict": "harmful",
+    "decision": [
+      "dont_apply"
+    ]
+  },
+  "answer": {
+    "verdict": "harmful",
+    "decision": "dont_apply",
+    "netdryrun_status": "failed",
+    "changed_files": [],
+    "reason": "The route-map FROM-R3 applies local-pref 200 to all routes from r3, causing r1 to incorrectly prefer r3 over r2 for r2's LAN (192.168.2.0/24). The route-map must be restricted with a prefix-list to match only 192.168.3.0/24."
+  },
+  "completed_unattended": true,
+  "verdict_ok": true,
+  "decision_ok": true,
+  "changed_files": [],
+  "added_files": [],
+  "rule_breaks": [],
+  "hidden_rerun": null,
+  "hidden_ok": true,
+  "solved": true,
+  "tool_calls": 15,
+  "netdryrun_calls": 2,
+  "lab_runs": 2,
+  "tools": {
+    "Glob": 6,
+    "Grep": 4,
+    "Read": 2,
+    "WebFetch": 1,
+    "mcp__netdryrun__dry_run": 2
+  },
+  "turns": 16,
+  "wall_s": 209.4,
+  "agent_duration_s": 207.0,
+  "cost_usd": 0.04986225,
+  "model": "claude-haiku-4-5-20251001",
+  "claude_code_version": "2.1.116",
+  "mcp_status": [
+    "connected"
+  ],
+  "permission_denials": [
+    {
+      "tool_name": "Read",
+      "tool_use_id": "toolu_01G8aF2wNpTUKBhCczNs8VpC",
+      "tool_input": {
+        "file_path": "\\mnt\\c\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T08-review-localpref\\TICKET.md"
+      }
+    },
+    {
+      "tool_name": "Read",
+      "tool_use_id": "toolu_01Pr6JF5QLc24VrnCScmUVcj",
+      "tool_input": {
+        "file_path": "\\mnt\\c\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T08-review-localpref\\AGENTS.md"
+      }
+    }
+  ],
+  "tool_errors": [
+    "Permission to use Read has been denied because Claude Code is running in don't ask mode. IMPORTANT: You *may* attempt to accomplish this action using other tools that might naturally be used to accomplish this goal, e.g. using head instead of cat. But you *should not* attempt to work around this den",
+    "Permission to use Read has been denied because Claude Code is running in don't ask mode. IMPORTANT: You *may* attempt to accomplish this action using other tools that might naturally be used to accomplish this goal, e.g. using head instead of cat. But you *should not* attempt to work around this den",
+    "<tool_use_error>Directory does not exist: /mnt/c/Users/manag/AppData/Local/Temp/ndr-eval/haiku1/T08-review-localpref. Note: your current working directory is C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T08-review-localpref.</tool_use_error>",
+    "<tool_use_error>Directory does not exist: /mnt/c/Users/manag/AppData/Local/Temp/ndr-eval/haiku1/T08-review-localpref. Note: your current working directory is C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T08-review-localpref.</tool_use_error>",
+    "<tool_use_error>Directory does not exist: /mnt/c/Users/manag/AppData/Local/Temp/ndr-eval/haiku1/T08-review-localpref. Note: your current working directory is C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T08-review-localpref.</tool_use_error>"
+  ],
+  "timed_out": false
+}

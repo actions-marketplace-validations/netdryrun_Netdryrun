@@ -1,0 +1,9 @@
+{
+  "ticket": "T03-review-open-filters",
+  "run": "haiku1",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_s": 24.0,
+  "folder": "C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T03-review-open-filters",
+  "model_requested": "haiku"
+}

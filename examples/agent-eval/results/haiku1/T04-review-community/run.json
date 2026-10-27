@@ -1,0 +1,9 @@
+{
+  "ticket": "T04-review-community",
+  "run": "haiku1",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_s": 157.1,
+  "folder": "C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\haiku1\\T04-review-community",
+  "model_requested": "haiku"
+}
