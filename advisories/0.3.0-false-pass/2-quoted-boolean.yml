@@ -1,0 +1,4 @@
+# A quoted boolean: 0.3.0 read "false" as true, so this leak guard passed exactly when the leak happened.
+lab: ../../examples/frr-bgp/topology.clab.yml
+checks:
+  - {type: route, node: r1, prefix: 0.0.0.0/0, protocol: bgp, present: "false"}

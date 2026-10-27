@@ -1,0 +1,4 @@
+# min: 0 on its own always passes.
+lab: ../../examples/frr-bgp/topology.clab.yml
+checks:
+  - {type: bgp_prefixes, node: r1, neighbor: 10.0.12.2, min: 0}

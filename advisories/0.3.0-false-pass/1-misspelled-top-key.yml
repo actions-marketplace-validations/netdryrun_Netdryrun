@@ -1,0 +1,6 @@
+# A typo at the top level: 0.3.0 ignored "chekcs", so the leak guard under it never ran and the run passed on the one check that remained.
+lab: ../../examples/frr-bgp/topology.clab.yml
+checks:
+  - {type: bgp_session, node: r1, neighbor: 10.0.12.2}
+chekcs:
+  - {type: route, node: r1, prefix: 0.0.0.0/0, protocol: bgp, present: false}

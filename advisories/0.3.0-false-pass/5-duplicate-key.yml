@@ -1,0 +1,9 @@
+# A duplicate key: plain YAML keeps the last one, so 0.3.0 checked present: true and this leak guard passed exactly when the leak happened.
+lab: ../../examples/frr-bgp/topology.clab.yml
+checks:
+  - type: route
+    node: r1
+    prefix: 0.0.0.0/0
+    protocol: bgp
+    present: false
+    present: true

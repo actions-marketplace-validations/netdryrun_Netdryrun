@@ -1,0 +1,4 @@
+# An unknown protocol name: 0.3.0 matched no route, so present: false always passed.
+lab: ../../examples/frr-bgp/topology.clab.yml
+checks:
+  - {type: route, node: r1, prefix: 0.0.0.0/0, protocol: ebgp, present: false}

@@ -1,0 +1,4 @@
+# An unknown address family: 0.3.0 counted 0 prefixes for it, which always passes max.
+lab: ../../examples/frr-bgp/topology.clab.yml
+checks:
+  - {type: bgp_prefixes, node: r1, neighbor: 10.0.12.2, afi: ipv4, max: 10}

@@ -73,8 +73,11 @@ VERDICT_MODULES = {
 # The runner's deploy, scenario and gate paths run on a fake lab and a fake clock (tests/test_verdict_runner.py).
 COVERAGE_FLOORS = {"checks": 99, "config": 99, "runner": 98, "drivers": 99}
 
-# Files that are evidence of past runs: never rewritten, so never linted or version-checked.
-EVIDENCE = ("examples/agent-eval/results/", "examples/agent-eval/validation/", "corpus/results/", "corpus/v2/results/")
+# Files that are evidence of past runs, and advisories about past versions (which name those versions on
+# purpose; tests/test_advisory_fixtures.py keeps their fixtures honest): never rewritten, so never linted or
+# version-checked.
+EVIDENCE = ("examples/agent-eval/results/", "examples/agent-eval/validation/", "corpus/results/", "corpus/v2/results/",
+            "advisories/")
 
 # Expected exit code of `netdryrun run` when it is stopped by a signal (128 + signal number, the
 # shell convention). SIGINT is documented (CHANGELOG 0.3.0: "Interrupted: no verdict", 130).

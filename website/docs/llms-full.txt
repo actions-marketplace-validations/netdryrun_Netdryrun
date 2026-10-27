@@ -1244,7 +1244,7 @@ checks:
 
 Validation is strict, and every problem is an error (exit code `2`) before anything is deployed. Run `netdryrun validate` to check a file without starting a lab. From 0.3.1:
 
-- **Unknown keys are errors at every level**: the top level, `nodes.<node>`, checks, scenarios, `link_down`, `node_isolated` and `inject_routes`. A misspelled key gets a suggestion: `unknown keys ['presnt'] for type route; did you mean 'present'?`. A misspelled key used to be ignored, which could turn a check into one that always passes.
+- **Unknown keys are errors at every level**: the top level, `nodes.<node>`, checks, scenarios, `link_down`, `node_isolated` and `inject_routes`. A misspelled key gets a suggestion: `unknown keys ['presnt'] for type route; did you mean 'present'?`. Before 0.3.1, a misspelled key at the top level, under `nodes` or inside a fault was ignored, so a misspelled block of checks never ran (keys inside a check or a scenario were already refused).
 - **Duplicate keys are errors**, at any depth: `duplicate key 'present' (first defined on line 12)`. Plain YAML keeps the last one silently. The topology file is read the same way. YAML merge keys (`<<: *anchor`) are allowed.
 - **Malformed YAML** is reported on one line, with its position: `netdryrun.yml: not valid YAML at line 7, column 3: ...`.
 - **Booleans must be real booleans**: `present` and `active` take unquoted `true` or `false`. A quoted `"false"`, `0`, `null` or an empty value is refused instead of being read as something else.
@@ -2268,7 +2268,7 @@ $ netdryrun validate my-lab
 config error: checks[2]: unknown keys ['presnt'] for type route; did you mean 'present'?; allowed: active, hold, name, node, prefix, present, protocol, timeout, type, vrf
 ```
 
-Exit code `2`. From 0.3.1, a key Netdryrun doesn't know is an error at every level of the file (top level, `nodes`, checks, scenarios and their faults), not only inside checks. A misspelled key used to be ignored: `presnt: false` left the check at its default `present: true`, the opposite of what was meant. Fix the spelling the message suggests; `allowed:` lists every key that fits there. The same goes for values from a fixed list (`afi`, `protocol`, `state`, `expect`, `driver`), and a key written twice in the same mapping is an error too (`duplicate key 'present' (first defined on line 12)`). Run `netdryrun validate` after upgrading: a file that 0.3.0 accepted can fail here, and every such failure was a check that didn't test what it said.
+Exit code `2`. From 0.3.1, a key Netdryrun doesn't know is an error at every level of the file (top level, `nodes`, checks, scenarios and their faults), not only inside checks. Before 0.3.1, a misspelled key at the top level, under `nodes` or inside a fault was ignored: a whole block of checks under `chekcs:` never ran, and nothing said so. Fix the spelling the message suggests; `allowed:` lists every key that fits there. The same goes for values from a fixed list (`afi`, `protocol`, `state`, `expect`, `driver`), and a key written twice in the same mapping is an error too (`duplicate key 'present' (first defined on line 12)`). Run `netdryrun validate` after upgrading: a file that 0.3.0 accepted can fail here, and every such failure was a check that didn't test what it said.
 
 ## containerlab is not installed
 
