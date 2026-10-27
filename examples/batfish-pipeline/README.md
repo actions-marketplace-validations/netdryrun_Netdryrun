@@ -2,8 +2,10 @@
 
 A two-stage gate for config changes on the FRR triangle from [`../frr-bgp`](../frr-bgp):
 
-1. **Batfish** analyses the configs: parsing, references, BGP sessions, best paths, a default-route guard, a traceroute and a link-failure fork. Nothing boots; in the runs below the stage took 2 to 6 seconds.
-2. **Netdryrun™** boots the same configs in a containerlab lab and checks what FRR really does: sessions, prefixes received, best paths, ping, the default-route guard and the same link failure.
+1. **Batfish** analyses the configs (8 checks): parsing without warnings, references, all six BGP sessions, r1's best paths, no default route on any router, a traceroute, and a link-failure fork. Nothing boots. With the Batfish service already running, the stage took 2 to 6 seconds in the runs below.
+2. **Netdryrun™** boots the same configs in a containerlab lab and checks what FRR really does (10 checks): r1's sessions, the prefixes r1 receives from r2, r1's route and best path to r2's LAN, a ping, no default route on r1 or r3, and the same link failure.
+
+The two stages check the same intent with two differences: Batfish checks the default route on all three routers (r2, which would send it, is not checked in the lab), and the lab adds a prefix count and a ping.
 
 `pipeline.sh` runs both stages on a scratch copy; nothing in this folder is modified. By default the lab is skipped when Batfish fails. `BOTH=1` runs the lab anyway, to compare the two stages; the results below were measured that way.
 
@@ -40,18 +42,20 @@ Each file in [`changes/`](changes) replaces `r2.conf`:
 
 ## Results
 
-Measured on 2026-10-27 from a fresh clone of commit c2d5c92, following [Run it](#run-it) word for word, on WSL2 (20 cores, 16 GB) with images already pulled: `batfish/batfish` (Batfish 2026.08.27.3685), pybatfish 2026.9.17.3748, Netdryrun 0.3.0 from PyPI, containerlab 0.81.1, FRR 10.4.1. Times are `pipeline.sh`'s own "Stage 1 exit ... after" and "Stage 2 exit ... after" lines. The Batfish stage includes loading the snapshot (the first run after the container starts is the slowest); the lab stage includes deploying and destroying the lab. An earlier run the same day with `batfish/allinone` (same Batfish version) gave the same results, with times within 3 s.
+Measured on 2026-10-27 from a fresh clone of commit f368194, following [Run it](#run-it) word for word (later commits change only this README and the website), on WSL2 (20 cores, 16 GB) with images already pulled: `batfish/batfish` (Batfish 2026.08.27.3685), pybatfish 2026.9.17.3748, Netdryrun 0.3.0 from PyPI, containerlab 0.81.1, FRR 10.4.1. Times are `pipeline.sh`'s own "Stage 1 exit ... after" and "Stage 2 exit ... after" lines. The Batfish stage includes loading the snapshot (the first run after the container starts is the slowest); the lab stage includes deploying and destroying the lab. Installing pybatfish took 14 s. Two earlier runs the same day, before the r3 default-route check was added, gave the same verdicts with times within 4 s.
 
-| Change (command) | Batfish (8 checks) | Netdryrun lab (9 checks) | Who caught what |
+| Change (command) | Batfish (8 checks) | Netdryrun lab (10 checks) | Who caught what |
 |---|---|---|---|
-| none (baseline): `pipeline.sh` | pass, 6 s | pass, 69 s | Both agree |
-| `BOTH=1 pipeline.sh default-leak` | **fail**, 2 s: r1 and r3 learn 0.0.0.0/0 | **fail**, 68 s: default route present on r1 (received, not selected) | Both. Batfish first, and it also names r3 |
-| `BOTH=1 pipeline.sh route-map-typo` | **fail**, 2 s: undefined route-map `ALLOW-AL` at r2.cfg line 27 | **fail**, 177 s: r1 gets 0 prefixes from r2 and reaches r2's LAN the long way, through r3 | Both flag it. But Batfish's own route model still predicts r1 uses the direct path to r2; FRR denies everything through a missing route-map |
-| `BOTH=1 pipeline.sh no-policy` | pass, 2 s | **fail**, 265 s: 6 of 9 checks; r2's LAN is unreachable from r1 | **Only the lab** |
+| none (baseline): `pipeline.sh` | pass, 6 s | pass, 66 s | Both agree |
+| `BOTH=1 pipeline.sh default-leak` | **fail**, 3 s: r1 and r3 learn 0.0.0.0/0 | **fail**, 68 s, 2 of 10: the default route is present on r1 and on r3 | Both, Batfish first |
+| `BOTH=1 pipeline.sh route-map-typo` | **fail**, 2 s: undefined route-map `ALLOW-AL` at r2.conf line 20 | **fail**, 179 s, 2 of 10: r1 gets 0 prefixes from r2 and reaches r2's LAN the long way, through r3 | Both flag it. But Batfish's own route model still predicts r1 uses the direct path to r2; FRR denies everything through a missing route-map |
+| `BOTH=1 pipeline.sh no-policy` | pass, 3 s | **fail**, 265 s, 6 of 10: r2's LAN is unreachable from r1 | **Only the lab** |
 
-**What Batfish caught first.** The default-route leak and the route-map typo, in seconds, with the file and line for the typo. A pipeline that stops on a Batfish failure never spends a minute or three booting a lab for them.
+**What Batfish caught first.** The default-route leak and the route-map typo, each in 2 to 3 seconds. For the typo it names the file and line (`r2.conf line 20`: the candidate `changes/route-map-typo.conf`, copied in as `r2.conf`); for the leak it names the routers. A pipeline that stops on a Batfish failure does not spend the 68 to 179 seconds of a lab run on them.
 
-**What only the lab saw.** Since FRR 7.4, `bgp ebgp-requires-policy` is on by default under `frr defaults traditional` (and off under `datacenter`). An eBGP neighbor without an inbound and outbound policy then gets nothing and sends nothing. The sessions still come up, so the failure is easy to miss. In the lab, r2 shows `(Policy) (Policy)` for both neighbors and 0 prefixes each way. Batfish accepted the config and predicted every route as before. It does not model this FRR default: when the command is written out explicitly, `bgp ebgp-requires-policy` is reported as an unrecognized line.
+In the lab, Netdryrun reports the leaked route on r1 and r3 as "present via bgp (not selected)": FRR picks it as the BGP best path and passes it on, but it is not the route the router installs for 0.0.0.0/0.
+
+**What only the lab saw.** [`bgp ebgp-requires-policy`](https://docs.frrouting.org/en/latest/bgp.html#clicmd-bgp-ebgp-requires-policy) is on by default under `frr defaults traditional` and off under `datacenter` (FRR documentation). An eBGP neighbor without an inbound and outbound policy then gets nothing and sends nothing. The sessions still come up, so a session check alone passes. In the lab, r2 shows `(Policy) (Policy)` for both neighbors and 0 prefixes each way. Batfish accepted the config and predicted every route as before. It does not model this FRR default: when the command is written out explicitly, `bgp ebgp-requires-policy` is reported as an unrecognized line.
 
 **The route-map typo** is a partial catch. Batfish's `undefinedReferences` question flags it, so the gate fails. If you look only at its routing answers, though, they say traffic still takes the direct path. Only the lab shows the real result: r1 falls back to the path through r3, and ping still works, so only the best-path check and the prefix count fail.
 
@@ -65,19 +69,26 @@ This test uses a small part of Batfish. It also analyses ACLs and firewall rules
 
 ## How well Batfish parses FRR
 
-Batfish has no stand-alone FRR config format:
+Batfish reads FRR configs as part of its Cumulus Linux and SONiC support. This example uses the Cumulus path; the probe below also tries the SONiC one.
 
 - A bare `frr.conf` is **detected as Cisco IOS**. On these files the status was `PARTIALLY_UNRECOGNIZED` (`frr defaults datacenter` unrecognized), and interfaces were renamed `eth1` → `Ethernet1`. The BGP answers happened to be right here, but FRR syntax is then read with IOS semantics.
-- Batfish's FRR grammar is used for **Cumulus Linux**. [`batfish_check.py`](batfish_check.py) wraps each `frr.conf` in the "Cumulus concatenated" layout (hostname, an interfaces section, a `ports.conf` marker, then `frr.conf`). With that, all three configs parse as `CUMULUS_CONCATENATED` with status `PASSED` and no warnings, and interface names stay as in the lab.
-- What is supported is the subset Cumulus used. Examples from this test: `frr defaults traditional` is accepted without its defaults being modelled, and `bgp ebgp-requires-policy` is not recognized at all. Check `fileParseStatus` and `parseWarning` (the script fails on any file that does not parse cleanly) before trusting an answer for FRR.
+- **Cumulus Linux** layout: [`batfish_check.py`](batfish_check.py) wraps each `frr.conf` in the "Cumulus concatenated" layout (hostname, an interfaces section, a `ports.conf` marker, then `frr.conf`). With that, all three configs parse as `CUMULUS_CONCATENATED` with status `PASSED` and no warnings, and interface names stay as in the lab.
+- **SONiC** layout (a `config_db.json` with the hostname and interface addresses, next to an unchanged `frr.conf`): the three configs also parse as `SONIC` with status `PASSED` and no warnings. Batfish predicts the same routes as through the Cumulus path, for the baseline and for `no-policy`.
+- Not every FRR command or default is supported. In this test, `frr defaults traditional` is accepted without its defaults being modelled, and `bgp ebgp-requires-policy` is not recognized at all. `batfish_check.py` fails on any file that does not parse cleanly or has a parse warning, so an unrecognized line stops the gate instead of being ignored.
 
 ## Reproduce the findings
 
 With the Batfish container from [Run it](#run-it) still running and `BF_PYTHON` set, from the root of the clone:
 
 ```bash
-# How Batfish parses the configs, bare and wrapped
+# How Batfish reads the configs in three layouts (bare, Cumulus, SONiC), and the route it predicts
 $BF_PYTHON examples/batfish-pipeline/frr_parse_probe.py examples/batfish-pipeline/configs
+
+# The same for the no-policy candidate: every layout still predicts r2's routes reach r1
+w=$(mktemp -d) && cp examples/batfish-pipeline/configs/r*.conf "$w"/
+cp examples/batfish-pipeline/changes/no-policy.conf "$w/r2.conf"
+$BF_PYTHON examples/batfish-pipeline/frr_parse_probe.py "$w" | grep -E '^==|best path'
+rm -rf "$w"
 
 # Batfish does not recognize the explicit command
 w=$(mktemp -d) && cp examples/batfish-pipeline/configs/r*.conf "$w"/
@@ -93,6 +104,6 @@ docker exec clab-ndr-bf-pipeline-r2 vtysh -c "show bgp ipv4 unicast summary"
 containerlab destroy -t "$w/topology.clab.yml" --cleanup && rm -rf "$w"
 ```
 
-Expected: the bare configs are `PARTIALLY_UNRECOGNIZED as CISCO_IOS` with r1's interfaces named `Ethernet1, Ethernet2, Loopback`, and the wrapped ones are `PASSED as CUMULUS_CONCATENATED` with `eth1, eth2, lo`. The explicit command gives `FAIL  every config parses` and a parse warning for `'bgp ebgp-requires-policy'`. FRR shows both of r2's neighbors with `(Policy)` in the `State/PfxRcd` and `PfxSnt` columns.
+Expected: the bare configs are `PARTIALLY_UNRECOGNIZED as CISCO_IOS` with r1's interfaces named `Ethernet1, Ethernet2, Loopback`; the Cumulus ones are `PASSED as CUMULUS_CONCATENATED` with `eth1, eth2, lo`; the SONiC ones are `PASSED as SONIC` with `eth1, eth2`. All three predict `AS 65002 via 10.0.12.2` for r1's path to r2's LAN, and they predict the same for the `no-policy` candidate. The explicit command gives `FAIL  every config parses, with no parse warnings` with `r2.conf line 15: 'bgp ebgp-requires-policy' not recognized`. FRR shows both of r2's neighbors with `(Policy)` in the `State/PfxRcd` and `PfxSnt` columns.
 
 This example covers BGP with route-maps on three routers. It says nothing about Batfish's support for other FRR features or other vendors, where its coverage is much broader.

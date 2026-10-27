@@ -24,7 +24,7 @@ Times are wall-clock for `netdryrun run` on WSL2 (20 cores, 16 GB) with images a
 | [sonic-frr](#sonic-frr) | SONiC VS + FRR | Configuring a NOS after boot, a port-down scenario | `PASSED: 8 passed, 0 failed` | `0` | 90 s |
 | [arista-frr](#arista-frr) | Arista cEOS + FRR (your image) | A bring-your-own vendor image | `PASSED: 10 passed, 0 failed` | `0` | 92 s |
 | [agent-demo](#agent-demo) `demo.sh` | FRR | An agent's leaky change rejected, the fix accepted | `Demo OK` | `0` | 65 s |
-| [batfish-pipeline](#batfish-pipeline) | FRR | Batfish first, then the lab; three bad changes | `PASSED: 9 passed, 0 failed` | `0` | 75 s |
+| [batfish-pipeline](#batfish-pipeline) | FRR | Batfish first, then the lab; three bad changes | `PASSED: 10 passed, 0 failed` | `0` | 72 s |
 
 ## frr-bgp
 
@@ -94,11 +94,11 @@ CI runs this example on every push and expects it to fail.
 
 ## batfish-pipeline
 
-[`examples/batfish-pipeline`](https://github.com/netdryrun/netdryrun/tree/main/examples/batfish-pipeline): the `frr-bgp` triangle behind a two-stage gate. `pipeline.sh` runs Batfish on the configs first (seconds, nothing boots), then the lab. It needs a running Batfish service and `pybatfish`.
+[`examples/batfish-pipeline`](https://github.com/netdryrun/netdryrun/tree/main/examples/batfish-pipeline): the `frr-bgp` triangle behind a two-stage gate. `pipeline.sh` runs Batfish on the configs first (nothing boots), then the lab. It needs a running Batfish service and `pybatfish`.
 
-**Shows:** what each stage catches. Three changes to r2 are in `changes/`: a leaked default route and a route-map typo (Batfish fails them in seconds) and a switch to FRR's `traditional` defaults, which Batfish passes but the lab fails. See [Batfish, then Netdryrun](batfish.md) for the measured results.
+**Shows:** what each stage catches. Three changes to r2 are in `changes/`: a leaked default route and a route-map typo (Batfish fails them in 2 to 3 seconds of analysis) and a switch to FRR's `traditional` defaults, which Batfish passes but the lab fails. See [Batfish, then Netdryrun](batfish.md) for the measured results.
 
-**Expected:** `pipeline.sh` with no change: Batfish `8 passed, 0 failed`, then `PASSED: 9 passed, 0 failed (9 checks)`, exit code `0`. The time in the table includes both stages, with the Batfish service already running.
+**Expected:** `pipeline.sh` with no change: Batfish `8 passed, 0 failed`, then `PASSED: 10 passed, 0 failed (10 checks)`, exit code `0`. The time in the table includes both stages, with the Batfish service already running.
 
 ## Use an example as a template
 
