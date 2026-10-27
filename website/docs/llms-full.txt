@@ -1848,6 +1848,12 @@ Fixes:
 - **Make the lab faster.** Lower `timeout` in `netdryrun.yml` so a broken change fails sooner, and pull images in advance so the first call does not wait on a download.
 - **If the client cannot wait that long**, let the agent run `netdryrun run <folder>` in a shell and read `netdryrun-report.json`.
 
+## No PR comment on a big lab
+
+With `pr-comment: true`, the job log says `could not comment on the PR (needs permissions pull-requests: write ...)` even though the permission is set, and the lab has several hundred checks, for example a file `netdryrun record` wrote for a 20-node lab.
+
+GitHub rejects a comment longer than 65,536 characters. Netdryrun 0.3.0 lists every check in the comment, about 90 characters each, so above roughly 700 checks the comment is too long. The verdict, the job status and the reports are not affected. The next release shortens the table to fit, failures first. Until then, trim the recorded file to the checks that matter, or split it into several `netdryrun.yml` files run as a [matrix](github-action.md#several-labs).
+
 ## Inconclusive: the lab never came up
 
 Exit code `3` means checks failed, but the lab never reached a testable state, so the result says nothing about your change. Reproduced with Netdryrun 0.3.0 by turning off `bgpd` in the FRR `daemons` file of a copy of `examples/frr-bgp` (and `timeout: 30`):
@@ -1951,6 +1957,28 @@ Memory used per node once the lab is up, measured with `docker stats` on WSL2 (2
 CPU is busy only while nodes boot. Once up, FRR and SONiC used about 1% of one core or less; cEOS was using about one full core when measured, shortly after boot.
 
 Plan for the sum of your nodes plus a few hundred MB for Docker and containerlab. A small FRR lab runs on any laptop. A lab with several SR Linux or cEOS nodes needs a machine with 8 GB or more. GitHub-hosted `ubuntu-latest` runners have enough memory for every example.
+
+### A 20-node lab
+
+Measured on 2026-10-27 on the same WSL2 machine, images already pulled: a leaf-spine fabric of 4 spines and 16 leaves, all FRR 10.4.1, 64 links, eBGP on every link with ECMP. `netdryrun record` turned the running lab into 560 checks (128 sessions, 128 prefix counts, 304 routes) in 11 seconds. Then `netdryrun run` on those 560 checks:
+
+| Phase | Time |
+|---|---|
+| Deploy (containerlab, 20 nodes) | 9 s |
+| BGP converged everywhere (polled once a second) | 9 s after deploy |
+| 432 convergence checks done | 25 s after deploy |
+| Settle, then 128 prefix counts held 10 s | 27 s |
+| Destroy | 3 s |
+| **Total, `netdryrun run`** | **65 s, all 560 passed** |
+
+Two more runs on the same lab:
+
+- **With a failure scenario** (spine1 isolated: 16 links down, 4 checks on leaf1): 128 s, all 564 passed. The scenario took 32 s (its checks, restoring the links, settling 10 s). Proving that all 432 convergence checks recovered afterwards took another 32 s.
+- **With a broken change** (leaf16 stops announcing its LAN): 193 s, 83 failed, exactly the expected ones: the 19 routes to that LAN, the 60 leaf prefix counts that dropped from 15 to 14, and the 4 spine prefix counts that dropped from 1 to 0. The prefix counts failed within 31 s. The missing routes failed at 120 s, the `timeout` that `record` writes, so most of a failing run is that wait. Lower `timeout` if your lab converges faster.
+
+Memory: 532 MiB for the 20 nodes at the peak (25 MiB per leaf, up to 58 MiB per spine with 16 BGP sessions), about 1 GB more host memory in use during the run, and 72 MB for Netdryrun itself. Netdryrun used a bit more than one core while polling.
+
+At this size each polling round takes 9 to 12 seconds instead of the nominal 3, because every check is its own `docker exec` and Netdryrun runs 8 at a time. A check therefore needs about 20 seconds to collect its two passing samples even when the network converged sooner, and failure detection is coarser. Timeouts still work as documented: a check is only failed on a failing sample after its timeout. If a big lab's runs are too slow, trim the recorded file to the checks that matter.
 
 ## How long does a run take, and what does CI cost?
 

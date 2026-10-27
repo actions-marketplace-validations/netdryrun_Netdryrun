@@ -64,6 +64,28 @@ CPU is busy only while nodes boot. Once up, FRR and SONiC used about 1% of one c
 
 Plan for the sum of your nodes plus a few hundred MB for Docker and containerlab. A small FRR lab runs on any laptop. A lab with several SR Linux or cEOS nodes needs a machine with 8 GB or more. GitHub-hosted `ubuntu-latest` runners have enough memory for every example.
 
+### A 20-node lab
+
+Measured on 2026-10-27 on the same WSL2 machine, images already pulled: a leaf-spine fabric of 4 spines and 16 leaves, all FRR 10.4.1, 64 links, eBGP on every link with ECMP. `netdryrun record` turned the running lab into 560 checks (128 sessions, 128 prefix counts, 304 routes) in 11 seconds. Then `netdryrun run` on those 560 checks:
+
+| Phase | Time |
+|---|---|
+| Deploy (containerlab, 20 nodes) | 9 s |
+| BGP converged everywhere (polled once a second) | 9 s after deploy |
+| 432 convergence checks done | 25 s after deploy |
+| Settle, then 128 prefix counts held 10 s | 27 s |
+| Destroy | 3 s |
+| **Total, `netdryrun run`** | **65 s, all 560 passed** |
+
+Two more runs on the same lab:
+
+- **With a failure scenario** (spine1 isolated: 16 links down, 4 checks on leaf1): 128 s, all 564 passed. The scenario took 32 s (its checks, restoring the links, settling 10 s). Proving that all 432 convergence checks recovered afterwards took another 32 s.
+- **With a broken change** (leaf16 stops announcing its LAN): 193 s, 83 failed, exactly the expected ones: the 19 routes to that LAN, the 60 leaf prefix counts that dropped from 15 to 14, and the 4 spine prefix counts that dropped from 1 to 0. The prefix counts failed within 31 s. The missing routes failed at 120 s, the `timeout` that `record` writes, so most of a failing run is that wait. Lower `timeout` if your lab converges faster.
+
+Memory: 532 MiB for the 20 nodes at the peak (25 MiB per leaf, up to 58 MiB per spine with 16 BGP sessions), about 1 GB more host memory in use during the run, and 72 MB for Netdryrun itself. Netdryrun used a bit more than one core while polling.
+
+At this size each polling round takes 9 to 12 seconds instead of the nominal 3, because every check is its own `docker exec` and Netdryrun runs 8 at a time. A check therefore needs about 20 seconds to collect its two passing samples even when the network converged sooner, and failure detection is coarser. Timeouts still work as documented: a check is only failed on a failing sample after its timeout. If a big lab's runs are too slow, trim the recorded file to the checks that matter.
+
 ## How long does a run take, and what does CI cost?
 
 On GitHub-hosted `ubuntu-latest` runners, measured from three CI runs on `main` on 2026-10-27, before 0.3.0 added a few checks per example:

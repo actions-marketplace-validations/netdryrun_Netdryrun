@@ -276,6 +276,12 @@ Fixes:
 - **Make the lab faster.** Lower `timeout` in `netdryrun.yml` so a broken change fails sooner, and pull images in advance so the first call does not wait on a download.
 - **If the client cannot wait that long**, let the agent run `netdryrun run <folder>` in a shell and read `netdryrun-report.json`.
 
+## No PR comment on a big lab
+
+With `pr-comment: true`, the job log says `could not comment on the PR (needs permissions pull-requests: write ...)` even though the permission is set, and the lab has several hundred checks, for example a file `netdryrun record` wrote for a 20-node lab.
+
+GitHub rejects a comment longer than 65,536 characters. Netdryrun 0.3.0 lists every check in the comment, about 90 characters each, so above roughly 700 checks the comment is too long. The verdict, the job status and the reports are not affected. The next release shortens the table to fit, failures first. Until then, trim the recorded file to the checks that matter, or split it into several `netdryrun.yml` files run as a [matrix](github-action.md#several-labs).
+
 ## Inconclusive: the lab never came up
 
 Exit code `3` means checks failed, but the lab never reached a testable state, so the result says nothing about your change. Reproduced with Netdryrun 0.3.0 by turning off `bgpd` in the FRR `daemons` file of a copy of `examples/frr-bgp` (and `timeout: 30`):

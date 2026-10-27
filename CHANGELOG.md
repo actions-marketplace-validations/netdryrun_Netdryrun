@@ -4,6 +4,8 @@
 
 - **`inject_routes` failure fault** (FRR nodes): a scenario makes a node announce extra routes (`prefixes`, or `count` consecutive ones from `from`, optional `as_path` prepend), then removes them. Use it to test that a max-prefix limit or an import filter holds when a customer or peer misbehaves. Prefixes the node already has configured, and non-FRR nodes, are refused before anything changes.
 - **Verdict Corpus v2** (`corpus/v2/`, `python corpus/run.py --corpus v2`): its own base lab, intent spec and 18 pre-registered cases that re-express the v1 misses (unexpected routes, latent risks, rigid prefix counts, a vendor-default label) and add new changes. v1 results are unchanged.
+- **Fix: the Markdown summary and PR comment of a big lab.** A GitHub comment holds at most 65,536 characters, and the summary listed every check (about 90 characters each), so above roughly 700 checks (a recorded 20-node lab gets there) the Action's `pr-comment` was rejected with a misleading permissions warning. The table now stops before the limit, failures first, and says how many checks it left out; the JSON and JUnit reports still have every check. Found by a 20-node scale test.
+- New `Published release` workflow: the released Action by its tag on `frr-bgp` (must pass) and `frr-bgp-broken` (must fail), and every documented install line from PyPI (`pip install`, `uvx netdryrun`, an MCP handshake over `uvx netdryrun mcp`) on Python 3.10 to 3.15. Runs on pushes to `main` and weekly.
 
 ## 0.3.0 (2026-10-27)
 
