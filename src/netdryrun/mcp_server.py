@@ -14,8 +14,8 @@ from pathlib import Path
 from mcp.server import MCPServer
 
 from . import __version__, report
-from .config import CHECK_TYPES, ConfigError, load
-from .runner import run
+from .config import CHECK_TYPES, ConfigError
+from .runner import destroy_active_labs, load_config, run
 
 mcp = MCPServer("netdryrun", version=__version__, website_url="https://netdryrun.com")
 
@@ -96,7 +96,7 @@ def _load(path: str):
     err = _outside_root(path)
     if err:
         raise ConfigError(err)
-    cfg = load(path)
+    cfg = load_config(path)
     err = _outside_root(cfg.path, cfg.lab)
     if err:
         raise ConfigError(err)
@@ -110,10 +110,13 @@ def _execute(path: str, deploy: bool, keep: bool) -> str:
         return json.dumps({"status": "error", "error": str(e), "verdict": "DO NOT APPLY THIS CHANGE"})
     rep = run(cfg, deploy=deploy, keep=keep)
     evidence = cfg.path.parent / "netdryrun-report.json"
-    if evidence.is_symlink():
-        evidence.unlink()  # a planted link must not redirect the write to another file
-    evidence.write_text(report.to_json(rep), encoding="utf-8")
-    return json.dumps(_summary(rep, str(evidence)), indent=2)
+    try:
+        if evidence.is_symlink():
+            evidence.unlink()  # a planted link must not redirect the write to another file
+        evidence.write_text(report.to_json(rep), encoding="utf-8")
+    except OSError:
+        evidence = None   # a read-only folder must not turn a finished run into a tool error with no verdict
+    return json.dumps(_summary(rep, str(evidence) if evidence else None), indent=2)
 
 
 @mcp.tool()
@@ -197,7 +200,23 @@ def last_report(path: str) -> str:
     return p.read_text(encoding="utf-8") if p.exists() else "{}"
 
 
+def _on_terminate(signum, _frame) -> None:
+    """SIGTERM/SIGHUP (the client or a supervisor stopping the server): a dry run in progress runs in a worker
+    thread whose cleanup can't be reached, so destroy its lab here, then exit 128 + signal number."""
+    destroy_active_labs()
+    os._exit(128 + signum)
+
+
 def main() -> None:
+    import signal
+
+    for name in ("SIGTERM", "SIGHUP"):
+        sig = getattr(signal, name, None)
+        if sig is not None:
+            try:
+                signal.signal(sig, _on_terminate)
+            except (ValueError, OSError):
+                pass
     mcp.run()
 
 

@@ -95,10 +95,23 @@ def _route(d: Driver, p: dict) -> tuple[bool, str, list]:
     return True, "absent", obs.evidence
 
 
+# "The destination is unreachable" is a ping result, not a ping that did not run: with no route at all,
+# iputils prints "connect: Network is unreachable" (busybox "sendto: Network unreachable") and no statistics.
+_UNREACHABLE = re.compile(r"network (is )?unreachable|no route to host|destination (host |net )?unreachable", re.I)
+
+
 def _ping(d: Driver, p: dict) -> tuple[bool, str, list]:
     count = int(p.get("count", 3))
     obs = d.ping(p["target"], p.get("source"), count, p.get("vrf", "default"))
     sent, received = obs.value
+    if sent == 0:
+        text = "\n".join(f"{e.get('output', '')}\n{e.get('stderr', '')}" for e in obs.evidence)
+        m = _UNREACHABLE.search(text)
+        if m:
+            why = f"0/{count} replies (destination unreachable: {m.group(0)})"
+            if p.get("expect", "success") == "failure":
+                return True, why, obs.evidence
+            return False, why, obs.evidence
     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
         err = obs.evidence[-1].get("stderr", "").strip() if obs.evidence else ""
         return False, f"error: ping did not run{': ' + err if err else ''}", obs.evidence

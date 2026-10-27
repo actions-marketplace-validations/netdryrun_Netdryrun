@@ -2,13 +2,37 @@
 from __future__ import annotations
 
 import argparse
+import math
 import os
+import signal
 import sys
+import traceback
 from pathlib import Path
 
 from . import __version__, report
-from .config import ConfigError, load
-from .runner import run
+from .config import ConfigError
+from .runner import error_report, install_signal_handlers, load_config, run, signal_exit_code, signal_name
+
+EXIT_CODES = """exit codes:
+  0  passed        every check passed
+  1  failed        at least one check failed (the change broke something)
+  2  error         config error, bad topology, lab problem, bad option, or an internal error: no verdict
+  3  inconclusive  the lab never reached a testable state: no verdict
+  130, 143, 129    interrupted by SIGINT (Ctrl-C), SIGTERM or SIGHUP: no verdict; the lab is destroyed
+                   unless --keep was set
+
+Set NETDRYRUN_DEBUG=1 (or pass --debug) to print the traceback of an internal error."""
+
+
+def _seconds(text: str) -> float:
+    """argparse type for a duration: a number >= 0 (a bad value exits 2 with a one-line message)."""
+    try:
+        v = float(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"must be a number of seconds, got {text!r}") from None
+    if not (0 <= v < math.inf):
+        raise argparse.ArgumentTypeError(f"must be a number of seconds >= 0, got {text}")
+    return v
 
 
 def _write_outputs(rep, args) -> None:
@@ -26,20 +50,31 @@ def _write_outputs(rep, args) -> None:
 
 def _cmd_run(args, deploy: bool) -> int:
     try:
-        cfg = load(args.path)
+        cfg = load_config(args.path)
     except ConfigError as e:
         print(f"config error: {e}", file=sys.stderr)
+        if getattr(args, "json", None):
+            _write_outputs(error_report(args.path, f"config error: {e}"), args)
         return 2
     print(f"Netdryrun {__version__}: {len(cfg.checks)} checks from {cfg.path}")
+    install_signal_handlers()
     try:
         rep = run(cfg, deploy=deploy, keep=args.keep, keep_on_failure=getattr(args, 'keep_on_failure', False),
                   settle=args.settle, hold=args.hold,
                   on_result=lambda r: print(report.console_line(r), flush=True),
                   log=lambda m: print(m, flush=True))
-    except KeyboardInterrupt:
+    except KeyboardInterrupt as e:
         # run() destroys the lab in its finally block before the interrupt reaches us
-        print("\nInterrupted: no verdict. The lab was cleaned up unless --keep was set.", file=sys.stderr)
-        return 130
+        signum = getattr(e, "signum", signal.SIGINT)
+        partial = getattr(e, "report", None)
+        if partial is not None:
+            try:
+                _write_outputs(partial, args)   # status "error": an interrupted run has no verdict
+            except Exception:
+                pass
+        print(f"\nInterrupted: no verdict ({signal_name(signum)}). The lab was cleaned up unless --keep was set.",
+              file=sys.stderr)
+        return signal_exit_code(signum)
     print(report.summary_line(rep))
     _write_outputs(rep, args)
     if sys.stdout.isatty() and not os.environ.get("CI"):
@@ -49,7 +84,7 @@ def _cmd_run(args, deploy: bool) -> int:
 
 def _cmd_validate(args) -> int:
     try:
-        cfg = load(args.path)
+        cfg = load_config(args.path)
     except ConfigError as e:
         print(f"config error: {e}", file=sys.stderr)
         return 2
@@ -74,7 +109,11 @@ def _cmd_record(args) -> int:
     if out.exists() and not args.force:
         print(f"error: {out} exists; use --force to overwrite or --out to pick another file", file=sys.stderr)
         return 2
-    lab = Lab(topo)
+    try:
+        lab = Lab(topo)
+    except LabError as e:
+        print(f"lab error: {e}", file=sys.stderr)
+        return 2
     try:
         if args.deploy:
             print(f"Deploying lab {lab.name}, then waiting {args.wait:g}s for the network to converge...", flush=True)
@@ -128,8 +167,13 @@ def _cmd_feedback(args) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(prog="netdryrun", description="Test network changes in a real virtual lab before production.")
+    ap = argparse.ArgumentParser(prog="netdryrun", description="Test network changes in a real virtual lab before production.",
+                                 epilog=EXIT_CODES, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--version", action="version", version=f"netdryrun {__version__}")
+    ap.add_argument("--debug", action="store_true", help="print the traceback of an internal error")
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--debug", action="store_true", default=argparse.SUPPRESS,
+                        help="print the traceback of an internal error")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     def add_run_opts(p):
@@ -137,27 +181,29 @@ def main(argv: list[str] | None = None) -> int:
         p.add_argument("--json", metavar="FILE", help="write the full evidence report as JSON")
         p.add_argument("--markdown", metavar="FILE", help="write a Markdown summary (for PR comments)")
         p.add_argument("--junit", metavar="FILE", help="write JUnit XML (for CI test reporting)")
-        p.add_argument("--settle", type=float, default=10.0, help="seconds to wait before negative checks (default 10)")
-        p.add_argument("--hold", type=float, default=10.0, help="seconds a negative check must hold (default 10)")
+        p.add_argument("--settle", type=_seconds, default=10.0, help="seconds to wait before negative checks (default 10)")
+        p.add_argument("--hold", type=_seconds, default=10.0, help="seconds a negative check must hold (default 10)")
         p.add_argument("--no-step-summary", action="store_true", help="don't append to $GITHUB_STEP_SUMMARY")
 
-    p_run = sub.add_parser("run", help="deploy the lab, run checks, destroy the lab")
+    p_run = sub.add_parser("run", help="deploy the lab, run checks, destroy the lab", parents=[common],
+                           epilog=EXIT_CODES, formatter_class=argparse.RawDescriptionHelpFormatter)
     add_run_opts(p_run)
     p_run.add_argument("--keep", action="store_true", help="leave the lab running afterwards (for debugging)")
     p_run.add_argument("--keep-on-failure", action="store_true", help="leave the lab running only if a check fails")
 
-    p_check = sub.add_parser("check", help="run checks against an already running lab")
+    p_check = sub.add_parser("check", help="run checks against an already running lab", parents=[common],
+                             epilog=EXIT_CODES, formatter_class=argparse.RawDescriptionHelpFormatter)
     add_run_opts(p_check)
     p_check.set_defaults(keep=True)
 
-    p_val = sub.add_parser("validate", help="validate netdryrun.yml without running anything")
+    p_val = sub.add_parser("validate", help="validate netdryrun.yml without running anything", parents=[common])
     p_val.add_argument("path", nargs="?", default=".")
 
-    p_rec = sub.add_parser("record", help="snapshot a known-good lab into a netdryrun.yml baseline")
+    p_rec = sub.add_parser("record", help="snapshot a known-good lab into a netdryrun.yml baseline", parents=[common])
     p_rec.add_argument("topology", help="containerlab topology file of the lab to record")
     p_rec.add_argument("--out", metavar="FILE", help="where to write (default: netdryrun.yml next to the topology)")
     p_rec.add_argument("--deploy", action="store_true", help="deploy the lab first and destroy it afterwards")
-    p_rec.add_argument("--wait", type=float, default=45.0, help="with --deploy: seconds to let BGP converge (default 45)")
+    p_rec.add_argument("--wait", type=_seconds, default=45.0, help="with --deploy: seconds to let BGP converge (default 45)")
     p_rec.add_argument("--min-prefixes", action="store_true", help="record prefix counts as minimums instead of exact")
     p_rec.add_argument("--no-routes", action="store_true", help="don't record individual BGP routes")
     p_rec.add_argument("--attributes", action="store_true",
@@ -170,17 +216,30 @@ def main(argv: list[str] | None = None) -> int:
     p_fb.add_argument("--print-only", action="store_true", help="print the form URL instead of opening a browser")
 
     args = ap.parse_args(argv)
-    if args.cmd == "mcp":
-        from .mcp_server import main as mcp_main
-        mcp_main()
-        return 0
-    if args.cmd == "validate":
-        return _cmd_validate(args)
-    if args.cmd == "record":
-        return _cmd_record(args)
-    if args.cmd == "feedback":
-        return _cmd_feedback(args)
-    return _cmd_run(args, deploy=args.cmd == "run")
+    if args.debug:
+        os.environ["NETDRYRUN_DEBUG"] = "1"
+    try:
+        if args.cmd == "mcp":
+            from .mcp_server import main as mcp_main
+            mcp_main()
+            return 0
+        if args.cmd == "validate":
+            return _cmd_validate(args)
+        if args.cmd == "record":
+            return _cmd_record(args)
+        if args.cmd == "feedback":
+            return _cmd_feedback(args)
+        return _cmd_run(args, deploy=args.cmd == "run")
+    except KeyboardInterrupt as e:
+        signum = getattr(e, "signum", signal.SIGINT)
+        print(f"\nInterrupted ({signal_name(signum)}).", file=sys.stderr)
+        return signal_exit_code(signum)
+    except Exception as e:
+        # Anything unexpected is an error (exit 2), never "checks failed" (exit 1), and never a bare traceback
+        if os.environ.get("NETDRYRUN_DEBUG", "") not in ("", "0", "false", "no"):
+            traceback.print_exc()
+        print(f"error: internal error: {type(e).__name__}: {e} (rerun with --debug for the traceback)", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":
