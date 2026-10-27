@@ -24,8 +24,8 @@ You need containerlab, and the images `ghcr.io/nokia/srlinux:26.7.2` (about 3.2 
 ```bash
 cd examples/srl-hidden-leak
 containerlab deploy -t topology.clab.yml     # with sudo, unless your user is in clab_admins
-docker exec -it clab-hidden-leak-srl1 sr_cli
-docker exec -it clab-hidden-leak-frr1 vtysh
+docker exec -it clab-ndr-hidden-leak-srl1 sr_cli
+docker exec -it clab-ndr-hidden-leak-frr1 vtysh
 containerlab destroy -t topology.clab.yml --cleanup
 ```
 

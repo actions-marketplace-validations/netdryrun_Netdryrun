@@ -1,7 +1,7 @@
 # "The route leak ping can't see": an SR Linux router and an FRR router peering eBGP.
 # Each router has its own static default route, so a default route leaked by the peer
 # is received but never selected. See README.md.
-name: hidden-leak
+name: ndr-hidden-leak
 
 topology:
   nodes:

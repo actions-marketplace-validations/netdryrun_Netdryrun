@@ -369,6 +369,14 @@ def layer_static(args) -> Layer:
     layer.add("examples-documented", "every example has a documented expected result and exit code", MAJOR,
               not bad, "; ".join(bad) or f"{len(dirs)} examples", json.dumps(docs, indent=1), time.monotonic() - t0)
 
+    # the live layer removes leftovers by this prefix only, so a lab we ship under another name would leak
+    topos = sorted(p for d in ("examples", "corpus") for p in (ROOT / d).rglob("*.clab.yml"))
+    names = {p: (re.search(r"^name:\s*(\S+)", p.read_text(encoding="utf-8"), re.M) or [None, ""])[1] for p in topos}
+    off = [f"{p.relative_to(ROOT).as_posix()} ({n or 'no name'})" for p, n in names.items()
+           if not n.startswith(OUR_LAB_PREFIX.removeprefix("clab-"))]
+    layer.add("lab-names", "every topology we ship is named ndr-*", BLOCKER, not off,
+              "; ".join(off) or f"{len(topos)} topologies")
+
     if args.candidate:
         candidate_checks(layer, args.version)
     return layer
@@ -656,6 +664,9 @@ def mutant_section(survivors: dict[str, list[str]], status: dict, accepted: dict
 # Layer 5: live matrix on the built package (the lab machine)
 # --------------------------------------------------------------------------------------------
 
+OUR_LAB_PREFIX = "clab-ndr-"   # every topology in examples/ and corpus/ is named ndr-* (a static check enforces it)
+
+
 def clab_containers() -> set[str] | None:
     p = run(["docker", "ps", "-a", "--filter", "name=clab-", "--format", "{{.Names}}"], timeout=60)
     return set(p.out.split()) if p.code == 0 else None
@@ -682,12 +693,14 @@ class Live:
         return sorted((now_ or set()) - self.before)
 
     def assert_clean(self, id: str, title: str) -> bool:
-        """No lab container left behind. Cleans up whatever is left so the next case starts clean."""
+        """No lab container left behind. Removes only our own leftovers (every lab we ship is named ndr-*),
+        so a lab someone else started on the machine is reported but never touched."""
         left = self.leftovers()
         self.layer.add(f"{id}-clean", f"{title}: no lab left running", BLOCKER, not left,
                        f"left running: {', '.join(left)}" if left else "none left")
         for c in left:
-            run(["docker", "rm", "-f", c], timeout=120)
+            if c.startswith(OUR_LAB_PREFIX):
+                run(["docker", "rm", "-f", c], timeout=120)
         return not left
 
     def netdryrun_run(self, folder: Path, timeout: float = 1800) -> Proc:
