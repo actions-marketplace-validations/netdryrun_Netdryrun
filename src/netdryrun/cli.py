@@ -1,4 +1,4 @@
-"""Command-line interface: netdryrun run | check | validate."""
+"""Command-line interface: netdryrun run | check | validate | record | mcp | feedback."""
 from __future__ import annotations
 
 import argparse
@@ -37,6 +37,8 @@ def _cmd_run(args, deploy: bool) -> int:
               log=lambda m: print(m, flush=True))
     print(report.summary_line(rep))
     _write_outputs(rep, args)
+    if sys.stdout.isatty() and not os.environ.get("CI"):
+        print("How did it go? Run `netdryrun feedback` (opens a GitHub form; nothing is sent automatically).")
     return rep.exit_code
 
 
@@ -95,6 +97,31 @@ def _cmd_record(args) -> int:
     return 0
 
 
+FEEDBACK_URL = "https://github.com/netdryrun/netdryrun/issues/new"
+
+
+def feedback_url() -> str:
+    """The feedback form, prefilled with the version and platform only. Nothing is sent until the user submits."""
+    import platform
+    from urllib.parse import urlencode
+
+    query = {"template": "feedback.yml", "labels": "feedback", "version": __version__,
+             "platform": f"{platform.system()} {platform.release()}, Python {platform.python_version()}"}
+    return f"{FEEDBACK_URL}?{urlencode(query)}"
+
+
+def _cmd_feedback(args) -> int:
+    url = feedback_url()
+    print("Thanks for trying Netdryrun. The form asks what you tested and what got in the way; it takes 2 minutes.")
+    print("Nothing is sent until you submit it on GitHub. Prefilled: your Netdryrun version and platform.")
+    print(url)
+    if not args.print_only:
+        import webbrowser
+
+        webbrowser.open(url)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="netdryrun", description="Test network changes in a real virtual lab before production.")
     ap.add_argument("--version", action="version", version=f"netdryrun {__version__}")
@@ -132,6 +159,9 @@ def main(argv: list[str] | None = None) -> int:
 
     sub.add_parser("mcp", help="run the MCP server (stdio) so AI agents can dry-run changes")
 
+    p_fb = sub.add_parser("feedback", help="open a short feedback form on GitHub (nothing is sent automatically)")
+    p_fb.add_argument("--print-only", action="store_true", help="print the form URL instead of opening a browser")
+
     args = ap.parse_args(argv)
     if args.cmd == "mcp":
         from .mcp_server import main as mcp_main
@@ -141,6 +171,8 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_validate(args)
     if args.cmd == "record":
         return _cmd_record(args)
+    if args.cmd == "feedback":
+        return _cmd_feedback(args)
     return _cmd_run(args, deploy=args.cmd == "run")
 
 

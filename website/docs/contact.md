@@ -7,6 +7,8 @@ description: How to reach Netdryrun - questions and permissions, security report
 
 | What | Where | Expect an answer |
 |---|---|---|
+| Feedback after trying it (2 minutes) | run `netdryrun feedback`, or the [feedback form](https://github.com/netdryrun/netdryrun/issues/new?template=feedback.yml) | read by a human |
+| Free help testing one real change | [design partners](design-partners.md) | within a few days |
 | Bugs, questions, feature requests | [GitHub issues](https://github.com/netdryrun/netdryrun/issues) | best effort, usually within a few days |
 | Security vulnerabilities (please don't open a public issue) | [security@netdryrun.com](mailto:security@netdryrun.com) or [GitHub private vulnerability reporting](https://github.com/netdryrun/netdryrun/security/advisories/new) | acknowledgment within 3 days |
 | Everything else: trademark permission, paid work, press | [hello@netdryrun.com](mailto:hello@netdryrun.com) | best effort, usually within a few days |

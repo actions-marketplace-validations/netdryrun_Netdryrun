@@ -1,0 +1,49 @@
+name: Feedback (I tried Netdryrun)
+description: Tell us what you tested and what got in the way. Two minutes; every answer is read.
+title: "Feedback: "
+labels: [feedback]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for trying Netdryrun. This issue is public; don't paste configs, addresses or anything confidential.
+  - type: textarea
+    id: tested
+    attributes:
+      label: What did you test?
+      description: The kind of network and change (for example "eBGP edge, new customer prefix list"). One or two lines is fine.
+    validations: {required: true}
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: How did it go?
+      options:
+        - It caught a real problem
+        - It confirmed a change was fine
+        - I couldn't get it to run
+        - It ran, but the result wasn't useful
+        - Other
+    validations: {required: true}
+  - type: textarea
+    id: friction
+    attributes:
+      label: What got in the way, or what's missing?
+  - type: textarea
+    id: today
+    attributes:
+      label: How do you test network changes today?
+      description: Optional. Scripts, a lab, peer review, nothing, a vendor tool... This helps us more than anything else.
+  - type: checkboxes
+    id: partner
+    attributes:
+      label: Design partner
+      options:
+        - label: I'd like help building a lab for one of my real changes, free, in exchange for feedback (see netdryrun.com/design-partners/)
+  - type: input
+    id: version
+    attributes:
+      label: Netdryrun version
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
