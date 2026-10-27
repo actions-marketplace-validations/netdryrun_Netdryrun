@@ -1,0 +1,22 @@
+Netdryrun 0.3.0: 10 checks from netdryrun.yml
+Deploying lab ndr-val-t10fixedlab (3 nodes); this usually takes 30-90 s, longer the first time images are pulled...
+  [PASS] TICKET r2 gets r1's new 192.168.11.0/24 -- active via bgp (13.6s)
+  [PASS] TICKET r3 gets r1's new 192.168.11.0/24 -- active via bgp (13.6s)
+  [PASS] TICKET r2's LAN reaches the new LAN -- 3/3 replies (need 2) (13.6s)
+  [PASS] r1: BGP session to 10.0.12.2 is established -- state is established (13.6s)
+  [PASS] r1: BGP session to 10.0.13.2 is established -- state is established (13.6s)
+  [PASS] r1: route 192.168.3.0/24 via bgp is present -- active via bgp (13.6s)
+  [PASS] r1: ping 192.168.3.1 from 192.168.1.1 expects success -- 3/3 replies (need 2) (13.6s)
+  [PASS] r1: BGP best path for 192.168.2.0/24 has as-path '65002', next hop 10.0.12.2 -- best path: as-path '65002', next hop 10.0.12.2, local-pref 100, MED 0, communities none (13.6s)
+Convergence checks done; settling 10s before post-convergence checks...
+  [PASS] r1: prefixes from 10.0.12.2 >= 1 and <= 10 -- 2 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.2s)
+  [PASS] r1: route 0.0.0.0/0 via bgp is absent -- absent (held 10s, 5 samples) (10.2s)
+Scenario: r1-r2 link fails
+  [PASS] [r1-r2 link fails] r1: route 192.168.2.0/24 via bgp is present -- active via bgp (7.4s)
+  [PASS] [r1-r2 link fails] r1: BGP best path for 192.168.2.0/24 has as-path '65003 65002', next hop 10.0.13.2 -- best path: as-path '65003 65002', next hop 10.0.13.2, local-pref 100, MED 0, communities none (7.4s)
+  [PASS] [r1-r2 link fails] r1: ping 192.168.2.1 from 192.168.1.1 expects success -- 3/3 replies (need 2) (7.4s)
+  [PASS] [r1-r2 link fails] r1: BGP session to 10.0.12.2 is down -- state is active (held 10s, 5 samples) (10.4s)
+Restored 1 link(s); settling 10s
+Destroying lab...
+PASSED: 14 passed, 0 failed (14 checks)
+  wrote json report: /tmp/ndr-val/out/t10fixedlab.json

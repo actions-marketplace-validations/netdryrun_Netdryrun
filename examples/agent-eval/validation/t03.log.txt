@@ -1,0 +1,20 @@
+Netdryrun 0.3.0: 14 checks from netdryrun.yml
+Deploying lab ndr-val-t03 (4 nodes); this usually takes 30-90 s, longer the first time images are pulled...
+  [PASS] TICKET up1 receives the customer's new 10.101.0.0/24 -- active via bgp (14.0s)
+  [PASS] TICKET peer1 receives the customer's new 10.101.0.0/24 -- active via bgp (14.0s)
+  [PASS] TICKET the new block reaches the peer -- 3/3 replies (need 2) (14.0s)
+  [PASS] GUARD session to cust1 up -- state is established (14.0s)
+  [PASS] GUARD session to up1 up -- state is established (14.0s)
+  [PASS] GUARD session to peer1 up -- state is established (14.0s)
+  [PASS] GUARD up1 receives our block -- active via bgp (14.0s)
+  [PASS] GUARD peer1 receives the customer's 10.100.0.0/24 -- active via bgp (14.0s)
+  [PASS] GUARD customer reaches the internet via up1 -- 3/3 replies (need 2) (14.0s)
+Convergence checks done; settling 10s before post-convergence checks...
+  [FAIL] LEAK GUARD peer1 must not get upstream routes -- unexpectedly present via bgp (0.2s)
+  [FAIL] LEAK GUARD peer1 must not get the upstream's default route -- unexpectedly present via bgp (not selected) (0.2s)
+  [FAIL] LEAK GUARD up1 must not get peer routes -- unexpectedly present via bgp (0.2s)
+  [FAIL] LEAK GUARD peer1 gets at most our 3 prefixes -- 6 ipv4-unicast prefixes accepted (0.2s)
+  [FAIL] LEAK GUARD edge1 rejects prefixes the customer doesn't own -- unexpectedly present via bgp (0.2s)
+Destroying lab...
+FAILED: 9 passed, 5 failed (14 checks)
+  wrote json report: /tmp/ndr-val/out/t03.json
