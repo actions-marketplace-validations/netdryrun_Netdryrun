@@ -30,7 +30,7 @@ theme:
   # Navy #041334 (from the wordmark) + amber #F59E0B accent ("dry run, not live").
   # Red/green stay reserved for pass/fail. Colors are set in stylesheets/brand.css.
   logo: assets/netdryrun-wordmark-white-tm.svg
-  favicon: assets/favicon.ico
+  favicon: assets/favicon.svg
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
