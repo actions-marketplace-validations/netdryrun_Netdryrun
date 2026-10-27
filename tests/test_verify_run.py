@@ -627,3 +627,39 @@ def test_cli_json_report_that_cannot_be_written_is_one_line_and_exit_2(tmp_path,
     err = capsys.readouterr().err.strip().splitlines()
     assert code == 2 and len(err) == 1
     assert err[0].startswith(f"could not write {target}: ") and err[0].endswith("; the verdict was INTENT MATCHED")
+
+
+# --- who supplied the intent, and an intent edited by the change ----------------------------------------------
+
+def test_intent_source_is_reported(tmp_path):
+    res, _ = run_verify(tmp_path, base().snap(), base().snap(), intent_text="intent: []\n", intent_source="mcp")
+    assert res.intent_supplied_by == "mcp" and validate(res)["intent"]["supplied_by"] == "mcp"
+    res, _ = run_verify(tmp_path / "default", base().snap(), base().snap(), intent_text="intent: []\n")
+    assert res.intent_supplied_by == "cli"
+
+
+def test_an_intent_edited_in_the_same_change_is_flagged(tmp_path):
+    lab = repo_lab(tmp_path)
+    (lab / "netdryrun-intent.yml").write_text("intent: []\n")
+    git(lab, "add", "netdryrun-intent.yml")
+    git(lab, "commit", "-q", "-m", "intent")
+    side = capture_side(base().snap())
+    res = vrun.verify(str(lab / "topology.clab.yml"), "HEAD", "HEAD", str(lab / "netdryrun-intent.yml"), side_fn=side)
+    assert vreport.INTENT_EDITED_WARNING not in res.warnings, res.error
+    (lab / "netdryrun-intent.yml").write_text("intent: []\nallow_anywhere: ['10.200.*.0/24']\n")
+    git(lab, "commit", "-q", "-am", "widen")
+    res = vrun.verify(str(lab / "topology.clab.yml"), "HEAD~1", "HEAD", str(lab / "netdryrun-intent.yml"), side_fn=side)
+    assert vreport.INTENT_EDITED_WARNING in res.warnings
+    assert "intent edited in the same change: needs a code-owner review" in vreport.console(res)
+    validate(res)
+
+
+def test_host_kinds_are_refused_unless_unobserved(tmp_path):
+    from netdryrun.lab import Lab
+    topo = tmp_path / "t.clab.yml"
+    topo.write_text("name: t\ntopology:\n  nodes:\n    r1: {kind: linux, image: quay.io/frrouting/frr:10.4.1}\n"
+                    "    x1: {kind: ext-container}\n    br: {kind: bridge}\n")
+    lab = Lab(topo)
+    with pytest.raises(vrun.VerifyInputError, match="x1"):
+        vrun.classify_nodes(lab, {}, [])
+    assert vrun.classify_nodes(lab, {}, ["x1"]) == {"r1": "frr", "x1": "", "br": ""}

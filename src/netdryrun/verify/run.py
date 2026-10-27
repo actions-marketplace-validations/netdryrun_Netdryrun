@@ -34,10 +34,11 @@ from .converge import Inconclusive, stable_snapshot
 from .engine import VerifyError, baseline_problems, match
 from .frr import FrrCollector
 from .intent import IntentError, check_nodes, load_intent
-from .report import ALLOW_WARNING, NO_GUARDS_WARNING, VerifyResult
+from .report import ALLOW_WARNING, INTENT_EDITED_WARNING, NO_GUARDS_WARNING, VerifyResult
 from .snapshot import Snapshot, SnapshotError
 
-HOST_KINDS = ("bridge", "ovs-bridge", "host", "ext-container", "k8s-kind")
+BRIDGE_KINDS = ("bridge", "ovs-bridge")          # never observed: no routing stack
+HOST_KINDS = ("host", "ext-container", "k8s-kind")  # refused unless named in --unobserved
 
 
 class VerifyInputError(RuntimeError):
@@ -322,6 +323,15 @@ def _hash_binds(side: Side) -> None:
                                "refusing to compare")
 
 
+def intent_edited(intent: Path, before: Side, after: Side) -> bool:
+    """Whether the intent file is part of the change: it lies in a side's tree and differs (or exists on one
+    side only) between the two."""
+    def read(p: Path | None) -> bytes | None:
+        return p.read_bytes() if p is not None and p.is_file() else None
+    b, a = before.locate(intent), after.locate(intent)
+    return (b is not None or a is not None) and read(b) != read(a)
+
+
 def check_sides(before: Side, after: Side, log: Callable[[str], None]) -> list[str]:
     """The self-check before booting: print which bound files differ between the sides. If the sources
     differ but every bound file hashes the same, the two sides collapsed into one (exit 2)."""
@@ -348,9 +358,12 @@ def classify_nodes(lab: Lab, overrides: dict[str, str], unobserved: list[str]) -
         raise VerifyInputError(f"--unobserved names node(s) not in the topology: {', '.join(unknown)}")
     out = {}
     for name, node in lab.nodes.items():
-        if name in unobserved or node.kind in HOST_KINDS:
+        if name in unobserved or node.kind in BRIDGE_KINDS:
             out[name] = ""
             continue
+        if node.kind in HOST_KINDS and name not in overrides:
+            raise VerifyInputError(f"node {name} is of kind {node.kind}: verify can't observe it, and an unobserved "
+                                   f"node could hide a change. Pass --unobserved {name} if it has no routing stack")
         drv = overrides.get(name)
         if drv is None:
             try:
@@ -497,9 +510,11 @@ def load_guards(path: str | None, before_spec: str, before: Side):
 def verify(topology: str, before: str, after: str, intent_path: str, *, guards: str | None = None,
            config_dir_name: str | None = None, unobserved: list[str] = (), settle: float = 15.0,
            timeout: float = 300.0, hold: float = 10.0, allow_unhealthy_baseline: bool = False, keep: bool = False,
-           log: Callable[[str], None] = lambda _: None, side_fn=None) -> VerifyResult:
+           log: Callable[[str], None] = lambda _: None, side_fn=None, intent_source: str = "cli") -> VerifyResult:
+    """`intent_source` says who supplied the intent (the CLI user, an MCP caller, the Action); the report
+    echoes it next to the intent."""
     res = VerifyResult(status="error", topology=str(topology), before_spec=before, after_spec=after,
-                       run_id=uuid.uuid4().hex[:12], started=_now())
+                       run_id=uuid.uuid4().hex[:12], started=_now(), intent_supplied_by=intent_source)
     work = Path(tempfile.mkdtemp(prefix="netdryrun-verify-"))
     try:
         res.intent = load_intent(intent_path)
@@ -514,6 +529,8 @@ def verify(topology: str, before: str, after: str, intent_path: str, *, guards: 
         aside = materialize(after, "after", topo, work, config_dir_name)
         res.before_spec, res.after_spec = f"{before}: {bside.desc}", f"{after}: {aside.desc}"
         check_sides(bside, aside, log)
+        if intent_edited(Path(intent_path), bside, aside):
+            res.warnings.append(INTENT_EDITED_WARNING)
         before_topo, after_topo = bside.topology, aside.topology
         gcfg, gsource, res.guards_source = load_guards(guards, before, bside)
         if gcfg is None:

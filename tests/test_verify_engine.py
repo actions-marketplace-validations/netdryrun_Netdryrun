@@ -550,3 +550,16 @@ def test_a_vrf_added_or_removed_on_a_node_is_a_diff_item():
     assert m.status == "failed" and [x.key for x in m.undeclared] == [d.key]
     (d,) = diff(after, before)
     assert d.change == "removed"
+
+
+# --- a neighbor deleted from the config is "session removed", not "goes: down" -------------------------------
+
+def test_a_removed_session_is_its_own_diff_kind_not_goes_down():
+    after = _peer1_down(base())
+    after.drop("edge1", "session", neighbor="10.0.3.2")                 # edge1's neighbor statement deleted
+    line = {"session": {"node": "edge1", "neighbor": "10.0.3.2", "afi": "ipv4-unicast"}, "goes": "down"}
+    m = run(base(), after, [line])
+    assert m.status == "failed" and m.not_happened and "removed" in m.not_happened[0].reason
+    removed = [d for d in m.undeclared if d.key.kind == "session"]
+    assert sorted((d.key.node, d.change, d.kind) for d in removed) == [("edge1", "removed", "session removed"),
+                                                                    ("peer1", "changed", "session")]

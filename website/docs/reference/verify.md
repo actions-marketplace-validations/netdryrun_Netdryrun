@@ -29,7 +29,7 @@ It deploys the lab with the *before* configs, waits for a stable snapshot, destr
 
 **Explained is not the same as safe.** The report echoes the declared intent at the top, for a human to review: an intent that declares a leak explains the leak. `verify` never prints `SAFE TO PROCEED`. A verdict covers the observed control-plane state of this lab (sessions, RIB, BGP paths and advertisements), nothing else.
 
-**The intent must come from outside the change**: the ticket, the operator, or the base branch. A pass is never earned by copying the undeclared items into the intent.
+**The intent must come from outside the change**: the ticket, the operator, or the base branch. A pass is never earned by copying the undeclared items into the intent. The report says who supplied it (`intent.supplied_by`: `cli` from the command line). When the intent file itself differs between `--before` and `--after` (the change edits its own intent), every report carries the warning "intent edited in the same change: needs a code-owner review".
 
 ## Options
 
@@ -40,7 +40,7 @@ It deploys the lab with the *before* configs, waits for a stable snapshot, destr
 | `--json FILE` | | Write the `netdryrun.verify/v1` report. |
 | `--guards FILE` | see below | The standing guards (a `netdryrun.yml`), run on the *after* lab; they must pass. Its `nodes:` settings (`driver`, `setup`) apply to both labs. See [Standing guards](#standing-guards). |
 | `--config-dir DIR` | | With directory sides: the folder each directory stands for, relative to the topology (for example `configs`), when the directories hold only that folder. Every bind must then resolve inside it. With a git ref, it is only checked to exist in the ref. |
-| `--unobserved NODE` | | A node without a routing stack (a host). Repeat for several. A node verify can't classify is an error, never silently skipped. Bridges are never observed. |
+| `--unobserved NODE` | | A node without a routing stack (a host). Repeat for several. A node verify can't classify is an error, never silently skipped: a `linux` node with no known routing image, and the host kinds (`host`, `ext-container`, `k8s-kind`), are refused unless named here. Bridges are never observed. |
 | `--settle` | `15` | Seconds between the two snapshots that must be identical. Must exceed the slowest MRAI or `update-delay` in the lab. |
 | `--timeout` | `300` | Seconds to reach a stable snapshot, per lab. |
 | `--hold` | `10` | The standing guards' hold window. |
@@ -132,7 +132,7 @@ intent:
     goes: down
 ```
 
-The session was established before and isn't after (or is gone). It covers both ends of that one session when both are lab nodes, and **only the routes learned over it**: the paths, received routes and advertisements over the session in its address family, and the RIB entries of prefixes that were learned only over it and are now gone. The report lists them. A failover to a backup path is a best-path change on that node and needs its own line; so does a route disappearing from another node. `afi:` is always required (one line per family), so the whole intent is validated before anything boots.
+The session was established before, is still configured after, and isn't established. **A neighbor deleted from the config is a different difference, `session removed`**, which `goes: down` never covers (the line doesn't happen, and the removed session is undeclared). It covers both ends of that one session when both are lab nodes, and **only the routes learned over it**: the paths, received routes and advertisements over the session in its address family, and the RIB entries of prefixes that were learned only over it and are now gone. The report lists them. A failover to a backup path is a best-path change on that node and needs its own line; so does a route disappearing from another node. `afi:` is always required (one line per family), so the whole intent is validated before anything boots.
 
 ### advertisement
 

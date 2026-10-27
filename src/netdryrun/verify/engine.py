@@ -20,7 +20,8 @@ What each form explains (and nothing else):
                         best included, may change its best flag only), the BGP RIB entry's next hops (when next_hop is
                         listed) or metric (when med is), and changed advertisements of the prefix, by N or to
                         N, that differ only in listed attributes and carry the new best path's values.
-  session goes down     both ends of that one session: its state, the paths, received routes and
+  session goes down     both ends of that one session (each still configured: a neighbor deleted from the
+                        config is a "session removed" difference, never covered): its state, the paths, received routes and
                         advertisements over it (in its address family), and the RIB entries of prefixes
                         that were learned only over it and are now gone. Nothing else: a failover to a
                         backup path is a best-path change and needs its own line.
@@ -66,6 +67,12 @@ class DiffItem:
     @property
     def change(self) -> str:
         return "added" if self.before is None else "removed" if self.after is None else "changed"
+
+    @property
+    def kind(self) -> str:
+        """The diff kind: the item's kind, except a session gone from the config, which is its own kind
+        ("session removed") that `goes: down` never covers."""
+        return "session removed" if self.key.kind == "session" and self.after is None else self.key.kind
 
     @property
     def fields(self) -> tuple[str, ...]:
@@ -448,13 +455,18 @@ def _session(ctx: _Ctx, ln: Line) -> LineResult:
     if far:
         ends.append(far)
     res = LineResult(ln, True)
+    if (n, vrf, nbr) not in ctx.after.sessions:
+        return LineResult(ln, False, f"{n}: the session to {nbr} was removed from the config (a `session removed` "
+                                     "difference); goes: down covers a configured session that stopped, not a "
+                                     "deleted neighbor")
     for node, v, peer in ends:
         s = ctx.after.sessions.get((node, v, peer))
         if s is not None and s.established:
             return LineResult(ln, False, f"{node}: the session to {peer} is still established")
     learned: dict[str, list[str]] = {}
     for node, v, peer in ends:
-        res.explained.add(ItemKey("session", node, v, neighbor=peer))
+        if (node, v, peer) in ctx.after.sessions:      # a far end that deleted its neighbor stays undeclared
+            res.explained.add(ItemKey("session", node, v, neighbor=peer))
         for d in ctx.items:
             k = d.key
             if k.node != node or k.vrf != v or k.kind == "session" or k.afi not in afis or d.change != "removed":

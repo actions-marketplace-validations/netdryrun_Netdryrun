@@ -29,6 +29,8 @@ ALLOW_WARNING = ("allow_anywhere weakens the verdict: every change to the listed
 NO_GUARDS_WARNING = ("no standing guards ran: nothing checked the after lab against the base branch's netdryrun.yml, "
                      "so an intent that declares a leak explains it. Pass --guards, or keep a netdryrun.yml next to "
                      "the topology in the --before ref.")
+INTENT_EDITED_WARNING = ("intent edited in the same change: needs a code-owner review (the intent file differs "
+                         "between --before and --after, so the change wrote its own allowlist)")
 INCONCLUSIVE_ADVICE = "Retry at most once, then escalate. This says nothing about the change."
 
 
@@ -75,6 +77,8 @@ def _diag(key, containers: dict) -> str:
 
 def _summary(d) -> str:
     where = d.key.where()
+    if d.kind == "session removed":
+        return f"{where}: session removed (the neighbor is gone from the config)"
     if d.change != "changed":
         return f"{where}: {d.change}"
     b, a = _flat(d.before), _flat(d.after)
