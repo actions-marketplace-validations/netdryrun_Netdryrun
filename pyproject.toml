@@ -14,7 +14,7 @@ keywords = [
   "network testing", "network automation", "bgp", "containerlab", "frr", "srlinux",
   "netdevops", "network change validation", "mcp", "ci",
 ]
-# The license is the SPDX expression above (PEP 639); a License classifier alongside it is rejected by the build.
+# The license is the SPDX expression above (PEP 639 License-Expression). PEP 639 deprecates License classifiers, so none is listed.
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Environment :: Console",
