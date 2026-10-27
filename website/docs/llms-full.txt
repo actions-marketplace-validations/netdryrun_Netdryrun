@@ -2248,6 +2248,10 @@ Configure a stdio server with command `netdryrun` and argument `mcp`. Most clien
 
 Without installing, use `"command": "uvx", "args": ["netdryrun", "mcp"]`. On Windows, use the `wsl.exe` command and arguments shown above. Set the client's tool-call timeout to at least 5 minutes.
 
+### Not supported: Docker MCP Toolkit and other containerized gateways
+
+Netdryrun starts containerlab labs, so the server needs the Docker socket and root-equivalent rights on the machine that runs the labs. The Docker MCP Toolkit runs each server in a container that can't mount the Docker socket and is capped at 1 CPU and 2 GB, so the tools can't boot a lab there. The same goes for hosted or sandboxed MCP runners without Docker. Add `netdryrun mcp` to your client directly, as above.
+
 ## Workflow
 
 1. The agent writes its proposed change into the lab's configs (in a lab folder with a containerlab topology and a `netdryrun.yml`).
