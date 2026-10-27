@@ -1,0 +1,14 @@
+kind: implement
+truth:
+  verdict: safe
+  decision: [apply]
+editable: [configs/r1.conf]
+hidden_checks:
+  - {type: route, node: r3, prefix: 192.168.1.0/24, protocol: bgp, name: "HIDDEN r3 still gets r1's 192.168.1.0/24"}
+  - {type: route, node: r2, prefix: 192.168.3.0/24, protocol: bgp, name: "HIDDEN r2 still gets r3's 192.168.3.0/24"}
+reference: |
+  aggregate-address 192.168.0.0/16 (without summary-only) under address-family ipv4 unicast, or
+  network 192.168.0.0/16 plus a static route for it (FRR checks that a network statement's prefix is in the RIB).
+traps: |
+  A bare `network 192.168.0.0/16` is not announced (no matching route in the RIB), so the ticket checks
+  fail; `summary-only` suppresses 192.168.1.0/24 and fails "r2 still gets r1's 192.168.1.0/24".

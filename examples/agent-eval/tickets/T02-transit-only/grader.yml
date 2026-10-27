@@ -1,0 +1,12 @@
+kind: implement
+truth:
+  verdict: safe
+  decision: [apply]
+editable: [configs/edge1.conf]
+hidden_checks:
+  - {type: route, node: edge1, prefix: 10.101.0.0/24, protocol: bgp, name: "HIDDEN edge1 accepts 10.101.0.0/24 from cust1"}
+  - {type: bgp_prefixes, node: up1, neighbor: 10.0.2.1, max: 3, name: "HIDDEN up1 gets at most our 3 prefixes"}
+reference: |
+  Add 10.101.0.0/24 to CUSTOMER-IN; announce it to up1 only, for example with a second prefix-list
+  matched in TO-UPSTREAM, leaving OUR-ROUTES (used by TO-PEER) unchanged.
+traps: Adding the block to OUR-ROUTES, the obvious change, sends it to peer1 too and fails the transit-only check and the 2-prefix limit.

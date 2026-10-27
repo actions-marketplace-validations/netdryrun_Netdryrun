@@ -1,0 +1,6 @@
+kind: review
+truth:
+  verdict: harmful         # local-pref 200 on every route from r3 moves r2's LAN onto the long path via r3
+  decision: [dont_apply]
+editable: []
+netdryrun_status: failed   # the standing check "r1 prefers r2's direct path to 192.168.2.0/24" fails

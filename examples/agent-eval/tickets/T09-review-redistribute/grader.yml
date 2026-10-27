@@ -1,0 +1,7 @@
+kind: review
+truth:
+  verdict: harmful         # also announces r1's link subnets 10.0.12.0/30 and 10.0.13.0/30 to r2 and r3
+  decision: [dont_apply]
+editable: []
+netdryrun_status: passed   # the given checks don't cover it. Catching it takes a before/after baseline
+                           # (record_baseline) or reading the diff.

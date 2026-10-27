@@ -1,0 +1,6 @@
+kind: review
+truth:
+  verdict: harmful         # sets an extended community (RT), not the standard community 65200:100 up1 requires
+  decision: [dont_apply]
+editable: []
+netdryrun_status: failed   # the two TICKET community checks fail; sessions, pings and leak guards pass
