@@ -369,7 +369,7 @@ def _peer1_down(lab):
 
 def test_session_goes_down_covers_only_routes_learned_over_it():
     after = _peer1_down(base())
-    line = {"session": {"node": "edge1", "neighbor": "10.0.3.2"}, "goes": "down"}
+    line = {"session": {"node": "edge1", "neighbor": "10.0.3.2", "afi": "ipv4-unicast"}, "goes": "down"}
     m = run(base(), after, [line])
     assert m.status == "failed"
     assert undeclared(m) == {("adj_out", "edge1", "198.18.0.0/24"), ("path", "cust1", "198.18.0.0/24"),
@@ -382,7 +382,7 @@ def test_session_goes_down_covers_only_routes_learned_over_it():
 
 
 def test_session_goes_down_but_it_stayed_up():
-    m = run(base(), base(), [{"session": {"node": "edge1", "neighbor": "10.0.3.2"}, "goes": "down"}])
+    m = run(base(), base(), [{"session": {"node": "edge1", "neighbor": "10.0.3.2", "afi": "ipv4-unicast"}, "goes": "down"}])
     assert m.status == "failed" and m.not_happened
 
 
@@ -401,13 +401,13 @@ def test_session_goes_down_does_not_explain_a_failover():
     after.drop("edge1", "rib", "198.18.0.0/24")
     after.drop("peer1", "path", "10.100.0.0/24")
     after.drop("peer1", "rib", "10.100.0.0/24")
-    m = run(before, after, [{"session": {"node": "edge1", "neighbor": "10.0.3.2"}, "goes": "down"}])
+    m = run(before, after, [{"session": {"node": "edge1", "neighbor": "10.0.3.2", "afi": "ipv4-unicast"}, "goes": "down"}])
     assert m.status == "failed"
     assert ("path", "edge1", "198.51.100.0/24") in undeclared(m)     # the backup became best
     assert ("rib", "edge1", "198.51.100.0/24") in undeclared(m)
 
 
-def test_session_line_needs_the_afi_when_the_session_carries_several():
+def test_session_line_needs_the_afi_even_when_the_session_carries_several():
     before = base()
     before.session("edge1", "10.0.3.2", session("10.0.3.1", afis=("ipv4-unicast", "ipv6-unicast"), remote_as=65003))
     after = base()

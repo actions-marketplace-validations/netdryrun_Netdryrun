@@ -602,3 +602,28 @@ def test_a_vrf_diff_item_in_the_report(tmp_path):
     (item,) = validate(res)["undeclared"]
     assert (item["kind"], item["vrf"], item["change"]) == ("vrf", "cust", "added")
     assert item["next_diagnostic"].endswith("'show vrf'") and "vrf cust" in item["summary"]
+
+
+# --- validation before booting, and the report-write rule (review finding 10) --------------------------------
+
+def test_a_session_line_without_afi_is_exit_2_before_anything_boots(tmp_path):
+    res, side = run_verify(tmp_path, base().snap(), base().snap(),
+                           intent_text="intent:\n  - {session: {node: edge1, neighbor: 10.0.3.2}, goes: down}\n")
+    assert res.exit_code == 2 and "afi" in res.error and not side.calls
+
+
+@pytest.mark.parametrize("how", ["directory", "render"])
+def test_cli_json_report_that_cannot_be_written_is_one_line_and_exit_2(tmp_path, monkeypatch, capsys, how):
+    res = vreport.VerifyResult(status="matched", run_id="x")
+    monkeypatch.setattr(vrun, "verify", lambda *a, **k: res)
+    target = tmp_path / "r.json"
+    if how == "directory":
+        target.mkdir()
+    else:
+        def boom(_r):
+            raise ValueError("Out of range float values are not JSON compliant")
+        monkeypatch.setattr(vreport, "to_json", boom)
+    code = cli.main(["verify", "t.yml", "--before", "a", "--after", "b", "--intent", "i.yml", "--json", str(target)])
+    err = capsys.readouterr().err.strip().splitlines()
+    assert code == 2 and len(err) == 1
+    assert err[0].startswith(f"could not write {target}: ") and err[0].endswith("; the verdict was INTENT MATCHED")

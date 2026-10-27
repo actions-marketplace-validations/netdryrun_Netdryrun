@@ -79,14 +79,14 @@ intent:
   - prefix: 203.0.113.0/24
     best_path_on: edge1
     to: {local_pref: 200}
-  - session: {node: edge1, neighbor: 10.0.9.2}
+  - session: {node: edge1, neighbor: 10.0.9.2, afi: ipv4-unicast}
     goes: down
   - prefix: 192.0.2.128/25
     disappears_from: [cust1]
 allow_anywhere: ["10.200.*.0/24"]
 ```
 
-`intent: []` declares that nothing changes. A file without `intent:`, an unknown key, a wrong type, a prefix with host bits, two lines about the same route on the same node, or a node that is not in the topology is an error (exit code `2`).
+`intent: []` declares that nothing changes. A file without `intent:`, an unknown key, a wrong type, a prefix with host bits, a session line without `afi:`, two lines about the same route on the same node, or a node that is not in the topology is an error (exit code `2`). The whole intent is validated before any lab boots.
 
 ### appears_on
 
@@ -132,7 +132,7 @@ intent:
     goes: down
 ```
 
-The session was established before and isn't after (or is gone). It covers both ends of that one session when both are lab nodes, and **only the routes learned over it**: the paths, received routes and advertisements over the session in its address family, and the RIB entries of prefixes that were learned only over it and are now gone. The report lists them. A failover to a backup path is a best-path change on that node and needs its own line; so does a route disappearing from another node. `afi:` is required when the session carries several address families (one line per family).
+The session was established before and isn't after (or is gone). It covers both ends of that one session when both are lab nodes, and **only the routes learned over it**: the paths, received routes and advertisements over the session in its address family, and the RIB entries of prefixes that were learned only over it and are now gone. The report lists them. A failover to a backup path is a best-path change on that node and needs its own line; so does a route disappearing from another node. `afi:` is always required (one line per family), so the whole intent is validated before anything boots.
 
 ### advertisement
 

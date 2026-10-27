@@ -17,7 +17,7 @@ def test_every_form_parses():
         {"prefix": "10.101.0.0/24", "appears_on": ["up1", "peer1"], "with": {"from": "10.0.2.1", "as_path": "65000 65101",
                                                                            "communities": ["no-export", "65000:1"]}},
         {"prefix": "203.0.113.0/24", "best_path_on": "edge1", "to": {"local_pref": 200, "med": None}},
-        {"session": {"node": "edge1", "neighbor": "10.0.9.2"}, "goes": "down"},
+        {"session": {"node": "edge1", "neighbor": "10.0.9.2", "afi": "ipv4-unicast"}, "goes": "down"},
         {"prefix": "192.0.2.128/25", "disappears_from": "cust1", "including_received_only": True},
         {"prefix": "198.51.100.0/24", "advertisement": {"node": "edge1", "neighbor": "192.0.2.9"}, "goes": "added"},
         {"prefix": "2001:db8::/32", "vrf": "cust", "advertisement": {"node": "edge1", "neighbor": "2001:db8::9"},
@@ -27,7 +27,7 @@ def test_every_form_parses():
     assert a.form == "appears_on" and a.nodes == ("up1", "peer1") and a.state == "installed"
     assert a.pins["as_path"] == AsPath.parse("65000 65101") and a.pins["communities"] == ("65000:1", "65535:65281")
     assert b.to == {"local_pref": 200, "med": None} and b.vrf == "default"
-    assert s.form == "session" and s.neighbor == "10.0.9.2" and s.goes == "down" and s.afi is None
+    assert s.form == "session" and s.neighbor == "10.0.9.2" and s.goes == "down" and s.afi == "ipv4-unicast"
     assert d.nodes == ("cust1",) and d.including_received_only
     assert adv.goes == "added" and adv.neighbor == "192.0.2.9"
     assert adv6.vrf == "cust" and adv6.to["as_path"].render() == "65000 65000"
@@ -163,3 +163,12 @@ def test_advertisement_with_is_only_for_goes_added():
                 {**adv, "goes": "added", "with": {"from": "10.0.0.1"}}, {**adv, "goes": "added", "with": {"protocol": "bgp"}}):
         with pytest.raises(IntentError):
             parse([bad])
+
+
+# --- the whole intent is validated before anything boots (review finding 10) ---------------------------------
+
+def test_a_session_line_names_its_address_family():
+    with pytest.raises(IntentError, match="afi"):
+        parse([{"session": {"node": "edge1", "neighbor": "10.0.9.2"}, "goes": "down"}])
+    ln = parse([{"session": {"node": "edge1", "neighbor": "10.0.9.2", "afi": "ipv4-unicast"}, "goes": "down"}]).lines[0]
+    assert ln.afi == "ipv4-unicast"

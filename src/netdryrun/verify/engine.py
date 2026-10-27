@@ -34,7 +34,7 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass, field, fields
 
-from .intent import Intent, IntentError, Line
+from .intent import Intent, Line
 from .snapshot import BgpAttrs, BgpPath, ItemKey, RibEntry, Session, Snapshot, SnapshotError
 
 STATUSES = ("no_change", "matched", "failed")
@@ -440,12 +440,9 @@ def _session(ctx: _Ctx, ln: Line) -> LineResult:
         return LineResult(ln, False, f"{n}: no BGP session to {nbr} before the change")
     if not bs.established:
         return LineResult(ln, False, f"{n}: the session to {nbr} was not established before ({bs.state})")
-    if len(bs.afis) > 1 and ln.afi is None:
-        raise IntentError(f"intent[{ln.index}]: the session {n} -> {nbr} carries {', '.join(bs.afis)}; "
-                          "add afi: to say which address family's routes the line covers")
-    if ln.afi is not None and ln.afi not in bs.afis:
+    if ln.afi not in bs.afis:
         return LineResult(ln, False, f"{n}: the session to {nbr} doesn't carry {ln.afi} ({', '.join(bs.afis) or 'none'})")
-    afis = {(ln.afi or f).split("-")[0] for f in ([ln.afi] if ln.afi else bs.afis)}
+    afis = {ln.afi.split("-")[0]}
     ends = [(n, vrf, nbr)]
     far = ctx.far.get((n, vrf, nbr))
     if far:

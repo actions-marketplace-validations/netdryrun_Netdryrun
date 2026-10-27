@@ -197,8 +197,9 @@ def _cmd_verify(args) -> int:
     if args.json:
         try:
             Path(args.json).write_text(vreport.to_json(res), encoding="utf-8")
-        except OSError as e:
-            print(f"could not write {args.json}: {e.strerror or e}; the verdict was {res.verdict}", file=sys.stderr)
+        except (OSError, ValueError, TypeError) as e:   # unwritable, or a report that can't be rendered
+            reason = (e.strerror if isinstance(e, OSError) else None) or e
+            print(f"could not write {args.json}: {reason}; the verdict was {res.verdict}", file=sys.stderr)
             return 2
         print(f"  wrote JSON report: {args.json}")
     return res.exit_code

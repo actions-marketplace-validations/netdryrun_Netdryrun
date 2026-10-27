@@ -7,8 +7,8 @@
       - prefix: 203.0.113.0/24
         best_path_on: edge1
         to: {local_pref: 200}                 # listed values exact, every other attribute frozen
-      - session: {node: edge1, neighbor: 10.0.9.2}
-        goes: down
+      - session: {node: edge1, neighbor: 10.0.9.2, afi: ipv4-unicast}
+        goes: down                            # afi: always (validated before anything boots)
       - prefix: 192.0.2.128/25
         disappears_from: [cust1]              # selected before; gone after
         including_received_only: true
@@ -249,13 +249,16 @@ def _line(i: int, raw) -> Line:
     if form == "session":
         s = raw["session"]
         if not isinstance(s, dict) or not {"node", "neighbor"} <= set(s) or set(s) - set(SESSION_KEYS):
-            raise IntentError(f"{where}: session must be a mapping with node and neighbor (and optional vrf, afi)")
+            raise IntentError(f"{where}: session must be a mapping with node, neighbor and afi (and optional vrf)")
         if raw.get("goes") != "down":
             raise IntentError(f"{where}: a session line needs `goes: down` (the only session change verify 0.4 declares)")
         if not isinstance(s["node"], str) or not s["node"]:
             raise IntentError(f"{where}: session.node must be a node name")
         afi = s.get("afi")
-        if afi is not None and afi not in AFI_SAFIS:
+        if afi is None:
+            raise IntentError(f"{where}: a session line needs afi: ({' or '.join(AFI_SAFIS)}), the address family "
+                              "whose routes it covers; it is checked before anything boots")
+        if afi not in AFI_SAFIS:
             raise IntentError(f"{where}: session.afi must be one of {', '.join(AFI_SAFIS)}, got {afi!r}")
         nbr = _ip(where, "session.neighbor", s["neighbor"])
         vrf = _vrf(where, s.get("vrf"))
