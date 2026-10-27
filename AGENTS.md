@@ -4,8 +4,8 @@ If you are an AI agent (or building one) that proposes or applies network config
 
 ## When to run it
 - **Before proposing** a routing or policy change: run `netdryrun record <topology> --deploy` once to snapshot today's behavior as checks (or use the existing `netdryrun.yml`).
-- **When the change must not change behavior** (a refactor, a cleanup): a `passed` on the given checks is not enough, because it covers only what they check. Snapshot the unchanged config with `record_baseline` (MCP) or `netdryrun record`, then run those checks against the change too.
-- **On Windows with the server in WSL**, pass the lab folder's Windows path (`C:\...`) or its WSL path (`/mnt/c/...`); the MCP tools accept both. Use the Windows path with your own file tools.
+- **When the change must not change behavior** (a refactor, a cleanup): a `passed` on the given checks is not enough, because it covers only what they check. Record the baseline before applying the change (on a review ticket, revert it in a scratch copy first) with `record_baseline` (MCP) or `netdryrun record`, then run those checks against the change too. `record_baseline` returns the checks as YAML and writes nothing.
+- **On Windows with the server in WSL**, pass the lab folder's Windows path (`C:\...`) or its WSL path (`/mnt/c/...`); the MCP tools accept both (Netdryrun 0.3.1 and later; with 0.3.0, pass `/mnt/c/...`). Use the Windows path with your own file tools.
 - **After editing configs** in the lab folder: run `netdryrun run <folder> --json report.json`.
 - **Before asking a human to approve:** include the verdict and the failed checks with their evidence in your summary.
 

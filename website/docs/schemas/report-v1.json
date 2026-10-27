@@ -9,8 +9,9 @@
   "properties": {
     "schema": {"const": "netdryrun.report/v1"},
     "status": {
-      "description": "passed: every check passed. failed: at least one check failed. error: the run could not complete (bad config, lab did not deploy); says nothing about the change. inconclusive: checks failed but the lab never reached a testable state; says nothing about the change.",
-      "enum": ["passed", "failed", "error", "inconclusive"]
+      "description": "Known values: passed (every check passed), failed (at least one check failed), error (the run could not complete: bad config, lab did not deploy; says nothing about the change), inconclusive (checks failed but the lab never reached a testable state; says nothing about the change). v1 may add values: treat any value other than passed as not safe to apply.",
+      "type": "string",
+      "minLength": 1
     },
     "lab": {"type": "string", "description": "containerlab lab name (empty if the topology could not be read)"},
     "config": {"type": "string", "description": "Path of the netdryrun.yml that was run"},
@@ -70,7 +71,11 @@
                    "evidence"],
       "properties": {
         "name": {"type": "string"},
-        "type": {"enum": ["bgp_session", "bgp_prefixes", "route", "bgp_route", "ping"]},
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Check type. Known values: bgp_session, bgp_prefixes, route, bgp_route, ping. v1 may add types; params then holds that type's keys."
+        },
         "params": {
           "type": "object",
           "description": "The check's keys from netdryrun.yml after normalization (prefixes and addresses in canonical form), without name, type, timeout and hold. Keys per type: see the check_types MCP tool or https://netdryrun.com/reference/config/"

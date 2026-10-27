@@ -7,6 +7,6 @@
   "folder": "C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\haiku2-fixed\\T03-review-open-filters",
   "model_requested": "haiku",
   "path_style": "windows",
-  "netdryrun": "/home/dmin/.venvs/ndr-eval-branch/bin/netdryrun",
+  "netdryrun": "/home/<user>/.venvs/ndr-eval-branch/bin/netdryrun",
   "agents_ref": "0975193"
 }

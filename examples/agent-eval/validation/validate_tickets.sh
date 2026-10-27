@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Ground-truth validation of the agent-eval tickets: run each ticket's reference / proposed change.
 set -u
-SRC=/mnt/c/NetCL\ Business/wt/agent-eval/examples/agent-eval/tickets
+SRC="$(cd "$(dirname "$0")/../tickets" && pwd)"
 NDR=~/.venvs/ndr-eval/bin/netdryrun
 W=/tmp/ndr-val; rm -rf $W; mkdir -p $W/out
 prep() { # prep <ticket> <name>

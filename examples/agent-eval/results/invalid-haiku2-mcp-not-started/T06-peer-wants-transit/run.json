@@ -7,6 +7,6 @@
   "folder": "C:\\Users\\<user>\\AppData\\Local\\Temp\\ndr-eval\\haiku2-fixed\\T06-peer-wants-transit",
   "model_requested": "haiku",
   "path_style": "windows",
-  "netdryrun": "C:/Program Files/Git/home/dmin/.venvs/ndr-eval-branch/bin/netdryrun",
+  "netdryrun": "C:/Program Files/Git/home/<user>/.venvs/ndr-eval-branch/bin/netdryrun",
   "agents_ref": "0975193"
 }

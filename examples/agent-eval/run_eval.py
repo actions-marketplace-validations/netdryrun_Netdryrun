@@ -27,7 +27,7 @@ RESULTS = HERE / "results"
 REPO = HERE.parents[1]
 WORK = Path(os.environ.get("NDR_EVAL_WORK", Path(os.environ["LOCALAPPDATA"]) / "Temp" / "ndr-eval"))
 DISTRO = os.environ.get("NDR_EVAL_DISTRO", "Ubuntu-22.04")
-NDR = os.environ.get("NDR_EVAL_NETDRYRUN", "/home/dmin/.venvs/ndr-eval/bin/netdryrun")
+NDR = os.environ.get("NDR_EVAL_NETDRYRUN", "")  # required for run and grade: the netdryrun binary inside WSL
 CLAUDE = os.environ.get("NDR_EVAL_CLAUDE") or shutil.which("claude.exe") or str(
     Path(os.environ.get("APPDATA", "")) / "npm/node_modules/@anthropic-ai/claude-code/bin/claude.exe")
 TIME_LIMIT = 1800
@@ -74,9 +74,10 @@ def snapshot(folder: Path) -> dict[str, bytes]:
 
 def run_one(tdir: Path, run: str, model: str | None, path_style: str = "wsl") -> dict:
     name = tdir.name
-    if not NDR.startswith("/") or ":" in NDR:
+    if not NDR.startswith("/") or ":" in NDR:  # also catches an unset NDR_EVAL_NETDRYRUN
         # Git Bash rewrites /home/... in an exported variable to C:/Program Files/Git/home/...: the server would not start
-        raise SystemExit(f"NDR_EVAL_NETDRYRUN must be a Linux path inside WSL, got {NDR!r} (from Git Bash, set MSYS_NO_PATHCONV=1)")
+        raise SystemExit(f"NDR_EVAL_NETDRYRUN must be the absolute path of netdryrun inside WSL, got {NDR!r} "
+                         "(from Git Bash, also set MSYS_NO_PATHCONV=1)")
     out = RESULTS / run / name
     out.mkdir(parents=True, exist_ok=True)
     folder = WORK / run / name
@@ -193,6 +194,8 @@ def parse_transcript(path: Path) -> dict:
 
 def wsl_netdryrun(folder: Path, extra_checks: list[dict], label: str) -> dict:
     """Rerun a folder independently in WSL (a copy in /tmp, with extra checks appended), return the report."""
+    if not NDR.startswith("/"):
+        raise SystemExit("grading reruns the lab: set NDR_EVAL_NETDRYRUN to netdryrun inside WSL, or pass --no-rerun")
     script = HERE / "grade_rerun.sh"
     for attempt in range(3):  # status error = the lab didn't deploy (e.g. a Docker address race with another lab): retry
         proc = subprocess.run(["wsl.exe", "-d", DISTRO, "--", "bash", wsl_path(script), wsl_path(folder), label,

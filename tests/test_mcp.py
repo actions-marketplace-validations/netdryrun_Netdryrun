@@ -54,3 +54,19 @@ def test_windows_paths_reach_the_server_in_wsl(tmp_path, monkeypatch):
     (lab / "topology.clab.yml").write_text("name: t\ntopology:\n  nodes:\n    r1: {kind: linux, image: frr}\n")
     (lab / "netdryrun.yml").write_text("lab: topology.clab.yml\nchecks:\n  - {type: route, node: r1, prefix: 10.0.0.0/24}\n")
     assert json.loads(mcp_server.validate(r"C:\lab"))["valid"] is True
+
+
+@pytest.mark.skipif(os.name != "posix", reason="the server runs on Linux")
+def test_windows_paths_stay_inside_netdryrun_mcp_root(tmp_path, monkeypatch):
+    # a Windows path is translated first, then held to NETDRYRUN_MCP_ROOT like any other: .. can't step outside
+    from netdryrun import mcp_server
+    monkeypatch.setattr(mcp_server, "WSL_MOUNTS", tmp_path)
+    for name in ("lab", "other"):
+        d = tmp_path / "c" / name
+        d.mkdir(parents=True)
+        (d / "topology.clab.yml").write_text("name: t\ntopology:\n  nodes:\n    r1: {kind: linux, image: frr}\n")
+        (d / "netdryrun.yml").write_text("lab: topology.clab.yml\nchecks:\n  - {type: route, node: r1, prefix: 10.0.0.0/24}\n")
+    monkeypatch.setenv("NETDRYRUN_MCP_ROOT", str(tmp_path / "c" / "lab"))
+    assert json.loads(mcp_server.validate(r"C:\lab"))["valid"] is True
+    out = json.loads(mcp_server.validate(r"C:\lab\..\other"))
+    assert out["valid"] is False and "outside NETDRYRUN_MCP_ROOT" in out["error"]

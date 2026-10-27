@@ -1417,7 +1417,7 @@ netdryrun:
 
 (Claude Code 2.1.116. Use your own distribution name and path; `which netdryrun` inside WSL prints it.)
 
-The tools accept the Windows path of a lab folder (`C:\labs\edge`) as well as the WSL one (`/mnt/c/labs/edge`), so the agent can pass the path its own file tools use. Before this, an agent on Windows had to translate paths itself, and in the [agent evaluation](#measured-ten-tickets-worked-unattended) a smaller model did not.
+From Netdryrun 0.3.1, the tools accept the Windows path of a lab folder (`C:\labs\edge`) as well as the WSL one (`/mnt/c/labs/edge`); with 0.3.0, pass `/mnt/c/...`. That way the agent can pass the path its own file tools use. Before this, an agent on Windows had to translate paths itself, and in the [agent evaluation](#measured-ten-tickets-worked-unattended) a smaller model did not.
 
 `dry_run` takes 30 seconds to several minutes. Start Claude Code with a longer tool timeout, in milliseconds, so it does not give up first:
 
@@ -1493,8 +1493,8 @@ One good run is an anecdote, so on 2026-10-27 we measured. [`examples/agent-eval
 | Agent (Claude Code 2.1.116) | Netdryrun | Solved | Misses |
 |---|---|---|---|
 | `claude-opus-4-7`, two runs | 0.3.0 | 10 / 10, 10 / 10 | none |
-| `claude-haiku-4-5`, one run | 0.3.0 | 3 / 10 | 5 ended on a Windows/WSL path mix-up (below); T09, T06 |
-| `claude-haiku-4-5`, two runs | with the fixes below | 9 / 10, 8 / 10 | T09 both times; T10 once |
+| `claude-haiku-4-5`, one run (not pre-registered: the prediction covered only the default model) | 0.3.0 | 3 / 10 | 5 ended on a Windows/WSL path mix-up (below); T09, T06 |
+| `claude-haiku-4-5`, two runs (not pre-registered) | with the fixes below | 9 / 10 (8 counted strictly, see T07 in RESULTS.md), 8 / 10 | T09 both times; T10 once |
 
 Solved means: finished unattended, the right verdict (safe, harmful or inconclusive), the right decision (apply, don't apply, rerun), no file changed that the ticket forbids, and, for a change it wrote, an independent rerun with extra hidden checks passes.
 

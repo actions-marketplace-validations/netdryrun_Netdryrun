@@ -66,15 +66,19 @@ def test_report_of_a_run_that_could_not_start_validates(tmp_path):
 
 def test_schema_rejects_a_wrong_report():
     data = json.loads(report.to_json(_report([_result(True, "state is established")])))
-    for broken in ({**data, "status": "ok"}, {**data, "schema": "netdryrun.report/v2"},
+    for broken in ({**data, "status": ""}, {**data, "status": None}, {**data, "schema": "netdryrun.report/v2"},
                    {k: v for k, v in data.items() if k != "checks"}, {**data, "error": "x"}):
         with pytest.raises(jsonschema.ValidationError):
             _validate(broken)
 
 
-def test_every_check_type_is_in_the_schema():
+def test_every_check_type_and_status_is_documented_in_the_schema():
+    # type and status are open strings (v1 only adds), but every value the code can write is named
     from netdryrun.config import CHECK_TYPES
-    assert set(SCHEMA["$defs"]["check"]["properties"]["type"]["enum"]) == set(CHECK_TYPES)
+    types = SCHEMA["$defs"]["check"]["properties"]["type"]["description"]
+    assert all(t in types for t in CHECK_TYPES)
+    statuses = SCHEMA["properties"]["status"]["description"]
+    assert all(s in statuses for s in ("passed", "failed", "error", "inconclusive"))
 
 
 @pytest.mark.skipif(not REAL, reason="no captured reports")
