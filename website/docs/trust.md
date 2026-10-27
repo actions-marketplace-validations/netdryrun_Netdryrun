@@ -50,6 +50,10 @@ What follows from that, by design:
 
 The one exception is opt-in: if you set `cloud: true` on the GitHub Action, the Action uploads the JSON report to Netdryrun Cloud. The report contains raw command output from your lab devices (configs and routing tables), which can reveal your test network's addressing and topology. Leave `cloud` off and nothing is uploaded.
 
+**No AI inside the tool.** The CLI, the GitHub Action and the MCP server contain no AI model and call no AI service; verdicts come from checks run against your lab. When an AI agent uses the MCP server, the agent sends whatever it chooses to the model provider *you* picked; Netdryrun is not part of that path.
+
+**AI in how we build it.** Development is done with Anthropic's Claude; releases are also reviewed by OpenAI and xAI models ([how it's built](how-its-built.md)). For a paid runnable-lab order, your sanitized configs are processed only with Anthropic's Claude, under terms that don't allow training on them, and deleted 30 days after delivery.
+
 **This website** is static documentation hosted on GitHub Pages. It sets no cookies, has no analytics and no forms, and serves its fonts itself, so your browser contacts no third party. GitHub, as the host, receives your IP address and request details to serve the pages.
 
 ## Trademarks
