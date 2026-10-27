@@ -13,7 +13,7 @@ If you are an AI agent (or building one) that proposes or applies network config
 | Signal | Meaning | What you should do |
 |---|---|---|
 | exit code `0`, `status: passed` | Every check passed after convergence | Present the change with the evidence. This proves only the checks that exist, in this lab |
-| exit code `1`, `status: failed` | At least one check failed | Read `checks[].detail` and `checks[].evidence` for the failed ones, fix the config, rerun. First rule out a broken lab: the inconclusive rule is conservative, so a lab where a daemon never started can still come back `failed`. If failed checks have `unready: true` (MCP) or details like `error: ... bgpd is not running` on nodes your change doesn't explain, report the lab problem instead of rewriting the change, and don't apply it |
+| exit code `1`, `status: failed` | At least one check failed | Read `checks[].detail` and `checks[].evidence` for the failed ones, fix the config, rerun. First rule out a broken lab: the inconclusive rule is conservative, so a lab where a daemon never started can still come back `failed`. If failed checks have `unready: true` (MCP, Netdryrun 0.3.1 and later) or details like `error: ... bgpd is not running` on nodes your change doesn't explain, report the lab problem instead of rewriting the change, and don't apply it |
 | exit code `2`, `status: error` | Config or lab problem (bad YAML, unknown node, lab didn't start) | Fix the setup; this says nothing about your change |
 | exit code `3`, `status: inconclusive` | Checks failed, but the lab never reached a testable state: nothing passed anywhere, and the failing nodes never returned usable BGP state (CLI not answering, or no BGP neighbors at all). `inconclusive_reason` says what was seen | Rerun, perhaps with a longer `timeout`. Don't rewrite your change because of it, and don't apply it either: this says nothing about your change |
 
@@ -27,6 +27,6 @@ A configured session that is down always counts as `failed`, never `inconclusive
 - Netdryrun never touches production devices. Only run topologies you were given or created in the lab folder.
 
 ## MCP
-`netdryrun mcp` starts an MCP server (stdio) with the tools <!-- facts:mcp_tools -->`dry_run`, `run_checks`, `record_baseline`, `validate` and `check_types`<!-- /facts:mcp_tools -->. Each result has a separate `verdict` field: `SAFE TO PROCEED`, `DO NOT APPLY THIS CHANGE`, or `INCONCLUSIVE: the lab did not reach a testable state; this says nothing about your change. Do not apply it until a run passes.` Add it with `claude mcp add netdryrun -- netdryrun mcp`, or run it with `uvx netdryrun mcp`.
+`netdryrun mcp` starts an MCP server (stdio) with the tools <!-- facts:mcp_tools -->`dry_run`, `run_checks`, `record_baseline`, `validate` and `check_types`<!-- /facts:mcp_tools -->. Each result has a separate `verdict` field: `SAFE TO PROCEED`, `DO NOT APPLY THIS CHANGE`, or `INCONCLUSIVE: the lab did not reach a testable state; this says nothing about your change. Do not apply it until a run passes.` `SAFE TO PROCEED` means only that every check in the file passed in the lab; it says nothing about behavior no check covers. Add it with `claude mcp add netdryrun -- netdryrun mcp`, or run it with `uvx netdryrun mcp`.
 
 Docs: https://netdryrun.com/ai-agents/ · Full docs in one file: https://netdryrun.com/llms-full.txt

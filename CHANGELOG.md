@@ -1,8 +1,28 @@
 # Changelog
 
-## Unreleased
+## 0.3.1 (unreleased)
 
-- **Fix: `present: false` on SR Linux no longer fails on the router's own routes.** SR Linux lists its own static and interface routes in its BGP RIB as locally originated paths (neighbor `0.0.0.0`), whether or not an export policy advertises them; this was seen live on SR Linux 26.7.2. So on a router with a static default, `bgp_route` with `present: false` and `route` with `protocol: bgp, present: false` for `0.0.0.0/0` failed even when no peer sent a default. Those rows no longer count for `present: false`, and the `route` check no longer reports them as BGP routes. Best-path checks (`bgp_route` with attributes) still read them, so asserting `as_path: ""` on a router's own route works as before. Found while building the new `examples/srl-hidden-leak` lab.
+Upgrade if you use 0.3.0 or the `netdryrun/netdryrun@v0.3.0` Action: this release closes the injection paths listed under Security, found by a security review after 0.3.0 was tagged.
+
+### Security
+
+- **Names that reach a device command are checked.** `vrf` names are restricted to letters, digits and `. _ : -` (at most 64 characters), and `link_down` interface names to Linux interface names (at most 15 letters, digits and `. _ @ -`), before they go into `vtysh -c`, `sr_cli`, `Cli -c` or `ip link`. Before, a `netdryrun.yml` with a newline or a pipe in one of these names could run a second command inside a lab node. Configs that used other characters now fail validation (exit code `2`).
+- **SR Linux:** the `attr-id` and the neighbor address read from device output are checked before they go back into a CLI command, so output from a lab node can't add to that command.
+- **Markdown summary and PR comment are inert.** HTML, links, images, `@mentions` and `#123` references from configs or device output are escaped, and code blocks are sized so device output can't close them. Before, text from a lab could forge content in a PR comment or ping people.
+- **`netdryrun record`:** warnings that quote device output stay on one YAML comment line, so device output can't add keys to the recorded baseline.
+- **MCP server:** a new optional `NETDRYRUN_MCP_ROOT` confines the configs, the labs they point to, topologies and report reads to the listed folders (0.3.0 had no such setting and ignores the variable). `detail` and `error` in tool results are flattened to one line and capped (300 and 1,000 characters). The evidence file is never written through a planted symlink. `record_baseline`'s `wait_seconds` is bounded (0 to 600).
+- **GitHub Action:** report files already in the workspace (committed in the PR, or left by an earlier run on a self-hosted runner) are deleted before the run, and the `status` output is `error` unless the report matches the run's own exit code, so a PR can't fake a pass with a committed report. The `inconclusive-reason` output is one line without quotes, backslashes, `$` or backticks.
+
+Impact: the inputs are your own `netdryrun.yml` and the output of your lab nodes, and the lab already runs privileged containers, so the realistic risk on 0.3.0 is a forged or noisy PR comment, a second command inside a lab node, or an MCP client reaching labs outside the folder you meant.
+
+### Fixes
+
+- **`present: false` on SR Linux no longer fails on the router's own routes.** SR Linux lists its own static and interface routes in its BGP RIB as locally originated paths (neighbor `0.0.0.0`), whether or not an export policy advertises them; this was seen live on SR Linux 26.7.2. So on a router with a static default, `bgp_route` with `present: false` and `route` with `protocol: bgp, present: false` for `0.0.0.0/0` failed even when no peer sent a default. Those rows no longer count for `present: false`, and the `route` check no longer reports them as BGP routes. Best-path checks (`bgp_route` with attributes) still read them, so asserting `as_path: ""` on a router's own route works as before. Found while building the new `examples/srl-hidden-leak` lab.
+- **The Markdown summary and PR comment of a big lab.** A GitHub comment holds at most 65,536 characters, and the summary listed every check (about 90 characters each), so above roughly 700 checks (a recorded 20-node lab gets there) the Action's `pr-comment` was rejected with a misleading permissions warning. The table now stops before the limit, failures first, and says how many checks it left out; the JSON and JUnit reports still have every check. Found by a 20-node scale test.
+- Pre-launch audit fixes: (filled in by the main session)
+
+### Added
+
 - **New example `examples/srl-hidden-leak`** ("The route leak ping can't see"): SR Linux and FRR each receive a leaked default route that loses to their own static, so sessions, ping and the routing table all look fine. The README shows how to see it by hand on each NOS; the checks catch each leak with one `bgp_route` `present: false` guard.
 - **Agent evaluation** (`examples/agent-eval/`): ten pre-registered tickets on the example labs, each with a hidden grader, worked by fresh headless Claude Code agents that had only `AGENTS.md`, the AI agents page and the MCP tools. Results, misses included: [RESULTS.md](examples/agent-eval/RESULTS.md).
 - **JSON Schema for the report**: `website/docs/schemas/report-v1.json`, published at https://netdryrun.com/schemas/report-v1.json (draft 2020-12). Tests validate reports from real lab runs against it.
@@ -11,8 +31,9 @@
 - **MCP: `"unready": true` on a failed check that never got usable state** from its node (the command failed, or BGP had no neighbors at all). The inconclusive rule is conservative, so a lab with `bgpd` off on every router still comes back `failed` when other nodes' route and ping checks read cleanly; the flag and `AGENTS.md` now help an agent tell that from a bad change. Found by the agent evaluation's broken-lab ticket.
 - **`inject_routes` failure fault** (FRR nodes): a scenario makes a node announce extra routes (`prefixes`, or `count` consecutive ones from `from`, optional `as_path` prepend), then removes them. Use it to test that a max-prefix limit or an import filter holds when a customer or peer misbehaves. Prefixes the node already has configured, and non-FRR nodes, are refused before anything changes.
 - **Verdict Corpus v2** (`corpus/v2/`, `python corpus/run.py --corpus v2`): its own base lab, intent spec and 18 pre-registered cases that re-express the v1 misses (unexpected routes, latent risks, rigid prefix counts, a vendor-default label) and add new changes. v1 results are unchanged.
-- **Fix: the Markdown summary and PR comment of a big lab.** A GitHub comment holds at most 65,536 characters, and the summary listed every check (about 90 characters each), so above roughly 700 checks (a recorded 20-node lab gets there) the Action's `pr-comment` was rejected with a misleading permissions warning. The table now stops before the limit, failures first, and says how many checks it left out; the JSON and JUnit reports still have every check. Found by a 20-node scale test.
 - New `Published release` workflow: the released Action by its tag on `frr-bgp` (must pass) and `frr-bgp-broken` (must fail), and every documented install line from PyPI (`pip install`, `uvx netdryrun`, an MCP handshake over `uvx netdryrun mcp`) on Python 3.10 to 3.15. Runs on pushes to `main` and weekly.
+- Python 3.11 and 3.14 are listed in the package classifiers. The published-release workflow installs and runs Netdryrun from PyPI on 3.10 to 3.15; the unit tests run on 3.10, 3.12 and 3.13.
+- The source distribution no longer includes the website's demo video and its copies of the demo GIFs.
 
 ## 0.3.0 (2026-10-27)
 

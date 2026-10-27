@@ -8,7 +8,7 @@ description: 30 realistic BGP changes with expected verdicts committed before an
 How much does a typical "ping after the change" test miss? This corpus answers that with data anyone can rerun.
 
 !!! info "How to read these numbers"
-    This is a small benchmark the Netdryrun maintainers wrote: one FRR provider topology, 30 changes in v1 and 18 in v2, each labelled harmful or safe before any run. It compares testing methods on the same changes. It is **not** an independent benchmark and **not** a reliability estimate for production networks: "24/30" does not mean Netdryrun is right 80% of the time on your network. Both runs used Netdryrun 0.2.0; the current release is newer, and the [changes since](how-its-built.md#every-miss-and-what-it-changed) are listed per miss.
+    This is a small benchmark the Netdryrun maintainers wrote: one FRR provider topology, 30 changes in v1 and 18 in v2, each labelled harmful or safe before any run. It compares testing methods on the same changes. It is **not** an independent benchmark and **not** a reliability estimate for production networks: "24/30" does not mean Netdryrun is right 80% of the time on your network. Neither run used a released version. v1 ran on commit `ec23379`, a pre-release build that called itself 0.2.0 (the tagged 0.2.0 added a scenario-recovery fix and the SONiC and EOS drivers). v2 ran on a development build that also called itself 0.2.0 and recorded no commit ("commit `unknown`" below); it included the `inject_routes` fault, which first ships in 0.3.1. A rerun of both on the released 0.3.1 is pending, and these numbers will be replaced by its results. The [changes since](how-its-built.md#every-miss-and-what-it-changed) are listed per miss.
 
 There are two runs. The v1 results below are frozen as first published. [Corpus v2](#corpus-v2) is a second, separately pre-registered run that makes v1's misses testable, including scenarios where a customer or peer misbehaves.
 
@@ -21,8 +21,8 @@ There are two runs. The v1 results below are frozen as first published. [Corpus 
     1. **Ping only:** the customer pings the upstream and the peer.
     2. **All BGP sessions up:** every session established.
     3. **Netdryrun™ intent checks:** one [intent spec](https://github.com/netdryrun/netdryrun/blob/main/corpus/specs/intent.yml), written once and used unchanged for every case, so it can't be tuned to win.
-- **Rerun it:** `python corpus/run.py` on any Linux or WSL2 machine with Docker and containerlab.
-- **Rerun it on GitHub's machines:** fork the repository, then run the [Reproduce corpus](https://github.com/netdryrun/netdryrun/blob/main/.github/workflows/reproduce-corpus.yml) workflow from your fork's Actions tab. It installs containerlab 0.81.1 and Netdryrun on a GitHub-hosted runner, runs every case, uploads `results.json`, `RESULTS.md` and the run log as artifacts, and lists every verdict that differs from the committed [`results.json`](https://github.com/netdryrun/netdryrun/blob/main/corpus/results/results.json) in the run summary.
+- **Rerun it:** `python corpus/run.py` on any Linux or WSL2 machine with Docker and containerlab. It uses the Netdryrun code in your checkout.
+- **Rerun it on GitHub's machines:** fork the repository, then run the [Reproduce corpus](https://github.com/netdryrun/netdryrun/blob/main/.github/workflows/reproduce-corpus.yml) workflow from your fork's Actions tab. It has not been run on GitHub yet, and it covers v1 only. It installs containerlab 0.81.1 and Netdryrun from your checkout (not the build that produced the committed results, so a verdict that differs can come from a code change) on a GitHub-hosted runner, runs every v1 case, uploads `results.json`, `RESULTS.md` and the run log as artifacts, and lists every verdict that differs from the committed [`results.json`](https://github.com/netdryrun/netdryrun/blob/main/corpus/results/results.json) in the run summary.
 
 ## Results
 
@@ -99,7 +99,7 @@ These findings came after the run. The table above is left exactly as pre-regist
 The v1 results above are frozen. Corpus v2 is a separate, second run with its own pre-registered cases. It turns v1's misses into things a test can see:
 
 - **Unexpected routes** (v1 cases 18 and 23): the v2 intent spec says infrastructure prefixes and a sentinel list of well-known third-party prefixes must never be BGP routes at the customer, the upstream or the peer. These are `route` checks with `present: false`; no new check type is needed.
-- **Latent risks** (v1 cases 21 and 30): two failure scenarios use the new [`inject_routes`](reference/config.md#injecting-routes) fault to make a neighbor misbehave. The customer floods 200 more-specifics from its own /16, and the peer announces a more-specific of our customer's space and a third-party /24. The checks then verify that the max-prefix limit and the import filter actually hold.
+- **Latent risks** (v1 cases 21 and 30): two failure scenarios use the [`inject_routes`](reference/config.md#injecting-routes) fault (first released in 0.3.1) to make a neighbor misbehave. The customer floods 200 more-specifics from its own /16, and the peer announces a more-specific of our customer's space and a third-party /24. The checks then verify that the max-prefix limit and the import filter actually hold.
 - **Rigid counts** (v1 case 06): announced-prefix counts are a range (2 to 51), so customer growth inside its block is not blocked.
 - **Vendor defaults** (v1 case 12): the FRR no-op is labeled safe, and the genuinely harmful variant is a separate case.
 

@@ -25,8 +25,10 @@ The harness was written for the setup the runs used: Windows 11 with Claude Code
    python examples/agent-eval/run_eval.py run --run myrun --parallel 2
    ```
 
-   `MSYS_NO_PATHCONV=1` matters: without it Git Bash rewrites `/home/...` to a Windows path and the MCP server never starts (the harness now refuses such a path). `NDR_EVAL_AGENTS_REF` is the commit whose `AGENTS.md` the agents get (`096bcf6` for the pre-registered runs). Add `--model haiku` for another model, and `--path-style windows` to give the agent the folder's Windows path instead of its WSL path (the server accepts both only from this branch on). `NDR_EVAL_DISTRO` sets the WSL distribution (default `Ubuntu-22.04`).
+   `MSYS_NO_PATHCONV=1` matters: without it Git Bash rewrites `/home/...` to a Windows path and the MCP server never starts (the harness now refuses such a path). `NDR_EVAL_AGENTS_REF` is the commit whose `AGENTS.md` the agents get (`096bcf6` for the pre-registered runs). Add `--model haiku` for another model, and `--path-style windows` to give the agent the folder's Windows path instead of its WSL path (the server accepts both only from 0.3.1 on). `NDR_EVAL_DISTRO` sets the WSL distribution (default `Ubuntu-22.04`).
 
 3. Grade again without rerunning the agents: `python examples/agent-eval/run_eval.py grade --run myrun --parallel 1`.
 
 Each ticket takes 1 to 6 minutes; ten tickets with `--parallel 2` took about 15 minutes. Each agent runs in a new folder under `%LOCALAPPDATA%\Temp\ndr-eval`, outside any repository, with Read, Edit and Write allowed only inside that folder, WebFetch only for `netdryrun.com`, and no shell. Labs are named `ndr-eval-tNN`, so two runs of the same ticket must not overlap.
+
+The harness also sets `NETDRYRUN_MCP_ROOT` to the ticket folder. Netdryrun 0.3.0 ignores that variable, so in the runs on 0.3.0 the MCP server was not confined to the folder (the agents had no shell). It takes effect from 0.3.1.

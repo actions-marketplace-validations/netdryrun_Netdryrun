@@ -14,7 +14,7 @@ netdryrun run examples/frr-bgp
 
 ## At a glance
 
-Times are wall-clock for `netdryrun run` on WSL2 (20 cores, 16 GB) with images already pulled, measured on 2026-10-27 with containerlab 0.81.1 and Netdryrun™ 0.3.0 (`frr-bgp-broken` and `agent-demo`: 0.2.0, their checks did not change in 0.3.0; `srl-hidden-leak`: 0.3.0 plus the unreleased SR Linux fix). They include deploying and destroying the lab. The first run of each example also pulls its images.
+Times are wall-clock for `netdryrun run` on WSL2 (20 cores, 16 GB) with images already pulled, measured on 2026-10-27 with containerlab 0.81.1 and Netdryrun™ 0.3.0 (`frr-bgp-broken`: 0.2.0, and `agent-demo`: a development build between 0.2.0 and 0.3.0; their checks did not change in 0.3.0. `srl-hidden-leak`: 0.3.0 plus the SR Linux fix that ships in 0.3.1). They include deploying and destroying the lab. The first run of each example also pulls its images.
 
 | Example | Network OS | Shows | Expected | Exit | Time |
 |---|---|---|---|---|---|
@@ -73,7 +73,7 @@ CI runs this example on every push and expects it to fail.
   [FAIL] srl1: no BGP path for 0.0.0.0/0 -- unexpectedly in the BGP table (1 path(s); as-path '65020', next hop 10.0.100.2, local-pref 100, MED 0, communities none) (2.4s)
 ```
 
-Needs the SR Linux fix in the changelog's Unreleased section: 0.3.0 counts `srl1`'s own static default as a BGP path, so the good configs fail. Its times in the table were measured with that fix (0.3.0 plus the fix), over nine runs on 2026-10-27; the README lists each one.
+Needs Netdryrun 0.3.1 or later: 0.3.0 counts `srl1`'s own static default as a BGP path, so the good configs fail. Its times in the table were measured with that fix (0.3.0 plus the fix), over nine runs on 2026-10-27; the README lists each one.
 
 ## sonic-frr
 

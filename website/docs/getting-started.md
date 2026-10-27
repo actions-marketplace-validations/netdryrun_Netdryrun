@@ -44,18 +44,25 @@ The MCP server for AI agents is included: run `netdryrun mcp`. See [AI agents](a
 
 ## Run the examples
 
-The repository ships these example labs (Arista needs your own cEOS image; SONiC pulls `docker-sonic-vs`).
+The repository ships these example labs. The FRR and SR Linux images are pulled automatically on first use.
 
 ```bash
 git clone https://github.com/netdryrun/netdryrun && cd netdryrun
 netdryrun run examples/frr-bgp          # 3 FRR routers, should pass
 netdryrun run examples/srl-frr          # SR Linux + FRR, should pass
 netdryrun run examples/frr-bgp-broken   # a bad change, should fail
-netdryrun run examples/sonic-frr        # SONiC + FRR, should pass
 examples/agent-demo/demo.sh             # replay: a leaky change rejected, the fix accepted
 ```
 
-Each run deploys the lab, runs the checks, prints one line per check and destroys the lab. Images are pulled on first use, so the first run takes longer.
+`examples/sonic-frr` needs the `docker-sonic-vs` image, which is on no container registry: download it from the SONiC build server and `docker load` it first ([how](guides/sonic-ci.md#1-get-the-image)). Then:
+
+```bash
+netdryrun run examples/sonic-frr        # SONiC + FRR, should pass
+```
+
+`examples/arista-frr` needs a cEOS image you download from Arista and import yourself; see the [examples page](examples.md#arista-frr).
+
+Each run deploys the lab, runs the checks, prints one line per check and destroys the lab. The first run of an example takes longer while its images are pulled.
 
 ### Expected results
 

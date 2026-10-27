@@ -52,7 +52,7 @@ Deploying lab my-lab, then waiting 45s for the network to converge...
 recording r1 (frr)
 recording r2 (frr)
 recording r3 (frr)
-Recorded 18 checks to /home/dmin/ndr-docs/my-lab/netdryrun.yml. Review it, then: netdryrun run /home/dmin/ndr-docs/my-lab
+Recorded 18 checks to /home/user/ndr-docs/my-lab/netdryrun.yml. Review it, then: netdryrun run /home/user/ndr-docs/my-lab
 ```
 
 This took 51 seconds. The file has one check for every established BGP session, every prefix count and every BGP route. The start of it:
@@ -184,7 +184,7 @@ Check it without starting a lab:
 
 ```text
 $ netdryrun validate my-lab
-OK: my-lab/netdryrun.yml (13 checks, lab /home/dmin/ndr-docs/my-lab/topology.clab.yml)
+OK: my-lab/netdryrun.yml (13 checks, lab /home/user/ndr-docs/my-lab/topology.clab.yml)
   - [bgp_session] r1: BGP session to 10.0.12.2 is established
   - [bgp_session] r1: BGP session to 10.0.13.2 is established
   - [bgp_session] r2: BGP session to 10.0.12.1 is established
@@ -417,7 +417,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.3.0
+      - uses: netdryrun/netdryrun@v0.3.1
         with:
           path: network/
           pr-comment: true

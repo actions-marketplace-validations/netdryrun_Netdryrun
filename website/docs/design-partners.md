@@ -28,7 +28,7 @@ Netdryrun is young. We'd rather learn from a few real changes than guess. If you
 
 ## How your configs are handled
 
-You send sanitized configs only. They're used for your lab and nothing else, kept private, and deleted within 30 days after delivery unless you ask us to keep them. An NDA is available on request. See the [privacy notice](privacy.md).
+You send sanitized configs only. They're used for your lab and nothing else and kept private. We build labs with the help of Anthropic's Claude, so your configs are processed by it, under terms that don't allow training on them; no other AI service sees them. They're deleted within 30 days after delivery unless you ask us to keep them. An NDA is available on request. See the [privacy notice](privacy.md#configs-you-send-us).
 
 ## Apply
 

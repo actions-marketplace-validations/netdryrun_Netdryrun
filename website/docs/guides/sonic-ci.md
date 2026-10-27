@@ -166,7 +166,7 @@ jobs:
           curl -fsSL -o docker-sonic-vs.gz \
             "https://sonic-build.azurewebsites.net/api/sonic/artifacts?branchName=master&platform=vs&target=target/docker-sonic-vs.gz"
           docker load -i docker-sonic-vs.gz
-      - uses: netdryrun/netdryrun@v0.3.0
+      - uses: netdryrun/netdryrun@v0.3.1
         with:
           path: network/sonic/
 ```

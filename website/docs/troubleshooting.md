@@ -67,7 +67,7 @@ After this, the same user deployed and ran the lab. Running Netdryrun with `sudo
 
 ```text
 $ netdryrun validate unk
-OK: unk/netdryrun.yml (14 checks, lab /home/dmin/ndr-docs/unk/topology.clab.yml)
+OK: unk/netdryrun.yml (14 checks, lab /home/user/ndr-docs/unk/topology.clab.yml)
   - [bgp_session] r9: BGP session to 10.0.12.2 is established
   ...
 ```
@@ -113,7 +113,7 @@ To see why, keep the lab and look inside:
 ```text
 $ netdryrun run slow --keep-on-failure
 ...
-Lab ndrdocs-slow left running for debugging; destroy with: containerlab destroy -t /home/dmin/ndr-docs/slow/topology.clab.yml --cleanup
+Lab ndrdocs-slow left running for debugging; destroy with: containerlab destroy -t /home/user/ndr-docs/slow/topology.clab.yml --cleanup
 FAILED: 10 passed, 4 failed (14 checks)
 $ docker exec clab-ndrdocs-slow-r1 vtysh -c "show bgp summary"
 ...
@@ -169,7 +169,7 @@ Destroying lab...
 ERROR: containerlab deploy failed:
 10:57:23 INFO Containerlab started version=0.81.1
 10:57:23 INFO Parsing & checking topology file=topology.clab.yml
-10:57:23 INFO Removing directory path=/home/dmin/ndr-docs/ceos/clab-ndrdocs-ceos
+10:57:23 INFO Removing directory path=/home/user/ndr-docs/ceos/clab-ndrdocs-ceos
 10:57:23 INFO Pulling image image=docker.io/library/ceos:4.34.1F
 10:57:25 ERRO Failed to pull image image=docker.io/library/ceos:4.34.1F err="Error response from daemon: pull access denied for ceos, repository does not exist or may require 'docker login'"
 ```
@@ -280,7 +280,7 @@ Fixes:
 
 With `pr-comment: true`, the job log says `could not comment on the PR (needs permissions pull-requests: write ...)` even though the permission is set, and the lab has several hundred checks, for example a file `netdryrun record` wrote for a 20-node lab.
 
-GitHub rejects a comment longer than 65,536 characters. Netdryrun 0.3.0 lists every check in the comment, about 90 characters each, so above roughly 700 checks the comment is too long. The verdict, the job status and the reports are not affected. The next release shortens the table to fit, failures first. Until then, trim the recorded file to the checks that matter, or split it into several `netdryrun.yml` files run as a [matrix](github-action.md#several-labs).
+GitHub rejects a comment longer than 65,536 characters. Netdryrun 0.3.0 lists every check in the comment, about 90 characters each, so above roughly 700 checks the comment is too long. The verdict, the job status and the reports are not affected. Fixed in 0.3.1: the table stops before the limit, failures first, and says how many checks it left out. On 0.3.0, trim the recorded file to the checks that matter, or split it into several `netdryrun.yml` files run as a [matrix](github-action.md#several-labs).
 
 ## Inconclusive: the lab never came up
 

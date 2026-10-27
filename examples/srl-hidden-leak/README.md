@@ -202,8 +202,8 @@ The check that catches this asks the BGP table, not the routing table: **there i
 `bgp_route` reads the BGP table (FRR: `show bgp ... json`; SR Linux: the BGP RIB, counting only paths learned over BGP, so the router's own static isn't mistaken for a leak). A `present: false` check runs after the network has converged and must hold for 10 seconds.
 
 ```bash
-pip install git+https://github.com/netdryrun/netdryrun   # see "Version" below
-netdryrun run examples/srl-hidden-leak                      # from the repository root
+pip install "netdryrun>=0.3.1"   # see "Version" below
+netdryrun run examples/srl-hidden-leak   # from the repository root
 ```
 
 The good configs pass all 9 checks:
@@ -246,7 +246,7 @@ With the SR Linux leak (`leaks/srl1.cli` over `configs/srl1.cli`), it's the guar
 FAILED: 8 passed, 1 failed (9 checks)
 ```
 
-Exit code `0` for the pass, `1` for each fail, so a CI job fails on the leak. Wall-clock for `netdryrun run`, including deploying and destroying the lab, with images already pulled. Measured on 2026-10-27 on WSL2 (20 cores, 16 GB), containerlab 0.81.1, SR Linux 26.7.2, FRR 10.4.1, Netdryrun 0.3.0 plus the unreleased SR Linux fix. Three rounds: the first from the development worktree, then two from a fresh clone following this README (the last on commit `1cbef33`):
+Exit code `0` for the pass, `1` for each fail, so a CI job fails on the leak. Wall-clock for `netdryrun run`, including deploying and destroying the lab, with images already pulled. Measured on 2026-10-27 on WSL2 (20 cores, 16 GB), containerlab 0.81.1, SR Linux 26.7.2, FRR 10.4.1, Netdryrun 0.3.0 plus the SR Linux fix (released in 0.3.1). Three rounds: the first from the development worktree, then two from a fresh clone following this README (the last on commit `1cbef33`):
 
 | Run | Result | Exit | Times |
 |---|---|---|---|
@@ -256,7 +256,7 @@ Exit code `0` for the pass, `1` for each fail, so a CI job fails on the leak. Wa
 
 Most of the difference between runs is how long SR Linux takes to bring BGP up (14 to 34 s in these runs).
 
-**Version:** on SR Linux this lab needs a fix that is not in a release yet (see the changelog's Unreleased section): SR Linux lists the router's own static default in its BGP RIB, and Netdryrun 0.3.0 from PyPI counts it as a BGP path, so the good configs fail the srl1 guard. That's why the install line above installs from the repository. After the next release, `pip install netdryrun` is enough.
+**Version:** on SR Linux this lab needs Netdryrun 0.3.1 or later. SR Linux lists the router's own static default in its BGP RIB, and Netdryrun 0.3.0 counts it as a BGP path, so the good configs fail the srl1 guard. The times above were measured with 0.3.0 plus that fix, before 0.3.1 was released.
 
 Other ways to guard this: a `bgp_prefixes` check with `exact: 1` also fails here, but it breaks on every legitimate new prefix. And the config-side fix belongs on both ends: export only what you mean to (the sender), and reject a default from peers that should never send one (an import policy at the receiver).
 
