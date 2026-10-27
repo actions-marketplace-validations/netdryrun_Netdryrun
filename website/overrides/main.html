@@ -15,6 +15,10 @@
   <link rel="icon" type="image/png" sizes="32x32" href="{{ 'assets/favicon-32.png' | url }}">
   <link rel="apple-touch-icon" href="{{ 'assets/netdryrun-mark-180.png' | url }}">
   <meta name="theme-color" content="#041334">
+  {% if page and page.is_homepage %}
+  <!-- The landing page is not a docs page: no heading permalinks, no "edit this page" button -->
+  <style>.md-content__button, .md-typeset .headerlink { display: none; }</style>
+  {% endif %}
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
