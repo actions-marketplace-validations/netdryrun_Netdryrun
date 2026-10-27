@@ -105,6 +105,7 @@ When a lab is kept, Netdryrun prints the command to destroy it. See [convergence
 - a lab problem: containerlab or Docker missing, deploy failed, containers not running, unknown driver, a lab with the same name already running;
 - a scenario whose fault did not take effect within the checks' timeout, or whose BGP state or interface addresses could not be read before the fault, so Netdryrun can't tell when it took effect (see [scenario timing](config.md#scenario-timing));
 - a link or injected route that could not be restored after a scenario;
+- a report that could not be written (`--json`, `--markdown`, `--junit`, or the GitHub Actions step summary), for example a path in a folder that doesn't exist. The verdict line is still printed and every other report is still written, but the evidence you asked for is missing, so the run exits `2`, with one line per report on stderr: `could not write <path>: <reason>; the verdict was <status>` (0.3.1 and later; 0.3.0 reported an internal error). The status inside the reports that were written is the verdict;
 - an internal error (a Netdryrun bug). It is reported on one line, never as a bare traceback, and never as exit code `1`, which would read as "the change broke something". Rerun with `--debug` or `NETDRYRUN_DEBUG=1` for the traceback, and please report it.
 
 The message is one line on stderr. With `--json` on `run` or `check`, a report with `status: error` and the message in `error` is written, including for a config error before anything starts and for an interrupted run.

@@ -16,7 +16,8 @@ from .runner import error_report, install_signal_handlers, load_config, run, sig
 EXIT_CODES = """exit codes:
   0  passed        every check passed
   1  failed        at least one check failed (the change broke something)
-  2  error         config error, bad topology, lab problem, bad option, or an internal error: no verdict
+  2  error         config error, bad topology, lab problem, bad option, a report that could not be
+                   written (after the verdict, which is printed), or an internal error: no verdict
   3  inconclusive  the lab never reached a testable state: no verdict
   130, 143, 129    interrupted by SIGINT (Ctrl-C), SIGTERM or SIGHUP: no verdict; the lab is destroyed
                    unless --keep was set
@@ -35,17 +36,30 @@ def _seconds(text: str) -> float:
     return v
 
 
-def _write_outputs(rep, args) -> None:
+def _write_outputs(rep, args) -> list[str]:
+    """Write every requested report, even if an earlier one fails. Returns one line per report that could
+    not be written (empty if all were)."""
+    failures = []
     outputs = {"json": report.to_json, "markdown": report.to_markdown, "junit": report.to_junit}
     for key, render in outputs.items():
         path = getattr(args, key, None)
         if path:
-            Path(path).write_text(render(rep), encoding="utf-8")
+            try:
+                Path(path).write_text(render(rep), encoding="utf-8")
+            except OSError as e:
+                failures.append(f"could not write {path}: {e.strerror or e}; the verdict was {rep.status}")
+                continue
             print(f"  wrote {key} report: {path}")
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
-    if summary and not args.no_step_summary:
-        with open(summary, "a", encoding="utf-8") as f:
-            f.write(report.to_markdown(rep))
+    if summary and not getattr(args, "no_step_summary", False):
+        try:
+            with open(summary, "a", encoding="utf-8") as f:
+                f.write(report.to_markdown(rep))
+        except OSError as e:
+            failures.append(f"could not write {summary}: {e.strerror or e}; the verdict was {rep.status}")
+    for line in failures:
+        print(line, file=sys.stderr)
+    return failures
 
 
 def _cmd_run(args, deploy: bool) -> int:
@@ -76,7 +90,9 @@ def _cmd_run(args, deploy: bool) -> int:
               file=sys.stderr)
         return signal_exit_code(signum)
     print(report.summary_line(rep))
-    _write_outputs(rep, args)
+    if _write_outputs(rep, args):
+        # The verdict is in, but evidence the user asked for is missing: no usable result (exit 2)
+        return 2
     if sys.stdout.isatty() and not os.environ.get("CI"):
         print("How did it go? Run `netdryrun feedback` (opens a GitHub form; nothing is sent automatically).")
     return rep.exit_code

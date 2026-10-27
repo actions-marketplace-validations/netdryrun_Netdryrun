@@ -468,6 +468,36 @@ def test_internal_error_in_the_cli_exits_2_and_debug_shows_the_traceback(tmp_pat
     assert "Traceback" in capsys.readouterr().err
 
 
+@pytest.mark.parametrize("passed", [True, False])
+def test_a_report_that_cannot_be_written_exits_2_after_the_verdict(tmp_path, monkeypatch, capsys, passed):
+    """The verdict is in, but evidence the user asked for is missing: exit 2 (not 0 or 1), never an internal
+    error, and every other report is still written."""
+    import netdryrun.cli as cli
+    from netdryrun.checks import Result
+
+    folder = _lab_folder(tmp_path)
+
+    def fake_run(config, **kw):
+        r = Result(config.checks[0], passed, "x", 2, 3.0, "2026-01-01T00:00:00+00:00")
+        return runner.RunReport(config=config, lab_name="t", started="s", finished="f", results=[r])
+
+    monkeypatch.setattr(cli, "run", fake_run)
+    summary = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
+    missing = tmp_path / "no-such-dir"
+    args = ["run", str(folder), "--json", str(missing / "r.json"), "--markdown", str(tmp_path / "r.md"),
+            "--junit", str(missing / "r.xml")]
+    assert main(args) == 2
+    err = capsys.readouterr().err
+    assert "internal error" not in err and len([x for x in err.splitlines() if x.strip()]) == 2
+    assert (tmp_path / "r.md").exists() and summary.exists()
+    # and when every write works, the verdict's own exit code
+    assert main(["run", str(folder), "--markdown", str(tmp_path / "r2.md"), "--no-step-summary"]) == (0 if passed else 1)
+    # a step summary that can't be written is the same
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(missing / "summary.md"))
+    assert main(["run", str(folder)]) == 2
+
+
 # ------------------------------------------------------------------ two runs of the same lab at once
 
 def test_a_lab_already_running_is_refused_and_left_alone(tmp_path, monkeypatch):
