@@ -52,6 +52,7 @@ Other fixes:
 - **`netdryrun validate` reads the topology** and makes the checks `run` makes before deploying, without Docker or containerlab: unknown nodes, nodes without a driver, keys a node's driver can't read, `inject_routes` on a non-FRR node, and link faults on SR Linux nodes. The MCP `validate` tool does the same. Before, `validate` said `OK` to a file that `run` then refused.
 - **The Markdown summary and PR comment show the proof.** The evidence for a failed check lists every command of its final sample (a route check reads the routing table and the BGP table), and the excerpt keeps the lines that say which route the device selected, with their protocol. Before, the excerpt of a "not selected" leak stopped before the `selected` field.
 - The MCP `check_types` tool lists `hold` among the keys every check accepts.
+- **Releases carry signed build provenance** (Sigstore, SLSA): verify a downloaded wheel with `gh attestation verify <file> -R netdryrun/netdryrun`; the bundle is also attached to each GitHub release.
 - **Install instructions use `pipx install netdryrun`** (or `uv tool install netdryrun`). Ubuntu 24.04 and Debian 12 refuse a plain `pip install` outside a virtualenv, so the old first command failed there.
 
 ### Added
