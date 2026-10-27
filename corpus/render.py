@@ -1,10 +1,12 @@
 """Render corpus/results/results.json into corpus/RESULTS.md, the website's corpus page and one page per case.
 
-Usage: python corpus/render.py
+Usage: python corpus/render.py              # v1 (frozen): RESULTS.md, the corpus page's v1 results, case pages
+       python corpus/render.py --corpus v2  # v2: corpus/v2/RESULTS.md and the corpus page's v2 section
 Also prints the launch numbers ({{x}}, {{fp_ping}}, ...) used in the announcement drafts.
 """
 from __future__ import annotations
 
+import argparse
 import difflib
 import json
 import re
@@ -22,6 +24,9 @@ MARK = {"correct": "✅", "false pass": "❌ approved a bad change", "false bloc
 
 # Post-run findings, appended without touching the pre-registered expected verdicts.
 AMENDMENTS = HERE / "AMENDMENTS.md"
+
+V2 = HERE / "v2"
+V2_MARKER = "<!-- CORPUS-V2 -->"   # the corpus page's v2 section starts here; v1 rendering keeps it intact
 
 
 def outcome(expected: str, verdict: str) -> str:
@@ -46,22 +51,23 @@ def stats(rows: list[dict]) -> dict:
     return out
 
 
-def results_markdown(data: dict, link=None) -> str:
+def results_markdown(data: dict, link=None, h: str = "##", corpus: Path = HERE, amendments: Path = AMENDMENTS) -> str:
     rows, env = data["cases"], data["environment"]
     st = stats(rows)
+    rel = corpus.relative_to(HERE.parent).as_posix()
     lines = [
         f"Generated {env['generated']} with netdryrun {env['netdryrun']}, containerlab {env['containerlab']}, "
-        f"FRR {env['frr_image']}, commit `{env.get('commit', '?')}`. Rerun everything with `python corpus/run.py`.", "",
+        f"FRR {env['frr_image']}, commit `{env.get('commit', '?')}`. Rerun everything with `python corpus/run.py{env.get('rerun_args', '')}`.", "",
         "**Conflict of interest:** the Netdryrun maintainers wrote this corpus and the runner. Expected verdicts were "
-        "committed before any run (see the git history of `corpus/cases/`). Losses are kept and shown at the same size as the catches.", "",
-        f"## Summary ({st['total']} cases: {st['unsafe']} harmful, {st['safe']} safe)", "",
+        f"committed before any run (see the git history of `{rel}/cases/`). Losses are kept and shown at the same size as the catches.", "",
+        f"{h} Summary ({st['total']} cases: {st['unsafe']} harmful, {st['safe']} safe)", "",
         "| Strategy | Correct | Harmful changes caught | Approved a bad change | Blocked a good change | Errors |",
         "|---|---|---|---|---|---|",
     ]
     for s, label in LABELS.items():
         x = st[s]
         lines.append(f"| {label} | **{x['correct']}/{st['total']}** | {x['caught']}/{st['unsafe']} | {x['false_pass']} | {x['false_block']} | {x['error']} |")
-    lines += ["", "## Every case", "", "| Case | Category | Expected | Ping only | Sessions up | Netdryrun | What Netdryrun flagged |",
+    lines += ["", f"{h} Every case", "", "| Case | Category | Expected | Ping only | Sessions up | Netdryrun | What Netdryrun flagged |",
               "|---|---|---|---|---|---|---|"]
     for r in rows:
         cells = [MARK[outcome(r["expected"], r["strategies"][s]["verdict"])] for s in LABELS]
@@ -69,14 +75,14 @@ def results_markdown(data: dict, link=None) -> str:
         name = f"[{r['title']}]({link(r['id'])})" if link else r["title"]
         lines.append(f"| `{r['id']}` {name} | {r['category']} | {r['expected']} | {' | '.join(cells)} | {flagged} |")
     losses = [r for r in rows if outcome(r["expected"], r["strategies"]["netdryrun"]["verdict"]) != "correct"]
-    lines += ["", "## Netdryrun's losses", ""]
+    lines += ["", f"{h} Netdryrun's losses", ""]
     if not losses:
         lines.append("None in this run.")
     for r in losses:
         oc = outcome(r["expected"], r["strategies"]["netdryrun"]["verdict"])
         lines.append(f"- **`{r['id']}` {r['title']}** ({oc}). {r.get('note') or r['rationale']}")
-    if AMENDMENTS.exists():
-        lines += ["", "## Findings after the run", "", AMENDMENTS.read_text(encoding="utf-8").strip()]
+    if amendments.exists():
+        lines += ["", f"{h} Findings after the run", "", amendments.read_text(encoding="utf-8").strip()]
     return "\n".join(lines) + "\n"
 
 
@@ -226,7 +232,28 @@ def write_case_pages(data: dict) -> int:
     return len(wanted)
 
 
+def render_v2() -> None:
+    """corpus/v2/RESULTS.md plus the v2 section of the corpus page (everything after V2_MARKER)."""
+    data = json.loads((V2 / "results" / "results.json").read_text(encoding="utf-8"))
+    amend = V2 / "AMENDMENTS.md"
+    (V2 / "RESULTS.md").write_text("# Verdict Corpus v2 results\n\n"
+                                   + results_markdown(data, lambda i: f"cases/{i}.yml", corpus=V2, amendments=amend),
+                                   encoding="utf-8", newline="\n")
+    intro = (V2 / "SITE.md").read_text(encoding="utf-8").strip()
+    body = results_markdown(data, lambda i: f"{REPO}/blob/main/corpus/v2/cases/{i}.yml", h="###", corpus=V2, amendments=amend)
+    body = body.replace("`corpus/v2/cases/`", f"[`corpus/v2/cases/`]({REPO}/tree/main/corpus/v2/cases)")
+    head = SITE_PAGE.read_text(encoding="utf-8").split(V2_MARKER)[0].rstrip("\n")
+    SITE_PAGE.write_text(head + "\n\n" + V2_MARKER + "\n\n" + intro + "\n\n" + body, encoding="utf-8", newline="\n")
+    st = stats(data["cases"])
+    print(f"wrote corpus/v2/RESULTS.md and the v2 section of {SITE_PAGE.name}")
+    print(json.dumps({s: st[s] for s in LABELS} | {"total": st["total"], "unsafe": st["unsafe"]}, indent=1))
+
+
 def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--corpus", choices=["v1", "v2"], default="v1")
+    if ap.parse_args().corpus == "v2":
+        return render_v2()
     data = json.loads((HERE / "results" / "results.json").read_text(encoding="utf-8"))
     (HERE / "RESULTS.md").write_text("# Verdict Corpus results\n\n" + results_markdown(data, lambda i: f"cases/{i}.yml"),
                                      encoding="utf-8", newline="\n")
@@ -234,7 +261,8 @@ def main() -> None:
     page = SITE_PAGE.read_text(encoding="utf-8")
     marker = "<!-- RESULTS -->"
     head = page.split(marker)[0]
-    SITE_PAGE.write_text(head + marker + "\n\n" + body.replace("`corpus/cases/`", "[`corpus/cases/`](https://github.com/netdryrun/netdryrun/tree/main/corpus/cases)"), encoding="utf-8", newline="\n")
+    tail = "\n" + V2_MARKER + page.split(V2_MARKER, 1)[1] if V2_MARKER in page else ""
+    SITE_PAGE.write_text(head + marker + "\n\n" + body.replace("`corpus/cases/`", "[`corpus/cases/`](https://github.com/netdryrun/netdryrun/tree/main/corpus/cases)") + tail, encoding="utf-8", newline="\n")
     print(f"wrote {write_case_pages(data)} case pages to {CASE_DIR}")
     st = stats(data["cases"])
     print(json.dumps({
