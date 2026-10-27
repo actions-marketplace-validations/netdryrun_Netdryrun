@@ -7,6 +7,17 @@ description: Connect an AI agent to Netdryrun. MCP setup for Claude Code and oth
 
 AI agents are starting to change networks. Netdryrun™ includes an [MCP](https://modelcontextprotocol.io) server that gives an agent a safety gate: it dry-runs the proposed change in a real lab and proceeds only if every check passes.
 
+## Watch the demo
+
+<figure class="ndr-video">
+<video controls preload="none" playsinline width="1920" height="1080" poster="/assets/video/netdryrun-demo-poster.jpg" aria-label="Netdryrun demo video, about 90 seconds, captions burned in">
+<source src="/assets/video/netdryrun-demo.mp4" type="video/mp4">
+<track kind="captions" srclang="en" label="English (text)" src="/assets/video/netdryrun-demo.vtt">
+<a href="/assets/video/netdryrun-demo.mp4">Download the video (MP4)</a>
+</video>
+<figcaption>About 90 seconds, captions on screen, no sound. A leaked default route that ping and session checks miss, an AI agent's tempting change rejected and the two-line fix passed (a scripted replay), a real agent run, and the verdict corpus with its losses. Every terminal line comes from a real run. <a href="/assets/video/netdryrun-demo.vtt">Captions as text</a>.</figcaption>
+</figure>
+
 ## Set up the MCP server
 
 ```bash

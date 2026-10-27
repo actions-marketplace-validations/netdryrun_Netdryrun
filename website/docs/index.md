@@ -10,6 +10,17 @@ To test a network change in CI, keep the changed configs and a containerlab topo
 !!! abstract "What Netdryrun is"
     Netdryrun is an open-source tool that tests network changes in a real virtual lab before they reach production. It boots the topology with containerlab, waits for convergence, checks BGP sessions, prefixes, routes and reachability, and returns a pass/fail verdict with evidence. It runs locally, in GitHub Actions, or as an MCP server for AI agents.
 
+## Watch the demo
+
+<figure class="ndr-video">
+<video controls preload="none" playsinline width="1920" height="1080" poster="/assets/video/netdryrun-demo-poster.jpg" aria-label="Netdryrun demo video, about 90 seconds, captions burned in">
+<source src="/assets/video/netdryrun-demo.mp4" type="video/mp4">
+<track kind="captions" srclang="en" label="English (text)" src="/assets/video/netdryrun-demo.vtt">
+<a href="/assets/video/netdryrun-demo.mp4">Download the video (MP4)</a>
+</video>
+<figcaption>About 90 seconds, captions on screen, no sound. A leaked default route that ping and session checks miss, an AI agent's tempting change rejected and the two-line fix passed (a scripted replay), a real agent run, and the verdict corpus with its losses. Every terminal line comes from a real run. <a href="/assets/video/netdryrun-demo.vtt">Captions as text</a>.</figcaption>
+</figure>
+
 ## A failing run
 
 This is the bundled `frr-bgp-broken` example. Router r2 has a bad change: it sends r1 a default route.

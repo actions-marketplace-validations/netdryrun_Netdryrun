@@ -27,3 +27,8 @@
 
 /* The wordmark already says the name: hide the duplicate site title (page titles still show on scroll) */
 .md-header__title .md-header__topic:first-child { visibility: hidden; }
+
+/* Demo video: full content width, poster until play; captions are burned in */
+.ndr-video { margin: 1.2em 0 1.6em; }
+.ndr-video video { display: block; width: 100%; height: auto; border-radius: 8px; background: #041334; }
+.ndr-video figcaption { font-size: 0.7rem; color: var(--md-default-fg-color--light); margin-top: 0.5em; text-align: left; max-width: none; }

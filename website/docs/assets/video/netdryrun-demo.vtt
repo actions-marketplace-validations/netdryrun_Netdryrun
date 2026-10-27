@@ -1,0 +1,81 @@
+WEBVTT
+
+1
+00:00:00.200 --> 00:00:03.500
+Ping passed. Every BGP session came up.
+
+2
+00:00:03.600 --> 00:00:07.900
+The change still leaked a default route.
+
+3
+00:00:08.500 --> 00:00:12.233
+A real run of the bundled example. Router r2 sends r1 a default route.
+
+4
+00:00:12.233 --> 00:00:16.033
+Sessions up. Ping 3/3 replies. So far it looks fine.
+
+5
+00:00:16.033 --> 00:00:19.683
+After convergence, Netdryrun checks what must not be there.
+
+6
+00:00:19.683 --> 00:00:23.583
+The default route is present, just not selected. So ping kept working.
+
+7
+00:00:23.583 --> 00:00:27.483
+FAILED: 5 passed, 1 failed. Exit code 1, so the CI job fails.
+
+8
+00:00:27.880 --> 00:00:31.380
+Now a ticket for an AI agent. This is a scripted replay of two attempts, run for real.
+
+9
+00:00:31.380 --> 00:00:35.180
+Attempt 1 removes the filters. Ticket checks pass, sessions are up, ping works.
+
+10
+00:00:35.180 --> 00:00:40.230
+But five leak guards fail: upstream routes and the default route leak to the peer.
+
+11
+00:00:40.230 --> 00:00:43.930
+FAILED. Over MCP the verdict reads: DO NOT APPLY THIS CHANGE.
+
+12
+00:00:43.930 --> 00:00:53.530
+Attempt 2 adds two prefix-list lines. The same 14 checks run.
+
+13
+00:00:53.530 --> 00:00:59.330
+14 passed, 0 failed. Only the config changed, not the checks.
+
+14
+00:00:59.730 --> 00:01:03.630
+This part is not a replay: a fresh Claude Code agent worked the ticket.
+
+15
+00:01:03.630 --> 00:01:08.380
+It made the two-line fix on the first try. The verdict came from the lab, not from the agent.
+
+16
+00:01:08.780 --> 00:01:12.680
+30 changes, three ways to test them. Netdryrun 24/30, ping only 20, sessions up 15.
+
+17
+00:01:12.680 --> 00:01:18.880
+The misses are published at the same size as the wins.
+
+18
+00:01:19.280 --> 00:01:22.280
+Run it locally with pip.
+
+19
+00:01:22.380 --> 00:01:25.730
+Gate every pull request with the GitHub Action.
+
+20
+00:01:25.830 --> 00:01:28.480
+Give your AI agent a safety gate over MCP.
