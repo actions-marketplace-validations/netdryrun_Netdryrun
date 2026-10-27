@@ -194,7 +194,7 @@ def test_guards_without_a_verdict_leave_no_verdict(tmp_path, gstatus, status):
 def test_allow_anywhere_warns(tmp_path):
     res, _ = run_verify(tmp_path, base().snap(), base().snap(),
                         intent_text="intent: []\nallow_anywhere: ['10.200.*.0/24']\n")
-    assert res.status == "no_change" and res.warnings == [vreport.ALLOW_WARNING]
+    assert res.status == "no_change" and res.warnings == [vreport.ALLOW_WARNING, vreport.NO_GUARDS_WARNING]
 
 
 def test_bad_intent_is_exit_2(tmp_path):
@@ -342,7 +342,7 @@ def test_cli_bad_intent_is_exit_2(tmp_path):
 def test_console_echoes_the_intent_first(tmp_path):
     res, _ = run_verify(tmp_path, base().snap(), add_new_customer_block(base()).snap())
     lines = vreport.console(res).splitlines()
-    assert lines[0] == "verify: INTENT MATCHED" and lines[1].startswith("Intent (")
+    assert lines[0].startswith("verify: INTENT MATCHED") and lines[1].startswith("Intent (")
 
 
 def test_schema_is_valid():
@@ -517,3 +517,79 @@ def test_the_report_lists_every_route_an_allow_entry_explained(tmp_path):
                                {"node": "up1", "vrf": "default", "prefix": "10.200.6.0/24"}]
     text = vreport.console(res)
     assert "cust1 10.200.5.0/24" in text and "up1 10.200.6.0/24" in text
+
+
+# --- standing guards: from the before side, never optional in silence (review finding 4) --------------------
+
+LEAK_INTENT = "intent:\n  - {prefix: 203.0.113.0/24, appears_on: [peer1]}\n"
+
+
+def leaked_after():
+    after = base()
+    after.adj_out("edge1", "10.0.3.2", "203.0.113.0/24", attrs(as_path="65002", next_hop="10.0.2.2"))
+    after.learn("peer1", "203.0.113.0/24", "10.0.3.1", "65000 65002")
+    return after
+
+
+def guards_on(after_snap):
+    """A run_guards stand-in that evaluates `route ... present: false` checks on the after snapshot."""
+    seen = {}
+
+    def fake(cfg, topology, settle, hold, log):
+        seen["checks"] = [c.params for c in cfg.checks]
+        items = after_snap.items()
+        failures = [{"check": c.name, "node": c.params["node"], "reason": "route present"} for c in cfg.checks
+                    if c.type == "route" and c.params.get("present") is False
+                    and any(k.kind == "rib" and k.node == c.params["node"] and k.prefix == c.params["prefix"]
+                            for k in items)]
+        return {"status": "failed" if failures else "passed", "passed": len(cfg.checks) - len(failures),
+                "failed": len(failures), "error": None, "failures": failures}
+    fake.seen = seen
+    return fake
+
+
+def guard_side(before_snap, after_snap):
+    def side(label, topology, on_up=None):
+        snap = before_snap if label == "before" else after_snap
+        return snap, 1.0, (on_up(None, topology) if on_up and label == "after" else None)
+    return side
+
+
+def test_dishonest_intent_fails_through_guards_read_from_the_before_ref(tmp_path, monkeypatch):
+    """No --guards: the netdryrun.yml of the before ref runs on the after lab, and its leak guard fails the
+    intent that declares the leak, even though the change deleted that guard in the working tree."""
+    lab = repo_lab(tmp_path)
+    (lab / "netdryrun.yml").write_text("lab: topology.clab.yml\nchecks:\n  - {type: bgp_session, node: edge1, neighbor: 10.0.1.2}\n")
+    after = leaked_after().snap()
+    fake = guards_on(after)
+    monkeypatch.setattr(vrun, "run_guards", fake)
+    res = vrun.verify(str(lab / "topology.clab.yml"), "HEAD", str(lab), str(intent_file(tmp_path, LEAK_INTENT)),
+                      side_fn=guard_side(base().snap(), after))
+    assert (res.status, res.exit_code) == ("failed", 1) and res.failed_because == ["guards"], res.error
+    assert len(fake.seen["checks"]) == 2 and res.guards_source == "before-ref"
+    data = validate(res)
+    assert data["guards_source"] == "before-ref" and data["guards"]["failed"] == 1
+
+
+def test_no_guards_with_a_directory_before_on_the_dishonest_intent(tmp_path, monkeypatch):
+    """A directory --before: guards come only from an explicit --guards (never a netdryrun.yml found in
+    the side), and a verdict without guards says so, visibly."""
+    lab = make_lab(tmp_path)
+    (lab / "netdryrun.yml").write_text(GUARDS)
+    b, a = side_dir(tmp_path, lab, "before"), side_dir(tmp_path, lab, "after", edit="! edge1 after\n")
+    shutil.copy(lab / "netdryrun.yml", b / "netdryrun.yml")
+    after = leaked_after().snap()
+    fake = guards_on(after)
+    monkeypatch.setattr(vrun, "run_guards", fake)
+    res = vrun.verify(str(lab / "topology.clab.yml"), str(b), str(a), str(intent_file(tmp_path, LEAK_INTENT)),
+                      side_fn=guard_side(base().snap(), after))
+    assert res.status == "matched" and res.guards is None and not fake.seen
+    assert res.guards_source == "none" and vreport.NO_GUARDS_WARNING in res.warnings
+    data = validate(res)
+    assert data["guards_source"] == "none" and vreport.NO_GUARDS_WARNING in data["warnings"]
+    first = vreport.console(res).splitlines()[0]
+    assert first.startswith("verify: INTENT MATCHED") and "no standing guards ran" in first
+    # an explicit --guards with a directory --before: read from that path, and said so
+    res = vrun.verify(str(lab / "topology.clab.yml"), str(b), str(a), str(intent_file(tmp_path, LEAK_INTENT)),
+                      guards=str(lab / "netdryrun.yml"), side_fn=guard_side(base().snap(), after))
+    assert res.status == "failed" and res.guards_source == "explicit" and validate(res)["guards_source"] == "explicit"

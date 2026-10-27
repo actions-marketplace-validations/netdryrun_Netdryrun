@@ -38,7 +38,7 @@ It deploys the lab with the *before* configs, waits for a stable snapshot, destr
 | `--before`, `--after` | required | One side each: a git ref or a directory. A **git ref** is the repository's whole tree at that ref, and the topology file in it must be byte-identical to the one given (exit code `2` otherwise: verify compares configs on one topology). A **directory** stands for the folder that holds the topology and every file it binds (for `lab/topo/t.clab.yml` binding `../configs/r1.conf`, a copy of `lab/`, with `configs/r1.conf` in it). A directory wins over a ref of the same name. See [How each side is built](#how-each-side-is-built). |
 | `--intent` | required | The intent file. |
 | `--json FILE` | | Write the `netdryrun.verify/v1` report. |
-| `--guards FILE` | | The standing guards (a `netdryrun.yml`), run on the *after* lab; they must pass. When `--before` is a git ref, the file is read from that ref (the base), never from the change. Its `nodes:` settings (`driver`, `setup`) apply to both labs. |
+| `--guards FILE` | see below | The standing guards (a `netdryrun.yml`), run on the *after* lab; they must pass. Its `nodes:` settings (`driver`, `setup`) apply to both labs. See [Standing guards](#standing-guards). |
 | `--config-dir DIR` | | With directory sides: the folder each directory stands for, relative to the topology (for example `configs`), when the directories hold only that folder. Every bind must then resolve inside it. With a git ref, it is only checked to exist in the ref. |
 | `--unobserved NODE` | | A node without a routing stack (a host). Repeat for several. A node verify can't classify is an error, never silently skipped. Bridges are never observed. |
 | `--settle` | `15` | Seconds between the two snapshots that must be identical. |
@@ -46,6 +46,19 @@ It deploys the lab with the *before* configs, waits for a stable snapshot, destr
 | `--hold` | `10` | The standing guards' hold window. |
 | `--allow-unhealthy-baseline` | | Compare even when sessions are down in the *before* lab. |
 | `--keep` | | Leave the *after* lab running, to run the `next_diagnostic` commands. |
+
+### Standing guards
+
+The standing guards catch what an intent can't: an intent that declares a leak explains the leak, and only a guard from the base branch fails it. They are read from the *before* side, never from the change:
+
+| `--before` | `--guards` | Guards used | `guards_source` |
+|---|---|---|---|
+| git ref | not given | the `netdryrun.yml` next to the topology in that ref, when one exists | `before-ref` (or `none`) |
+| git ref | given | that path, read from the ref (exit code `2` if it isn't there) | `before-ref` |
+| directory | not given | none: a `netdryrun.yml` in the directory is not used | `none` |
+| directory | given | that path | `explicit` |
+
+With no guards, the report's `warnings` and the verdict line say "no standing guards ran".
 
 ### How each side is built
 

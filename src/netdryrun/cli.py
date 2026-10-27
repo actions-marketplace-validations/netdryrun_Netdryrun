@@ -284,7 +284,8 @@ def main(argv: list[str] | None = None) -> int:
     p_ver.add_argument("--intent", required=True, metavar="FILE", help="the intent file (what the change is meant to do)")
     p_ver.add_argument("--json", metavar="FILE", help="write the netdryrun.verify/v1 report as JSON")
     p_ver.add_argument("--guards", metavar="FILE", help="standing guards (netdryrun.yml) run on the after lab; read "
-                       "from the --before ref when it is a git ref")
+                       "from the --before ref when it is a git ref (default there: the netdryrun.yml next to the "
+                       "topology); with a directory --before, only this path")
     p_ver.add_argument("--config-dir", metavar="DIR", help="with directory sides: the folder each directory stands "
                        "for, relative to the topology (default: the folder holding the topology and every file it "
                        "binds); every bind must resolve inside it")

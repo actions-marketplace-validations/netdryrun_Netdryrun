@@ -34,7 +34,7 @@ from .converge import Inconclusive, stable_snapshot
 from .engine import VerifyError, baseline_problems, match
 from .frr import FrrCollector
 from .intent import IntentError, check_nodes, load_intent
-from .report import ALLOW_WARNING, VerifyResult
+from .report import ALLOW_WARNING, NO_GUARDS_WARNING, VerifyResult
 from .snapshot import Snapshot, SnapshotError
 
 HOST_KINDS = ("bridge", "ovs-bridge", "host", "ext-container", "k8s-kind")
@@ -441,22 +441,32 @@ def run_guards(cfg, topology: Path, settle: float, hold: float, log) -> dict:
                          for r in rep.results if not r.passed]}
 
 
-def load_guards(path: str, before_spec: str, before: Side):
-    """The standing guards. With a git ref as --before, they are read from that ref (the base branch),
-    never from the working tree; with a directory, from the path given."""
+def load_guards(path: str | None, before_spec: str, before: Side):
+    """The standing guards: (config or None, where it was read from, guards_source).
+
+    With a git ref as --before, they are read from that ref (the base branch), never from the working tree
+    or the change: the --guards path in that ref, or without --guards the netdryrun.yml next to the
+    topology there, when one exists. With a directory as --before, only from an explicit --guards path."""
     from ..runner import load_config
 
     if before.is_ref:
-        p = before.locate(Path(path))
-        if p is None:
-            raise VerifyInputError(f"--guards {path} is outside the git repository {before.repo}")
-        if p.is_dir():
-            p = p / "netdryrun.yml"
-        if not p.is_file():
-            raise VerifyInputError(f"--guards {path}: not in the before ref ({before_spec}); the standing guards are "
-                                   "read from the base, never from the change")
-        return load_config(p), f"{p.relative_to(before.root).as_posix()} at {before_spec}"
-    return load_config(path), str(path)
+        if path is None:
+            p = before.topology.parent / "netdryrun.yml"
+            if not p.is_file():
+                return None, None, "none"
+        else:
+            p = before.locate(Path(path))
+            if p is None:
+                raise VerifyInputError(f"--guards {path} is outside the git repository {before.repo}")
+            if p.is_dir():
+                p = p / "netdryrun.yml"
+            if not p.is_file():
+                raise VerifyInputError(f"--guards {path}: not in the before ref ({before_spec}); the standing guards "
+                                       "are read from the base, never from the change")
+        return load_config(p), f"{p.relative_to(before.root).as_posix()} at {before_spec}", "before-ref"
+    if path is None:
+        return None, None, "none"
+    return load_config(path), str(path), "explicit"
 
 
 # ---------------------------------------------------------------------------------------------------------
@@ -484,9 +494,9 @@ def verify(topology: str, before: str, after: str, intent_path: str, *, guards: 
         res.before_spec, res.after_spec = f"{before}: {bside.desc}", f"{after}: {aside.desc}"
         check_sides(bside, aside, log)
         before_topo, after_topo = bside.topology, aside.topology
-        gcfg, gsource = None, None
-        if guards:
-            gcfg, gsource = load_guards(guards, before, bside)
+        gcfg, gsource, res.guards_source = load_guards(guards, before, bside)
+        if gcfg is None:
+            res.warnings.append(NO_GUARDS_WARNING)
         nodes = classify_nodes(lab, gcfg.drivers if gcfg else {}, list(unobserved))
         check_nodes(res.intent, nodes)
         side = side_fn or real_side(nodes=nodes, setup=gcfg.setup if gcfg else {}, settle=settle, timeout=timeout,

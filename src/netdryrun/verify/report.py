@@ -26,6 +26,9 @@ NOTICE = ("Explained is not the same as safe: review the declared intent above. 
           "verify never prints SAFE TO PROCEED.")
 ALLOW_WARNING = ("allow_anywhere weakens the verdict: every change to the listed prefixes is accepted on every node. "
                  "A change that adds or widens it needs a second approver (CODEOWNERS); the CLI can't enforce that.")
+NO_GUARDS_WARNING = ("no standing guards ran: nothing checked the after lab against the base branch's netdryrun.yml, "
+                     "so an intent that declares a leak explains it. Pass --guards, or keep a netdryrun.yml next to "
+                     "the topology in the --before ref.")
 INCONCLUSIVE_ADVICE = "Retry at most once, then escalate. This says nothing about the change."
 
 
@@ -46,6 +49,7 @@ class VerifyResult:
     baseline_problems: list[str] = field(default_factory=list)
     baseline_overridden: bool = False
     guards: dict | None = None
+    guards_source: str = "none"             # before-ref, explicit, none
     timings: dict = field(default_factory=dict)
     containers: dict = field(default_factory=dict)
     run_id: str = ""
@@ -175,6 +179,7 @@ def to_dict(r: VerifyResult) -> dict:
         "allowed": allowed,
         "unobserved": dict(sorted((r.before or r.after).unobserved.items())) if (r.before or r.after) else {},
         "guards": r.guards,
+        "guards_source": r.guards_source,
         "timings": r.timings,
         "evidence": {"before": r.before.to_json() if r.before is not None else None,
                      "after": r.after.to_json() if r.after is not None else None},
@@ -187,7 +192,9 @@ def to_json(r: VerifyResult) -> str:
 
 def console(r: VerifyResult, max_items: int = 40) -> str:
     d = to_dict(r)
-    lines = [f"verify: {r.verdict}"]
+    lines = [f"verify: {r.verdict}" + (" (warning: no standing guards ran)"
+                                       if r.guards_source == "none" and r.status in ("matched", "no_change", "failed")
+                                       else "")]
     if d["intent"] is not None:
         lines.append(f"Intent ({d['intent']['source']}, supplied by {d['intent']['supplied_by']}):")
         lines += [f"  [{i}] {t}" for i, t in enumerate(d["intent"]["lines"])] or ["  (none: nothing may change)"]

@@ -6,7 +6,7 @@
   "type": "object",
   "required": ["schema", "verdict", "status", "notice", "intent", "run_id", "started", "finished", "topology", "before",
                "after", "failed_because", "warnings", "error", "inconclusive", "baseline", "diff_items", "undeclared",
-               "not_happened", "declared", "allowed", "unobserved", "guards", "timings", "evidence"],
+               "not_happened", "declared", "allowed", "unobserved", "guards", "guards_source", "timings", "evidence"],
   "additionalProperties": false,
   "properties": {
     "schema": {"const": "netdryrun.verify/v1"},
@@ -83,6 +83,7 @@
                                          "reason": {"type": "string"}}}}}}
       ]
     },
+    "guards_source": {"enum": ["before-ref", "explicit", "none"]},
     "timings": {"type": "object", "additionalProperties": false,
                 "properties": {"before_s": {"type": "number"}, "after_s": {"type": "number"}}},
     "evidence": {"type": "object", "required": ["before", "after"], "additionalProperties": false,
