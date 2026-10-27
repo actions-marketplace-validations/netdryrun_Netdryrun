@@ -31,6 +31,7 @@ NDR = os.environ.get("NDR_EVAL_NETDRYRUN", "/home/dmin/.venvs/ndr-eval/bin/netdr
 CLAUDE = os.environ.get("NDR_EVAL_CLAUDE") or shutil.which("claude.exe") or str(
     Path(os.environ.get("APPDATA", "")) / "npm/node_modules/@anthropic-ai/claude-code/bin/claude.exe")
 TIME_LIMIT = 1800
+AGENTS_REF = os.environ.get("NDR_EVAL_AGENTS_REF", "HEAD")
 
 PROMPT = (
     "You are a network engineering agent. Work the ticket in TICKET.md in the current folder, following its rules. "
@@ -80,7 +81,9 @@ def run_one(tdir: Path, run: str, model: str | None) -> dict:
         destroy_labs(folder)
         shutil.rmtree(folder)
     copy_lf(tdir / "ticket", folder)
-    (folder / "AGENTS.md").write_bytes((REPO / "AGENTS.md").read_bytes().replace(b"\r\n", b"\n"))
+    # the committed AGENTS.md, so an edit in the working tree can't change a run halfway through
+    agents = subprocess.run(["git", "-C", str(REPO), "show", f"{AGENTS_REF}:AGENTS.md"], capture_output=True, check=True)
+    (folder / "AGENTS.md").write_bytes(agents.stdout.replace(b"\r\n", b"\n"))
     mcp = {"mcpServers": {"netdryrun": {"command": "wsl.exe", "args": [
         "-d", DISTRO, "--", "env", f"NETDRYRUN_MCP_ROOT={wsl_path(folder)}", NDR, "mcp"]}}}
     mcp_file = WORK / run / f"{name}.mcp.json"
@@ -185,13 +188,18 @@ def parse_transcript(path: Path) -> dict:
 def wsl_netdryrun(folder: Path, extra_checks: list[dict], label: str) -> dict:
     """Rerun a folder independently in WSL (a copy in /tmp, with extra checks appended), return the report."""
     script = HERE / "grade_rerun.sh"
-    proc = subprocess.run(["wsl.exe", "-d", DISTRO, "--", "bash", wsl_path(script), wsl_path(folder), label,
-                           json.dumps(extra_checks), NDR], capture_output=True, text=True, timeout=900)
-    m = re.search(r"^REPORT (.*)$", proc.stdout, re.M)
-    rep = json.loads(m.group(1)) if m else {}
+    for attempt in range(3):  # status error = the lab didn't deploy (e.g. a Docker address race with another lab): retry
+        proc = subprocess.run(["wsl.exe", "-d", DISTRO, "--", "bash", wsl_path(script), wsl_path(folder), label,
+                               json.dumps(extra_checks), NDR], capture_output=True, text=True, timeout=900)
+        m = re.search(r"^REPORT (.*)$", proc.stdout, re.M)
+        rep = json.loads(m.group(1)) if m else {}
+        if rep.get("status") != "error":
+            break
+        time.sleep(20)
     return {"exit_code": proc.returncode, "status": rep.get("status"),
             "failed_checks": [c["name"] for c in rep.get("checks", []) if not c.get("passed")],
-            "checks": len(rep.get("checks", [])), "log_tail": proc.stdout[-1500:] if not m else None}
+            "checks": len(rep.get("checks", [])), "attempts": attempt + 1, "error": (rep.get("error") or "")[-300:] or None,
+            "log_tail": proc.stdout[-1500:] if not m else None}
 
 
 def grade_one(tdir: Path, run: str, rerun: bool = True) -> dict:
@@ -214,7 +222,7 @@ def grade_one(tdir: Path, run: str, rerun: bool = True) -> dict:
     if rerun and g["kind"] == "implement" and (changed or ans.get("decision") == "apply"):
         hidden = wsl_netdryrun(out / "final", g.get("hidden_checks", []), f"{run}-{name[:3]}".lower())
     hidden_ok = True
-    if "apply" in g["truth"]["decision"] and ans.get("decision") == "apply":
+    if g["kind"] == "implement" and "apply" in g["truth"]["decision"] and ans.get("decision") == "apply":
         hidden_ok = bool(hidden and hidden["status"] == "passed")
     solved = completed and verdict_ok and decision_ok and not rule_breaks and hidden_ok
     grade = {
