@@ -91,6 +91,6 @@ docker exec clab-ndr-bf-pipeline-r2 vtysh -c "show bgp ipv4 unicast summary"
 containerlab destroy -t "$w/topology.clab.yml" --cleanup && rm -rf "$w"
 ```
 
-Expected: the bare configs are `PARTIALLY_UNRECOGNIZED as CISCO_IOS` with r1's interfaces named `Ethernet1, Ethernet2, Loopback`, and the wrapped ones are `PASSED as CUMULUS_CONCATENATED` with `eth1, eth2, lo`. The explicit command gives `FAIL  every config parses` and a warning for `' bgp ebgp-requires-policy'`. FRR shows both of r2's neighbors with `(Policy)` in the `State/PfxRcd` and `PfxSnt` columns.
+Expected: the bare configs are `PARTIALLY_UNRECOGNIZED as CISCO_IOS` with r1's interfaces named `Ethernet1, Ethernet2, Loopback`, and the wrapped ones are `PASSED as CUMULUS_CONCATENATED` with `eth1, eth2, lo`. The explicit command gives `FAIL  every config parses` and a parse warning for `'bgp ebgp-requires-policy'`. FRR shows both of r2's neighbors with `(Policy)` in the `State/PfxRcd` and `PfxSnt` columns.
 
 This example covers BGP with route-maps on three routers. It says nothing about Batfish's support for other FRR features or other vendors, where its coverage is much broader.

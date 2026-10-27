@@ -96,6 +96,8 @@ Batfish's FRR support is partial, and the way you feed it configs matters:
 - **Batfish's FRR grammar belongs to its Cumulus Linux support.** Wrapped in the "Cumulus concatenated" layout (a hostname line, an interfaces section, a `ports.conf` marker, then `frr.conf`), the same three configs parse as `CUMULUS_CONCATENATED` with status `PASSED`, no warnings, and the lab's interface names. `batfish_check.py` does this wrapping.
 - **What is supported is the subset Cumulus used.** In this test, the defaults profile is accepted but not modelled, and `bgp ebgp-requires-policy` is not recognized at all. Make the gate fail on any file that does not parse cleanly (`fileParseStatus`, `parseWarning`), as the example script does.
 
+The commands that reproduce these findings, and the `(Policy)` output from FRR, are in the example's [README](https://github.com/netdryrun/netdryrun/tree/main/examples/batfish-pipeline#reproduce-the-findings).
+
 These findings cover only BGP with route-maps on three FRR routers. Batfish's support for other vendors (Cisco, Juniper, Arista, Palo Alto and more) is much broader and is not tested here.
 
 ## Takeaways
