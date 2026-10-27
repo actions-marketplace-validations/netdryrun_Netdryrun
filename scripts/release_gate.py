@@ -67,10 +67,11 @@ VERDICT_MODULES = {
 }
 
 # Coverage floors (percent of lines and branches). A ratchet: raise a floor when coverage rises,
-# never lower one to make a release pass. Set to the coverage measured on 2026-10-27 (Python 3.12,
-# rounded down): checks 87.5, config 92.3, runner 38.7, drivers 70.7. runner.py is low because its
-# deploy/destroy path needs a lab; the live layer exercises it.
-COVERAGE_FLOORS = {"checks": 87, "config": 92, "runner": 38, "drivers": 70}
+# never lower one to make a release pass. Raised after the mutation-testing work of 2026-10-27 to the
+# coverage measured then (Python 3.12, rounded down; drivers measured 100, floored at 99 so that one
+# platform-specific branch does not fail the gate): checks 99.5, config 99.2, runner 98.3, drivers 100.
+# The runner's deploy, scenario and gate paths run on a fake lab and a fake clock (tests/test_verdict_runner.py).
+COVERAGE_FLOORS = {"checks": 99, "config": 99, "runner": 98, "drivers": 99}
 
 # Files that are evidence of past runs: never rewritten, so never linted or version-checked.
 EVIDENCE = ("examples/agent-eval/results/", "examples/agent-eval/validation/", "corpus/results/", "corpus/v2/results/")

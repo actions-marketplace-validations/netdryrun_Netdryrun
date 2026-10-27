@@ -86,9 +86,6 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# zip() without strict=: the polling loops zip checks with their results. Kept visible on purpose:
-# remove this line once checks.py passes strict=True (a short result list would drop a check).
-"src/netdryrun/checks.py" = ["B905"]
 "examples/agent-eval/run_eval.py" = ["B007"]
 
 # Line coverage for the verdict modules (release gate, unit layer).
