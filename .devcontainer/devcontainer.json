@@ -14,12 +14,20 @@
     "storage": "32gb"
   },
   "postCreateCommand": "bash .devcontainer/setup.sh",
+  // Every terminal says what to type first
+  "postAttachCommand": "bash .devcontainer/hint.sh",
   "customizations": {
     "codespaces": {
       "openFiles": ["examples/agent-demo/README.md"]
     },
     "vscode": {
-      "extensions": ["redhat.vscode-yaml"]
+      "extensions": ["redhat.vscode-yaml"],
+      "settings": {
+        // The image's containerlab extension opens its own welcome page on top of our instructions
+        "containerlab.showWelcomePage": false,
+        // Open the demo README rendered, not as Markdown source
+        "workbench.editorAssociations": {"*.md": "vscode.markdown.preview.editor"}
+      }
     }
   }
 }
