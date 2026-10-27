@@ -5,7 +5,7 @@ description: A two-stage gate for network changes. Batfish analyses FRR configs 
 
 # Batfish, then Netdryrun
 
-[Batfish](https://batfish.org) and Netdryrun™ answer different questions. Batfish reads configs and models the network: nothing has to boot, and in the runs below it answered in 3 to 5 seconds. Netdryrun boots the configs in a containerlab lab and checks what the routing software really does. Run Batfish first on every commit, and boot the lab only when it passes.
+[Batfish](https://batfish.org) and Netdryrun™ answer different questions. Batfish reads configs and models the network: nothing has to boot, and in the runs below its stage took 2 to 6 seconds. Netdryrun boots the configs in a containerlab lab and checks what the routing software really does. Run Batfish first on every commit, and boot the lab only when it passes.
 
 This page reports one measured run of that pipeline: four versions of a small FRR network, each tested by both stages. The code is in [`examples/batfish-pipeline`](https://github.com/netdryrun/netdryrun/tree/main/examples/batfish-pipeline).
 
@@ -38,7 +38,7 @@ jobs:
       - run: pip install pybatfish
       - name: Wait for the Batfish service
         run: |
-          for i in $(seq 60); do
+          for _ in $(seq 60); do
             python -c 'from pybatfish.client.session import Session; Session(host="localhost").list_networks()' 2>/dev/null && exit 0
             sleep 2
           done
@@ -59,18 +59,18 @@ The workflow is an example to copy: this repository's CI does not run it. The me
 
 ## Results
 
-Measured on 2026-10-27 on WSL2 (20 cores, 16 GB) with images already pulled: Batfish 2026.08.27.3685, pybatfish 2026.9.17.3748, Netdryrun 0.3.0, containerlab 0.81.1, FRR 10.4.1. The `batfish/batfish` service container was ready to answer 3.3 s after `docker run`. Lab times include deploying and destroying the lab. Each change below replaces r2's config.
+Measured on 2026-10-27 from a fresh clone, following the example's [README](https://github.com/netdryrun/netdryrun/tree/main/examples/batfish-pipeline#run-it) word for word, on WSL2 (20 cores, 16 GB) with images already pulled: `batfish/batfish` (Batfish 2026.08.27.3685), pybatfish 2026.9.17.3748, Netdryrun 0.3.0 from PyPI, containerlab 0.81.1, FRR 10.4.1. In a separate measurement, the `batfish/batfish` container answered 3.3 s after `docker run`. The Batfish stage includes loading the snapshot; the lab stage includes deploying and destroying the lab. Each change below replaces r2's config; the last column is the command that reproduces the row.
 
-| Change to r2 | Batfish | Netdryrun lab | Who caught it |
-|---|---|---|---|
-| None (baseline) | pass, 4 s | pass, 70 s | Both pass |
-| Adds `default-originate` toward r1 | **fail**, 3 s | **fail**, 68 s | Both; Batfish first |
-| Route-map name typo (`ALLOW-AL`) toward r1 | **fail**, 5 s | **fail**, 179 s | Both; Batfish first, but its route model predicts the wrong outcome |
-| Switches to `frr defaults traditional` and drops the "allow all" route-maps | pass, 3 s | **fail**, 266 s | **Only the lab** |
+| Change to r2 | Batfish | Netdryrun lab | Who caught it | Reproduce |
+|---|---|---|---|---|
+| None (baseline) | pass, 6 s | pass, 69 s | Both pass | `pipeline.sh` |
+| Adds `default-originate` toward r1 | **fail**, 2 s | **fail**, 68 s | Both; Batfish first | `BOTH=1 pipeline.sh default-leak` |
+| Route-map name typo (`ALLOW-AL`) toward r1 | **fail**, 2 s | **fail**, 177 s | Both; Batfish first, but its route model predicts the wrong outcome | `BOTH=1 pipeline.sh route-map-typo` |
+| Switches to `frr defaults traditional` and drops the "allow all" route-maps | pass, 2 s | **fail**, 265 s | **Only the lab** | `BOTH=1 pipeline.sh no-policy` |
 
 ### Caught by Batfish first: a leaked default route
 
-r2 starts sending r1 a default route. In a 3-second run, Batfish reports that r1 learns `0.0.0.0/0` from r2 and passes it on to r3. The lab finds the same leak on r1 (received but not selected) after about a minute. Stopping at the Batfish stage saves the lab run.
+r2 starts sending r1 a default route. In a 2-second run, Batfish reports that r1 learns `0.0.0.0/0` from r2 and passes it on to r3. The lab finds the same leak on r1 (received but not selected) after about a minute. Stopping at the Batfish stage saves the lab run.
 
 The route-map typo is also caught first: Batfish's `undefinedReferences` question names the missing `ALLOW-AL` and its line. Its routing model, though, still predicts that r1 uses the direct path to r2. FRR denies everything through a route-map that does not exist, so in the lab r1 receives nothing from r2 and reaches r2's LAN through r3. Ping still works; only the best-path check and the prefix count fail. The gate would fail in both stages, but only the lab shows what the network would really do.
 
@@ -100,7 +100,7 @@ These findings cover only BGP with route-maps on three FRR routers. Batfish's su
 
 ## Takeaways
 
-- Put Batfish first. It needs no lab, it failed the bad changes in 3 to 5 seconds, it names the file and line, and here it caught two of the three bad changes before any lab booted.
+- Put Batfish first. It needs no lab, it failed the bad changes in 2 seconds each, it names the file and line, and here it caught two of the three bad changes before any lab booted.
 - Keep the lab stage. The change that passed Batfish broke every route through r2, because of a vendor default that the model does not know about.
 - Watch for disagreements, not only for failures. On the route-map typo, both stages failed, but Batfish's prediction of the outcome was wrong.
 

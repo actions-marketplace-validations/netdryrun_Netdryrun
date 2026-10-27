@@ -24,7 +24,7 @@ Times are wall-clock for `netdryrun run` on WSL2 (20 cores, 16 GB) with images a
 | [sonic-frr](#sonic-frr) | SONiC VS + FRR | Configuring a NOS after boot, a port-down scenario | `PASSED: 8 passed, 0 failed` | `0` | 90 s |
 | [arista-frr](#arista-frr) | Arista cEOS + FRR (your image) | A bring-your-own vendor image | `PASSED: 10 passed, 0 failed` | `0` | 92 s |
 | [agent-demo](#agent-demo) `demo.sh` | FRR | An agent's leaky change rejected, the fix accepted | `Demo OK` | `0` | 65 s |
-| [batfish-pipeline](#batfish-pipeline) | FRR | Batfish first, then the lab; three bad changes | `PASSED: 9 passed, 0 failed` | `0` | 74 s |
+| [batfish-pipeline](#batfish-pipeline) | FRR | Batfish first, then the lab; three bad changes | `PASSED: 9 passed, 0 failed` | `0` | 75 s |
 
 ## frr-bgp
 

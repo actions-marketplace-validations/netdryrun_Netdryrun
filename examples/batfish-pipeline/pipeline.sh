@@ -17,7 +17,7 @@ py="${BF_PYTHON:-python3}"
 ndr="${NDR:-netdryrun}"
 command -v "$ndr" >/dev/null || { echo "netdryrun not found (install it, or set NDR=/path/to/netdryrun)"; exit 2; }
 work="$(mktemp -d)" || { echo "mktemp failed"; exit 2; }
-[ -n "$work" ] && [ -d "$work" ] || { echo "mktemp failed"; exit 2; }
+if [ -z "$work" ] || [ ! -d "$work" ]; then echo "mktemp failed"; exit 2; fi
 trap 'rm -rf "$work"' EXIT
 cp -r "$here/netdryrun.yml" "$here/topology.clab.yml" "$here/configs" "$work"/
 if [ -n "$change" ]; then

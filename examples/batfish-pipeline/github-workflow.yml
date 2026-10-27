@@ -26,7 +26,7 @@ jobs:
       - run: pip install pybatfish
       - name: Wait for the Batfish service
         run: |
-          for i in $(seq 60); do
+          for _ in $(seq 60); do
             python -c 'from pybatfish.client.session import Session; Session(host="localhost").list_networks()' 2>/dev/null && exit 0
             sleep 2
           done
