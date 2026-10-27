@@ -461,3 +461,19 @@ def test_baseline_problems_list_every_session_not_established():
                                              local_address=None))
     probs = baseline_problems(lab.snap())
     assert len(probs) == 2 and all("edge1" in p for p in probs)
+
+
+# --- best_path_on freezes every path but the new best (review finding 5) ------------------------------------
+
+def test_best_path_on_the_old_best_path_changing_a_listed_attribute_is_undeclared():
+    before = _two_paths(base())
+    after = _swap_winner(_two_paths(base()), "weight", 100)
+    lines = [{"prefix": "198.51.100.0/24", "best_path_on": "edge1",
+              "to": {"weight": 100, "from": "10.0.2.2", "next_hop": "10.0.2.2", "as_path": "65002 65003"}},
+             {"prefix": "198.51.100.0/24", "best_path_on": "cust1", "to": {"as_path": "65000 65002 65003"}}]
+    assert run(before, after, lines).status == "matched"
+    # the old best path also changes weight, to a value nobody declared: only the best flag may move on it
+    after.path("edge1", "198.51.100.0/24", "10.0.3.2", path(best=False, as_path="65003", next_hop="10.0.3.2", weight=50))
+    m = run(before, after, lines)
+    assert m.status == "failed" and undeclared(m) == {("path", "edge1", "198.51.100.0/24")}
+    assert {d.key.neighbor for d in m.undeclared} == {"10.0.3.2"}

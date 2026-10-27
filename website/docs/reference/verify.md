@@ -122,7 +122,7 @@ intent:
 
 One meaning: **every listed value must equal exactly after the change, and every attribute not listed stays frozen.** If the winner changes to another neighbor's path, `from`, `next_hop` and the AS path change too, and each must be listed. At least one listed value must actually change. `to:` accepts `from`, `next_hop`, `as_path`, `origin`, `local_pref`, `med`, `weight`, `communities`, `ext_communities`, `large_communities`, `cluster_list` and `originator_id`.
 
-It explains, on that node: the best flag moving between paths; changes to the old and new best paths in the listed attributes only; the BGP RIB entry's next hops (when `next_hop` is listed) or metric (when `med` is); and advertisements of the prefix, by the node or to it, that differ only in listed attributes and carry the new best path's values. A downstream node whose best path changes needs its own line. A lost backup path is never explained by a best-path line.
+It explains, on that node: the best flag moving between paths; changes to the new best path in the listed attributes only, to exactly the declared values (every other path, the old best included, stays frozen apart from its best flag); the BGP RIB entry's next hops (when `next_hop` is listed) or metric (when `med` is); and advertisements of the prefix, by the node or to it, that differ only in listed attributes and carry the new best path's values. A downstream node whose best path changes needs its own line. A lost backup path is never explained by a best-path line.
 
 ### session ... goes: down
 

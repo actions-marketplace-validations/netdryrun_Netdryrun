@@ -15,8 +15,9 @@ What each form explains (and nothing else):
   disappears_from S     on each node in S, the removed RIB entries and BGP paths for the prefix (received-only
                         routes before inbound policy only with including_received_only); and every
                         withdrawn advertisement of the prefix to a node in S.
-  best_path_on N, to:   on N, the move of the best flag between paths, changes to the before and after best
-                        paths in the listed attributes only, the BGP RIB entry's next hops (when next_hop is
+  best_path_on N, to:   on N, the move of the best flag between paths, changes to the new best path in the
+                        listed attributes only (to exactly the declared values; every other path, the old
+                        best included, may change its best flag only), the BGP RIB entry's next hops (when next_hop is
                         listed) or metric (when med is), and changed advertisements of the prefix, by N or to
                         N, that differ only in listed attributes and carry the new best path's values.
   session goes down     both ends of that one session: its state, the paths, received routes and
@@ -395,7 +396,7 @@ def _best_path(ctx: _Ctx, ln: Line) -> LineResult:
     if frozen:
         return LineResult(ln, False, f"{n}: attributes not listed in `to:` changed too: {'; '.join(frozen)}")
     may = _fields_for(ln.to)
-    best_keys = {sp for sp, p in b.paths.items() if p.best} | {sp for sp, p in a.paths.items() if p.best}
+    new_best = next(sp for sp, p in a.paths.items() if p.best)
     res = LineResult(ln, True, details=[{"node": n, "before": {"from": vb["from"], **_compact(vb, ln.to)},
                                          "after": {"from": va["from"], **_compact(va, ln.to)}}])
     for d in ctx.items:
@@ -404,7 +405,9 @@ def _best_path(ctx: _Ctx, ln: Line) -> LineResult:
             continue
         f = set(d.fields)
         if k.kind == "path" and k.node == n:
-            ok = f <= {"best"} | (may if (k.neighbor, k.path_id) in best_keys else set())
+            # the new best path: the best flag and the listed attributes (whose values were checked above);
+            # every other path, the old best included: the best flag only
+            ok = f <= {"best"} | (may if (k.neighbor, k.path_id) == new_best else set())
         elif k.kind == "rib" and k.node == n and k.protocol == "bgp":
             ok = f <= ({"nexthops"} if "next_hop" in ln.to else set()) | ({"metric"} if "med" in ln.to else set())
         elif k.kind == "adj_out" and k.node == n:
