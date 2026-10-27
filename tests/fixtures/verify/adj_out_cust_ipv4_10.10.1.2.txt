@@ -1,0 +1,10 @@
+# synthetic, to be replaced by live capture
+{
+  "bgpTableVersion": 2,
+  "bgpLocalRouterId": "10.10.1.1",
+  "defaultLocPrf": 100,
+  "localAS": 65000,
+  "advertisedRoutes": {},
+  "totalPrefixCounter": 0,
+  "filteredPrefixCounter": 0
+}

@@ -1,0 +1,2 @@
+# synthetic, to be replaced by live capture
+vrf cust id 5 table 1001

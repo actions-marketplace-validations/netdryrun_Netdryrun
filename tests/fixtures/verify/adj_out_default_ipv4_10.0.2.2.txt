@@ -1,0 +1,51 @@
+# synthetic, to be replaced by live capture
+{
+  "bgpTableVersion": 9,
+  "bgpLocalRouterId": "1.1.1.1",
+  "defaultLocPrf": 100,
+  "localAS": 65000,
+  "advertisedRoutes": {
+    "192.0.2.0/24": {
+      "prefix": "192.0.2.0/24",
+      "paths": [
+        {
+          "aspath": {
+            "string": "65000 65000",
+            "segments": [
+              {
+                "type": "as-sequence",
+                "list": [
+                  65000,
+                  65000
+                ]
+              }
+            ],
+            "length": 2
+          },
+          "origin": "IGP",
+          "metric": 0,
+          "weight": 32768,
+          "valid": true,
+          "version": 2,
+          "lastUpdate": {
+            "epoch": 1793073298,
+            "string": "Tue Oct 27 03:54:58 2026"
+          },
+          "nexthops": [
+            {
+              "ip": "10.0.2.1",
+              "afi": "ipv4",
+              "used": true
+            }
+          ],
+          "peer": {
+            "peerId": "0.0.0.0",
+            "routerId": "1.1.1.1"
+          }
+        }
+      ]
+    }
+  },
+  "totalPrefixCounter": 1,
+  "filteredPrefixCounter": 0
+}
