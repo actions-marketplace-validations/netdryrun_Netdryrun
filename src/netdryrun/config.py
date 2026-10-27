@@ -355,8 +355,8 @@ def _validate_check(i: int, raw: Any, default_timeout: float, prefix: str = "che
         from .checks import is_post_convergence   # checks imports this module
         if not is_post_convergence(check):
             raise ConfigError(f"{where}: hold only applies to post-convergence checks (present: false, "
-                              "without_communities, expect: failure, a state other than established, max or "
-                              "exact); this check passes after 2 consecutive passing samples, so hold would be "
+                              "a bgp_route attribute, expect: failure, a state other than established, max "
+                              "or exact); this check passes after 2 consecutive passing samples, so hold would be "
                               "ignored")
     return check
 

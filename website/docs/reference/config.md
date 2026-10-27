@@ -164,7 +164,7 @@ Rules:
 - The check fails if there is no path, or no best path (for example when the next hop is unreachable). The failure detail shows what the best path actually carries.
 - **Local preference** is the effective value: a path without a LOCAL_PREF attribute (eBGP-learned or local) gets the device's default (FRR and SONiC: `bgp default local-preference`; SR Linux: the neighbor's `local-preference`; Arista EOS reports it directly). The exception is a locally originated path on Arista EOS, which reports no local preference; asserting `local_pref` on it fails with "not set".
 - **Next hop** is the address the device reports. For an IPv6 path FRR may list only the link-local next hop.
-- `present: false` and `without_communities` make it a post-convergence check: a "must not carry" check could pass on a transient best path before the real one arrives, so it must hold instead.
+- `present: false`, and any attribute key (`communities`, `without_communities`, `as_path`, `as_path_regex`, `local_pref`, `med`, `next_hop`), make it a post-convergence check. The best path can change when a slower session comes up, so an attribute check could pass on a temporary best path before the real one arrives; it is judged only after every BGP session on the node is up and the settle delay, and must hold (0.3.1 and later; 0.3.0 judged attribute checks other than `without_communities` on 2 early samples). A `bgp_route` with no attribute keys (the best path exists) is a positive check.
 
 ```yaml
 - type: bgp_route         # customer routes are tagged and preferred
@@ -277,7 +277,7 @@ Limits: only FRR nodes are supported. Any other node is refused before the lab d
 
 Networks need time to converge, and some checks are trivially true before they do. Netdryrun splits checks into two groups.
 
-**Positive checks** (session `established`, prefix count with only `min`, route present, ping expected to succeed):
+**Positive checks** (session `established`, prefix count with only `min`, route present, a `bgp_route` best path that exists with no attribute asserted, ping expected to succeed):
 
 - Polled every 3 seconds until they pass on **2 consecutive samples**, or until `timeout` expires.
 - A single lucky sample is not enough. If the last sample passed but the streak was too short, the result says "not stable". If the check passed some samples but not consistently, the result says "flapping".
@@ -285,7 +285,7 @@ Networks need time to converge, and some checks are trivially true before they d
 **Post-convergence checks** are the ones that would pass on a network that has not come up yet:
 
 - routes that must be absent (`present: false` on `route` or `bgp_route`)
-- best paths that must not carry a community (`without_communities`)
+- best-path attributes (`bgp_route` with any of `communities`, `without_communities`, `as_path`, `as_path_regex`, `local_pref`, `med`, `next_hop`): a best path seen while a slower session is still coming up can be replaced when it arrives
 - pings that must fail (`expect: failure`)
 - sessions expected in a state other than `established`
 - prefix counts with an upper bound (`max` or `exact`), since 0 prefixes satisfies `max: 10` while BGP is still starting

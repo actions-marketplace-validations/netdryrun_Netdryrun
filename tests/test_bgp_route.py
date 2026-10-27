@@ -134,7 +134,8 @@ def test_post_convergence_rules():
         return Check(type="bgp_route", params={"node": "r1", "prefix": "10.0.0.0/8", **p}, name="x", timeout=1)
     assert is_post_convergence(c(present=False))
     assert is_post_convergence(c(without_communities=["1:1"]))
-    assert not is_post_convergence(c(communities=["1:1"], local_pref=200))
+    assert is_post_convergence(c(communities=["1:1"], local_pref=200))
+    assert not is_post_convergence(c())   # presence only
 
 
 def test_unsupported_attribute_is_refused(monkeypatch):

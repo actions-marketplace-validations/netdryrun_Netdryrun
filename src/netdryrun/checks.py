@@ -12,7 +12,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 
-from .config import Check, community_name
+from .config import BGP_ATTRIBUTES, Check, community_name
 from .drivers import Driver
 
 REACH_WINDOW = 30.0  # seconds for post-convergence prefix counts to reach their range
@@ -176,13 +176,15 @@ EVALUATORS = {"bgp_session": _bgp_session, "bgp_prefixes": _bgp_prefixes, "route
 
 def is_post_convergence(check: Check) -> bool:
     """Checks that are trivially true before the network converges, so they must run afterwards
-    and hold: "must be absent", "must fail", a session expected NOT established, and upper bounds
-    on prefix counts (0 prefixes satisfies "max: 10" while BGP is still coming up)."""
+    and hold: "must be absent", "must fail", a session expected NOT established, upper bounds on
+    prefix counts (0 prefixes satisfies "max: 10" while BGP is still coming up), and any assertion
+    about a best path's attributes (the best path can change when a slower session comes up)."""
     p = check.params
     return (
         (check.type in ("route", "bgp_route") and p.get("present", True) is False)
-        # "must not carry" passes on a transient best path before the real one arrives: hold it instead
-        or (check.type == "bgp_route" and "without_communities" in p)
+        # A best-path attribute (next hop, AS path, local-pref, MED, communities, or "must not carry") can
+        # pass on a transient best path before the real one arrives: judge it after convergence and hold it
+        or (check.type == "bgp_route" and any(k in p for k in BGP_ATTRIBUTES))
         or (check.type == "ping" and p.get("expect", "success") == "failure")
         or (check.type == "bgp_session" and p.get("state", "established") != "established")
         or (check.type == "bgp_prefixes" and ("max" in p or "exact" in p))

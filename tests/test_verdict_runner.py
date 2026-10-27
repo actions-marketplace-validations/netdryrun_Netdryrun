@@ -18,7 +18,7 @@ import pytest
 from netdryrun import runner
 from netdryrun.checks import Result
 from netdryrun.config import Check, Config, Fault, Scenario
-from netdryrun.drivers.base import BgpNeighbor, DriverError, Observation, Route
+from netdryrun.drivers.base import BgpNeighbor, BgpPath, DriverError, Observation, Route
 from netdryrun.lab import ExecResult, Lab, LabError, Node
 
 
@@ -129,10 +129,12 @@ def _at(v, t):
 
 class Drv:
     """neighbors: {vrf: value or fn(t)} where value is {addr: state or (state, {afi: n})};
-    routes: {vrf: fn(t, prefix) -> bool (present and active)}. A VRF not listed is an error."""
+    routes: {vrf: fn(t, prefix) -> bool (present and active)};
+    paths: {vrf: fn(t, prefix) -> list[BgpPath]}. A VRF not listed is an error."""
 
-    def __init__(self, clock, neighbors=None, routes=None, ping=None, neighbors_error=None, on_call=None):
+    def __init__(self, clock, neighbors=None, routes=None, ping=None, neighbors_error=None, on_call=None, paths=None):
         self.clock, self.neighbors, self.routes_ = clock, neighbors or {}, routes or {}
+        self.paths_ = paths or {}
         self.ping_, self.neighbors_error, self.on_call = ping, neighbors_error, on_call
         self.calls: list[tuple] = []
 
@@ -159,6 +161,12 @@ class Drv:
             raise DriverError(f"no VRF {vrf}")
         present = self.routes_[vrf](self.clock.now, prefix)
         return Observation([Route(prefix, "bgp", True)] if present else [], [{"cmd": "rt"}])
+
+    def bgp_paths(self, prefix, vrf="default"):
+        self.calls.append(("bgp_paths", prefix, vrf, self.clock.now))
+        if vrf not in self.paths_:
+            raise DriverError(f"no VRF {vrf}")
+        return Observation(self.paths_[vrf](self.clock.now, prefix), [{"cmd": "bgp"}])
 
     def ping(self, target, source, count, vrf="default"):
         self.calls.append(("ping", target, vrf, self.clock.now))
@@ -325,6 +333,25 @@ def test_checks_wait_on_the_runner_clock(monkeypatch):
     rep = e.run([route("pos"), leak("neg")], settle=10, hold=10)
     assert by_name(rep)["pos"].duration == 9.0 and by_name(rep)["neg"].duration == 10.0
     assert e.clock.now == 9 + 3 + 10 + 10   # positives, the gate's second sample, settle, hold
+
+
+def test_bgp_route_attribute_is_not_judged_on_a_temporary_best_path(monkeypatch):
+    """A best path via the first session up is replaced once a slower session (preferred) comes up at t=20:
+    next_hop must not pass on the early path; it is judged after the BGP gate, the settle and the hold."""
+    def paths(t, p):
+        return [BgpPath(True, "65002 65009", "10.0.12.2" if t < 20 else "10.0.13.3", 100, 0)]
+
+    def nbrs(t):
+        return {"10.0.12.2": "established", "10.0.13.3": "established" if t >= 20 else "active"}
+
+    e = make(monkeypatch, r1={"neighbors": {"default": nbrs}, "paths": {"default": paths}})
+    rep = e.run([chk("bgp_route", "nh", prefix="10.9.0.0/16", next_hop="10.0.12.2")], settle=10, hold=10)
+    assert rep.status == "failed"
+    # the same check holds on the final best path
+    e = make(monkeypatch, r1={"neighbors": {"default": nbrs}, "paths": {"default": paths}})
+    rep = e.run([chk("bgp_route", "nh", prefix="10.9.0.0/16", next_hop="10.0.13.3")], settle=10, hold=10)
+    assert rep.status == "passed" and by_name(rep)["nh"].attempts > 2
+    assert min(c[3] for c in e.drivers["r1"].calls if c[0] == "bgp_paths") >= 20
 
 
 def test_not_converged_checks_are_reported_once_and_not_held(monkeypatch):
