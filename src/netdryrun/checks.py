@@ -77,7 +77,9 @@ def _route(d: Driver, p: dict) -> tuple[bool, str, list]:
     want_proto = str(p.get("protocol", "")).lower()
     matching = [r for r in obs.value if not want_proto or r.protocol == want_proto]
     active = [r for r in matching if r.active]
-    if p.get("present", True):
+    # `is not False`, the same test is_post_convergence uses, so the evaluator and the scheduler can never
+    # disagree on what a check means (config validation already insists on a real boolean)
+    if p.get("present", True) is not False:
         if active:
             return True, f"active via {active[0].protocol}", obs.evidence
         if p.get("active", True) is False and matching:
