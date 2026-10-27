@@ -17,6 +17,8 @@ Attempt 1 is a change an engineer or an agent in a hurry could make: it does wha
 
 `demo.sh` exits 0 only if attempt 1 fails on exactly the leak guards, with every other check passing, and attempt 2 passes every check. CI runs it on pushes to `main` and on pull requests.
 
+**A real agent run** is recorded in [AGENT-RUN.md](AGENT-RUN.md): a fresh Claude Code agent with only the ticket, the lab and the Netdryrun MCP tools made the correct two-line change on the first try and proposed it with a 14/14 `passed` verdict.
+
 To let a real agent work the ticket, give it only `TICKET.md`, `netdryrun.yml`, `topology.clab.yml` and `configs/` (not this README, `changes/` or `demo.sh`, which contain the answer), plus the `netdryrun mcp` tools.
 
 To see the starting point, run `netdryrun run examples/agent-demo`: the guards pass and the 3 ticket checks fail, because the work isn't done yet.
