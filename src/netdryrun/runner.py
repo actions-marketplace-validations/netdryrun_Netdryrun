@@ -79,7 +79,7 @@ def run(config: Config, *, deploy: bool = True, keep: bool = False, keep_on_fail
         for c in config.checks + [c for sc in config.scenarios for c in sc.checks]:
             check_supported(lab, c, config.drivers.get(c.node))
         if deploy:
-            log(f"Deploying lab {lab.name} ({len(lab.nodes)} nodes)...")
+            log(f"Deploying lab {lab.name} ({len(lab.nodes)} nodes); this usually takes 30-90 s, longer the first time images are pulled...")
             lab.deploy()
         missing = {n.container for n in lab.nodes.values()} - lab.running_containers()
         if missing:

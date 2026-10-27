@@ -16,3 +16,17 @@ def test_feedback_print_only(capsys):
     assert main(["feedback", "--print-only"]) == 0
     out = capsys.readouterr().out
     assert "Nothing is sent until you submit it" in out and "issues/new?template=feedback.yml" in out
+
+
+def test_ctrl_c_gives_clean_message_not_traceback(tmp_path, monkeypatch, capsys):
+    import netdryrun.cli as cli
+
+    (tmp_path / "topo.clab.yml").write_text("name: t\ntopology:\n  nodes:\n    r1: {}\n")
+    (tmp_path / "netdryrun.yml").write_text("lab: topo.clab.yml\nchecks:\n  - {type: ping, node: r1, target: 10.0.0.1}\n")
+
+    def interrupted(*a, **k):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(cli, "run", interrupted)
+    assert cli.main(["run", str(tmp_path)]) == 130
+    assert "Interrupted: no verdict" in capsys.readouterr().err

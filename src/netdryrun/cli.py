@@ -31,10 +31,15 @@ def _cmd_run(args, deploy: bool) -> int:
         print(f"config error: {e}", file=sys.stderr)
         return 2
     print(f"Netdryrun {__version__}: {len(cfg.checks)} checks from {cfg.path}")
-    rep = run(cfg, deploy=deploy, keep=args.keep, keep_on_failure=getattr(args, 'keep_on_failure', False),
-              settle=args.settle, hold=args.hold,
-              on_result=lambda r: print(report.console_line(r), flush=True),
-              log=lambda m: print(m, flush=True))
+    try:
+        rep = run(cfg, deploy=deploy, keep=args.keep, keep_on_failure=getattr(args, 'keep_on_failure', False),
+                  settle=args.settle, hold=args.hold,
+                  on_result=lambda r: print(report.console_line(r), flush=True),
+                  log=lambda m: print(m, flush=True))
+    except KeyboardInterrupt:
+        # run() destroys the lab in its finally block before the interrupt reaches us
+        print("\nInterrupted: no verdict. The lab was cleaned up unless --keep was set.", file=sys.stderr)
+        return 130
     print(report.summary_line(rep))
     _write_outputs(rep, args)
     if sys.stdout.isatty() and not os.environ.get("CI"):
