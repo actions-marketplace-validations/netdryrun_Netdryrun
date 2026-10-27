@@ -123,6 +123,7 @@ def blocks(f: dict) -> dict[str, str]:
                          f"    - Approved although harmful: {loss_links['unsafe'] or 'none'}.\n"
                          f"    - Blocked although safe: {loss_links['safe'] or 'none'}."),
         "agents_platforms": short,
+        "faq_platforms": long_,
         "mcp_tools": tools,
     }
 
@@ -166,7 +167,8 @@ def main() -> int:
 
     for rel in ("README.md", "AGENTS.md", "website/docs/index.md", "website/docs/when-to-use-what.md",
                 "website/docs/llms.txt", "website/docs/github-action.md", "website/docs/trust.md",
-                "website/docs/how-its-built.md"):
+                "website/docs/how-its-built.md", "website/docs/ai-agents.md", "website/docs/faq.md",
+                "website/docs/tutorial.md", "website/docs/examples.md", "website/docs/troubleshooting.md"):
         path = ROOT / rel
         old = path.read_text(encoding="utf-8")
         new = sync_blocks(old, values, rel, problems)

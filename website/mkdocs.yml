@@ -86,11 +86,15 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting started: getting-started.md
+  - "Tutorial: test a change on your own lab": tutorial.md
+  - Examples: examples.md
   - Reference:
       - netdryrun.yml: reference/config.md
       - CLI and reports: reference/cli.md
   - GitHub Action: github-action.md
   - AI agents (MCP): ai-agents.md
+  - Troubleshooting: troubleshooting.md
+  - FAQ: faq.md
   - Verdict corpus: corpus.md
   - How it's built: how-its-built.md
   - When to use what: when-to-use-what.md

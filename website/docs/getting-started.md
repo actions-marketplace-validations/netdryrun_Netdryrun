@@ -59,6 +59,9 @@ Each run deploys the lab, runs the checks, prints one line per check and destroy
 
 ### Expected results
 
+The [examples page](examples.md) has every example, what it shows and how long it takes.
+
+
 | Example | Topology | Checks | Expected | Exit code |
 |---|---|---|---|---|
 | `examples/frr-bgp` | Triangle of three FRR routers (r1, r2, r3), eBGP | 2 sessions, prefix count 1 to 10, route present via BGP, ping, best-path AS path and next hop, default route absent, and a link-failure scenario (reroute via r3) | `PASSED: 11 passed, 0 failed` | `0` |
@@ -84,7 +87,7 @@ It deploys the lab, waits for BGP to converge, and writes `my-lab/netdryrun.yml`
 netdryrun run my-lab
 ```
 
-Anything that changed fails, with evidence. Before committing the baseline, remove what is allowed to change and add negative checks for what must never happen (for example `present: false` for a default route at a peer). See the [`record` reference](reference/cli.md#record).
+Anything that changed fails, with evidence. Before committing the baseline, remove what is allowed to change and add negative checks for what must never happen (for example `present: false` for a default route at a peer). See the [`record` reference](reference/cli.md#record) and the [tutorial](tutorial.md).
 
 ## Write checks for your own lab
 
@@ -117,4 +120,4 @@ netdryrun run .
 
 To debug a failing run, keep the lab up with `--keep` (or `--keep-on-failure`), inspect the routers, and rerun the checks against the running lab with `netdryrun check .`. Destroy it afterwards with `containerlab destroy -t topology.clab.yml --cleanup`.
 
-Next: the [netdryrun.yml reference](reference/config.md) and the [CLI reference](reference/cli.md).
+Next: the [tutorial](tutorial.md) walks through all of this on a real lab, step by step. Then see the [netdryrun.yml reference](reference/config.md), the [CLI reference](reference/cli.md) and [Troubleshooting](troubleshooting.md).

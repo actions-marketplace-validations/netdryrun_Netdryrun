@@ -1,27 +1,71 @@
 ---
 title: AI agents (MCP server)
-description: The Netdryrun MCP server lets an AI agent dry-run a network change in a real containerlab lab and proceed only if every check passes. Install, tools, verdict field and safety model.
+description: Connect an AI agent to Netdryrun. MCP setup for Claude Code and other clients, the TICKET.md prompt pattern, a real agent run, a CI gate for agent-made pull requests, tools, verdict field and safety model.
 ---
 
 # AI agents (MCP server)
 
 AI agents are starting to change networks. Netdryrun™ includes an [MCP](https://modelcontextprotocol.io) server that gives an agent a safety gate: it dry-runs the proposed change in a real lab and proceeds only if every check passes.
 
-## Install
+## Set up the MCP server
 
 ```bash
 pip install netdryrun
 ```
 
-The MCP server is built in: `netdryrun mcp` starts it over stdio. The same requirements apply as for the CLI: Linux or WSL2, Docker, containerlab.
+The MCP server is built in: `netdryrun mcp` starts it over stdio. The same requirements apply as for the CLI: Linux or WSL2, Docker, containerlab. The server runs labs on the machine where it runs.
 
-Add it to your MCP client. For example, Claude Code:
+### Claude Code
+
+On Linux or inside WSL:
 
 ```bash
 claude mcp add netdryrun -- netdryrun mcp
 ```
 
-Other clients: configure a stdio server with command `netdryrun` and argument `mcp` (or `uvx netdryrun mcp` with no install).
+Add `-s project` to write the server into `.mcp.json` in the current folder, so everyone who works in that repository gets it.
+
+On Windows, with Claude Code running on Windows and Netdryrun installed in WSL, start the server through `wsl.exe` and give the full path to `netdryrun` inside WSL:
+
+```text
+$ claude mcp add -s project netdryrun -- wsl.exe -d Ubuntu-22.04 -- /home/dmin/ndr-docs/bin/netdryrun mcp
+Added stdio MCP server netdryrun with command: wsl.exe -d Ubuntu-22.04 -- /home/dmin/ndr-docs/bin/netdryrun mcp to project config
+$ claude mcp get netdryrun
+netdryrun:
+  Scope: Project config (shared via .mcp.json)
+  Status: ✓ Connected
+  Type: stdio
+  Command: wsl.exe
+  Args: -d Ubuntu-22.04 -- /home/dmin/ndr-docs/bin/netdryrun mcp
+```
+
+(Claude Code 2.1.116. Use your own distribution name and path; `which netdryrun` inside WSL prints it.)
+
+`dry_run` takes 30 seconds to several minutes. Start Claude Code with a longer tool timeout, in milliseconds, so it does not give up first:
+
+```bash
+MCP_TOOL_TIMEOUT=600000 claude
+```
+
+See [MCP tool calls time out](troubleshooting.md#mcp-tool-calls-time-out-in-the-client).
+
+### Other MCP clients
+
+Configure a stdio server with command `netdryrun` and argument `mcp`. Most clients take JSON like this (this is the `.mcp.json` Claude Code wrote above, with the Linux command):
+
+```json
+{
+  "mcpServers": {
+    "netdryrun": {
+      "type": "stdio",
+      "command": "netdryrun",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+Without installing, use `"command": "uvx", "args": ["netdryrun", "mcp"]`. On Windows, use the `wsl.exe` command and arguments shown above. Set the client's tool-call timeout to at least 5 minutes.
 
 ## Workflow
 
@@ -33,14 +77,80 @@ Other clients: configure a stdio server with command `netdryrun` and argument `m
 
 ![An attempt that passes the ticket checks but leaks routes is rejected; the proper fix passes the same checks](assets/netdryrun-agent-demo.gif)
 
-[`examples/agent-demo`](https://github.com/netdryrun/netdryrun/tree/main/examples/agent-demo): the customer's new block must reach the upstream and the peer. The tempting change, removing the prefix-list filters, passes every ticket check, session check and ping, but leaks upstream routes and the upstream's default route to the peer, and accepts a prefix the customer doesn't own. The network team's leak guards fail, so the verdict is `DO NOT APPLY THIS CHANGE`. The proper fix, two prefix-list lines, passes the same checks. The checks never change; only the config does. Both attempts are a scripted replay (hand-written diffs, not output from a real agent); `demo.sh` runs them, and CI runs it on pushes to `main` and on pull requests. In a [real run](https://github.com/netdryrun/netdryrun/blob/main/examples/agent-demo/AGENT-RUN.md), a fresh Claude Code agent with only the ticket, the lab and these MCP tools made the correct two-line change on the first try and proposed it with a `passed` verdict.
+[`examples/agent-demo`](https://github.com/netdryrun/netdryrun/tree/main/examples/agent-demo): the customer's new block must reach the upstream and the peer. The tempting change, removing the prefix-list filters, passes every ticket check, session check and ping, but leaks upstream routes and the upstream's default route to the peer, and accepts a prefix the customer doesn't own. The network team's leak guards fail, so the verdict is `DO NOT APPLY THIS CHANGE`. The proper fix, two prefix-list lines, passes the same checks. The checks never change; only the config does. Both attempts are a scripted replay (hand-written diffs, not output from a real agent); `demo.sh` runs them, and CI runs it on pushes to `main` and on pull requests. In a [real run](#a-real-agent-run), a fresh Claude Code agent with only the ticket, the lab and these MCP tools made the correct two-line change on the first try and proposed it with a `passed` verdict.
+
+## Give the agent a ticket (the TICKET.md pattern)
+
+An agent does better with a written task and explicit rules than with a chat message. Put a `TICKET.md` in the lab folder, next to `topology.clab.yml`, `configs/` and `netdryrun.yml`. [`examples/agent-demo/TICKET.md`](https://github.com/netdryrun/netdryrun/blob/main/examples/agent-demo/TICKET.md) is a complete example. A ticket says:
+
+- **The goal, in network terms.** "The customer's new block 10.101.0.0/24 must reach the upstream and the peer." Name the routers, ASes and prefixes.
+- **What the agent may change.** "Change only `configs/edge1.conf`." A small allowed surface makes the change easy to review.
+- **What it must not change.** "Don't edit `netdryrun.yml`." The checks belong to the network team. An agent that may edit the checks can make any change pass.
+- **The gate.** "Before proposing the change, run Netdryrun on this folder (`netdryrun run <folder>`, or the `dry_run` MCP tool) and include the verdict. Propose it only if the status is `passed`."
+
+Then the prompt can stay short. The real run below used: "Work the ticket in TICKET.md in the current folder, following its rules", plus the path the MCP tools use for the folder and a request for the diff and the verdict at the end. Nothing about the solution.
+
+More guidance for the prompt or the agent's instructions file:
+
+- Ask for the verdict and the names of any failed checks in the final answer, so a human can review the evidence instead of the agent's reasoning.
+- Tell it what to do on a failure: read `detail` for each failed check, fix the config, run again. Never weaken or delete a check; if it thinks a check is wrong, it should say so and stop.
+- Don't show it the answer. In `examples/agent-demo`, the README, `changes/` and `demo.sh` contain the solution, so the real run could only see `TICKET.md`, `netdryrun.yml`, `topology.clab.yml` and `configs/`.
+- A pass covers only the checks that exist. Give the agent the network team's standing guards (leak checks, `present: false` routes), not only the ticket's acceptance checks.
+
+The repository's [`AGENTS.md`](https://github.com/netdryrun/netdryrun/blob/main/AGENTS.md) has the same rules written for agents.
+
+## A real agent run
+
+[`AGENT-RUN.md`](https://github.com/netdryrun/netdryrun/blob/main/examples/agent-demo/AGENT-RUN.md) records one real run on `examples/agent-demo`, not the scripted replay:
+
+- **Agent:** Claude Code 2.1.116 in headless mode (`claude -p`). It could read and edit files and call the Netdryrun MCP tools. No shell, no web access, so its only way to test was Netdryrun.
+- **What it did:** read the ticket, the router config and `netdryrun.yml`; added the new block to the two prefix lists in `configs/edge1.conf`; called `dry_run`; got `status: passed`, 14 of 14 checks, verdict `SAFE TO PROCEED`; proposed the two-line change with the verdict. 7 turns, 69 seconds.
+- **Checked afterwards:** it changed only `configs/edge1.conf`, and a fresh `netdryrun run` on its folder gave `PASSED: 14 passed, 0 failed`.
+
+The agent did not make the tempting leaky change, so this run did not show Netdryrun catching a mistake (`demo.sh` shows that). It shows the workflow end to end: the agent found the tool, ran the network team's checks through MCP, and its proposal came with a verdict from a real lab. It is one run of one model on one ticket.
+
+## Gate agent-made pull requests in CI
+
+An agent's own `dry_run` is a claim. Run the same checks again in CI, where the agent cannot change the result:
+
+```yaml title=".github/workflows/network-dryrun.yml"
+name: Network dry run
+on:
+  pull_request:
+    paths:
+      - "network/**"
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  dryrun:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: netdryrun/netdryrun@v0.2.0
+        with:
+          path: network/
+          pr-comment: true
+```
+
+Then, in the repository settings:
+
+- **Make the job a required status check** on the default branch, so a failed verdict blocks the merge.
+- **Protect the checks.** Add a `CODEOWNERS` line such as `network/netdryrun.yml @your-org/network-team` and require code-owner review. A PR that edits the checks then needs a human from the network team, while config-only PRs need only the green check and a normal review.
+- **Keep agent PRs away from secrets.** The lab runs as root on the runner. Follow the [Action security notes](github-action.md#security-notes): no secrets in the job, no `pull_request_target`.
+
+The PR comment lists failures first with their evidence, so the reviewer sees what the lab saw. See [GitHub Action](github-action.md) for every input.
 
 ## Tools
+
+The server has these tools: <!-- facts:mcp_tools -->`dry_run`, `run_checks`, `record_baseline`, `validate` and `check_types`<!-- /facts:mcp_tools -->.
+
 
 | Tool | Arguments | What it does |
 |---|---|---|
 | `dry_run` | `path`, `keep_lab` (default `false`) | Deploy the lab, run every check, destroy the lab, return the verdict. Takes 1 to 5 minutes. |
 | `run_checks` | `path` | Run the checks against a lab that is already running (no deploy or destroy) |
+| `record_baseline` | `topology`, `deploy` (default `true`), `wait_seconds` (default `45`) | Deploy the lab, snapshot its BGP sessions, prefix counts and routes as `netdryrun.yml` text, destroy the lab. Returns the YAML; nothing is written to disk. Like [`netdryrun record`](reference/cli.md#record) |
 | `validate` | `path` | Validate `netdryrun.yml` without starting a lab |
 | `check_types` | | List supported check types and their keys, to help write `netdryrun.yml` |
 
@@ -73,6 +183,8 @@ The server also exposes the last full JSON report as a resource, `netdryrun://re
 - `SAFE TO PROCEED` when `status` is `passed`
 - `DO NOT APPLY THIS CHANGE` for `failed` or `error`, including config errors
 - `INCONCLUSIVE: the lab did not reach a testable state; this says nothing about your change. Do not apply it until a run passes.` when `status` is `inconclusive`: the lab never came up far enough for the checks to mean anything ([rules](reference/cli.md#when-a-run-is-inconclusive)). `inconclusive_reason` says what was seen. Rerun it, perhaps with a longer `timeout`; don't rewrite the change because of it.
+
+<!-- TODO(v0.3): document the `inconclusive` status and its verdict here once ndr/v03 is merged. -->
 
 The full evidence is written to `netdryrun-report.json` next to `netdryrun.yml`.
 
