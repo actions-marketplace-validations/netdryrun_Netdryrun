@@ -14,6 +14,7 @@ Usage (Linux/WSL, containerlab + docker available):
   python corpus/run.py                 # all cases
   python corpus/run.py --case 09       # cases whose id starts with 09
   python corpus/run.py --keep --case 01
+  python corpus/run.py --corpus v2     # corpus v2 (corpus/v2/: its own base lab, spec and cases)
 """
 from __future__ import annotations
 
@@ -34,6 +35,7 @@ from netdryrun.lab import Lab
 from netdryrun.runner import run
 
 HERE = Path(__file__).resolve().parent
+CORPORA = {"v1": HERE, "v2": HERE / "v2"}   # v1 lives at the top of corpus/ and is frozen
 STRATEGIES = {"ping": "baseline-ping.yml", "sessions": "baseline-sessions.yml", "netdryrun": "intent.yml"}
 
 
@@ -41,9 +43,9 @@ class CaseError(ValueError):
     pass
 
 
-def load_cases(prefix: str | None) -> list[dict]:
+def load_cases(prefix: str | None, corpus: Path = HERE) -> list[dict]:
     cases = []
-    for path in sorted((HERE / "cases").glob("*.yml")):
+    for path in sorted((corpus / "cases").glob("*.yml")):
         case = yaml.safe_load(path.read_text(encoding="utf-8"))
         case["file"] = path.name
         for key in ("id", "title", "category", "expected", "rationale"):
@@ -56,14 +58,14 @@ def load_cases(prefix: str | None) -> list[dict]:
     return cases
 
 
-def build_workdir(case: dict, root: Path) -> tuple[Path, list[dict]]:
+def build_workdir(case: dict, root: Path, corpus: Path = HERE) -> tuple[Path, list[dict]]:
     """Copy the base lab and apply the case's edits. Every edit must match exactly once."""
     work = root / case["id"]
     if work.exists():
         shutil.rmtree(work)
-    shutil.copytree(HERE / "base", work)
+    shutil.copytree(corpus / "base", work)
     for spec in STRATEGIES.values():
-        shutil.copy(HERE / "specs" / spec, work / spec)
+        shutil.copy(corpus / "specs" / spec, work / spec)
     diff = []
     for i, edit in enumerate(case.get("edits", [])):
         cfg = work / "configs" / f"{edit['node']}.conf"
@@ -82,8 +84,8 @@ def build_workdir(case: dict, root: Path) -> tuple[Path, list[dict]]:
     return work, diff
 
 
-def evaluate(case: dict, root: Path, keep: bool) -> dict:
-    work, diff = build_workdir(case, root)
+def evaluate(case: dict, root: Path, keep: bool, corpus: Path = HERE) -> dict:
+    work, diff = build_workdir(case, root, corpus)
     lab = Lab(work / "topology.clab.yml")
     row = {k: case.get(k) for k in ("id", "title", "category", "expected", "rationale", "source", "note")}
     row["edits"] = diff
@@ -115,14 +117,14 @@ def outcome(expected: str, verdict: str) -> str:
     return "false pass" if expected == "unsafe" else "false block"
 
 
-def write_results(rows: list[dict], out: Path, env: dict) -> None:
+def write_results(rows: list[dict], out: Path, env: dict, corpus: Path = HERE) -> None:
     out.mkdir(exist_ok=True)
     (out / "results.json").write_text(json.dumps({"schema": "netdryrun.corpus/v1", "environment": env, "cases": rows}, indent=2))
     names = list(STRATEGIES)
     lines = [
         "# Verdict Corpus results", "",
         f"Generated {env['generated']} with netdryrun {env['netdryrun']}, containerlab {env['containerlab']}, "
-        f"FRR {env['frr_image']}. Rerun with `python corpus/run.py`.", "",
+        f"FRR {env['frr_image']}. Rerun with `python corpus/run.py{env.get('rerun_args', '')}`.", "",
         "**Conflict of interest:** the Netdryrun maintainers wrote this corpus and the runner. "
         "Expected verdicts were recorded before running. Losses are kept.", "",
         "## Summary", "",
@@ -144,7 +146,7 @@ def write_results(rows: list[dict], out: Path, env: dict) -> None:
         lines.append("None in this run.")
     for r in losses:
         lines.append(f"- **`{r['id']}` {r['title']}**: {outcome(r['expected'], r['strategies']['netdryrun']['verdict'])}. {r.get('note') or ''}")
-    (HERE / "RESULTS.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (corpus / "RESULTS.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def _git_commit() -> str:
@@ -158,23 +160,29 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--case", help="only run cases whose id starts with this")
     ap.add_argument("--keep", action="store_true", help="leave each lab running (debugging; use with --case)")
-    ap.add_argument("--workdir", default=str(Path.home() / ".cache" / "netdryrun" / "corpus"))
+    ap.add_argument("--corpus", choices=sorted(CORPORA), default="v1", help="which corpus to run (default v1)")
+    ap.add_argument("--workdir", help="where case labs are built (default ~/.cache/netdryrun/corpus[-v2])")
     args = ap.parse_args()
-    cases = load_cases(args.case)
-    root = Path(args.workdir)
+    corpus = CORPORA[args.corpus]
+    cases = load_cases(args.case, corpus)
+    suffix = "" if args.corpus == "v1" else f"-{args.corpus}"
+    root = Path(args.workdir or Path.home() / ".cache" / "netdryrun" / f"corpus{suffix}")
     root.mkdir(parents=True, exist_ok=True)
-    clab = Lab(HERE / "base" / "topology.clab.yml")
+    clab = Lab(corpus / "base" / "topology.clab.yml")
     env = {
         "generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "netdryrun": __version__, "containerlab": clab.version(),
         "frr_image": next(iter(clab.nodes.values())).image, "host": platform.platform(),
         "commit": _git_commit(),
     }
+    if args.corpus != "v1":
+        env["corpus"] = args.corpus
+        env["rerun_args"] = f" --corpus {args.corpus}"
     rows = []
     for case in cases:
         print(f"== {case['id']}: {case['title']} (expected {case['expected']})", flush=True)
         try:
-            row = evaluate(case, root, args.keep)
+            row = evaluate(case, root, args.keep, corpus)
         except CaseError as e:
             print(f"   CASE ERROR: {e}", flush=True)
             return 2
@@ -182,8 +190,8 @@ def main() -> int:
         print("   " + "  ".join(f"{s}={row['strategies'][s]['verdict']}" for s in STRATEGIES)
               + f"  ({row['seconds']}s)", flush=True)
     if not args.case:
-        write_results(rows, HERE / "results", env)
-        print("wrote corpus/RESULTS.md and corpus/results/results.json")
+        write_results(rows, corpus / "results", env, corpus)
+        print(f"wrote {corpus.relative_to(HERE.parent).as_posix()}/RESULTS.md and results/results.json")
     else:
         print(json.dumps(rows, indent=1)[:4000])
     return 0
