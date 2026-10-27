@@ -56,7 +56,10 @@ Netdryrun adds a test layer on top of a containerlab lab:
 - a route that was received but not selected counts as present
 - every run produces one pass/fail result, a CI-friendly exit code, and a JSON evidence file
 
-It is early (version 0.1.0). Drivers exist only for FRR and Nokia SR Linux, and checks cover BGP sessions, prefix counts, routes and ping. It does not do static analysis, build labs for you, or test production devices.
+<!-- facts:when_status -->
+It is early (version 0.2.0). Drivers exist for FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image), and checks cover BGP sessions, prefix counts, routes and ping, with link-down and node-isolation failure scenarios.
+<!-- /facts:when_status -->
+It does not do static analysis, build labs for you, or test production devices.
 
 ## How they combine
 

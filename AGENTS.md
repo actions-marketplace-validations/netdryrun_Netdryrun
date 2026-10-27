@@ -17,11 +17,11 @@ If you are an AI agent (or building one) that proposes or applies network config
 JSON report: `schema: netdryrun.report/v1`, with `checks[]` of `{name, type, params, passed, detail, attempts, duration_s, history, evidence}`.
 
 ## Rules
-- **Never treat a pass as proof of production safety.** It covers the checks that exist, on the network OSes in the lab (FRR, SR Linux, Arista EOS, SONiC), in steady state and in the defined failure scenarios.
+- **Never treat a pass as proof of production safety.** It covers the checks that exist, on the network OSes in the lab (<!-- facts:agents_platforms -->FRR, SR Linux, SONiC and Arista EOS<!-- /facts:agents_platforms -->), in steady state and in the defined failure scenarios.
 - **Don't weaken checks to make a change pass.** If a check is wrong, say so explicitly to the human.
 - Netdryrun never touches production devices. Only run topologies you were given or created in the lab folder.
 
 ## MCP
-`netdryrun mcp` starts an MCP server (stdio) with the tools `dry_run`, `run_checks`, `record_baseline`, `validate` and `check_types`. Each result has a separate `verdict` field: `SAFE TO PROCEED` or `DO NOT APPLY THIS CHANGE`. Add it with `claude mcp add netdryrun -- netdryrun mcp`, or run it with `uvx netdryrun mcp`.
+`netdryrun mcp` starts an MCP server (stdio) with the tools <!-- facts:mcp_tools -->`dry_run`, `run_checks`, `record_baseline`, `validate` and `check_types`<!-- /facts:mcp_tools -->. Each result has a separate `verdict` field: `SAFE TO PROCEED` or `DO NOT APPLY THIS CHANGE`. Add it with `claude mcp add netdryrun -- netdryrun mcp`, or run it with `uvx netdryrun mcp`.
 
 Docs: https://netdryrun.com/ai-agents/ · Full docs in one file: https://netdryrun.com/llms-full.txt

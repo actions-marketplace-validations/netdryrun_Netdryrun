@@ -24,12 +24,14 @@ Email **[security@netdryrun.com](mailto:security@netdryrun.com)**. Please do not
 
 A Netdryrun pass means the change behaved correctly in a lab. The lab runs real routing software, so a pass is strong evidence for protocol logic and policy intent: sessions come up, the intended prefixes are accepted, routes land in the routing table, traffic gets through, and unwanted routes stay out. It does not prove:
 
-- **Vendor-specific behavior.** FRR and SR Linux are not your vendor's routers. Defaults, policy evaluation and bugs differ between implementations. Running your own licensed vendor images is on the roadmap.
+- **Vendor-specific behavior.** Open-source and container routers (FRR, SR Linux, SONiC VS) are not your vendor's routers, and even Arista cEOS is not the same as EOS on hardware. Defaults, policy evaluation and bugs differ between implementations and versions. For Arista you can bring your own licensed cEOS image.
 - **Scale.** A lab has a handful of nodes and small tables, not full Internet tables or hundreds of peers.
 - **Hardware and ASIC behavior.** Containers have no forwarding hardware, so TCAM limits, hardware programming and line-rate effects are not tested.
 - **Timing at scale.** Convergence time in a small lab says little about convergence time in a large production network.
 
-Version 0.1.0 also covers only BGP (IPv4/IPv6 unicast), routes and ping. OSPF/IS-IS adjacencies, path checks, policy attributes and failure scenarios are not covered yet.
+<!-- facts:trust_scope -->
+Version 0.2.0 also covers only BGP (IPv4/IPv6 unicast), routes and ping, plus link-down and node-isolation failure scenarios. OSPF/IS-IS adjacencies, path checks and policy attributes are not covered yet.
+<!-- /facts:trust_scope -->
 
 ## Running untrusted labs
 

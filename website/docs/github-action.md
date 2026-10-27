@@ -1,6 +1,6 @@
 ---
 title: GitHub Action
-description: Run Netdryrun in GitHub Actions with netdryrun/netdryrun@v0.1.0. Inputs, outputs, example workflows, and security notes for running privileged containerlab labs in CI.
+description: Run Netdryrun in GitHub Actions with netdryrun/netdryrun@v0.2.0. Inputs, outputs, example workflows, and security notes for running privileged containerlab labs in CI.
 ---
 
 # GitHub Action
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.1.0
+      - uses: netdryrun/netdryrun@v0.2.0
         with:
           path: network/        # folder containing netdryrun.yml
 ```
@@ -63,7 +63,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.1.0
+      - uses: netdryrun/netdryrun@v0.2.0
         with:
           path: network/
 ```
@@ -71,7 +71,7 @@ jobs:
 ### Use the outputs in a later step
 
 ```yaml
-      - uses: netdryrun/netdryrun@v0.1.0
+      - uses: netdryrun/netdryrun@v0.2.0
         id: ndr
         with:
           path: network/
@@ -91,7 +91,7 @@ jobs:
         lab: [network/core, network/edge]
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.1.0
+      - uses: netdryrun/netdryrun@v0.2.0
         with:
           path: ${{ matrix.lab }}
           artifact-name: netdryrun-${{ strategy.job-index }}
