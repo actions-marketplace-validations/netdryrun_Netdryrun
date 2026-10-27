@@ -6,3 +6,6 @@ dist/
 netdryrun-report.json
 netdryrun-junit.xml
 .pytest_cache/
+
+# MkDocs Material privacy plugin download cache
+website/.cache/
