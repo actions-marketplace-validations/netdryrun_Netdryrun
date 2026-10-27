@@ -132,7 +132,7 @@ runs:
         except Exception:
             out = {"status": "error", "passed": 0, "failed": 0, "inconclusive_reason": ""}
         # The reason can quote lab output: one line, and no quotes, backslashes, $ or backticks, in case
-        # a workflow pastes the output into a shell with ${{ }}
+        # a workflow pastes the output into a shell through an expression
         out["inconclusive_reason"] = re.sub(r"[`$\\\"']", "", " ".join(str(out["inconclusive_reason"]).split()))[:500]
         with open(os.environ["GITHUB_OUTPUT"], "a") as f:
             for k, v in out.items():

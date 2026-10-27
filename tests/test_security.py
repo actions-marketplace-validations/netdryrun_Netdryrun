@@ -157,6 +157,16 @@ def test_mcp_evidence_write_does_not_follow_a_planted_symlink(tmp_path, monkeypa
     assert not (tmp_path / "netdryrun-report.json").is_symlink()
 
 
+def test_action_and_workflows_have_no_empty_expressions():
+    # GitHub evaluates ${{ }} anywhere in a string, comments in run scripts included: an empty one
+    # makes the whole action.yml fail to load on every runner
+    import re
+    files = [ROOT / "action.yml", *sorted((ROOT / ".github" / "workflows").glob("*.yml"))]
+    for f in files:
+        for m in re.finditer(r"\$\{\{(.*?)\}\}", f.read_text(encoding="utf-8"), re.S):
+            assert m.group(1).strip(), f"{f.name}: empty expression {m.group(0)!r}"
+
+
 def _action_step(name):
     steps = yaml.safe_load((ROOT / "action.yml").read_text(encoding="utf-8"))["runs"]["steps"]
     return next(s for s in steps if s.get("name") == name)
