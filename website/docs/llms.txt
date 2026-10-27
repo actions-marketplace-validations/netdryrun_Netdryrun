@@ -24,6 +24,7 @@ Facts (generated from the source): version 0.2.0; check types `bgp_session`, `bg
 <!-- facts:llms_corpus -->
 - [Verdict corpus](https://netdryrun.com/corpus/): 30 realistic BGP changes with pre-registered verdicts; Netdryrun 24/30, ping-only 20/30, sessions-up 15/30 correct
 <!-- /facts:llms_corpus -->
+- [How it's built](https://netdryrun.com/how-its-built/): AI agents write most of the code; how results are checked, with evidence links; what is not claimed
 
 ## Full documentation
 

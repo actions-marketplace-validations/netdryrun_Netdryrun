@@ -1,0 +1,71 @@
+name: Reproduce corpus
+
+# Reruns the Network Change Verdict Corpus (corpus/run.py, all 30 cases) on a GitHub-hosted runner
+# and uploads results.json, RESULTS.md and the run log. Anyone can run it on a fork:
+# Actions tab > Reproduce corpus > Run workflow. Each case takes about a minute, so one job fits
+# well inside the 6-hour job limit. The step summary lists every verdict that differs from the
+# results committed in corpus/results/results.json.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  corpus:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: "3.12"
+      - name: Install containerlab and Netdryrun
+        run: |
+          bash -c "$(curl -sL https://get.containerlab.dev)" -- -v 0.81.1
+          python -m pip install --quiet .
+          containerlab version
+      - name: Keep the committed results for comparison
+        run: cp corpus/results/results.json "$RUNNER_TEMP/committed-results.json"
+      - name: Run the corpus
+        # containerlab needs root. Only PATH and HOME are passed; the safe.directory setting lets
+        # run.py read the commit hash of this checkout as root.
+        run: |
+          set -o pipefail
+          sudo env -i "PATH=$PATH" "HOME=/root" \
+            GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=safe.directory GIT_CONFIG_VALUE_0="$GITHUB_WORKSPACE" \
+            python corpus/run.py 2>&1 | tee "$RUNNER_TEMP/corpus-run.log"
+      - name: Compare with the committed results
+        if: always()
+        run: |
+          python - "$RUNNER_TEMP/committed-results.json" corpus/results/results.json >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          import json, sys
+          old, new = (json.load(open(p)) for p in sys.argv[1:3])
+          if new["environment"]["generated"] == old["environment"]["generated"]:
+              print("No new results were written (the run did not finish)."); sys.exit(0)
+          before = {c["id"]: c for c in old["cases"]}
+          print(f"## Corpus rerun\n\nEnvironment: `{json.dumps(new['environment'])}`\n")
+          diffs = []
+          for c in new["cases"]:
+              for s, v in c["strategies"].items():
+                  was = before.get(c["id"], {}).get("strategies", {}).get(s, {}).get("verdict")
+                  if was != v["verdict"]:
+                      diffs.append(f"| `{c['id']}` | {s} | {was} | {v['verdict']} |")
+          if diffs:
+              print("| Case | Strategy | Committed | This run |\n|---|---|---|---|\n" + "\n".join(diffs))
+          else:
+              print(f"All {len(new['cases'])} cases: every strategy's verdict matches the committed results.")
+          EOF
+      - name: Upload results and log
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: corpus-results
+          path: |
+            corpus/results/results.json
+            corpus/RESULTS.md
+            ${{ runner.temp }}/corpus-run.log
+            ${{ runner.temp }}/committed-results.json
+          if-no-files-found: warn

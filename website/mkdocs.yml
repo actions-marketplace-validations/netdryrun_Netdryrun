@@ -92,6 +92,7 @@ nav:
   - GitHub Action: github-action.md
   - AI agents (MCP): ai-agents.md
   - Verdict corpus: corpus.md
+  - How it's built: how-its-built.md
   - When to use what: when-to-use-what.md
   - Trust and security: trust.md
   - Support and versioning: support.md
