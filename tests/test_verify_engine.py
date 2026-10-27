@@ -527,3 +527,26 @@ def test_sessions_compare_established_or_not_never_the_raw_state():
     after.session("edge1", "10.0.3.2", session(None, state="idle", remote_as=65003))
     (d,) = [d for d in diff(before.snap(), after.snap()) if d.key.kind == "session"]
     assert d.key.neighbor == "10.0.3.2" and "established" in d.fields and "state" not in d.fields
+
+
+# --- every collected field is compared (review finding 9) -----------------------------------------------------
+
+def test_soft_reconfiguration_on_a_session_is_compared():
+    before, after = base(), base()
+    s = before.get("edge1", "session", neighbor="10.0.2.2")
+    before.session("edge1", "10.0.2.2", replace(s, soft_reconfig_in=("ipv4-unicast",)))
+    (d,) = diff(before.snap(), after.snap())
+    assert d.key.kind == "session" and d.key.neighbor == "10.0.2.2" and d.fields == ("soft_reconfig_in",)
+    m = run(before, after)
+    assert m.status == "failed" and undeclared(m) == {("session", "edge1", "10.0.2.2")}
+
+
+def test_a_vrf_added_or_removed_on_a_node_is_a_diff_item():
+    before, after = base().snap(), base().snap()
+    after.nodes["edge1"].vrfs = ("cust", "default")
+    (d,) = diff(before, after)
+    assert (d.key.kind, d.key.node, d.key.vrf, d.change) == ("vrf", "edge1", "cust", "added")
+    m = match(before, after, intent(allow=["10.200.*.0/24"]))
+    assert m.status == "failed" and [x.key for x in m.undeclared] == [d.key]
+    (d,) = diff(after, before)
+    assert d.change == "removed"

@@ -85,7 +85,7 @@ def _summary(d) -> str:
 def item_json(d, ib: Index, ia: Index, containers: dict) -> dict:
     k = d.key
     out = {"kind": k.kind, "node": k.node, "vrf": k.vrf, "change": d.change}
-    if k.kind != "session":
+    if k.kind not in ("session", "vrf"):
         out.update({"afi": k.afi, "safi": k.safi, "prefix": k.prefix})
     if k.neighbor:
         out["neighbor"] = k.neighbor
@@ -94,7 +94,7 @@ def item_json(d, ib: Index, ia: Index, containers: dict) -> dict:
     if k.path_id:
         out["path_id"] = k.path_id
     out["fields"] = list(d.fields)
-    if k.kind != "session":
+    if k.kind not in ("session", "vrf"):
         out["route_before"] = route_state(ib, k)
         out["route_after"] = route_state(ia, k)
     out["before"] = _plain(d.before)

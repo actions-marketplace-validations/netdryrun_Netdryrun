@@ -593,3 +593,12 @@ def test_no_guards_with_a_directory_before_on_the_dishonest_intent(tmp_path, mon
     res = vrun.verify(str(lab / "topology.clab.yml"), str(b), str(a), str(intent_file(tmp_path, LEAK_INTENT)),
                       guards=str(lab / "netdryrun.yml"), side_fn=guard_side(base().snap(), after))
     assert res.status == "failed" and res.guards_source == "explicit" and validate(res)["guards_source"] == "explicit"
+
+
+def test_a_vrf_diff_item_in_the_report(tmp_path):
+    after = base().snap()
+    after.nodes["edge1"].vrfs = ("cust", "default")
+    res, _ = run_verify(tmp_path, base().snap(), after, intent_text="intent: []\n")
+    (item,) = validate(res)["undeclared"]
+    assert (item["kind"], item["vrf"], item["change"]) == ("vrf", "cust", "added")
+    assert item["next_diagnostic"].endswith("'show vrf'") and "vrf cust" in item["summary"]

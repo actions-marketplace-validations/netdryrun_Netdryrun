@@ -180,7 +180,8 @@ It never matches by containment: `10.0.0.0/8` doesn't cover `10.1.0.0/16`. The r
 
 After convergence, for every FRR node, in every VRF:
 
-- **BGP sessions**: (neighbor, VRF) → established or not, ASNs, address families, local address. The raw FSM state (`active`, `connect`, `idle`) is kept in the evidence but never compared: a session going from `active` to `idle` is no change. Prefix counts are derived and never matched on their own.
+- **BGP sessions**: (neighbor, VRF) → established or not, ASNs, address families, local address. The raw FSM state (`active`, `connect`, `idle`) is kept in the evidence but never compared: a session going from `active` to `idle` is no change. Which address families have `soft-reconfiguration inbound` is compared too. Prefix counts are derived and never matched on their own.
+- **VRFs**: the VRFs each node has. A VRF added or removed is a diff item (`kind: vrf`).
 - **Routes, every protocol** (`kernel`, `connected`, `local`, `static`, `ospf`, `isis`, `bgp` and the rest): (VRF, AFI, SAFI, prefix, protocol) → selected or not, installed in the FIB or not, administrative distance, metric (the OSPF cost, for example), and the next hops with their resolution (recursive next hops keep the next hops that resolve them; IPv6 link-local next hops keep their interface).
 - **Every BGP path per prefix**, not only the best: (neighbor or `local`, add-path ID) → best, multipath, valid, origin, AS path, next hops (accessible, IGP metric), local preference, MED, weight, standard, extended and large communities, cluster list, originator ID, atomic aggregate, aggregator.
 - **Adj-RIB-Out per session**: what each node advertises to each established neighbor, with the advertised attributes, including neighbors that aren't lab nodes.

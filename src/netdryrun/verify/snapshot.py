@@ -32,6 +32,7 @@ from ..drivers.base import DriverError
 
 SNAPSHOT_SCHEMA = "netdryrun.snapshot/v1"
 KINDS = ("session", "rib", "path", "adj_out", "adj_in")
+DIFF_KINDS = KINDS + ("vrf",)    # "vrf": a VRF a node has (NodeSnapshot.vrfs); a diff item, never a stored item
 AFIS = ("ipv4", "ipv6")
 SAFIS = ("unicast",)
 AFI_SAFIS = ("ipv4-unicast", "ipv6-unicast")      # the session address families verify 0.4 snapshots
@@ -381,9 +382,9 @@ class Session:
     local_as: int | None
     afis: tuple[str, ...]           # address families configured on the session, e.g. ("ipv4-unicast",)
     local_address: str | None       # the session's local address while established
-    # Derived facts: never part of the diff (compare=False), but part of stability.
+    # A derived fact: never part of the diff (compare=False), but part of stability.
     prefix_counts: tuple[tuple[str, int], ...] = field(default=(), compare=False)
-    soft_reconfig_in: tuple[str, ...] = field(default=(), compare=False)
+    soft_reconfig_in: tuple[str, ...] = ()     # address families with soft-reconfiguration inbound (compared)
     established: bool = field(init=False)
 
     def __post_init__(self):
@@ -410,9 +411,12 @@ class ItemKey:
     path_id: int = 0        # path and adj_*: the add-path ID (0 without add-path)
 
     def __post_init__(self):
-        _require(self.kind in KINDS, f"item key: unknown kind {self.kind!r}")
+        _require(self.kind in DIFF_KINDS, f"item key: unknown kind {self.kind!r}")
         _require(bool(self.node) and bool(self.vrf), "item key: node and vrf are required")
-        if self.kind == "session":
+        if self.kind == "vrf":
+            _require(not (self.afi or self.safi or self.prefix or self.neighbor or self.protocol or self.path_id),
+                     f"item key: bad vrf key {self!r}")
+        elif self.kind == "session":
             _require(bool(self.neighbor) and not (self.afi or self.prefix or self.protocol),
                      f"item key: bad session key {self!r}")
         else:
@@ -423,6 +427,8 @@ class ItemKey:
 
     def where(self) -> str:
         bits = [self.node]
+        if self.kind == "vrf":
+            return f"{self.node} vrf {self.vrf}"
         if self.vrf != "default":
             bits.append(f"vrf {self.vrf}")
         if self.kind == "session":
@@ -440,6 +446,8 @@ class ItemKey:
 
 
 def value_matches_kind(kind: str, value) -> bool:
+    if kind not in VALUE_TYPES:
+        return False
     if kind == "rib":
         return isinstance(value, tuple) and bool(value) and all(isinstance(e, RibEntry) for e in value) \
             and value == canon_set(value)
@@ -477,7 +485,9 @@ class Snapshot:
         counts) that the diff itself ignores."""
         view = {}
         for k, v in self.items().items():
-            view[k] = (v, v.prefix_counts, v.soft_reconfig_in) if isinstance(v, Session) else v
+            view[k] = (v, v.prefix_counts) if isinstance(v, Session) else v
+        for n, ns in self.nodes.items():
+            view[ItemKey("vrf", n, "default")] = ns.vrfs
         return view
 
     def sessions(self) -> dict[ItemKey, Session]:
@@ -511,6 +521,8 @@ class Snapshot:
                 if not isinstance(it, dict) or set(it) != {"key", "value"}:
                     raise SnapshotError(f"snapshot: node {name!r}: each item has exactly key and value")
                 key = decode(ItemKey, it["key"], "item key")
+                if key.kind not in VALUE_TYPES:
+                    raise SnapshotError(f"snapshot: node {name!r}: a stored item can't be of kind {key.kind!r}")
                 if key in items:
                     raise SnapshotError(f"snapshot: duplicate item {key.where()}")
                 items[key] = decode(VALUE_TYPES[key.kind], it["value"], key.where())

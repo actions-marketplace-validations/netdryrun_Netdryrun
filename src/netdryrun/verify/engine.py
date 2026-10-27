@@ -99,6 +99,9 @@ def diff(before: Snapshot, after: Snapshot) -> list[DiffItem]:
         raise VerifyError(f"the snapshots cover different nodes (before: {sorted(before.nodes)}, after: "
                           f"{sorted(after.nodes)}); verify compares configs on one topology")
     b, a = before.items(), after.items()
+    for snap, items in ((before, b), (after, a)):   # the VRFs each node has are items too
+        for n, ns in snap.nodes.items():
+            items.update({ItemKey("vrf", n, v): True for v in ns.vrfs})
     out = []
     for k in sorted(set(b) | set(a)):
         if b.get(k) != a.get(k):
@@ -554,7 +557,7 @@ def match(before: Snapshot, after: Snapshot, intent: Intent) -> Match:
         if d.key in explained:
             continue
         hit = next((i for i, al in enumerate(intent.allow)
-                    if d.key.kind != "session" and al.matches(d.key.prefix, d.key.vrf)), None)
+                    if d.key.kind not in ("session", "vrf") and al.matches(d.key.prefix, d.key.vrf)), None)
         if hit is not None:
             allowed.setdefault(hit, []).append(d)
             continue
@@ -570,7 +573,7 @@ def match(before: Snapshot, after: Snapshot, intent: Intent) -> Match:
 
 def route_state(index: Index, key: ItemKey) -> str:
     """The route's state on the item's node, for the report (absent, received, selected, in the FIB)."""
-    if key.kind == "session":
+    if key.kind in ("session", "vrf"):
         return ""
     return STATE_TEXT[index.route(key.node, key.vrf, key.afi, key.prefix).presence()]
 

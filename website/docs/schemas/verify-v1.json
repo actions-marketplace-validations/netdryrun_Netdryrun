@@ -96,7 +96,7 @@
       "required": ["kind", "node", "vrf", "change", "fields", "before", "after", "summary", "next_diagnostic"],
       "additionalProperties": false,
       "properties": {
-        "kind": {"enum": ["session", "rib", "path", "adj_out", "adj_in"]},
+        "kind": {"enum": ["session", "rib", "path", "adj_out", "adj_in", "vrf"]},
         "node": {"type": "string"},
         "vrf": {"type": "string"},
         "afi": {"enum": ["ipv4", "ipv6"]},

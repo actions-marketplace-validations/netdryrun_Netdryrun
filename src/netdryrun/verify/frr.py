@@ -575,6 +575,8 @@ class FrrCollector:
 def show_command(key: ItemKey) -> str:
     """One read-only vtysh command that shows an item on its node."""
     in_vrf = "" if key.vrf == "default" else f" vrf {key.vrf}"
+    if key.kind == "vrf":
+        return "show vrf"
     if key.kind == "session":
         return f"show bgp{in_vrf} neighbors {key.neighbor}"
     if key.kind == "rib":
