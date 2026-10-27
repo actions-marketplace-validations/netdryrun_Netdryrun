@@ -8,6 +8,7 @@ from .checks import Result
 from .runner import RunReport
 
 ICON = {True: "PASS", False: "FAIL"}
+MAX_MARKDOWN = 65000  # characters; GitHub rejects a comment over 65536 (the Action adds a marker line)
 
 
 def console_line(r: Result) -> str:
@@ -84,20 +85,33 @@ def to_markdown(rep: RunReport) -> str:
                   "> This says nothing about the change, good or bad. Rerun once the lab comes up.", ""]
     lines += [f"**{rep.passed} passed, {rep.failed} failed** on lab `{rep.lab_name}`", "",
               "| | Check | Result | Time |", "|---|---|---|---|"]
-    for r in sorted(rep.results, key=lambda r: r.passed):  # failures first
-        lines.append(f"| {'✅' if r.passed else '❌'} | {_md_cell(r.check.name)} | {_md_cell(r.detail)} | {r.duration}s |")
+    tail = []
     failures = [r for r in rep.results if not r.passed]
     for r in failures[:5]:
         ev = r.evidence[-1] if r.evidence else None
         if not ev:
             continue
         out = _evidence_excerpt(ev.get("output") or ev.get("stderr") or "", r.check.params)
-        lines += ["", f"<details><summary>Evidence: {_md_cell(r.check.name)}</summary>", "",
-                  f"`{ev['node']}$ {ev['cmd']}`", "", "```", out, "```", "", "</details>"]
+        tail += ["", f"<details><summary>Evidence: {_md_cell(r.check.name)}</summary>", "",
+                 f"`{ev['node']}$ {ev['cmd']}`", "", "```", out, "```", "", "</details>"]
     env = rep.environment
-    lines += ["", f"<sub>netdryrun {env.get('netdryrun', '?')} · containerlab {env.get('containerlab', '?')} · "
-              f"{rep.started} · full evidence in the JSON report</sub>"]
-    return "\n".join(lines) + "\n"
+    tail += ["", f"<sub>netdryrun {env.get('netdryrun', '?')} · containerlab {env.get('containerlab', '?')} · "
+             f"{rep.started} · full evidence in the JSON report</sub>"]
+    # A GitHub comment holds at most 65536 characters: a big (recorded) lab can have more rows than
+    # that, so the table stops early and says how many it left out. Failures come first, so they stay.
+    room = MAX_MARKDOWN - sum(len(x) + 1 for x in lines + tail) - 200
+    rows = sorted(rep.results, key=lambda r: r.passed)  # failures first
+    for i, r in enumerate(rows):
+        row = f"| {'✅' if r.passed else '❌'} | {_md_cell(r.check.name)} | {_md_cell(r.detail)} | {r.duration}s |"
+        room -= len(row) + 1
+        if room < 0:
+            left = rows[i:]
+            bad = sum(not x.passed for x in left)
+            lines.append(f"| | … {len(left)} more checks ({bad} failed, {len(left) - bad} passed) | "
+                         "not shown: too many for one comment; all are in the JSON report | |")
+            break
+        lines.append(row)
+    return "\n".join(lines + tail) + "\n"
 
 
 def to_junit(rep: RunReport) -> str:

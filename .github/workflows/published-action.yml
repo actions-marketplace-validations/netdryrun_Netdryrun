@@ -1,0 +1,116 @@
+name: Published release
+
+# Tests what an outside user gets: the released Action by its tag and the package from PyPI,
+# never this checkout's code. ci.yml covers the code on main (`uses: ./`, `pip install -e .`).
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 6 * * 1"   # weekly: the release can break without a commit here (PyPI, runners, deps)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # The release under test. Pinned by tag on purpose: this must be exactly what the docs tell
+  # users to write. Bump it together with the `uses:` refs below after each release; the
+  # `install` job fails when PyPI has a newer release than this.
+  RELEASE: "0.3.0"
+
+jobs:
+  action-passes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      # Pinned by tag on purpose (not by SHA, not ./): this is the line from the docs.
+      - uses: netdryrun/netdryrun@v0.3.0
+        id: ndr
+        with:
+          path: examples/frr-bgp
+          artifact-name: published-frr-bgp
+      - name: Check the outputs
+        env:
+          STATUS: ${{ steps.ndr.outputs.status }}
+          PASSED: ${{ steps.ndr.outputs.passed }}
+          FAILED: ${{ steps.ndr.outputs.failed }}
+        run: |
+          echo "status=$STATUS passed=$PASSED failed=$FAILED"
+          test "$STATUS" = "passed"
+          test "$FAILED" = "0"
+          test "$PASSED" -ge 7
+
+  # The released Action must catch the leak in frr-bgp-broken: this run MUST fail.
+  action-catches-bad-change:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      # Pinned by tag on purpose (not by SHA, not ./): this is the line from the docs.
+      - uses: netdryrun/netdryrun@v0.3.0
+        id: ndr
+        continue-on-error: true
+        with:
+          path: examples/frr-bgp-broken
+          artifact-name: published-frr-bgp-broken
+      - name: Expect failure on the default-route guard
+        env:
+          OUTCOME: ${{ steps.ndr.outcome }}
+          STATUS: ${{ steps.ndr.outputs.status }}
+          FAILED: ${{ steps.ndr.outputs.failed }}
+        run: |
+          echo "outcome=$OUTCOME status=$STATUS failed=$FAILED"
+          test "$OUTCOME" = "failure"
+          test "$STATUS" = "failed"
+          test "$FAILED" -ge 1
+          python - <<'EOF'
+          import json
+          rep = json.load(open("netdryrun-report.json"))
+          failed = [c for c in rep["checks"] if not c["passed"]]
+          for c in failed:
+              print("failed:", c["name"])
+          assert any(c["params"].get("prefix") == "0.0.0.0/0" for c in failed), "the leaked default route was not caught"
+          EOF
+
+  # Every documented install line, from PyPI, on every Python that pyproject.toml allows.
+  install:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15"]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          sparse-checkout: |
+            examples/frr-bgp
+            scripts/mcp_handshake.py
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: pip install netdryrun==${{ env.RELEASE }}
+        run: |
+          python -m venv "$RUNNER_TEMP/pinned"
+          "$RUNNER_TEMP/pinned/bin/python" -m pip install --no-cache-dir "netdryrun==$RELEASE"
+          test "$("$RUNNER_TEMP/pinned/bin/netdryrun" --version)" = "netdryrun $RELEASE"
+          "$RUNNER_TEMP/pinned/bin/netdryrun" validate examples/frr-bgp
+          python scripts/mcp_handshake.py "$RUNNER_TEMP/pinned/bin/netdryrun" mcp
+      - name: pip install netdryrun (the line in the docs)
+        run: |
+          python -m venv "$RUNNER_TEMP/latest"
+          "$RUNNER_TEMP/latest/bin/python" -m pip install --no-cache-dir netdryrun
+          got="$("$RUNNER_TEMP/latest/bin/netdryrun" --version)"
+          test "$got" = "netdryrun $RELEASE" || { echo "::error::PyPI serves '$got', this workflow tests $RELEASE: bump RELEASE and the uses: refs"; exit 1; }
+      - name: pip install "netdryrun[mcp]" (kept for old instructions)
+        run: |
+          python -m venv "$RUNNER_TEMP/extra"
+          "$RUNNER_TEMP/extra/bin/python" -m pip install --no-cache-dir "netdryrun[mcp]==$RELEASE"
+          python scripts/mcp_handshake.py "$RUNNER_TEMP/extra/bin/netdryrun-mcp"
+      - name: uvx netdryrun --version, uvx netdryrun mcp
+        env:
+          UV_PYTHON: ${{ matrix.python }}
+        run: |
+          python -m pip install --quiet uv
+          test "$(uvx --refresh "netdryrun@$RELEASE" --version)" = "netdryrun $RELEASE"
+          uvx netdryrun --version
+          python scripts/mcp_handshake.py uvx netdryrun mcp
