@@ -297,7 +297,11 @@ They run in this order:
 3. A settle delay (`--settle`, default 10 seconds; at least 30 seconds if the file has no positive checks, because nothing else has shown that the network converged).
 4. Each one must then hold for the hold window (`--hold` or the check's `hold`, default 10 seconds), sampled every 3 seconds. A violation at any sample fails the check immediately.
 
-Prefix counts with an upper bound first wait (up to `timeout`) for the count to enter the range, because counters ramp up, and then must hold.
+Prefix counts with an upper bound start like this (step 4), because counters ramp up and the BGP gate has already waited for stable counts:
+
+- `max` only: no wait. The count must be within `max` from the first sample of the hold window to the last (0 prefixes is within any `max`).
+- `exact: N` (N at least 1) and `min` with `max`: first a short wait, up to 30 seconds (or `timeout` if shorter), for the count to reach at least N (or `min`); a count that never gets there fails. Then the full condition (`exact`, or the whole range) must hold on every sample of the hold window, so a count that overshoots fails.
+- `exact: 0`: no wait; it must hold like `max: 0`.
 
 `hold` is accepted only on post-convergence checks. A positive check passes after 2 consecutive passing samples, so a `hold` on it would be ignored; that is an error rather than a silent no-op. (Inside a scenario, positive checks do hold for `--hold`; see [scenario timing](#scenario-timing).)
 
