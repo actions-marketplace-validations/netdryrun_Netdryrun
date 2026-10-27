@@ -31,9 +31,9 @@ class ExecResult:
     stderr: str
 
 
-def _run(cmd: list[str], timeout: float = 600, env: dict | None = None) -> ExecResult:
+def _run(cmd: list[str], timeout: float = 600, env: dict | None = None, input: str | None = None) -> ExecResult:
     try:
-        p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=env)
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=env, input=input)
     except subprocess.TimeoutExpired:
         return ExecResult(cmd, 124, "", f"timed out after {timeout}s")
     return ExecResult(cmd, p.returncode, p.stdout, p.stderr)
@@ -148,5 +148,6 @@ class Lab:
                 time.sleep(5)
         log(f"setup done on {node} ({len(commands)} commands)")
 
-    def exec(self, node: str, cmd: list[str], timeout: float = 60) -> ExecResult:
-        return _run(["docker", "exec", self.nodes[node].container, *cmd], timeout=timeout)
+    def exec(self, node: str, cmd: list[str], timeout: float = 60, input: str | None = None) -> ExecResult:
+        flags = ["-i"] if input is not None else []
+        return _run(["docker", "exec", *flags, self.nodes[node].container, *cmd], timeout=timeout, input=input)

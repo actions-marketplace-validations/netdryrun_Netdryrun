@@ -9,6 +9,8 @@ from typing import Any
 
 import yaml
 
+from .faults import parse_inject
+
 CHECK_TYPES = {
     "bgp_session": {"required": ("node", "neighbor"), "optional": ("state", "vrf")},
     "bgp_prefixes": {"required": ("node", "neighbor"), "optional": ("min", "max", "exact", "afi", "vrf")},
@@ -97,11 +99,15 @@ class Config:
 
 @dataclass
 class Fault:
-    kind: str          # "link_down" or "node_isolated"
+    kind: str          # "link_down", "node_isolated" or "inject_routes"
     node: str
     interface: str | None = None
+    prefixes: list[str] = field(default_factory=list)   # inject_routes
+    as_path: list[int] = field(default_factory=list)    # inject_routes: ASNs prepended to the injected routes
 
     def describe(self) -> str:
+        if self.kind == "inject_routes":
+            return f"{self.node} injects {len(self.prefixes)} route(s)"
         return f"{self.node} {self.interface} down" if self.kind == "link_down" else f"{self.node} isolated"
 
 
@@ -281,7 +287,7 @@ def _validate_scenario(i: int, raw: Any, default_timeout: float) -> Scenario:
     where = f"scenarios[{i}]"
     if not isinstance(raw, dict):
         raise ConfigError(f"{where}: must be a mapping")
-    unknown = set(raw) - {"name", "link_down", "node_isolated", "checks"}
+    unknown = set(raw) - {"name", "link_down", "node_isolated", "inject_routes", "checks"}
     if unknown:
         raise ConfigError(f"{where}: unknown keys {sorted(unknown)}")
     faults = []
@@ -294,8 +300,14 @@ def _validate_scenario(i: int, raw: Any, default_timeout: float) -> Scenario:
         if not node:
             raise ConfigError(f"{where}: node_isolated needs a node")
         faults.append(Fault("node_isolated", str(node)))
+    for item in _as_list(raw.get("inject_routes")):
+        try:
+            inj = parse_inject(where, item)
+        except ValueError as e:
+            raise ConfigError(str(e)) from None
+        faults.append(Fault("inject_routes", inj["node"], prefixes=inj["prefixes"], as_path=inj["as_path"]))
     if not faults:
-        raise ConfigError(f"{where}: define at least one fault (link_down or node_isolated)")
+        raise ConfigError(f"{where}: define at least one fault (link_down, node_isolated or inject_routes)")
     raw_checks = raw.get("checks") or []
     if not raw_checks:
         raise ConfigError(f"{where}: no checks defined")

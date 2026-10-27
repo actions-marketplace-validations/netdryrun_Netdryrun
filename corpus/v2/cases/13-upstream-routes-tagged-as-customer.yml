@@ -1,0 +1,9 @@
+id: 13-upstream-routes-tagged-as-customer
+title: Upstream import policy tags routes with the customer community (copy-paste error)
+category: route-leak
+expected: unsafe
+rationale: FROM-UPSTREAM now sets 65000:100 instead of 65000:200. Every export policy treats upstream routes as customer routes, so the upstream's routes and its default are announced to the peer, giving the peer free transit through our upstream.
+edits:
+- node: pe1
+  replace: " set community 65000:200\n"
+  with: " set community 65000:100\n"

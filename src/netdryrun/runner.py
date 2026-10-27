@@ -10,7 +10,8 @@ from typing import Callable
 from . import __version__
 from .checks import Result, hold_together, inconclusive_reason, is_post_convergence, run_round_robin
 from .config import Config, Scenario
-from .drivers import DriverError, check_supported, for_node
+from .drivers import DriverError, check_supported, detect, for_node
+from .faults import RouteInjection
 from .lab import Lab, LabError
 
 
@@ -78,6 +79,11 @@ def run(config: Config, *, deploy: bool = True, keep: bool = False, keep_on_fail
             raise LabError(f"unknown node(s) {', '.join(unknown)}; the topology has {', '.join(lab.nodes)}")
         for c in config.checks + [c for sc in config.scenarios for c in sc.checks]:
             check_supported(lab, c, config.drivers.get(c.node))
+        for f in (f for sc in config.scenarios for f in sc.faults if f.kind == "inject_routes"):
+            driver = config.drivers.get(f.node) or detect(lab.nodes[f.node])
+            if driver != "frr":
+                raise LabError(f"inject_routes on {f.node} ({driver}) is not supported yet: it needs an FRR node; "
+                               "inject the routes from an FRR neighbor instead")
         if deploy:
             log(f"Deploying lab {lab.name} ({len(lab.nodes)} nodes); this usually takes 30-90 s, longer the first time images are pulled...")
             lab.deploy()
@@ -147,12 +153,19 @@ def run(config: Config, *, deploy: bool = True, keep: bool = False, keep_on_fail
 
 def run_scenario(lab: Lab, sc: Scenario, drivers: dict, *, settle: float, hold: float,
                  on_result=None, log=lambda _: None) -> list[Result]:
-    """Inject the scenario's faults, run its checks, then restore the links and let the network re-converge."""
+    """Inject the scenario's faults, run its checks, then restore the links and routes and let the network re-converge."""
     downed: list[tuple[str, str]] = []
+    injected: list[RouteInjection] = []
     results: list[Result] = []
     log(f"Scenario: {sc.name}")
     try:
         for f in sc.faults:
+            if f.kind == "inject_routes":
+                inj = RouteInjection(lab, f.node, f.prefixes, f.as_path)
+                injected.append(inj)   # recorded first: restore even if applying half-fails
+                log(f"Injecting {inj.describe()}")
+                inj.apply()
+                continue
             lab._require_linux_links(f.node)
             ifaces = [f.interface] if f.kind == "link_down" else lab.data_interfaces(f.node)
             for iface in ifaces:
@@ -171,10 +184,16 @@ def run_scenario(lab: Lab, sc: Scenario, drivers: dict, *, settle: float, hold: 
                 lab.set_link(node, iface, up=True)
             except LabError as e:
                 not_restored.append(f"{node} {iface}: {e}")
+        for inj in injected:
+            try:
+                inj.restore()
+            except LabError as e:
+                not_restored.append(str(e))
         if not_restored:
-            # A link left down silently would corrupt every later result: stop the run instead
-            raise LabError("could not restore links after scenario: " + "; ".join(not_restored))
-        if downed:
-            log(f"Restored {len(downed)} link(s); settling {settle:g}s")
+            # A link left down or a route left injected would corrupt every later result: stop the run instead
+            raise LabError("could not restore after scenario: " + "; ".join(not_restored))
+        applied = sum(inj.applied for inj in injected)
+        if downed or applied:
+            log(f"Restored {len(downed)} link(s) and {applied} route injection(s); settling {settle:g}s")
             time.sleep(settle)
     return results

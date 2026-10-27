@@ -1,0 +1,9 @@
+id: 12-customer-max-prefix-raised
+title: Customer maximum-prefix raised from 50 to 100
+category: hygiene
+expected: safe
+rationale: The customer is growing and asked for a higher limit. The limit still exists and still shuts the session on a flood well beyond the customer's needs.
+edits:
+- node: pe1
+  replace: '  neighbor 10.0.1.2 maximum-prefix 50 restart 1'
+  with: '  neighbor 10.0.1.2 maximum-prefix 100 restart 1'

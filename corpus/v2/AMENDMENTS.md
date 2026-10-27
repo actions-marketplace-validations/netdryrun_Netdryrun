@@ -1,0 +1,9 @@
+These findings came after the v2 run. The table above is left exactly as pre-registered in commit `322cc4e`; nothing in `corpus/v2/cases/` was edited.
+
+**Run provenance.** `results.json` records the commit as `unknown`: the run used git inside WSL on a Windows git worktree, and that git could not read the worktree. The run started at 04:02:42 UTC, 16 seconds after the pre-registration commit `322cc4e`. `src/` and `corpus/run.py` were not changed during the run. The renderer, the docs and the unit tests were edited during the run, and none of them affect verdicts.
+
+**Case 04 is a real miss, as predicted.** pe2 announced the mistyped 192.0.12.0/24 to pe1 and on to the customer, and no check looked for it. I7 only spot-checks a few well-known prefixes, and nothing bounds what the customer receives. Catching this class needs a check that the customer receives only routes from known origins, or only expected prefixes from our own AS. No such check type exists yet.
+
+**Case 18 is a real miss.** With the discard route deleted, FRR (traditional defaults, no `bgp network import-check`) kept announcing 192.0.2.0/24, so I2 passed. The harm is the routing loop for unused addresses inside the aggregate, which no check probes. A `ping` with `expect: failure` to an unused address in 192.0.2.0/24 from the upstream would not show the loop either, because ping fails both with and without it. Catching it needs a path or traceroute check (TTL exceeded versus a clean discard).
+
+**Ping only's catch of case 14 is partly a lab artifact.** In the lab, the customer's BGP default is not active, because containerlab's management default route outranks it (the spec checks the default with `active: false` for this reason). Once the customer lost its specific routes, its pings had no path at all. A real customer with a working default would still ping, and the ping baseline would pass the change. The result stays as measured.

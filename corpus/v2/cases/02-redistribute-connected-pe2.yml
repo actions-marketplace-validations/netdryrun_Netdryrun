@@ -1,0 +1,12 @@
+id: 02-redistribute-connected-pe2
+title: redistribute connected added on pe2
+category: hygiene
+expected: unsafe
+rationale: pe2's link /30s, its loopback and the management subnet become BGP routes. The peer export filter keeps them from the peer, but they reach pe1 over iBGP and go on to the customer. Reviewers reject leaking infrastructure to customers. (Re-expresses v1 case 18 on the other router.)
+edits:
+- node: pe2
+  append: |-
+    router bgp 65000
+     address-family ipv4 unicast
+      redistribute connected
+     exit-address-family

@@ -1,0 +1,9 @@
+id: 17-customer-region-community
+title: Add an informational region community to customer routes
+category: hygiene
+expected: safe
+rationale: Customer routes get 65000:110 (region tag) next to 65000:100. The export policies match on 65000:100, which is still present, so nothing else changes.
+edits:
+- node: pe1
+  replace: " set community 65000:100\n"
+  with: " set community 65000:100 65000:110\n"

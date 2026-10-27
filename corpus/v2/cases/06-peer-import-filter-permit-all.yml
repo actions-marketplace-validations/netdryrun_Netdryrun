@@ -1,0 +1,11 @@
+id: 06-peer-import-filter-permit-all
+title: Peer inbound filter replaced with permit-all
+category: latent-risk
+expected: unsafe
+rationale: Nothing changes today because the peer only sends its /24, but anything the peer sends is now accepted, including a more-specific of our customer's space that would hijack the customer's traffic. Reviewers reject removing an import filter. (Re-expresses v1 case 30.)
+edits:
+- node: pe2
+  append: route-map ALLOW-ALL permit 10
+- node: pe2
+  replace: '  neighbor 10.0.4.2 route-map FROM-PEER in'
+  with: '  neighbor 10.0.4.2 route-map ALLOW-ALL in'

@@ -101,7 +101,7 @@ checks:
     present: false
 ```
 
-Failure scenarios take links down and check the network still behaves, then restore them:
+Failure scenarios break something, check the network still behaves, then restore it. They can take links down, or make an FRR neighbor announce routes it shouldn't, to prove a max-prefix limit or an import filter actually holds:
 
 ```yaml
 scenarios:
@@ -110,6 +110,10 @@ scenarios:
     checks:
       - {type: ping, node: r1, source: 192.168.1.1, target: 192.168.2.1}   # rerouted via r3
       - {type: bgp_session, node: r1, neighbor: 10.0.12.2, state: down}
+  - name: customer floods 200 prefixes
+    inject_routes: {node: ce1, count: 200, from: 10.100.16.0/24}
+    checks:
+      - {type: bgp_prefixes, node: up1, neighbor: 10.0.2.1, max: 51}   # the limit stops the flood
 ```
 
 Every check also accepts `name`, `timeout` and `vrf`. Ping accepts `expect: failure` and `count`. Drivers are detected from the topology; override them with `nodes: {r1: {driver: frr}}`. Nodes that are configured after boot (SONiC) take `setup` commands: `nodes: {sonic1: {setup: [...]}}`.
@@ -193,7 +197,7 @@ What Netdryrun adds: positive checks wait for convergence, negative checks run o
 ## Honest limits
 
 - Lab routers are not your production routers. A pass on FRR, SR Linux, SONiC VS or Arista cEOS is strong evidence for protocol logic and policy intent, but not proof of hardware, scale or version-specific behavior. For Arista, bring your own licensed cEOS image to test real vendor code.
-- Checks cover IPv4/IPv6 unicast BGP (sessions, prefix counts, best-path attributes), routes and ping, with link-down and node-isolation failure scenarios. More checks are coming: OSPF/IS-IS adjacencies, path/traceroute.
+- Checks cover IPv4/IPv6 unicast BGP (sessions, prefix counts, best-path attributes), routes and ping, with link-down, node-isolation and route-injection (FRR only) failure scenarios. More checks are coming: OSPF/IS-IS adjacencies, path/traceroute.
 
 How results are checked, and who writes the code (mostly AI agents): [How it's built](https://netdryrun.com/how-its-built/).
 

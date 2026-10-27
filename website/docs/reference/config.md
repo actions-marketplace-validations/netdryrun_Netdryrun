@@ -188,7 +188,7 @@ Reachability from a node.
 
 ## Failure scenarios
 
-`scenarios:` runs extra checks while links are down, then restores them. Use it to prove the network survives a failure, for example that traffic reroutes when an uplink dies.
+`scenarios:` runs extra checks while something is wrong, then puts it right. Use it to prove the network survives a failure, for example that traffic reroutes when an uplink dies, or that your max-prefix limit and import filters hold when a neighbor misbehaves.
 
 ```yaml
 scenarios:
@@ -202,6 +202,17 @@ scenarios:
   - node_isolated: r2          # all of r2's lab links down
     checks:
       - {type: route, node: r1, prefix: 192.168.2.0/24, present: false}
+
+  - name: customer floods us
+    inject_routes: {node: ce1, count: 200, from: 10.100.16.0/24}   # ce1 announces 200 extra /24s
+    checks:
+      - {type: bgp_prefixes, node: up1, neighbor: 10.0.2.1, max: 51}   # the max-prefix limit holds
+
+  - name: peer announces what it does not own
+    inject_routes: {node: peer1, prefixes: [10.100.0.0/25, 8.8.8.0/24], as_path: [65400]}
+    checks:
+      - {type: bgp_prefixes, node: pe2, neighbor: 10.0.4.2, max: 1}   # the import filter holds
+      - {type: route, node: ce1, prefix: 10.100.0.0/25, protocol: bgp, present: false}
 ```
 
 | Key | Meaning |
@@ -209,9 +220,26 @@ scenarios:
 | `name` | Label shown before each check (default: generated from the faults) |
 | `link_down` | `{node, interface}` or a list of them. Interface names as seen inside the node (`eth1` on FRR, `e1-1` on SR Linux) |
 | `node_isolated` | A node name (or list): every lab link of that node goes down |
+| `inject_routes` | `{node, prefixes}` or `{node, count}` (or a list of them): the node announces extra routes. See below |
 | `checks` | Same check types as the top level, with the same convergence rules |
 
-Scenarios run after the main checks, one at a time. Links are always restored afterwards, even if a check fails, and Netdryrun waits for the network to settle before the next scenario.
+Scenarios run after the main checks, one at a time. Links and injected routes are always restored afterwards, even if a check fails, and Netdryrun waits for the network to settle before the next scenario. If the network does not recover, the checks that passed before the scenario are reported as failed `[after <scenario>] recovers: ...` checks.
+
+### Injecting routes
+
+`inject_routes` makes a node announce routes it normally doesn't, so you can test what the rest of the network does with them: a customer leaking more-specifics, a peer announcing someone else's prefix, a flood that should trip a max-prefix limit.
+
+| Key | Required | Meaning |
+|---|---|---|
+| `node` | yes | The node that announces the routes. It must be an FRR node with `router bgp` in the default VRF |
+| `prefixes` | one of | A prefix or list of prefixes, IPv4 or IPv6 |
+| `count` | one of | Announce this many consecutive prefixes (1 to 10000), starting at `from` |
+| `from` | no | First prefix for `count`; its length is used for all of them. Default `100.64.0.0/24` |
+| `as_path` | no | List of AS numbers prepended to the injected routes, so they look learned from those networks |
+
+On the node, Netdryrun adds a blackhole static route and a BGP `network` statement per prefix (with `as_path`, through a route-map named `NDR-INJECT`). It applies them with `vtysh -f` and waits until every prefix is in the node's own BGP table before running the scenario's checks. Afterwards it removes exactly what it added and waits until the prefixes are gone. What the node's neighbors do with the routes is up to the policy under test: an outbound filter on the node itself can still stop them.
+
+Limits: only FRR nodes are supported. Any other node is refused before the lab deploys; inject the routes from an FRR neighbor instead. A prefix that is already a `network` statement or a static route on the node is refused, because removing it afterwards would delete real config. IPv6 prefixes need the BGP sessions to carry IPv6 unicast.
 
 ## Convergence semantics
 
@@ -254,6 +282,7 @@ A driver turns device state into a common shape. Netdryrun detects it from the t
 | `bgp_route`: communities (standard, large, well-known), AS path, local preference, MED, next hop, absent | yes | yes | yes | yes |
 | `ping` success / failure | yes | yes | yes | yes |
 | Failure scenarios on the node's own links | yes | not yet (fail the FRR/Linux side instead) | yes | yes |
+| `inject_routes` on the node | yes | not yet (inject from an FRR neighbor) | not yet | not yet |
 
 **Received-but-not-selected routes:** on SR Linux and Arista EOS, a BGP route that lost to a static or local route lives only in the BGP table, not the routing table. Both drivers read the BGP table too, so such a route still counts as present for `present: false`.
 

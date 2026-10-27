@@ -1,0 +1,15 @@
+id: 07-customer-adds-prefixes
+title: Customer announces two more /24s from its /16
+category: customer-growth
+expected: safe
+rationale: The customer adds 10.100.1.0/24 and 10.100.2.0/24, inside its registered 10.100.0.0/16. Announcing them upstream and to the peer is the desired outcome. (Re-expresses v1 case 06, which v1's exact prefix count wrongly blocked.)
+edits:
+- node: ce1
+  append: |-
+    ip route 10.100.1.0/24 blackhole
+    ip route 10.100.2.0/24 blackhole
+    router bgp 65100
+     address-family ipv4 unicast
+      network 10.100.1.0/24
+      network 10.100.2.0/24
+     exit-address-family

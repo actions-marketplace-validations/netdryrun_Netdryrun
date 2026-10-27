@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **`inject_routes` failure fault** (FRR nodes): a scenario makes a node announce extra routes (`prefixes`, or `count` consecutive ones from `from`, optional `as_path` prepend), then removes them. Use it to test that a max-prefix limit or an import filter holds when a customer or peer misbehaves. Prefixes the node already has configured, and non-FRR nodes, are refused before anything changes.
+- **Verdict Corpus v2** (`corpus/v2/`, `python corpus/run.py --corpus v2`): its own base lab, intent spec and 18 pre-registered cases that re-express the v1 misses (unexpected routes, latent risks, rigid prefix counts, a vendor-default label) and add new changes. v1 results are unchanged.
+
 ## 0.3.0 (2026-10-27)
 
 - **Friendlier long waits:** the deploy line says it usually takes 30-90 s (longer when images are pulled), and Ctrl+C prints "Interrupted: no verdict" with exit code 130 instead of a Python traceback. The lab is still cleaned up. Found on the first real Codespaces run.
