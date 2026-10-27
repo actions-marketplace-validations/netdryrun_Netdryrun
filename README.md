@@ -33,7 +33,7 @@ That run caught a leaked default route that was *received but not selected*. A p
 
 - **It tests behavior, not syntax.** A config diff shows what changed, not whether BGP comes up or which routes each router ends up with. A real control plane shows what the routing software actually does.
 - **It's built for CI.** One GitHub Action, a pass/fail exit code, a Markdown summary in the job, JUnit XML, and a JSON evidence file with every command and raw output.
-- **It waits for convergence, with stated rules.** A positive check passes after 2 passing samples taken 3 s apart, within its timeout. Negative checks ("this route must be absent") start only after the positive checks have finished and a 10 s settle, then must hold for 10 s (both configurable), so they don't pass just because BGP hasn't come up yet. The rules are sample-based; see [convergence semantics](https://netdryrun.com/reference/config/#convergence-semantics).
+- **It waits for convergence, with stated rules.** A positive check passes after 2 passing samples taken 3 s apart, within its timeout. Negative checks ("this route must be absent") start only after the positive checks have finished, every configured BGP session on their node is up with stable prefix counts, and a 10 s settle has passed; then they must hold for 10 s (settle and hold are configurable), so they don't pass just because BGP hasn't come up yet. In a failure scenario, checks start only once the fault is visible in BGP, and positive checks must hold too. The rules are sample-based; see [convergence semantics](https://netdryrun.com/reference/config/#convergence-semantics).
 
 ## Quick start
 
@@ -133,10 +133,10 @@ Every check also accepts `name`, `timeout` and `vrf`. Ping accepts `expect: fail
 |---|---|
 | `netdryrun run [path]` | Deploy the lab, run the checks, destroy the lab. Add `--keep` to leave it up for debugging |
 | `netdryrun check [path]` | Run the checks against a lab that is already running |
-| `netdryrun validate [path]` | Validate `netdryrun.yml` without running anything |
+| `netdryrun validate [path]` | Validate `netdryrun.yml` and its topology without running anything |
 | `netdryrun record topology.clab.yml` | Snapshot a known-good lab into a `netdryrun.yml` baseline, so you don't write checks by hand |
 
-Reports: `--json FILE` (full evidence), `--markdown FILE`, `--junit FILE`. Under GitHub Actions, a summary is appended to the job page automatically. Exit codes: `0` passed, `1` a check failed, `2` config or lab error, `3` inconclusive (the lab never reached a testable state, so the run says nothing about the change).
+Reports: `--json FILE` (full evidence), `--markdown FILE`, `--junit FILE`. Under GitHub Actions, a summary is appended to the job page automatically. Exit codes: `0` passed, `1` a check failed, `2` no verdict (config or lab error, a fault that did not take effect, or an internal error; add `--debug` for the traceback), `3` inconclusive (the lab never reached a testable state, so the run says nothing about the change), `130`/`143`/`129` interrupted by SIGINT/SIGTERM/SIGHUP after cleaning up the lab.
 
 ## GitHub Action
 

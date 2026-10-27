@@ -53,7 +53,7 @@ The check that caught it:
   present: false
 ```
 
-Checks like this one run only after the network has converged and must hold for a time window, so they cannot pass just because BGP has not come up yet. See [convergence semantics](reference/config.md#convergence-semantics).
+Checks like this one run only after the network has converged (the positive checks passed and every configured BGP session on the node is up) and must hold for a time window, so they cannot pass just because BGP has not come up yet. See [convergence semantics](reference/config.md#convergence-semantics).
 
 ## Run it in GitHub Actions
 

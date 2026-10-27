@@ -15,7 +15,9 @@ from mcp.server import MCPServer
 
 from . import __version__, report
 from .config import CHECK_TYPES, ConfigError
-from .runner import destroy_active_labs, load_config, run
+from .drivers import DriverError
+from .lab import LabError
+from .runner import check_topology, destroy_active_labs, load_config, run
 
 mcp = MCPServer("netdryrun", version=__version__, website_url="https://netdryrun.com")
 
@@ -177,7 +179,8 @@ def validate(path: str) -> str:
     """Validate netdryrun.yml at `path` without starting a lab. Returns the parsed checks or the error."""
     try:
         cfg = _load(path)
-    except ConfigError as e:
+        check_topology(cfg)   # node names, drivers and supported keys, as dry_run checks them before deploying
+    except (ConfigError, LabError, DriverError) as e:
         return json.dumps({"valid": False, "error": str(e)})
     return json.dumps({"valid": True, "lab": str(cfg.lab), "checks": [c.name for c in cfg.checks]}, indent=2)
 
@@ -186,7 +189,7 @@ def validate(path: str) -> str:
 def check_types() -> str:
     """List supported check types and their keys, to help write netdryrun.yml."""
     return json.dumps({"netdryrun": __version__, "check_types": {
-        k: {"required": list(v["required"]), "optional": list(v["optional"]) + ["name", "timeout"]}
+        k: {"required": list(v["required"]), "optional": list(v["optional"]) + ["name", "timeout", "hold"]}
         for k, v in CHECK_TYPES.items()}}, indent=2)
 
 

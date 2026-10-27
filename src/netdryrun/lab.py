@@ -11,8 +11,6 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-import yaml
-
 
 class LabError(RuntimeError):
     pass
@@ -67,13 +65,14 @@ class Lab:
         self.topology = topology
         self.clab = containerlab
         self._lock_file = None
+        from .config import ConfigError, load_yaml   # imported here: config -> faults -> lab
+
         try:
-            topo = yaml.safe_load(topology.read_text(encoding="utf-8")) or {}
-        except yaml.YAMLError as e:
-            mark = getattr(e, "problem_mark", None)
-            where = f" (line {mark.line + 1}, column {mark.column + 1})" if mark else ""
-            raise LabError(f"{topology}: topology is not valid YAML{where}: "
-                           f"{getattr(e, 'problem', None) or e}") from None
+            # strict like netdryrun.yml: a duplicate key (two `nodes:` blocks) is an error, not a silent overwrite
+            topo = load_yaml(topology.read_text(encoding="utf-8"), str(topology)) or {}
+        except ConfigError as e:
+            detail = str(e).removeprefix(f"{topology}: ")   # "not valid YAML at line L, column C: ..."
+            raise LabError(f"{topology}: topology is {detail}") from None
         except (OSError, UnicodeDecodeError) as e:
             raise LabError(f"{topology}: cannot read the topology: {e}") from None
         if not isinstance(topo, dict):
@@ -223,7 +222,7 @@ class Lab:
                 if other[0] in bridges:
                     # every other port of the bridge leads to a peer (or to another bridge)
                     for a2, b2 in self.links:
-                        for x, y in ((a2, b2), (b2, a2)):
+                        for x, _y in ((a2, b2), (b2, a2)):
                             if x[0] == other[0] and x != other and x not in seen:
                                 seen.add(x)
                                 todo.append(x)

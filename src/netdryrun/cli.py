@@ -88,7 +88,19 @@ def _cmd_validate(args) -> int:
     except ConfigError as e:
         print(f"config error: {e}", file=sys.stderr)
         return 2
-    print(f"OK: {cfg.path} ({len(cfg.checks)} checks, lab {cfg.lab})")
+    from .drivers import DriverError
+    from .lab import LabError
+    from .runner import check_topology
+
+    try:
+        lab = check_topology(cfg)   # the topology and every check run makes before deploying
+    except LabError as e:
+        print(f"lab error: {e}", file=sys.stderr)
+        return 2
+    except DriverError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+    print(f"OK: {cfg.path} ({len(cfg.checks)} checks, lab {cfg.lab}, {len(lab.nodes)} nodes)")
     for c in cfg.checks:
         print(f"  - [{c.type}] {c.name}")
     return 0

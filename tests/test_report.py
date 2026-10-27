@@ -41,3 +41,30 @@ def test_huge_report_fits_one_github_comment():
     assert 0 < shown < 1970
     assert f"… {1970 - shown} more checks (0 failed, {1970 - shown} passed)" in md
     assert md.startswith("### ❌ Netdryrun failed") and "**1970 passed, 30 failed**" in md
+
+
+def test_evidence_excerpt_shows_which_route_is_selected():
+    # A real leak (frr-bgp-broken style): FRR lists the leaked BGP default first, without "selected", and the
+    # selected kernel default after it, beyond the 15-line window. The excerpt must show the proof for
+    # "unexpectedly present via bgp (not selected)": the selected route and its protocol.
+    import json
+
+    data = json.loads((Path(__file__).parent / "fixtures" / "report-real-failed-leak.json").read_text())
+    check = next(c for c in data["checks"] if c["params"].get("prefix") == "0.0.0.0/0" and not c["passed"])
+    output = check["evidence"][0]["output"]
+    rows = output.splitlines()
+    assert len(rows) > 15 and next(i for i, r in enumerate(rows) if '"selected"' in r) > 15
+    ex = report._evidence_excerpt(output, check["params"])
+    assert '"0.0.0.0/0"' in ex and '"protocol":"bgp"' in ex
+    assert '"protocol":"kernel"' in ex and '"selected":true' in ex and '"installed":true' in ex
+    assert len(ex.splitlines()) <= 15 + 1 + 8 + 1
+
+
+def test_markdown_evidence_shows_every_command_of_the_last_sample():
+    rep = _big_report(1, failing=1)
+    r = rep.results[0]
+    r.evidence = [{"node": "leaf1", "cmd": "vtysh -c 'show ip route 192.168.0.0/24 json'", "output": "{}"},
+                  {"node": "leaf1", "cmd": "vtysh -c 'show bgp ipv4 unicast 192.168.0.0/24 json'", "output": "{}"}]
+    md = report.to_markdown(rep)
+    assert "show ip route 192.168.0.0/24 json" in md and "show bgp ipv4 unicast 192.168.0.0/24 json" in md
+    assert md.count("<details>") == 1
