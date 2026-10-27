@@ -19,7 +19,7 @@ Facts (generated from the source): version 0.3.0; check types `bgp_session`, `bg
 
 ## Optional
 
-- [When to use what](https://netdryrun.com/when-to-use-what/): Batfish, netlab, pyATS/Genie, containerlab and Netdryrun compared
+- [When to use what](https://netdryrun.com/when-to-use-what/): Batfish, pyATS/Genie, containerlab and Netdryrun compared
 - [Trust and security](https://netdryrun.com/trust/): license, releases, security contact, limits, privacy
 <!-- facts:llms_corpus -->
 - [Verdict corpus](https://netdryrun.com/corpus/): 30 realistic BGP changes with pre-registered verdicts; Netdryrun 24/30, ping-only 20/30, sessions-up 15/30 correct

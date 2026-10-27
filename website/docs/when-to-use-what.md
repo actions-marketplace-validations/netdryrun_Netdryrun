@@ -1,6 +1,6 @@
 ---
 title: When to use what
-description: A neutral comparison of Batfish, netlab, pyATS/Genie, containerlab and Netdryrun for network change testing. What each tool is best at and how they combine.
+description: A neutral comparison of Batfish, pyATS/Genie, containerlab and Netdryrun for network change testing. What each tool is best at and how they combine.
 ---
 
 # When to use what
@@ -12,7 +12,6 @@ Several good open-source tools help you test network changes. They answer differ
 | Tool | Best at | Runs routers? |
 |---|---|---|
 | [Batfish](https://batfish.org) | Analyzing configs of many vendors without booting anything: reachability, ACLs and firewall rules, routing, differences between two snapshots | No, it models them |
-| [netlab](https://netlab.tools) | Building a working lab from a short, high-level topology, with generated configs for many platforms and built-in validation tests | Yes, through containerlab or libvirt |
 | [pyATS / Genie](https://developer.cisco.com/pyats/) | A full Python test framework with a large library of device parsers, for testing labs and real (including production) devices, with state snapshots and diffs | Works against any reachable device |
 | [containerlab](https://containerlab.dev) | Running container-based network labs from a YAML topology, for many network operating systems | Yes, it is the lab |
 | Netdryrun™ | Declarative, convergence-aware checks on a containerlab lab, packaged for CI with a pass/fail verdict and evidence | Yes, through containerlab |
@@ -24,14 +23,6 @@ Batfish parses device configs and builds a model of the network's control and da
 Use it when you want broad, fast analysis on every commit, especially for ACLs, firewall policy and multi-vendor configs that you cannot run in containers.
 
 A model is not the running software, so behavior that depends on the real implementation (timers, convergence order, bugs) is outside what it sees. That is where a lab helps.
-
-## netlab
-
-netlab takes a compact topology description ("these routers, running OSPF and BGP, connected like this") and builds the whole lab: addressing, device configs for many platforms, and the containerlab or libvirt topology. It also includes validation tests you can run against the lab.
-
-Use it when building and maintaining the lab is the hard part, or when you want the same design on several platforms.
-
-It combines with Netdryrun naturally: netlab can generate a containerlab topology, and Netdryrun can run its checks against that topology as a CI gate.
 
 ## pyATS / Genie
 
@@ -66,7 +57,7 @@ It does not do static analysis, build labs for you, or test production devices.
 A reasonable pipeline uses more than one:
 
 1. **Batfish** on every commit for fast, broad config analysis.
-2. **netlab** or a hand-written **containerlab** topology to build a lab that mirrors the change.
+2. A **containerlab** topology that mirrors the change.
 3. **Netdryrun** in CI to boot that lab, wait for convergence, and gate the merge on runtime behavior.
 4. **pyATS / Genie** (or similar) for pre- and post-change checks on the production devices during the change window.
 

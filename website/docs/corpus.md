@@ -7,6 +7,9 @@ description: 30 realistic BGP changes with expected verdicts committed before an
 
 How much does a typical "ping after the change" test miss? This corpus answers that with data anyone can rerun.
 
+!!! info "How to read these numbers"
+    This is a small benchmark the Netdryrun maintainers wrote: one FRR provider topology, 30 changes in v1 and 18 in v2, each labelled harmful or safe before any run. It compares testing methods on the same changes. It is **not** an independent benchmark and **not** a reliability estimate for production networks: "24/30" does not mean Netdryrun is right 80% of the time on your network. Both runs used Netdryrun 0.2.0; the current release is newer, and the [changes since](how-its-built.md#every-miss-and-what-it-changed) are listed per miss.
+
 There are two runs. The v1 results below are frozen as first published. [Corpus v2](#corpus-v2) is a second, separately pre-registered run that makes v1's misses testable, including scenarios where a customer or peer misbehaves.
 
 ## Method

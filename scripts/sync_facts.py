@@ -64,16 +64,22 @@ def facts() -> dict:
     mcp_tools = [n.name for n in _module(SRC / "mcp_server.py").body if isinstance(n, ast.FunctionDef)
                  and any(isinstance(d, ast.Call) and getattr(d.func, "attr", "") == "tool" for d in n.decorator_list)]
 
-    results = json.loads((ROOT / "corpus" / "results" / "results.json").read_text(encoding="utf-8"))
+    return {"version": version, "platforms": [PLATFORMS[d] for d in PLATFORMS], "drivers": list(PLATFORMS),
+            "check_types": check_types, "mcp_tools": mcp_tools,
+            "corpus": _corpus(ROOT / "corpus" / "results" / "results.json"),
+            "corpus_v2": _corpus(ROOT / "corpus" / "v2" / "results" / "results.json")}
+
+
+def _corpus(path: Path) -> dict:
+    results = json.loads(path.read_text(encoding="utf-8"))
     cases = results["cases"]
     corpus = {"cases": len(cases), "harmful": sum(c["expected"] == "unsafe" for c in cases),
-              "generated": results["environment"]["generated"][:10], "netdryrun": results["environment"]["netdryrun"]}
+              "generated": results["environment"]["generated"][:10], "ran_with": results["environment"]["netdryrun"]}
     for strategy in ("netdryrun", "ping", "sessions"):
         corpus[strategy] = sum(bool(c["strategies"][strategy]["correct"]) for c in cases)
     corpus["losses"] = [{"id": c["id"], "title": c["title"], "expected": c["expected"]}
                         for c in cases if not c["strategies"]["netdryrun"]["correct"]]
-    return {"version": version, "platforms": [PLATFORMS[d] for d in PLATFORMS], "drivers": list(PLATFORMS),
-            "check_types": check_types, "mcp_tools": mcp_tools, "corpus": corpus}
+    return corpus
 
 
 def _count(n: int, noun: str) -> str:
@@ -84,9 +90,14 @@ def blocks(f: dict) -> dict[str, str]:
     long_, mid, short = (_join([p[i] for p in f["platforms"]]) for i in range(3))
     c = f["corpus"]
     scores = f"Netdryrun {c['netdryrun']}/{c['cases']}, ping-only {c['ping']}/{c['cases']}, sessions-up {c['sessions']}/{c['cases']}"
-    corpus_sentence = (f"On the {{link}} ({c['cases']} realistic BGP changes, expected verdicts committed before any run), "
-                       f"Netdryrun judged {c['netdryrun']}/{c['cases']} correctly, ping-only checks {c['ping']}/{c['cases']} "
-                       f"and all-sessions-up checks {c['sessions']}/{c['cases']}.")
+    c2 = f["corpus_v2"]
+    ran = _join(sorted({c["ran_with"], c2["ran_with"]}))
+    corpus_sentence = (f"On the {{link}}, Netdryrun judged {c['netdryrun']}/{c['cases']} realistic BGP changes correctly "
+                       f"(ping-only checks {c['ping']}/{c['cases']}, all-sessions-up checks {c['sessions']}/{c['cases']}) and "
+                       f"{c2['netdryrun']}/{c2['cases']} on the harder v2 ({c2['ping']}/{c2['cases']} and {c2['sessions']}/{c2['cases']}). "
+                       f"Both are small benchmarks the maintainers wrote on one FRR topology, with expected verdicts committed "
+                       f"before any run, and both ran on Netdryrun {ran}: they compare methods, they are not a production "
+                       "reliability estimate.")
     losses = {kind: [x for x in c["losses"] if x["expected"] == kind] for kind in ("unsafe", "safe")}
     checks = _join([f"`{t}`" for t in f["check_types"]])
     attrs = "bgp_route" in f["check_types"]  # BGP best-path attribute checks exist

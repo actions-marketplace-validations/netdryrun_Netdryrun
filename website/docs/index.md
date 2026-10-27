@@ -7,6 +7,10 @@ description: Test a network change in CI with a containerlab lab. Netdryrun boot
 
 To test a network change in CI, keep the changed configs and a containerlab topology in Git, describe the expected behavior in a `netdryrun.yml` file, and run `netdryrun run` (or the GitHub Action) on every pull request. Netdryrun™ deploys the lab, waits for BGP to converge, checks sessions, prefix counts, routes and pings, then destroys the lab. Any failed check exits non-zero and fails the job, with a JSON evidence file showing every command and its raw output.
 
+[Try it in your browser](https://codespaces.new/netdryrun/netdryrun?quickstart=1){ .md-button .md-button--primary } [View the source on GitHub](https://github.com/netdryrun/netdryrun){ .md-button }
+
+The browser trial runs in GitHub Codespaces: it needs a free GitHub account, takes a few minutes to start, and then `bash examples/agent-demo/demo.sh` shows a bad change rejected and the fix accepted. Nothing to install.
+
 !!! abstract "What Netdryrun is"
     Netdryrun is an open-source tool that tests network changes in a real virtual lab before they reach production. It boots the topology with containerlab, waits for convergence, checks BGP sessions, prefixes, routes and reachability, and returns a pass/fail verdict with evidence. It runs locally, in GitHub Actions, or as an MCP server for AI agents.
 
@@ -93,5 +97,5 @@ Requirements: Linux or WSL2, Docker, containerlab, Python 3.10+. Walkthrough: [G
 ## Status
 
 <!-- facts:site_status -->
-Version 0.3.0, early. Works with FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image) on Linux and WSL2. Check types: `bgp_session`, `bgp_prefixes`, `route`, `bgp_route` and `ping` (IPv4/IPv6 unicast BGP sessions, prefix counts, routes, BGP best-path attributes and ping), plus link-down and node-isolation failure scenarios. On the [verdict corpus](corpus.md) (30 realistic BGP changes, expected verdicts committed before any run), Netdryrun judged 24/30 correctly, ping-only checks 20/30 and all-sessions-up checks 15/30. Issues and feedback: [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun/issues).
+Version 0.3.0, early. Works with FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image) on Linux and WSL2. Check types: `bgp_session`, `bgp_prefixes`, `route`, `bgp_route` and `ping` (IPv4/IPv6 unicast BGP sessions, prefix counts, routes, BGP best-path attributes and ping), plus link-down and node-isolation failure scenarios. On the [verdict corpus](corpus.md), Netdryrun judged 24/30 realistic BGP changes correctly (ping-only checks 20/30, all-sessions-up checks 15/30) and 16/18 on the harder v2 (9/18 and 7/18). Both are small benchmarks the maintainers wrote on one FRR topology, with expected verdicts committed before any run, and both ran on Netdryrun 0.2.0: they compare methods, they are not a production reliability estimate. Issues and feedback: [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun/issues).
 <!-- /facts:site_status -->

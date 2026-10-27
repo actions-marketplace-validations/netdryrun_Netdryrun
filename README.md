@@ -26,7 +26,7 @@ FAILED: 5 passed, 1 failed (6 checks)
 That run caught a leaked default route that was *received but not selected*. A ping test or a config linter would have missed it.
 
 <!-- facts:readme_status -->
-> Status: **v0.3.0, early.** Works today with FRR, Nokia SR Linux, SONiC (docker-sonic-vs) and Arista EOS (cEOS, bring your own image) on Linux and WSL2. On the [verdict corpus](https://netdryrun.com/corpus/) (30 realistic BGP changes, expected verdicts committed before any run), Netdryrun judged 24/30 correctly, ping-only checks 20/30 and all-sessions-up checks 15/30. Feedback and issues are very welcome.
+> Status: **v0.3.0, early.** Works today with FRR, Nokia SR Linux, SONiC (docker-sonic-vs) and Arista EOS (cEOS, bring your own image) on Linux and WSL2. On the [verdict corpus](https://netdryrun.com/corpus/), Netdryrun judged 24/30 realistic BGP changes correctly (ping-only checks 20/30, all-sessions-up checks 15/30) and 16/18 on the harder v2 (9/18 and 7/18). Both are small benchmarks the maintainers wrote on one FRR topology, with expected verdicts committed before any run, and both ran on Netdryrun 0.2.0: they compare methods, they are not a production reliability estimate. Feedback and issues are very welcome.
 <!-- /facts:readme_status -->
 
 ## Why
@@ -188,7 +188,6 @@ Netdryrun complements these tools; it doesn't replace them.
 | Tool | What it does best | Where Netdryrun fits |
 |---|---|---|
 | [Batfish](https://batfish.org) | Static analysis of configs, without booting anything; fast and broad | Netdryrun runs the real control plane, so it sees runtime behavior: convergence, timers, what actually lands in the RIB |
-| [netlab](https://netlab.tools) | Builds labs from a high-level topology, with built-in validation | Use netlab to build the lab and Netdryrun for convergence-aware CI gates and evidence reports |
 | [pyATS / Genie](https://developer.cisco.com/pyats/) | A full test framework with deep Cisco parsers | Netdryrun is a small declarative YAML file plus one GitHub Action, with no test code to write |
 | [containerlab](https://containerlab.dev) | Runs the lab | Netdryrun drives containerlab; it doesn't replace it |
 

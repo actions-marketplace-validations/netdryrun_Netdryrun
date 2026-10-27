@@ -1,6 +1,6 @@
 ---
 title: FAQ
-description: Frequently asked questions about Netdryrun. Does it touch production, what a pass proves, how it differs from Batfish, pyATS and netlab, supported network operating systems, Windows, memory needs, CI time and cost, privacy and license.
+description: Frequently asked questions about Netdryrun. Does it touch production, what a pass proves, how it differs from Batfish and pyATS, supported network operating systems, Windows, memory needs, CI time and cost, privacy and license.
 ---
 
 # FAQ
@@ -27,11 +27,10 @@ A run is `inconclusive` (exit code `3`) when checks failed but the lab never rea
 
 The rules are conservative. A configured session that is down, a missing route or a failed ping is always `failed`, because an ASN typo looks exactly like a slow lab from the outside. See [when a run is inconclusive](reference/cli.md#when-a-run-is-inconclusive) and [troubleshooting](troubleshooting.md#inconclusive-the-lab-never-came-up).
 
-## How is it different from Batfish, pyATS or netlab?
+## How is it different from Batfish or pyATS?
 
 - **Batfish** models configs without booting anything. It is fast, covers many vendors and large networks, and answers broad questions. Netdryrun runs the real routing software, so it sees what the implementation actually does, on fewer nodes.
 - **pyATS / Genie** is a full Python test framework with many parsers, for labs and production devices. Netdryrun is a YAML file of checks and a CLI, aimed at one job: a pass/fail gate in CI.
-- **netlab** builds labs from a short topology description and has its own validation tests. Netdryrun takes a containerlab topology you already have, including one netlab generated.
 
 They work together. See [When to use what](when-to-use-what.md) for a longer, neutral comparison.
 
