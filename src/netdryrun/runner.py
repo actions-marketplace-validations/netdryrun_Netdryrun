@@ -346,7 +346,7 @@ def run(config: Config, *, deploy: bool = True, keep: bool = False, keep_on_fail
             for check in sc.checks:
                 driver_for(check.node)
             report.results += run_scenario(lab, sc, drivers, settle=settle, hold=hold, on_result=on_result, log=log,
-                                           driver_for=driver_for)
+                                           driver_for=driver_for, baseline_checks=config.checks)
             # Prove the network recovered (not just slept): the positive checks that passed before
             # the scenario must pass again. Checks the change already broke can't recover, so they
             # don't count. Not recovering is a finding about the network, reported as failed checks.
@@ -437,7 +437,8 @@ def _with_warnings(warnings: dict[int, str], on_result=None):
 
 def _bgp_convergence_gate(negatives: list[Check], all_checks: list[Check], drivers: dict,
                           log=lambda _: None, positive_results: list[Result] = (),
-                          warnings: dict[int, str] | None = None) -> dict[int, Result]:
+                          warnings: dict[int, str] | None = None,
+                          expected_down: set[tuple[str, str, str]] = frozenset()) -> dict[int, Result]:
     # A node whose positive checks never got usable state on any sample already waited out their timeout:
     # don't wait again (the run is then failed or inconclusive on those checks anyway)
     on_node: dict[str, list[Result]] = {}
@@ -450,6 +451,7 @@ def _bgp_convergence_gate(negatives: list[Check], all_checks: list[Check], drive
             groups.setdefault((c.node, c.params.get("vrf", "default")), []).append(c)
     excluded = {(c.node, c.params.get("vrf", "default"), c.params.get("neighbor")) for c in all_checks
                 if c.type == "bgp_session" and c.params.get("state", "established") != "established"}
+    excluded |= set(expected_down)   # in a scenario: the sessions over the links it took down
     deadline = {g: max(c.timeout for c in cs) for g, cs in groups.items()}
     st = {g: {"streak": 0, "counts": None, "answered": False, "empty": False, "detail": "", "history": []}
           for g in groups}
@@ -548,7 +550,11 @@ def _bgp_convergence_gate(negatives: list[Check], all_checks: list[Check], drive
 #   3. Wait the settle delay (--settle), so the withdrawals propagate beyond the adjacent routers.
 #   4. Positive checks must then pass on 2 consecutive samples AND keep passing for the hold window
 #      (--hold, or the check's hold): a redundancy claim is about the whole failure, not one instant.
-#      Post-convergence checks run after that, as everywhere else.
+#   5. Post-convergence checks then wait for the same BGP gate as at the top level (every session on their
+#      node up, except the sessions over the downed links and those a check expects down, with stable
+#      prefix counts; capped at their timeout), then must hold. For inject_routes this is what shows the
+#      routes spread beyond the injecting node. A peer with a long advertisement interval can still delay
+#      propagation beyond the gate.
 # If the BGP state (or interface addresses) needed for step 1 can't be read, the run stops with an error
 # (exit 2) before any fault: "couldn't read it" is never "there are none". When the state was read and no
 # BGP session runs over the downed links (static routing, a link without BGP, iBGP between
@@ -564,14 +570,23 @@ def _ip(text: str):
 
 
 def _sessions_over_links(lab: Lab, links: list[tuple[str, str]], vrfs: list[str], driver_for,
-                         log=lambda _: None) -> list[tuple[str, str, str]]:
-    """The established BGP sessions (node, vrf, neighbor) that run over the given (node, interface) links.
+                         log=lambda _: None, any_state: bool = False) -> list[tuple[str, str, str]]:
+    """The established BGP sessions (node, vrf, neighbor) that run over the given (node, interface) links
+    (with any_state, every configured session over them, established or not)."""
+    established, every = _link_sessions(lab, links, vrfs, driver_for, log=log)
+    return every if any_state else established
+
+
+def _link_sessions(lab: Lab, links: list[tuple[str, str]], vrfs: list[str], driver_for,
+                   log=lambda _: None) -> tuple[list[tuple[str, str, str]], list[tuple[str, str, str]]]:
+    """(the established sessions, every configured session) over the links, from one read of each node.
 
     "Couldn't read it" is never "there are none": BGP state (or interface addresses) that can't be read
     raises LabError naming the node, since the scenario could otherwise be judged without the wait for the
     fault to take effect. Only a node no driver can read (a Linux host), or a VRF or BGP instance the node
     says it doesn't have, has nothing to observe."""
     watch: set[tuple[str, str, str]] = set()
+    every: set[tuple[str, str, str]] = set()
     states: dict[tuple[str, str], dict] = {}
 
     def neighbors(node: str, vrf: str) -> dict:
@@ -600,14 +615,18 @@ def _sessions_over_links(lab: Lab, links: list[tuple[str, str]], vrfs: list[str]
             for key, n in neighbors(node, vrf).items():
                 ip = _ip(key)
                 over = key == iface or (ip is not None and ip not in local_ips and any(ip in a.network for a in addrs))
-                if over and n.state == "established":
-                    watch.add((node, vrf, key))
+                if over:
+                    every.add((node, vrf, key))
+                    if n.state == "established":
+                        watch.add((node, vrf, key))
             for peer, peer_iface in lab.peers_of(node, iface):
                 for key, n in neighbors(peer, vrf).items():
                     ip = _ip(key)
-                    if (key == peer_iface or ip in local_ips) and n.state == "established":
-                        watch.add((peer, vrf, key))
-    return sorted(watch)
+                    if key == peer_iface or ip in local_ips:
+                        every.add((peer, vrf, key))
+                        if n.state == "established":
+                            watch.add((peer, vrf, key))
+    return sorted(watch), sorted(every)
 
 
 def _wait_fault_visible(watch: list[tuple[str, str, str]], driver_for, timeout: float, sc: Scenario,
@@ -668,7 +687,7 @@ def _reach_then_hold(checks: list[Check], drivers: dict, hold: float, on_result=
 
 
 def run_scenario(lab: Lab, sc: Scenario, drivers: dict, *, settle: float, hold: float,
-                 on_result=None, log=lambda _: None, driver_for=None) -> list[Result]:
+                 on_result=None, log=lambda _: None, driver_for=None, baseline_checks: list[Check] = ()) -> list[Result]:
     """Inject the scenario's faults, prove they took effect, run its checks, then restore the links and
     routes and let the network re-converge. See "Scenario timing" above for the rule."""
     if driver_for is None:
@@ -690,7 +709,11 @@ def run_scenario(lab: Lab, sc: Scenario, drivers: dict, *, settle: float, hold: 
         plan.append((f, [f.interface] if f.kind == "link_down" else lab.data_interfaces(f.node)))
     links = [(f.node, iface) for f, ifaces in plan for iface in ifaces]
     vrfs = sorted({"default"} | {c.params.get("vrf", "default") for c in sc.checks})
-    watch = _sessions_over_links(lab, links, vrfs, driver_for, log=log) if links else []
+    # watch: the established sessions over the downed links, which must go down (the fault took effect).
+    # over_links: every session over them, established or not, expected down while the fault lasts: the
+    # BGP gate for the scenario's post-convergence checks doesn't wait for those.
+    watch, over = _link_sessions(lab, links, vrfs, driver_for, log=log) if links else ([], [])
+    over_links = set(over)
     try:
         for f, ifaces in plan:
             if f.kind == "inject_routes":
@@ -708,9 +731,28 @@ def run_scenario(lab: Lab, sc: Scenario, drivers: dict, *, settle: float, hold: 
         _sleep(settle)
         positives = [c for c in sc.checks if not is_post_convergence(c)]
         negatives = [c for c in sc.checks if is_post_convergence(c)]
-        results += _reach_then_hold(positives, drivers, hold, on_result=on_result)
+        pos_results = _reach_then_hold(positives, drivers, hold, on_result=on_result)
+        results += pos_results
         if negatives:
-            results += hold_together(negatives, drivers, hold=hold, on_result=on_result, clock=_clock, sleep=_sleep)
+            # The same BGP gate as at the top level: every session on the node up (except those the fault
+            # took down and those a check expects down), with stable prefix counts. For inject_routes, this
+            # is what shows the routes have spread to the node under test, not only into the injecting
+            # node's own table.
+            for c in negatives:
+                driver_for(c.node)
+            gate_warnings: dict[int, str] = {}
+            blocked = _bgp_convergence_gate(negatives, list(baseline_checks) + sc.checks, drivers, log=log,
+                                            positive_results=pos_results, warnings=gate_warnings,
+                                            expected_down=over_links)
+            ready = [c for c in negatives if id(c) not in blocked]
+            neg_results = hold_together(ready, drivers, hold=hold, on_result=_with_warnings(gate_warnings, on_result),
+                                        clock=_clock, sleep=_sleep)
+            for r in blocked.values():
+                neg_results.append(r)
+                if on_result:
+                    on_result(r)
+            order = {id(c): i for i, c in enumerate(negatives)}
+            results += sorted(neg_results, key=lambda r: order[id(r.check)])
     finally:
         not_restored = []
         for node, iface in downed:

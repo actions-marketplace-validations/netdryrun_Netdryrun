@@ -858,6 +858,57 @@ def test_scenario_negative_checks_are_held(monkeypatch):
     assert [r.passed for r in results] == [True, False]
 
 
+def _injected_at(lab):
+    ev = [x for x in lab.events if x[0] == "inject"]
+    return ev[0][2] if ev else None
+
+
+def test_scenario_negative_checks_wait_for_the_bgp_gate(monkeypatch):
+    """inject_routes: the injected routes reach r3 over 30 s (its prefix count from r2 climbs every sample),
+    the leak among them last. The leak guard must not be judged until r3's counts are stable."""
+    e = make(monkeypatch)
+
+    def since(t):
+        at = _injected_at(e.lab)
+        return None if at is None else t - at
+
+    e.drivers["r3"].neighbors = {"default": lambda t: {"10.0.23.2": (
+        "established", {"ipv4-unicast": 3 + int(min(since(t) or 0, 30))})}}
+    e.drivers["r3"].routes_ = {"default": lambda t, p: since(t) is not None and since(t) >= 30}
+    sc = Scenario("s", [Fault("inject_routes", "r2", prefixes=["10.66.0.0/16"])], [leak("neg", node="r3", timeout=60)])
+    [r] = direct(e, sc)
+    assert not r.passed
+    # a session over a downed link is expected down: it doesn't hold the gate
+    e = make(monkeypatch)
+    e.drivers["r1"].neighbors = {"default": lambda t: {"10.0.12.2": "idle" if e.lab.link_events() else "established",
+                                                       "10.0.13.3": "established"}}
+    e.drivers["r2"].neighbors = {"default": lambda t: {"10.0.12.1": "idle" if e.lab.link_events() else "established"}}
+    e.drivers["r1"].routes_ = {"default": never}
+    [r] = direct(e, Scenario("s", [Fault("link_down", "r1", "eth1")], [leak("neg", node="r1", timeout=60)]))
+    assert r.passed and e.clock.now < 60
+    # any other session that stays down blocks it: not evaluated, after the cap
+    e = make(monkeypatch)
+    e.drivers["r1"].neighbors = {"default": lambda t: {"10.0.12.2": "idle" if e.lab.link_events() else "established",
+                                                       "10.0.13.3": "active"}}
+    e.drivers["r2"].neighbors = {"default": lambda t: {"10.0.12.1": "idle" if e.lab.link_events() else "established"}}
+    e.drivers["r1"].routes_ = {"default": never}
+    neg = leak("neg", node="r1", timeout=20)
+    [r] = direct(e, Scenario("s", [Fault("link_down", "r1", "eth1")], [neg]))
+    assert not r.passed and not any(c[0] == "routes" for c in e.drivers["r1"].calls)
+    assert [x.check for x in e.results] == [neg]
+    # ...unless a check says it is down on purpose (in the scenario, or at the top level)
+    for in_scenario in (True, False):
+        e = make(monkeypatch)
+        e.drivers["r1"].neighbors = {"default": lambda t: {
+            "10.0.12.2": "idle" if e.lab.link_events() else "established", "10.0.13.3": "active"}}
+        e.drivers["r2"].neighbors = {"default": lambda t: {"10.0.12.1": "idle" if e.lab.link_events() else "established"}}
+        e.drivers["r1"].routes_ = {"default": never}
+        down = chk("bgp_session", "down", neighbor="10.0.13.3", state="down")
+        sc = Scenario("s", [Fault("link_down", "r1", "eth1")], [neg] + ([down] if in_scenario else []))
+        results = runner.run_scenario(e.lab, sc, e.drivers, settle=10, hold=10, baseline_checks=[] if in_scenario else [down])
+        assert all(x.passed for x in results)
+
+
 def test_scenario_positive_that_fails_in_the_hold(monkeypatch):
     e = make(monkeypatch)
     e.drivers["r3"].routes_ = {"default": lambda t, p: t < 10 + 3 + 6}
@@ -936,6 +987,15 @@ def test_sessions_over_links_on_the_faulted_node(monkeypatch):
                                              "10.0.12.3": "idle", "eth2": "established"}}
     e.drivers["r2"].neighbors = {"default": {}}
     assert sessions(e, [("r1", "eth1")]) == [("r1", "default", "10.0.12.2"), ("r1", "default", "eth1")]
+
+
+def test_sessions_over_links_any_state(monkeypatch):
+    e = make(monkeypatch)
+    e.drivers["r1"].neighbors = {"default": {"10.0.12.2": "established", "10.0.12.3": "idle", "10.9.9.9": "idle"}}
+    e.drivers["r2"].neighbors = {"default": {"10.0.12.1": "active"}}
+    assert runner._sessions_over_links(e.lab, [("r1", "eth1")], ["default"], lambda n: e.drivers[n], any_state=True) == [
+        ("r1", "default", "10.0.12.2"), ("r1", "default", "10.0.12.3"), ("r2", "default", "10.0.12.1")]
+    assert sessions(e, [("r1", "eth1")]) == [("r1", "default", "10.0.12.2")]
 
 
 def test_sessions_over_links_on_the_far_end(monkeypatch):
