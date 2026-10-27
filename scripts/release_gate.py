@@ -34,6 +34,7 @@ import argparse
 import concurrent.futures
 import datetime as dt
 import fnmatch
+import hashlib
 import json
 import os
 import platform
@@ -603,30 +604,85 @@ def layer_mutation(args) -> Layer:
         if m:
             status[m.group(1)] = m.group(2)
     accepted = load_accepted(args.version).get("mutants", {})
+    survived_names = sorted(n for n, s in status.items() if s != "not checked" and s not in CAUGHT
+                            and any(n.startswith(f"netdryrun.{m}.") for m in modules))
+    diffs = mutant_diffs(survived_names, mutmut, args.jobs)
+    if args.pin_accepted:
+        pin_accepted(args, accepted, diffs)
     survivors_all: dict[str, list[str]] = {}
     for module in modules:
         prefix = f"netdryrun.{module}."
         mine = {n: s for n, s in status.items() if n.startswith(prefix)}
         checked = {n: s for n, s in mine.items() if s != "not checked"}
         survived = sorted(n for n, s in checked.items() if s not in CAUGHT)
-        open_ = [n for n in survived if n not in accepted]
+        open_ = [n for n in survived if not accepted_now(accepted, n, diffs)]
+        stale = [n for n in survived if n in accepted and not accepted_now(accepted, n, diffs)]
         survivors_all[module] = survived
         caught = len(checked) - len(survived)
         score = 100.0 * caught / max(1, len(checked))
         untested = sum(checked[n] == "no tests" for n in survived)
         summary = (f"{caught}/{len(checked)} mutants caught ({score:.1f}%); not caught: "
                    f"{len(survived) - untested} survived the tests, {untested} in code no test runs"
-                   + (f", {len(survived) - len(open_)} accepted" if len(survived) != len(open_) else ""))
+                   + (f", {len(survived) - len(open_)} accepted" if len(survived) != len(open_) else "")
+                   + (f"; {len(stale)} accepted entries no longer match their mutant's diff (re-review them)"
+                      if stale else ""))
         if not checked:
             layer.add(f"mutants-{module}", f"no surviving mutants in {VERDICT_MODULES[module]}", BLOCKER, False,
                       "no mutants were checked", tail(out), p.seconds)
             continue
         layer.add(f"mutants-{module}", f"no surviving mutants in {VERDICT_MODULES[module]}", BLOCKER, not open_,
-                  summary, tail("\n".join(f"{n}: {checked[n]}" + (f"  [accepted: {accepted[n]}]" if n in accepted else "")
+                  summary, tail("\n".join(f"{n}: {checked[n]}" + (f"  [accepted: {reason(accepted[n])}]" if accepted_now(accepted, n, diffs)
+                                                                   else "  [STALE acceptance]" if n in accepted else "")
                                           for n in survived), 40), p.seconds if module == modules[0] else 0.0,
                   cmdline(["mutmut", *cmd[3:]]))
-    layer.sections.append(mutant_section(survivors_all, status, accepted, mutmut, args))
+    gone = sorted(n for n in accepted if n not in survived_names
+                  and any(n.startswith(f"netdryrun.{m}.") for m in modules))
+    if gone:
+        layer.sections.append(f"**Accepted entries that no longer survive** ({len(gone)}; remove them from "
+                              "accepted.json): " + ", ".join(f"`{n}`" for n in gone[:40]) + (" ..." if len(gone) > 40 else ""))
+    layer.sections.append(mutant_section(survivors_all, status, accepted, diffs, args))
     return layer
+
+
+def mutant_fingerprint(diff: str) -> str:
+    """What a mutant changes, without line numbers: the diff body minus its ---/+++/@@ headers. An accepted
+    entry pins this, so when code moves and mutmut renumbers its mutants, an ID that now names a different
+    mutant is no longer accepted (it happened in 0.3.1: x_run__mutmut_225 came to mean `d.rc == 0`)."""
+    body = [ln.rstrip() for ln in diff.splitlines() if not ln.startswith(("---", "+++", "@@"))]
+    return hashlib.sha256("\n".join(body).encode()).hexdigest()[:16]
+
+
+def reason(entry) -> str:
+    return entry if isinstance(entry, str) else entry.get("reason", "")
+
+
+def accepted_now(accepted: dict, name: str, diffs: dict[str, str]) -> bool:
+    """Accepted only if the entry pins the diff this mutant has today."""
+    entry = accepted.get(name)
+    return isinstance(entry, dict) and name in diffs and entry.get("diff") == mutant_fingerprint(diffs[name])
+
+
+def pin_accepted(args, accepted: dict, diffs: dict[str, str]) -> None:
+    """--pin-accepted: add fingerprints to entries that have none (the old format), right after each one was
+    audited against its current diff. An entry that already pins a different diff is never rewritten."""
+    path = out_dir(args) / "accepted.json"
+    data = load_accepted(args.version, out_dir(args))
+    pinned = 0
+    for n, entry in list(data.get("mutants", {}).items()):
+        if isinstance(entry, str) and n in diffs:
+            data["mutants"][n] = {"reason": entry, "diff": mutant_fingerprint(diffs[n])}
+            pinned += 1
+    path.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    accepted.clear()
+    accepted.update(data.get("mutants", {}))
+    print(f"pinned {pinned} accepted mutants to their current diffs in {path}", flush=True)
+
+
+def mutant_diffs(names: list[str], mutmut: list, jobs: int) -> dict[str, str]:
+    def show(n: str) -> tuple[str, str]:
+        return n, run([*mutmut, "show", n], timeout=120).out.strip()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=jobs) as pool:
+        return dict(pool.map(show, names))
 
 
 def mutant_function(name: str) -> str:
@@ -637,15 +693,11 @@ def mutant_function(name: str) -> str:
     return f"{module.removeprefix('netdryrun.')}.{func}"
 
 
-def mutant_section(survivors: dict[str, list[str]], status: dict, accepted: dict, mutmut: list, args) -> str:
+def mutant_section(survivors: dict[str, list[str]], status: dict, accepted: dict, diffs: dict[str, str], args) -> str:
     """Survivors grouped by function, each with its diff (written to mutants.md beside GATE.md)."""
     names = [n for ns in survivors.values() for n in ns]
     if not names:
         return "**Surviving mutants:** none."
-    def show(n: str) -> tuple[str, str]:
-        return n, run([*mutmut, "show", n], timeout=120).out.strip()
-    with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as pool:
-        diffs = dict(pool.map(show, names))
     by_func: dict[str, list[str]] = {}
     for n in names:
         by_func.setdefault(mutant_function(n), []).append(n)
@@ -655,8 +707,11 @@ def mutant_section(survivors: dict[str, list[str]], status: dict, accepted: dict
     for func, ns in sorted(by_func.items(), key=lambda kv: (-len(kv[1]), kv[0])):
         lines += [f"## `{func}` ({len(ns)})", ""]
         for n in ns:
-            note = f" (accepted: {accepted[n]})" if n in accepted else ""
-            lines += [f"`{n}`: {status[n]}{note}", "", "```diff", diffs[n] or "(no diff)", "```", ""]
+            note = (f" (accepted: {reason(accepted[n])})" if accepted_now(accepted, n, diffs) else
+                    f" (STALE acceptance, re-review: {reason(accepted[n])})" if n in accepted else "")
+            fp = mutant_fingerprint(diffs.get(n, ""))
+            lines += [f"`{n}`: {status[n]}{note}; diff fingerprint `{fp}`", "", "```diff",
+                      diffs.get(n) or "(no diff)", "```", ""]
     write_out(args, "mutants.md", "\n".join(lines))
     table = "\n".join(f"| `{f}` | {len(ns)} |" for f, ns in sorted(by_func.items(), key=lambda kv: (-len(kv[1]), kv[0])))
     return (f"**Surviving mutants by function** ({len(names)} in all; every diff is in [mutants.md](mutants.md)):\n\n"
@@ -1108,7 +1163,8 @@ def write_out(args, name: str, text: str) -> Path:
 
 
 def load_accepted(version: str, folder: Path | None = None) -> dict:
-    """releases/<version>/accepted.json: {"checks": {"layer/id": reason}, "mutants": {name: reason}}.
+    """releases/<version>/accepted.json: {"checks": {"layer/id": reason},
+    "mutants": {name: {"reason": ..., "diff": fingerprint}}} (a mutant entry without a matching fingerprint is stale).
     Accepting is for MAJOR checks and for mutants shown harmless; a BLOCKER check can't be accepted."""
     path = (folder or ROOT / "releases" / version) / "accepted.json"
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
@@ -1276,6 +1332,8 @@ def main() -> int:
     ap.add_argument("--examples", help="live: only these examples (comma-separated)")
     ap.add_argument("--skip-corpus", action="store_true", help="live: skip the corpus reruns (recorded as SKIP)")
     ap.add_argument("--pack", help="live: a check pack's verify script, run with NDR=<installed netdryrun>")
+    ap.add_argument("--pin-accepted", action="store_true",
+                    help="mutation: add diff fingerprints to accepted mutants that have none, after auditing each one")
     ap.add_argument("--allow-running-labs", action="store_true",
                     help="live: start although clab- containers exist (only new ones count as left over)")
     ap.add_argument("--chaos-docker-restart", action="store_true", help="live: also restart Docker mid-run (sudo)")
