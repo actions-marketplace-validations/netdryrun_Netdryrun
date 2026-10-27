@@ -1,108 +1,363 @@
 {
  "mutants": {
-  "netdryrun.checks.x__bgp_prefixes__mutmut_17": "message text only: the detail text of a check result, same verdict and evidence",
-  "netdryrun.checks.x__bgp_route__mutmut_129": "message text only: the text of a failure detail, the verdict is unchanged",
-  "netdryrun.checks.x__bgp_route__mutmut_134": "message text only: the detail text of a check result, same verdict and evidence",
-  "netdryrun.checks.x__bgp_route__mutmut_18": "equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'",
-  "netdryrun.checks.x__bgp_route__mutmut_20": "equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'",
-  "netdryrun.checks.x__bgp_route__mutmut_32": "message text only: the detail text of a check result, same verdict and evidence",
-  "netdryrun.checks.x__bgp_route__mutmut_33": "message text only: the detail text of a check result, same verdict and evidence",
-  "netdryrun.checks.x__bgp_route__mutmut_34": "message text only: the detail text of a check result, same verdict and evidence",
-  "netdryrun.checks.x__bgp_route__mutmut_59": "message text only: the text of a failure detail, the verdict is unchanged",
-  "netdryrun.checks.x__bgp_route__mutmut_71": "message text only: the text of a failure detail, the verdict is unchanged",
-  "netdryrun.checks.x__bgp_session__mutmut_17": "message text only: the detail text of a check result, same verdict and evidence",
-  "netdryrun.checks.x__describe_path__mutmut_10": "message text only: the description of a best path inside a detail",
-  "netdryrun.checks.x__describe_path__mutmut_11": "message text only: the text of a detail or error message",
-  "netdryrun.checks.x__describe_path__mutmut_12": "message text only: the description of a best path inside a detail",
-  "netdryrun.checks.x__describe_path__mutmut_13": "message text only: the description of a best path inside a detail",
-  "netdryrun.checks.x__describe_path__mutmut_14": "message text only: the description of a best path inside a detail",
-  "netdryrun.checks.x__describe_path__mutmut_16": "message text only: part of an error or detail message string",
-  "netdryrun.checks.x__describe_path__mutmut_4": "message text only: the text of a detail or error message",
-  "netdryrun.checks.x__describe_path__mutmut_6": "message text only: the text of a detail or error message",
-  "netdryrun.checks.x__describe_path__mutmut_7": "message text only: the text of a detail or error message",
-  "netdryrun.checks.x__describe_path__mutmut_8": "message text only: the description of a best path inside a detail",
-  "netdryrun.checks.x__describe_path__mutmut_9": "message text only: the description of a best path inside a detail",
-  "netdryrun.checks.x__evaluate__mutmut_6": "message text only: the detail stays an Unready instance, only its text changes",
-  "netdryrun.checks.x__evaluate_all__mutmut_1": "equivalent: thread pool size; every check is still evaluated once and results keep input order",
-  "netdryrun.checks.x__evaluate_all__mutmut_2": "equivalent: one check evaluated through the pool instead of inline; same result",
-  "netdryrun.checks.x__evaluate_all__mutmut_3": "equivalent: two checks evaluated inline instead of through the pool; same results, same order",
-  "netdryrun.checks.x__evaluate_all__mutmut_8": "equivalent: thread pool size; every check is still evaluated once and results keep input order",
-  "netdryrun.checks.x__not_configured__mutmut_2": "message text only: the detail stays an Unready instance, only its text changes",
-  "netdryrun.checks.x__not_configured__mutmut_4": "message text only: the list of neighbors seen, in a detail",
-  "netdryrun.checks.x__opt__mutmut_1": "message text only: how an unset attribute is shown in a detail",
-  "netdryrun.checks.x__opt__mutmut_3": "message text only: how an unset attribute is shown in a detail",
-  "netdryrun.checks.x__opt__mutmut_4": "message text only: how an unset attribute is shown in a detail",
-  "netdryrun.checks.x__ping__mutmut_37": "equivalent: separator between evidence entries; no unreachable pattern contains a newline or 'XX', so no match can span or appear at a boundary",
-  "netdryrun.checks.x__ping__mutmut_39": "equivalent: text used for a missing output key; 'None' matches no unreachable pattern",
-  "netdryrun.checks.x__ping__mutmut_41": "equivalent: text used for a missing output key; 'None' matches no unreachable pattern",
-  "netdryrun.checks.x__ping__mutmut_44": "equivalent: text used for a missing output key; 'XXXX' matches no unreachable pattern",
-  "netdryrun.checks.x__ping__mutmut_46": "equivalent: text used for a missing stderr key; 'None' matches no unreachable pattern",
-  "netdryrun.checks.x__ping__mutmut_48": "equivalent: text used for a missing stderr key; 'None' matches no unreachable pattern",
-  "netdryrun.checks.x__ping__mutmut_51": "equivalent: text used for a missing stderr key; 'XXXX' matches no unreachable pattern",
-  "netdryrun.checks.x__ping__mutmut_56": "message text only: the text of a detail or error message",
-  "netdryrun.checks.x__ping__mutmut_58": "equivalent: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect)",
-  "netdryrun.checks.x__ping__mutmut_60": "equivalent: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect)",
-  "netdryrun.checks.x__ping__mutmut_63": "equivalent: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect)",
-  "netdryrun.checks.x__ping__mutmut_64": "equivalent: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect)",
-  "netdryrun.checks.x__ping__mutmut_72": "message text only: the stderr quoted in the 'ping did not run' detail",
-  "netdryrun.checks.x__ping__mutmut_73": "message text only: the stderr quoted in the 'ping did not run' detail",
-  "netdryrun.checks.x__ping__mutmut_75": "message text only: the stderr quoted in the 'ping did not run' detail",
-  "netdryrun.checks.x__ping__mutmut_81": "message text only: the stderr quoted in the 'ping did not run' detail",
-  "netdryrun.checks.x__ping__mutmut_82": "message text only: the stderr quoted in the 'ping did not run' detail",
-  "netdryrun.checks.x__ping__mutmut_83": "message text only: the stderr quoted in the 'ping did not run' detail",
-  "netdryrun.checks.x__ping__mutmut_84": "message text only: the stderr quoted in the 'ping did not run' detail",
-  "netdryrun.checks.x__ping__mutmut_86": "message text only: the detail text of a check result, same verdict and evidence",
-  "netdryrun.checks.x__ping__mutmut_87": "message text only: the detail text of a check result, same verdict and evidence",
-  "netdryrun.checks.x__ping__mutmut_89": "message text only: the detail text of a check result, same verdict and evidence",
-  "netdryrun.checks.x__ping__mutmut_90": "message text only: the detail text of a check result, same verdict and evidence",
-  "netdryrun.checks.x__reach_view__mutmut_15": "equivalent: min is assigned again on the next line (params['min'] = low), so not dropping the old one changes nothing",
-  "netdryrun.checks.x__reach_view__mutmut_16": "equivalent: min is assigned again on the next line (params['min'] = low), so not dropping the old one changes nothing",
-  "netdryrun.checks.x__route__mutmut_32": "equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'",
-  "netdryrun.checks.x__route__mutmut_34": "equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'",
-  "netdryrun.checks.x__route__mutmut_44": "equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'",
-  "netdryrun.checks.x__route__mutmut_46": "equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'",
-  "netdryrun.checks.x__route__mutmut_57": "message text only: the text of a detail or error message",
-  "netdryrun.checks.x__route__mutmut_58": "message text only: the text of a detail or error message",
-  "netdryrun.checks.x__route__mutmut_60": "message text only: the text of a detail or error message",
-  "netdryrun.checks.x__route__mutmut_61": "message text only: the text of a detail or error message",
-  "netdryrun.checks.x__route__mutmut_63": "message text only: the text of a detail or error message",
-  "netdryrun.checks.x__route__mutmut_64": "message text only: the text of a detail or error message",
-  "netdryrun.checks.x__route__mutmut_66": "message text only: the detail text of a check result, same verdict and evidence",
-  "netdryrun.checks.x__route__mutmut_67": "message text only: the detail text of a check result, same verdict and evidence",
-  "netdryrun.checks.x__route__mutmut_69": "message text only: the detail text of a check result, same verdict and evidence",
-  "netdryrun.checks.x__route__mutmut_70": "message text only: the detail text of a check result, same verdict and evidence",
-  "netdryrun.checks.x__route__mutmut_71": "message text only: the detail text of a check result, same verdict and evidence",
-  "netdryrun.checks.x__route__mutmut_75": "message text only: the detail text of a check result, same verdict and evidence",
-  "netdryrun.checks.x__route__mutmut_77": "message text only: the detail text of a check result, same verdict and evidence",
-  "netdryrun.checks.x__route__mutmut_78": "message text only: the detail text of a check result, same verdict and evidence",
-  "netdryrun.checks.x__route__mutmut_81": "message text only: the detail text of a check result, same verdict and evidence",
-  "netdryrun.checks.x__route__mutmut_82": "message text only: the detail text of a check result, same verdict and evidence",
-  "netdryrun.checks.x_converge_then_hold__mutmut_55": "equivalent: the sum of two durations already rounded to 0.1 s rounds the same to 0.01 s",
-  "netdryrun.checks.x_inconclusive_reason__mutmut_35": "message text only: the text of a detail or error message",
-  "netdryrun.checks.x_inconclusive_reason__mutmut_37": "message text only: the node list in the inconclusive reason",
-  "netdryrun.checks.x_is_post_convergence__mutmut_13": "equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'",
-  "netdryrun.checks.x_is_post_convergence__mutmut_15": "equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'",
-  "netdryrun.checks.x_is_post_convergence__mutmut_33": "equivalent: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect)",
-  "netdryrun.checks.x_is_post_convergence__mutmut_35": "equivalent: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect)",
-  "netdryrun.checks.x_is_post_convergence__mutmut_38": "equivalent: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect)",
-  "netdryrun.checks.x_is_post_convergence__mutmut_39": "equivalent: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect)",
-  "netdryrun.checks.x_run_round_robin__mutmut_71": "equivalent: unreachable branch: the round-robin timeout only ends a check on a failing sample, so a finished check is never 'not passed but ok'",
-  "netdryrun.checks.x_run_round_robin__mutmut_72": "equivalent: unreachable branch: the round-robin timeout only ends a check on a failing sample, so a finished check is never 'not passed but ok'",
-  "netdryrun.checks.x_run_round_robin__mutmut_73": "equivalent: unreachable branch: the round-robin timeout only ends a check on a failing sample, so a finished check is never 'not passed but ok'",
-  "netdryrun.config.x__describe__mutmut_10": "message text only: the default check name shown in reports",
+  "netdryrun.checks.x__bgp_prefixes__mutmut_17": {
+   "reason": "message text only: the detail text of a check result, same verdict and evidence",
+   "diff": "bd8127ba74728e4f"
+  },
+  "netdryrun.checks.x__bgp_route__mutmut_129": {
+   "reason": "message text only: the text of a failure detail, the verdict is unchanged",
+   "diff": "8766113b82390fa1"
+  },
+  "netdryrun.checks.x__bgp_route__mutmut_134": {
+   "reason": "message text only: the detail text of a check result, same verdict and evidence",
+   "diff": "7d3804f9332113aa"
+  },
+  "netdryrun.checks.x__bgp_route__mutmut_18": {
+   "reason": "equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'",
+   "diff": "85319e2fc2c4a348"
+  },
+  "netdryrun.checks.x__bgp_route__mutmut_20": {
+   "reason": "equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'",
+   "diff": "3ce401d46427dd7a"
+  },
+  "netdryrun.checks.x__bgp_route__mutmut_32": {
+   "reason": "message text only: the detail text of a check result, same verdict and evidence",
+   "diff": "886537b37c36745c"
+  },
+  "netdryrun.checks.x__bgp_route__mutmut_33": {
+   "reason": "message text only: the detail text of a check result, same verdict and evidence",
+   "diff": "1da19f8a7ecd8094"
+  },
+  "netdryrun.checks.x__bgp_route__mutmut_34": {
+   "reason": "message text only: the detail text of a check result, same verdict and evidence",
+   "diff": "dd0093f965de7715"
+  },
+  "netdryrun.checks.x__bgp_route__mutmut_59": {
+   "reason": "message text only: the text of a failure detail, the verdict is unchanged",
+   "diff": "950d73f5e77adb05"
+  },
+  "netdryrun.checks.x__bgp_route__mutmut_71": {
+   "reason": "message text only: the text of a failure detail, the verdict is unchanged",
+   "diff": "4fb7326c94111cf8"
+  },
+  "netdryrun.checks.x__bgp_session__mutmut_17": {
+   "reason": "message text only: the detail text of a check result, same verdict and evidence",
+   "diff": "0d9aabffe0546dff"
+  },
+  "netdryrun.checks.x__describe_path__mutmut_10": {
+   "reason": "message text only: the description of a best path inside a detail",
+   "diff": "ea26769c5b005a6d"
+  },
+  "netdryrun.checks.x__describe_path__mutmut_11": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "716e1462b3c031d7"
+  },
+  "netdryrun.checks.x__describe_path__mutmut_12": {
+   "reason": "message text only: the description of a best path inside a detail",
+   "diff": "2b3d8d002b6e85c1"
+  },
+  "netdryrun.checks.x__describe_path__mutmut_13": {
+   "reason": "message text only: the description of a best path inside a detail",
+   "diff": "1e41c3ebef974075"
+  },
+  "netdryrun.checks.x__describe_path__mutmut_14": {
+   "reason": "message text only: the description of a best path inside a detail",
+   "diff": "af657a895342f594"
+  },
+  "netdryrun.checks.x__describe_path__mutmut_16": {
+   "reason": "message text only: part of an error or detail message string",
+   "diff": "c0bd37018c96e390"
+  },
+  "netdryrun.checks.x__describe_path__mutmut_4": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "567edc5041362507"
+  },
+  "netdryrun.checks.x__describe_path__mutmut_6": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "dec152bd7d240c71"
+  },
+  "netdryrun.checks.x__describe_path__mutmut_7": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "2c70cbb203a08daf"
+  },
+  "netdryrun.checks.x__describe_path__mutmut_8": {
+   "reason": "message text only: the description of a best path inside a detail",
+   "diff": "a62c118fc04e6f18"
+  },
+  "netdryrun.checks.x__describe_path__mutmut_9": {
+   "reason": "message text only: the description of a best path inside a detail",
+   "diff": "a28fe64593a65fc7"
+  },
+  "netdryrun.checks.x__evaluate__mutmut_6": {
+   "reason": "message text only: the detail stays an Unready instance, only its text changes",
+   "diff": "adadbe7e5f278204"
+  },
+  "netdryrun.checks.x__evaluate_all__mutmut_1": {
+   "reason": "equivalent: thread pool size; every check is still evaluated once and results keep input order",
+   "diff": "30e1f75d61ee9e5f"
+  },
+  "netdryrun.checks.x__evaluate_all__mutmut_2": {
+   "reason": "equivalent: one check evaluated through the pool instead of inline; same result",
+   "diff": "9a065e9a590d43a1"
+  },
+  "netdryrun.checks.x__evaluate_all__mutmut_3": {
+   "reason": "equivalent: two checks evaluated inline instead of through the pool; same results, same order",
+   "diff": "f5599358fc010b5c"
+  },
+  "netdryrun.checks.x__evaluate_all__mutmut_8": {
+   "reason": "equivalent: thread pool size; every check is still evaluated once and results keep input order",
+   "diff": "81e46835f29009ac"
+  },
+  "netdryrun.checks.x__not_configured__mutmut_2": {
+   "reason": "message text only: the detail stays an Unready instance, only its text changes",
+   "diff": "f07a5abb19505536"
+  },
+  "netdryrun.checks.x__not_configured__mutmut_4": {
+   "reason": "message text only: the list of neighbors seen, in a detail",
+   "diff": "221753d5051d0675"
+  },
+  "netdryrun.checks.x__opt__mutmut_1": {
+   "reason": "message text only: how an unset attribute is shown in a detail",
+   "diff": "22ab2d30cd3bb32d"
+  },
+  "netdryrun.checks.x__opt__mutmut_3": {
+   "reason": "message text only: how an unset attribute is shown in a detail",
+   "diff": "67d80eb452acf9dc"
+  },
+  "netdryrun.checks.x__opt__mutmut_4": {
+   "reason": "message text only: how an unset attribute is shown in a detail",
+   "diff": "865025d1ca36277b"
+  },
+  "netdryrun.checks.x__ping__mutmut_37": {
+   "reason": "equivalent: separator between evidence entries; no unreachable pattern contains a newline or 'XX', so no match can span or appear at a boundary",
+   "diff": "c7591a1d795d5755"
+  },
+  "netdryrun.checks.x__ping__mutmut_39": {
+   "reason": "equivalent: text used for a missing output key; 'None' matches no unreachable pattern",
+   "diff": "bcc965c30c19a214"
+  },
+  "netdryrun.checks.x__ping__mutmut_41": {
+   "reason": "equivalent: text used for a missing output key; 'None' matches no unreachable pattern",
+   "diff": "e443436a3ed7d743"
+  },
+  "netdryrun.checks.x__ping__mutmut_44": {
+   "reason": "equivalent: text used for a missing output key; 'XXXX' matches no unreachable pattern",
+   "diff": "9ceddfc80657f919"
+  },
+  "netdryrun.checks.x__ping__mutmut_46": {
+   "reason": "equivalent: text used for a missing stderr key; 'None' matches no unreachable pattern",
+   "diff": "3426d07abdb75d1a"
+  },
+  "netdryrun.checks.x__ping__mutmut_48": {
+   "reason": "equivalent: text used for a missing stderr key; 'None' matches no unreachable pattern",
+   "diff": "3e3c5bb2f3c0c41b"
+  },
+  "netdryrun.checks.x__ping__mutmut_51": {
+   "reason": "equivalent: text used for a missing stderr key; 'XXXX' matches no unreachable pattern",
+   "diff": "68f8198d34915ad7"
+  },
+  "netdryrun.checks.x__ping__mutmut_56": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "1242e44765662cc8"
+  },
+  "netdryrun.checks.x__ping__mutmut_58": {
+   "reason": "equivalent: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect)",
+   "diff": "d31744d77ab02484"
+  },
+  "netdryrun.checks.x__ping__mutmut_60": {
+   "reason": "equivalent: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect)",
+   "diff": "8a95bb014039ee73"
+  },
+  "netdryrun.checks.x__ping__mutmut_63": {
+   "reason": "equivalent: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect)",
+   "diff": "61fae5418dd35b57"
+  },
+  "netdryrun.checks.x__ping__mutmut_64": {
+   "reason": "equivalent: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect)",
+   "diff": "bd66698206cc5d6a"
+  },
+  "netdryrun.checks.x__ping__mutmut_72": {
+   "reason": "message text only: the stderr quoted in the 'ping did not run' detail",
+   "diff": "b96d73dec294704d"
+  },
+  "netdryrun.checks.x__ping__mutmut_73": {
+   "reason": "message text only: the stderr quoted in the 'ping did not run' detail",
+   "diff": "de103690e3e24530"
+  },
+  "netdryrun.checks.x__ping__mutmut_75": {
+   "reason": "message text only: the stderr quoted in the 'ping did not run' detail",
+   "diff": "a2fd27cd72eae81e"
+  },
+  "netdryrun.checks.x__ping__mutmut_81": {
+   "reason": "message text only: the stderr quoted in the 'ping did not run' detail",
+   "diff": "592dce8496e84aba"
+  },
+  "netdryrun.checks.x__ping__mutmut_82": {
+   "reason": "message text only: the stderr quoted in the 'ping did not run' detail",
+   "diff": "bc504b531c23c544"
+  },
+  "netdryrun.checks.x__ping__mutmut_83": {
+   "reason": "message text only: the stderr quoted in the 'ping did not run' detail",
+   "diff": "b307ca86822a2867"
+  },
+  "netdryrun.checks.x__ping__mutmut_84": {
+   "reason": "message text only: the stderr quoted in the 'ping did not run' detail",
+   "diff": "7ec2812d16c91f5d"
+  },
+  "netdryrun.checks.x__ping__mutmut_86": {
+   "reason": "message text only: the detail text of a check result, same verdict and evidence",
+   "diff": "5511d05a5b0e53e9"
+  },
+  "netdryrun.checks.x__ping__mutmut_87": {
+   "reason": "message text only: the detail text of a check result, same verdict and evidence",
+   "diff": "825e8177cd4c8917"
+  },
+  "netdryrun.checks.x__ping__mutmut_89": {
+   "reason": "message text only: the detail text of a check result, same verdict and evidence",
+   "diff": "782421908c1d392e"
+  },
+  "netdryrun.checks.x__ping__mutmut_90": {
+   "reason": "message text only: the detail text of a check result, same verdict and evidence",
+   "diff": "7ec627e2a475b906"
+  },
+  "netdryrun.checks.x__reach_view__mutmut_15": {
+   "reason": "equivalent: min is assigned again on the next line (params['min'] = low), so not dropping the old one changes nothing",
+   "diff": "54855ee173e29caa"
+  },
+  "netdryrun.checks.x__reach_view__mutmut_16": {
+   "reason": "equivalent: min is assigned again on the next line (params['min'] = low), so not dropping the old one changes nothing",
+   "diff": "66246b8f75b3189d"
+  },
+  "netdryrun.checks.x__route__mutmut_32": {
+   "reason": "equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'",
+   "diff": "69ae803e4824b276"
+  },
+  "netdryrun.checks.x__route__mutmut_34": {
+   "reason": "equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'",
+   "diff": "ed34e860b4b14741"
+  },
+  "netdryrun.checks.x__route__mutmut_44": {
+   "reason": "equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'",
+   "diff": "79c20ed0ddfaf432"
+  },
+  "netdryrun.checks.x__route__mutmut_46": {
+   "reason": "equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'",
+   "diff": "32255ffebb371b50"
+  },
+  "netdryrun.checks.x__route__mutmut_57": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "1ba2110fc7d34fe8"
+  },
+  "netdryrun.checks.x__route__mutmut_58": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "3af93d9cce0bb518"
+  },
+  "netdryrun.checks.x__route__mutmut_60": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "892953c2fb42d6e2"
+  },
+  "netdryrun.checks.x__route__mutmut_61": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "6bd3c1555c4ff862"
+  },
+  "netdryrun.checks.x__route__mutmut_63": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "054d9decca0eb7bd"
+  },
+  "netdryrun.checks.x__route__mutmut_64": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "0ecd1737e9af0350"
+  },
+  "netdryrun.checks.x__route__mutmut_66": {
+   "reason": "message text only: the detail text of a check result, same verdict and evidence",
+   "diff": "1e9055e8e477cb19"
+  },
+  "netdryrun.checks.x__route__mutmut_67": {
+   "reason": "message text only: the detail text of a check result, same verdict and evidence",
+   "diff": "e679f4bd983ca5c8"
+  },
+  "netdryrun.checks.x__route__mutmut_69": {
+   "reason": "message text only: the detail text of a check result, same verdict and evidence",
+   "diff": "7648d4978cb45185"
+  },
+  "netdryrun.checks.x__route__mutmut_70": {
+   "reason": "message text only: the detail text of a check result, same verdict and evidence",
+   "diff": "459833adcb0f6ad9"
+  },
+  "netdryrun.checks.x__route__mutmut_71": {
+   "reason": "message text only: the detail text of a check result, same verdict and evidence",
+   "diff": "ddc4a38953bb8cb9"
+  },
+  "netdryrun.checks.x__route__mutmut_75": {
+   "reason": "message text only: the detail text of a check result, same verdict and evidence",
+   "diff": "0d668104e6011fd5"
+  },
+  "netdryrun.checks.x__route__mutmut_77": {
+   "reason": "message text only: the detail text of a check result, same verdict and evidence",
+   "diff": "5fa2ee3a77630a7a"
+  },
+  "netdryrun.checks.x__route__mutmut_78": {
+   "reason": "message text only: the detail text of a check result, same verdict and evidence",
+   "diff": "af3d0000780c5f26"
+  },
+  "netdryrun.checks.x__route__mutmut_81": {
+   "reason": "message text only: the detail text of a check result, same verdict and evidence",
+   "diff": "e00117cd4cb5d2d8"
+  },
+  "netdryrun.checks.x__route__mutmut_82": {
+   "reason": "message text only: the detail text of a check result, same verdict and evidence",
+   "diff": "053b4b1c00ac88da"
+  },
+  "netdryrun.checks.x_converge_then_hold__mutmut_55": {
+   "reason": "equivalent: the sum of two durations already rounded to 0.1 s rounds the same to 0.01 s",
+   "diff": "cf966c70d92a4995"
+  },
+  "netdryrun.checks.x_inconclusive_reason__mutmut_35": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "e3e8c96aefb78d5d"
+  },
+  "netdryrun.checks.x_inconclusive_reason__mutmut_37": {
+   "reason": "message text only: the node list in the inconclusive reason",
+   "diff": "4277af972274d2ff"
+  },
+  "netdryrun.checks.x_run_round_robin__mutmut_71": {
+   "reason": "equivalent: unreachable branch: the round-robin timeout only ends a check on a failing sample, so a finished check is never 'not passed but ok'",
+   "diff": "cf30660ae75c2c65"
+  },
+  "netdryrun.checks.x_run_round_robin__mutmut_72": {
+   "reason": "equivalent: unreachable branch: the round-robin timeout only ends a check on a failing sample, so a finished check is never 'not passed but ok'",
+   "diff": "97ef2442d40cba83"
+  },
+  "netdryrun.checks.x_run_round_robin__mutmut_73": {
+   "reason": "equivalent: unreachable branch: the round-robin timeout only ends a check on a failing sample, so a finished check is never 'not passed but ok'",
+   "diff": "88dc0d8ad998e1b9"
+  },
+  "netdryrun.config.x__describe__mutmut_10": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "119883003608ce08"
+  },
   "netdryrun.config.x__describe__mutmut_109": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_11": "message text only: the default check name shown in reports",
+  "netdryrun.config.x__describe__mutmut_11": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "d7b11751bd2d98a1"
+  },
   "netdryrun.config.x__describe__mutmut_110": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_111": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_114": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_115": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_117": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_12": "message text only: the default check name shown in reports",
+  "netdryrun.config.x__describe__mutmut_12": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "92a3d5ebe6413744"
+  },
   "netdryrun.config.x__describe__mutmut_121": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_122": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_127": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_128": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_13": "message text only: the default check name shown in reports",
+  "netdryrun.config.x__describe__mutmut_13": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "864b4e2fa06f7140"
+  },
   "netdryrun.config.x__describe__mutmut_133": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_134": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_135": "message text only: the default check name shown in reports",
@@ -110,13 +365,19 @@
   "netdryrun.config.x__describe__mutmut_137": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_138": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_139": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_14": "message text only: the default check name shown in reports",
+  "netdryrun.config.x__describe__mutmut_14": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "e68185333f9201ac"
+  },
   "netdryrun.config.x__describe__mutmut_140": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_141": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_142": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_143": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_144": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_15": "message text only: the default check name shown in reports",
+  "netdryrun.config.x__describe__mutmut_15": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "41dfeb9a744fddbe"
+  },
   "netdryrun.config.x__describe__mutmut_153": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_155": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_156": "message text only: the default check name shown in reports",
@@ -133,20 +394,32 @@
   "netdryrun.config.x__describe__mutmut_167": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_168": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_169": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_17": "message text only: the default check name shown in reports",
+  "netdryrun.config.x__describe__mutmut_17": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "011ececea33ab6f4"
+  },
   "netdryrun.config.x__describe__mutmut_170": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_171": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_175": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_176": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_177": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_178": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_18": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_2": "message text only: the default check name shown in reports",
+  "netdryrun.config.x__describe__mutmut_18": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "c62cd25b12ab556d"
+  },
+  "netdryrun.config.x__describe__mutmut_2": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "19563ae2c42d8b5d"
+  },
   "netdryrun.config.x__describe__mutmut_20": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_21": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_26": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_27": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_3": "message text only: the default check name shown in reports",
+  "netdryrun.config.x__describe__mutmut_3": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "15d69c1de9d9d8ca"
+  },
   "netdryrun.config.x__describe__mutmut_32": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_33": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_42": "message text only: the default check name shown in reports",
@@ -176,10 +449,16 @@
   "netdryrun.config.x__describe__mutmut_73": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_74": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_75": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_8": "message text only: the default check name shown in reports",
+  "netdryrun.config.x__describe__mutmut_8": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "9b901300fcef415f"
+  },
   "netdryrun.config.x__describe__mutmut_84": "message text only: the default check name shown in reports",
   "netdryrun.config.x__describe__mutmut_86": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_9": "message text only: the default check name shown in reports",
+  "netdryrun.config.x__describe__mutmut_9": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "98a4e10973239a81"
+  },
   "netdryrun.config.x__reject_unknown__mutmut_10": "message text only: the text of a detail or error message",
   "netdryrun.config.x__reject_unknown__mutmut_15": "message text only: the did-you-mean hints in the error",
   "netdryrun.config.x__reject_unknown__mutmut_19": "message text only: the text of a detail or error message",
@@ -187,496 +466,1314 @@
   "netdryrun.config.x__reject_unknown__mutmut_22": "message text only: the did-you-mean hints in the error",
   "netdryrun.config.x__reject_unknown__mutmut_31": "message text only: part of an error or detail message string",
   "netdryrun.config.x__reject_unknown__mutmut_7": "message text only: the did-you-mean hints in the error",
-  "netdryrun.config.x__suggest__mutmut_14": "message text only: the did-you-mean hint in an error",
-  "netdryrun.config.x__suggest__mutmut_15": "message text only: the did-you-mean hint in an error",
-  "netdryrun.config.x__suggest__mutmut_17": "message text only: the did-you-mean hint in an error",
-  "netdryrun.config.x__suggest__mutmut_2": "message text only: the did-you-mean hint in an error",
-  "netdryrun.config.x__suggest__mutmut_22": "message text only: the did-you-mean hint in an error",
-  "netdryrun.config.x__validate_bgp_route__mutmut_15": "message text only: part of an error or detail message string",
-  "netdryrun.config.x__validate_bgp_route__mutmut_30": "message text only: part of an error or detail message string",
-  "netdryrun.config.x__validate_bgp_route__mutmut_31": "message text only: part of an error or detail message string",
-  "netdryrun.config.x__validate_bgp_route__mutmut_32": "message text only: part of an error or detail message string",
-  "netdryrun.config.x__validate_bgp_route__mutmut_34": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.config.x__validate_bgp_route__mutmut_5": "equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'",
-  "netdryrun.config.x__validate_bgp_route__mutmut_56": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.config.x__validate_bgp_route__mutmut_65": "equivalent: a None, float or dict as_path is still refused, by normalize_as_path, as a ConfigError",
-  "netdryrun.config.x__validate_bgp_route__mutmut_69": "message text only: the same ConfigError is raised, only its message changes",
-  "netdryrun.config.x__validate_bgp_route__mutmut_7": "equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'",
-  "netdryrun.config.x__validate_bgp_route__mutmut_84": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.config.x__validate_check__mutmut_106": "equivalent: strict=None is falsy, the same as strict=False",
-  "netdryrun.config.x__validate_check__mutmut_150": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.config.x__validate_check__mutmut_178": "equivalent: float() reads 'INF' and 'inf' alike",
-  "netdryrun.config.x__validate_check__mutmut_199": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.config.x__validate_check__mutmut_229": "equivalent: the default state is lower-cased right after",
-  "netdryrun.config.x__validate_check__mutmut_236": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.config.x__validate_check__mutmut_237": "message text only: part of an error or detail message string",
-  "netdryrun.config.x__validate_check__mutmut_280": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.config.x__validate_check__mutmut_304": "message text only: the eBGP/iBGP hint in the protocol error",
-  "netdryrun.config.x__validate_check__mutmut_305": "message text only: the eBGP/iBGP hint in the protocol error",
-  "netdryrun.config.x__validate_check__mutmut_306": "message text only: the eBGP/iBGP hint in the protocol error",
-  "netdryrun.config.x__validate_check__mutmut_307": "message text only: the text of a detail or error message",
-  "netdryrun.config.x__validate_check__mutmut_308": "message text only: the text of a detail or error message",
-  "netdryrun.config.x__validate_check__mutmut_309": "message text only: the text of a detail or error message",
-  "netdryrun.config.x__validate_check__mutmut_311": "message text only: the eBGP/iBGP hint in the protocol error",
-  "netdryrun.config.x__validate_check__mutmut_312": "message text only: the eBGP/iBGP hint in the protocol error",
-  "netdryrun.config.x__validate_check__mutmut_313": "message text only: the eBGP/iBGP hint in the protocol error",
-  "netdryrun.config.x__validate_check__mutmut_314": "message text only: the eBGP/iBGP hint in the protocol error",
-  "netdryrun.config.x__validate_check__mutmut_315": "message text only: the eBGP/iBGP hint in the protocol error",
-  "netdryrun.config.x__validate_check__mutmut_316": "message text only: the eBGP/iBGP hint in the protocol error",
-  "netdryrun.config.x__validate_check__mutmut_317": "message text only: the eBGP/iBGP hint in the protocol error",
-  "netdryrun.config.x__validate_check__mutmut_326": "message text only: part of an error or detail message string",
-  "netdryrun.config.x__validate_check__mutmut_333": "equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'",
-  "netdryrun.config.x__validate_check__mutmut_335": "equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'",
-  "netdryrun.config.x__validate_check__mutmut_345": "message text only: part of an error or detail message string",
-  "netdryrun.config.x__validate_check__mutmut_346": "message text only: part of an error or detail message string",
-  "netdryrun.config.x__validate_check__mutmut_358": "equivalent: the default expect is lower-cased right after",
-  "netdryrun.config.x__validate_check__mutmut_368": "message text only: part of an error or detail message string",
-  "netdryrun.config.x__validate_check__mutmut_372": "message text only: part of an error or detail message string",
-  "netdryrun.config.x__validate_check__mutmut_373": "message text only: part of an error or detail message string",
-  "netdryrun.config.x__validate_check__mutmut_374": "message text only: part of an error or detail message string",
-  "netdryrun.config.x__validate_check__mutmut_375": "message text only: part of an error or detail message string",
-  "netdryrun.config.x__validate_check__mutmut_407": "message text only: part of an error or detail message string",
-  "netdryrun.config.x__validate_check__mutmut_408": "message text only: part of an error or detail message string",
-  "netdryrun.config.x__validate_check__mutmut_434": "message text only: the location or key name shown in an error",
-  "netdryrun.config.x__validate_check__mutmut_441": "message text only: the location or key name shown in an error",
-  "netdryrun.config.x__validate_check__mutmut_457": "message text only: the location or key name shown in an error",
-  "netdryrun.config.x__validate_check__mutmut_493": "message text only: part of an error or detail message string",
-  "netdryrun.config.x__validate_check__mutmut_494": "message text only: part of an error or detail message string",
-  "netdryrun.config.x__validate_check__mutmut_495": "message text only: part of an error or detail message string",
-  "netdryrun.config.x__validate_check__mutmut_496": "message text only: part of an error or detail message string",
-  "netdryrun.config.x__validate_check__mutmut_497": "message text only: part of an error or detail message string",
-  "netdryrun.config.x__validate_check__mutmut_498": "message text only: part of an error or detail message string",
-  "netdryrun.config.x__validate_check__mutmut_51": "message text only: the location or key name shown in an error",
-  "netdryrun.config.x__validate_check__mutmut_63": "message text only: the location or key name shown in an error",
-  "netdryrun.config.x__validate_check__mutmut_88": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.config.x__validate_check__mutmut_94": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.config.x__validate_check__mutmut_95": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.config.x__validate_nodes__mutmut_17": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.config.x__validate_nodes__mutmut_44": "message text only: part of an error or detail message string",
-  "netdryrun.config.x__validate_scenario__mutmut_11": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.config.x__validate_scenario__mutmut_115": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.config.x__validate_scenario__mutmut_136": "message text only: the location or key name shown in an error",
-  "netdryrun.config.x__validate_scenario__mutmut_137": "message text only: the location or key name shown in an error",
-  "netdryrun.config.x__validate_scenario__mutmut_142": "message text only: the location or key name shown in an error",
-  "netdryrun.config.x__validate_scenario__mutmut_143": "message text only: the location or key name shown in an error",
-  "netdryrun.config.x__validate_scenario__mutmut_146": "equivalent: parse_inject refuses the same values (a non-string prefix or from is never a valid network once str()-ed), so the config is still refused",
-  "netdryrun.config.x__validate_scenario__mutmut_147": "equivalent: parse_inject refuses the same values (a non-string prefix or from is never a valid network once str()-ed), so the config is still refused",
-  "netdryrun.config.x__validate_scenario__mutmut_149": "message text only: the location or key name shown in an error",
-  "netdryrun.config.x__validate_scenario__mutmut_150": "message text only: the location or key name shown in an error",
-  "netdryrun.config.x__validate_scenario__mutmut_155": "message text only: the location or key name shown in an error",
-  "netdryrun.config.x__validate_scenario__mutmut_156": "message text only: the location or key name shown in an error",
-  "netdryrun.config.x__validate_scenario__mutmut_159": "equivalent: parse_inject refuses the same values (a non-string prefix or from is never a valid network once str()-ed), so the config is still refused",
-  "netdryrun.config.x__validate_scenario__mutmut_160": "equivalent: parse_inject refuses the same values (a non-string prefix or from is never a valid network once str()-ed), so the config is still refused",
-  "netdryrun.config.x__validate_scenario__mutmut_169": "equivalent: parse_inject refuses the same values (a non-string prefix or from is never a valid network once str()-ed), so the config is still refused",
-  "netdryrun.config.x__validate_scenario__mutmut_174": "message text only: the same ConfigError is raised, only its message changes",
-  "netdryrun.config.x__validate_scenario__mutmut_185": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.config.x__validate_scenario__mutmut_21": "message text only: the location or key name shown in an error",
-  "netdryrun.config.x__validate_scenario__mutmut_217": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.config.x__validate_scenario__mutmut_22": "message text only: the location or key name shown in an error",
-  "netdryrun.config.x__validate_scenario__mutmut_227": "message text only: the default scenario name shown in reports",
-  "netdryrun.config.x__validate_scenario__mutmut_27": "message text only: the location or key name shown in an error",
-  "netdryrun.config.x__validate_scenario__mutmut_28": "message text only: the location or key name shown in an error",
-  "netdryrun.config.x__validate_scenario__mutmut_40": "equivalent: an empty-string fault is refused further down: link_down needs a mapping, node_isolated a node name, inject_routes a mapping with a node",
-  "netdryrun.config.x__validate_scenario__mutmut_48": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.config.x__validate_scenario__mutmut_62": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.config.x__validate_scenario__mutmut_63": "message text only: the location or key name shown in an error",
-  "netdryrun.config.x__validate_scenario__mutmut_64": "message text only: the location or key name shown in an error",
-  "netdryrun.config.x__validate_scenario__mutmut_69": "message text only: the location or key name shown in an error",
-  "netdryrun.config.x__validate_scenario__mutmut_70": "message text only: the location or key name shown in an error",
-  "netdryrun.config.x_load__mutmut_11": "message text only: the file name shown in errors",
-  "netdryrun.config.x_load__mutmut_13": "message text only: the file name shown in errors",
-  "netdryrun.config.x_load__mutmut_16": "equivalent: 'UTF-8' and 'utf-8' are the same codec",
-  "netdryrun.config.x_load__mutmut_17": "message text only: the file name shown in errors",
-  "netdryrun.config.x_load__mutmut_19": "message text only: an empty file is still refused (as 'top level must be a mapping' instead of 'missing lab')",
-  "netdryrun.config.x_load__mutmut_21": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.config.x_load__mutmut_22": "message text only: the file name shown in errors",
-  "netdryrun.config.x_load__mutmut_30": "message text only: the file name shown in errors",
-  "netdryrun.config.x_load__mutmut_36": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.config.x_load__mutmut_37": "message text only: the file name shown in errors",
-  "netdryrun.config.x_load__mutmut_43": "message text only: the file name shown in errors",
-  "netdryrun.config.x_load__mutmut_57": "message text only: the file name shown in errors",
-  "netdryrun.config.x_load__mutmut_63": "message text only: the file name shown in errors",
-  "netdryrun.config.x_load__mutmut_77": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.config.x_load__mutmut_8": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.config.x_load__mutmut_89": "message text only: the file name shown in errors",
-  "netdryrun.config.x_load__mutmut_93": "message text only: the file name shown in errors",
-  "netdryrun.config.x_load_yaml__mutmut_1": "message text only: the position or wording of a YAML error, still a ConfigError",
-  "netdryrun.config.x_load_yaml__mutmut_13": "message text only: the position or wording of a YAML error, still a ConfigError",
-  "netdryrun.config.x_load_yaml__mutmut_14": "message text only: the position or wording of a YAML error, still a ConfigError",
-  "netdryrun.config.x_load_yaml__mutmut_15": "message text only: the position or wording of a YAML error, still a ConfigError",
-  "netdryrun.config.x_load_yaml__mutmut_16": "message text only: the position or wording of a YAML error, still a ConfigError",
-  "netdryrun.config.x_load_yaml__mutmut_18": "message text only: the text of a detail or error message",
-  "netdryrun.config.x_load_yaml__mutmut_19": "message text only: the text of a detail or error message",
-  "netdryrun.config.x_load_yaml__mutmut_2": "message text only: the position or wording of a YAML error, still a ConfigError",
-  "netdryrun.config.x_load_yaml__mutmut_20": "message text only: the text of a detail or error message",
-  "netdryrun.config.x_load_yaml__mutmut_21": "message text only: the text of a detail or error message",
-  "netdryrun.config.x_load_yaml__mutmut_23": "message text only: the text of a detail or error message",
-  "netdryrun.config.x_load_yaml__mutmut_33": "message text only: the position or wording of a YAML error, still a ConfigError",
-  "netdryrun.config.x_load_yaml__mutmut_34": "message text only: the position or wording of a YAML error, still a ConfigError",
-  "netdryrun.config.x_load_yaml__mutmut_7": "message text only: the position or wording of a YAML error, still a ConfigError",
-  "netdryrun.config.x_load_yaml__mutmut_8": "message text only: the position or wording of a YAML error, still a ConfigError",
-  "netdryrun.config.x_normalize_as_path__mutmut_1": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.config.x_normalize_as_path__mutmut_2": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.config.x_normalize_as_path__mutmut_3": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.config.x_parse_community__mutmut_35": "message text only: part of an error or detail message string",
-  "netdryrun.config.xǁFaultǁdescribe__mutmut_4": "message text only: the default scenario name built from the faults",
-  "netdryrun.config.xǁFaultǁdescribe__mutmut_7": "message text only: the default scenario name built from the faults",
-  "netdryrun.config.xǁFaultǁdescribe__mutmut_8": "message text only: the default scenario name built from the faults",
-  "netdryrun.config.xǁ_StrictLoaderǁconstruct_mapping__mutmut_1": "equivalent: construction depth; keys are scalars and the constructed mapping is the same",
-  "netdryrun.config.xǁ_StrictLoaderǁconstruct_mapping__mutmut_11": "equivalent: construction depth; keys are scalars and the constructed mapping is the same",
-  "netdryrun.config.xǁ_StrictLoaderǁconstruct_mapping__mutmut_12": "equivalent: construction depth; keys are scalars and the constructed mapping is the same",
-  "netdryrun.config.xǁ_StrictLoaderǁconstruct_mapping__mutmut_15": "equivalent: after an unhashable key SafeLoader refuses the mapping anyway, so stopping the duplicate scan there changes nothing",
-  "netdryrun.config.xǁ_StrictLoaderǁconstruct_mapping__mutmut_17": "message text only: the text or position of the duplicate-key error, still a ConfigError",
-  "netdryrun.config.xǁ_StrictLoaderǁconstruct_mapping__mutmut_18": "message text only: the text or position of the duplicate-key error, still a ConfigError",
-  "netdryrun.config.xǁ_StrictLoaderǁconstruct_mapping__mutmut_20": "message text only: the text or position of the duplicate-key error, still a ConfigError",
-  "netdryrun.config.xǁ_StrictLoaderǁconstruct_mapping__mutmut_24": "message text only: the text or position of the duplicate-key error, still a ConfigError",
-  "netdryrun.config.xǁ_StrictLoaderǁconstruct_mapping__mutmut_25": "message text only: the text or position of the duplicate-key error, still a ConfigError",
-  "netdryrun.config.xǁ_StrictLoaderǁconstruct_mapping__mutmut_26": "message text only: the text or position of the duplicate-key error, still a ConfigError",
-  "netdryrun.config.xǁ_StrictLoaderǁconstruct_mapping__mutmut_31": "equivalent: construction depth; keys are scalars and the constructed mapping is the same",
-  "netdryrun.config.xǁ_StrictLoaderǁconstruct_mapping__mutmut_33": "equivalent: construction depth; keys are scalars and the constructed mapping is the same",
-  "netdryrun.config.xǁ_StrictLoaderǁconstruct_mapping__mutmut_9": "equivalent: construction depth; keys are scalars and the constructed mapping is the same",
-  "netdryrun.drivers.base.x_as_int__mutmut_1": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.base.x_as_int__mutmut_10": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.base.x_as_int__mutmut_11": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.base.x_as_int__mutmut_2": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.base.x_as_int__mutmut_6": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.base.x_as_int__mutmut_7": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.base.x_check_vrf_name__mutmut_6": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.base.x_check_vrf_name__mutmut_7": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.base.x_load_json__mutmut_11": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.base.x_load_json__mutmut_12": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.base.x_load_json__mutmut_4": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.base.x_load_json__mutmut_5": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.base.x_load_json__mutmut_8": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.base.x_load_json__mutmut_9": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.base.x_network__mutmut_11": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.base.x_network__mutmut_12": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.base.x_network__mutmut_2": "equivalent: strict=None is falsy, the same as strict=False",
-  "netdryrun.drivers.base.x_network__mutmut_7": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.base.x_network__mutmut_8": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.base.x_unexpected__mutmut_1": "message text only: the output snippet in the error",
-  "netdryrun.drivers.base.x_unexpected__mutmut_2": "message text only: the output snippet in the error",
-  "netdryrun.drivers.base.x_unexpected__mutmut_4": "message text only: the text of a detail or error message",
-  "netdryrun.drivers.base.x_unexpected__mutmut_5": "message text only: the output snippet in the error",
-  "netdryrun.drivers.base.x_unexpected__mutmut_6": "message text only: the output snippet in the error",
-  "netdryrun.drivers.base.x_unexpected__mutmut_7": "message text only: the text of a detail or error message",
-  "netdryrun.drivers.base.x_unexpected__mutmut_8": "message text only: the text of a detail or error message",
-  "netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_28": "message text only: the last output line quoted in the error",
-  "netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_29": "message text only: the last output line quoted in the error",
-  "netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_32": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_33": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_37": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_38": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.base.xǁDriverǁall_routes__mutmut_1": "equivalent: default argument of an abstract base-class method that only raises NotImplementedError",
-  "netdryrun.drivers.base.xǁDriverǁall_routes__mutmut_2": "equivalent: default argument of an abstract base-class method that only raises NotImplementedError",
-  "netdryrun.drivers.base.xǁDriverǁall_routes__mutmut_3": "equivalent: default argument of an abstract base-class method that only raises NotImplementedError",
-  "netdryrun.drivers.base.xǁDriverǁbgp_neighbors__mutmut_1": "equivalent: default argument of an abstract base-class method that only raises NotImplementedError",
-  "netdryrun.drivers.base.xǁDriverǁbgp_neighbors__mutmut_2": "equivalent: default argument of an abstract base-class method that only raises NotImplementedError",
-  "netdryrun.drivers.base.xǁDriverǁbgp_paths__mutmut_1": "equivalent: default argument of an abstract base-class method that only raises NotImplementedError",
-  "netdryrun.drivers.base.xǁDriverǁbgp_paths__mutmut_2": "equivalent: default argument of an abstract base-class method that only raises NotImplementedError",
-  "netdryrun.drivers.base.xǁDriverǁping__mutmut_1": "equivalent: default argument of an abstract base-class method that only raises NotImplementedError",
-  "netdryrun.drivers.base.xǁDriverǁping__mutmut_2": "equivalent: default argument of an abstract base-class method that only raises NotImplementedError",
-  "netdryrun.drivers.base.xǁDriverǁroutes__mutmut_1": "equivalent: default argument of an abstract base-class method that only raises NotImplementedError",
-  "netdryrun.drivers.base.xǁDriverǁroutes__mutmut_2": "equivalent: default argument of an abstract base-class method that only raises NotImplementedError",
-  "netdryrun.drivers.eos.x__bgp_entries__mutmut_13": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.eos.x__bgp_entries__mutmut_2": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.eos.x__bgp_entries__mutmut_25": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__bgp_entries__mutmut_26": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__bgp_entries__mutmut_27": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__bgp_entries__mutmut_28": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__bgp_entries__mutmut_29": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__bgp_entries__mutmut_30": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__bgp_entries__mutmut_35": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__bgp_entries__mutmut_36": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__bgp_entries__mutmut_37": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__bgp_entries__mutmut_38": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__bgp_entries__mutmut_39": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__bgp_entries__mutmut_40": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__bgp_entries__mutmut_8": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.eos.x__json__mutmut_10": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__json__mutmut_14": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__json__mutmut_15": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__json__mutmut_2": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.eos.x__learned__mutmut_10": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__learned__mutmut_11": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__learned__mutmut_12": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__learned__mutmut_13": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__learned__mutmut_14": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__learned__mutmut_9": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__summary__mutmut_1": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.eos.x__summary__mutmut_11": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.eos.x__summary__mutmut_17": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.eos.x__summary__mutmut_2": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.eos.x__summary__mutmut_21": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.eos.x__summary__mutmut_29": "equivalent: an empty or non-string peerState still raises (AttributeError or IndexError, turned into a DriverError by the parser wrapper)",
-  "netdryrun.drivers.eos.x__summary__mutmut_3": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.eos.x__summary__mutmut_30": "equivalent: a non-mapping peer or a missing peerState still raises (AttributeError or KeyError, turned into a DriverError by the parser wrapper)",
-  "netdryrun.drivers.eos.x__summary__mutmut_37": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__summary__mutmut_38": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__summary__mutmut_39": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__summary__mutmut_4": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.eos.x__summary__mutmut_40": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__summary__mutmut_41": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__summary__mutmut_42": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__summary__mutmut_5": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.eos.x__summary__mutmut_64": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.eos.x__summary__mutmut_74": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__summary__mutmut_75": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__summary__mutmut_76": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__summary__mutmut_77": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__table__mutmut_4": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__table__mutmut_5": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__table__mutmut_8": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__table__mutmut_9": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__vrf__mutmut_12": "message text only: part of an error or detail message string",
-  "netdryrun.drivers.eos.x__vrf__mutmut_14": "message text only: part of an error or detail message string",
-  "netdryrun.drivers.eos.x__vrf__mutmut_16": "message text only: part of an error or detail message string",
-  "netdryrun.drivers.eos.x__vrf__mutmut_20": "message text only: part of an error or detail message string",
-  "netdryrun.drivers.eos.x__vrf__mutmut_21": "message text only: part of an error or detail message string",
-  "netdryrun.drivers.eos.x__vrf__mutmut_22": "message text only: part of an error or detail message string",
-  "netdryrun.drivers.eos.x__vrf__mutmut_23": "message text only: part of an error or detail message string",
-  "netdryrun.drivers.eos.x__vrf__mutmut_26": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__vrf__mutmut_27": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__vrf__mutmut_30": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__vrf__mutmut_31": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__vrf__mutmut_6": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.x__vrf__mutmut_7": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.eos.xǁEosDriverǁall_routes__mutmut_3": "equivalent: family default 4 vs 5: only family == 6 selects IPv6, every other value reads IPv4",
-  "netdryrun.drivers.frr.x__bgp_json__mutmut_10": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__bgp_json__mutmut_11": "equivalent: the warning object is still refused further down, as a neighbor without bgpState or a table without paths/routes",
-  "netdryrun.drivers.frr.x__bgp_json__mutmut_12": "equivalent: the warning object is still refused further down, as a neighbor without bgpState or a table without paths/routes",
-  "netdryrun.drivers.frr.x__bgp_json__mutmut_14": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__bgp_json__mutmut_15": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__bgp_json__mutmut_16": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__bgp_json__mutmut_17": "equivalent: {'bgpNoSuchInstance': true} is still refused further down, as a neighbor without bgpState or a table without paths/routes",
-  "netdryrun.drivers.frr.x__bgp_json__mutmut_18": "equivalent: {'bgpNoSuchInstance': true} is still refused further down, as a neighbor without bgpState or a table without paths/routes",
-  "netdryrun.drivers.frr.x__bgp_json__mutmut_19": "equivalent: {'bgpNoSuchInstance': true} is still refused further down, as a neighbor without bgpState or a table without paths/routes",
-  "netdryrun.drivers.frr.x__bgp_json__mutmut_2": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.frr.x__bgp_json__mutmut_20": "equivalent: {'bgpNoSuchInstance': true} is still refused further down, as a neighbor without bgpState or a table without paths/routes",
-  "netdryrun.drivers.frr.x__bgp_json__mutmut_22": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__bgp_json__mutmut_23": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__bgp_json__mutmut_7": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__bgp_json__mutmut_8": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__bgp_json__mutmut_9": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__bgp_paths_for_route_check__mutmut_16": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.frr.x__bgp_paths_for_route_check__mutmut_2": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_12": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_13": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_14": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_15": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_16": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_2": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_27": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_28": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_29": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_30": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_31": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_32": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__learned__mutmut_10": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__learned__mutmut_11": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__learned__mutmut_12": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__learned__mutmut_13": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__learned__mutmut_8": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__learned__mutmut_9": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__route_table__mutmut_10": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__route_table__mutmut_13": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.frr.x__route_table__mutmut_2": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.frr.x__route_table__mutmut_20": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__route_table__mutmut_21": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__route_table__mutmut_22": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__route_table__mutmut_23": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__route_table__mutmut_24": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__route_table__mutmut_25": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__route_table__mutmut_29": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__route_table__mutmut_30": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__route_table__mutmut_31": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__route_table__mutmut_32": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__route_table__mutmut_33": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__route_table__mutmut_34": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__route_table__mutmut_7": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__route_table__mutmut_8": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.x__route_table__mutmut_9": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.frr.xǁFrrDriverǁ_confirm_vrf__mutmut_12": "message text only: part of an error or detail message string",
-  "netdryrun.drivers.frr.xǁFrrDriverǁ_confirm_vrf__mutmut_14": "message text only: part of an error or detail message string",
-  "netdryrun.drivers.frr.xǁFrrDriverǁ_confirm_vrf__mutmut_16": "message text only: part of an error or detail message string",
-  "netdryrun.drivers.frr.xǁFrrDriverǁ_confirm_vrf__mutmut_17": "message text only: part of an error or detail message string",
-  "netdryrun.drivers.frr.xǁFrrDriverǁall_routes__mutmut_3": "equivalent: family default 4 vs 5: only family == 6 selects IPv6, every other value reads IPv4",
-  "netdryrun.drivers.srlinux.x__bgp_learned__mutmut_10": "equivalent: the default origin-protocol is lower-cased before the comparison",
-  "netdryrun.drivers.srlinux.x__json__mutmut_1": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.srlinux.x__json__mutmut_10": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.srlinux.x__json__mutmut_2": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.srlinux.x__json__mutmut_4": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.srlinux.x__json__mutmut_9": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.srlinux.x__list__mutmut_10": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.srlinux.x__list__mutmut_11": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.srlinux.x__list__mutmut_14": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.srlinux.x__list__mutmut_15": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.srlinux.x__list__mutmut_5": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.srlinux.x__list__mutmut_6": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.srlinux.x__rib_rows__mutmut_11": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.srlinux.x__rib_rows__mutmut_13": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.srlinux.x__rib_rows__mutmut_19": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.srlinux.x__rib_rows__mutmut_20": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.srlinux.x__rib_rows__mutmut_21": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.srlinux.x__rib_rows__mutmut_22": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.srlinux.x__rib_rows__mutmut_23": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.srlinux.x__rib_rows__mutmut_24": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.srlinux.x__rib_rows__mutmut_25": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.srlinux.x__rib_rows__mutmut_4": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.srlinux.x_parse_instance_state__mutmut_7": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.srlinux.x_parse_instance_state__mutmut_9": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_10": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_11": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_30": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_32": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_38": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_40": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_52": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-  "netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_8": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_9": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.srlinux.xǁSrlDriverǁall_routes__mutmut_3": "equivalent: family default 4 vs 5: only family == 6 selects IPv6, every other value reads IPv4",
-  "netdryrun.drivers.x_check_supported__mutmut_34": "message text only: the unsupported-afi error text; the same exception is raised",
-  "netdryrun.drivers.x_check_supported__mutmut_35": "message text only: the unsupported-afi error text; the same exception is raised",
-  "netdryrun.drivers.x_check_supported__mutmut_47": "message text only: the key list in the unsupported-key error; the same exception is raised",
+  "netdryrun.config.x__suggest__mutmut_14": {
+   "reason": "message text only: the did-you-mean hint in an error",
+   "diff": "fb2f446c2f905724"
+  },
+  "netdryrun.config.x__suggest__mutmut_15": {
+   "reason": "message text only: the did-you-mean hint in an error",
+   "diff": "a01d18dc8886b754"
+  },
+  "netdryrun.config.x__suggest__mutmut_17": {
+   "reason": "message text only: the did-you-mean hint in an error",
+   "diff": "03baa33c8427e8d3"
+  },
+  "netdryrun.config.x__suggest__mutmut_2": {
+   "reason": "message text only: the did-you-mean hint in an error",
+   "diff": "090986294ba479f8"
+  },
+  "netdryrun.config.x__suggest__mutmut_22": {
+   "reason": "message text only: the did-you-mean hint in an error",
+   "diff": "9cc27decf92e802e"
+  },
+  "netdryrun.config.x__validate_bgp_route__mutmut_15": {
+   "reason": "message text only: part of an error or detail message string",
+   "diff": "6d87bff12aebf777"
+  },
+  "netdryrun.config.x__validate_bgp_route__mutmut_30": {
+   "reason": "message text only: part of an error or detail message string",
+   "diff": "9193acf479f37024"
+  },
+  "netdryrun.config.x__validate_bgp_route__mutmut_31": {
+   "reason": "message text only: part of an error or detail message string",
+   "diff": "9ec7b51478983f22"
+  },
+  "netdryrun.config.x__validate_bgp_route__mutmut_32": {
+   "reason": "message text only: part of an error or detail message string",
+   "diff": "fb648a02f3a77cf5"
+  },
+  "netdryrun.config.x__validate_bgp_route__mutmut_34": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "d10805aa9c27987f"
+  },
+  "netdryrun.config.x__validate_bgp_route__mutmut_5": {
+   "reason": "equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'",
+   "diff": "7952f89a8dde1f6d"
+  },
+  "netdryrun.config.x__validate_bgp_route__mutmut_56": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "1fefe78eea0e4342"
+  },
+  "netdryrun.config.x__validate_bgp_route__mutmut_65": {
+   "reason": "equivalent: a None, float or dict as_path is still refused, by normalize_as_path, as a ConfigError",
+   "diff": "1f49b2ce2eba3708"
+  },
+  "netdryrun.config.x__validate_bgp_route__mutmut_69": {
+   "reason": "message text only: the same ConfigError is raised, only its message changes",
+   "diff": "b65f7c548b278c33"
+  },
+  "netdryrun.config.x__validate_bgp_route__mutmut_7": {
+   "reason": "equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'",
+   "diff": "64bb0f9b0b255d23"
+  },
+  "netdryrun.config.x__validate_bgp_route__mutmut_84": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "30fafc57c8754032"
+  },
+  "netdryrun.config.x__validate_nodes__mutmut_17": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "638ef379d4a68d28"
+  },
+  "netdryrun.config.x__validate_nodes__mutmut_44": {
+   "reason": "message text only: part of an error or detail message string",
+   "diff": "ba3931053d4f948b"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_11": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "7baf08778fa84abe"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_115": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "6b5d77bfc6570f2a"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_136": {
+   "reason": "message text only: the location or key name shown in an error",
+   "diff": "9fb446f6c568c67f"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_137": {
+   "reason": "message text only: the location or key name shown in an error",
+   "diff": "38a4991883e4b6d1"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_142": {
+   "reason": "message text only: the location or key name shown in an error",
+   "diff": "afc266016fbdd6b4"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_143": {
+   "reason": "message text only: the location or key name shown in an error",
+   "diff": "323e8e6e18871f43"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_146": {
+   "reason": "equivalent: parse_inject refuses the same values (a non-string prefix or from is never a valid network once str()-ed), so the config is still refused",
+   "diff": "205a27b838cb04c5"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_147": {
+   "reason": "equivalent: parse_inject refuses the same values (a non-string prefix or from is never a valid network once str()-ed), so the config is still refused",
+   "diff": "a591d16fd91fb95c"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_149": {
+   "reason": "message text only: the location or key name shown in an error",
+   "diff": "7bc3079d8556d2a3"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_150": {
+   "reason": "message text only: the location or key name shown in an error",
+   "diff": "af1eab940eb3b488"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_155": {
+   "reason": "message text only: the location or key name shown in an error",
+   "diff": "dd8261a3d5b22fb8"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_156": {
+   "reason": "message text only: the location or key name shown in an error",
+   "diff": "4e6d74fb9cbb7e20"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_159": {
+   "reason": "equivalent: parse_inject refuses the same values (a non-string prefix or from is never a valid network once str()-ed), so the config is still refused",
+   "diff": "1d35579956c7ea4f"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_160": {
+   "reason": "equivalent: parse_inject refuses the same values (a non-string prefix or from is never a valid network once str()-ed), so the config is still refused",
+   "diff": "3c55a3efc7ef6e5d"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_169": {
+   "reason": "equivalent: parse_inject refuses the same values (a non-string prefix or from is never a valid network once str()-ed), so the config is still refused",
+   "diff": "ceb60eab65babebf"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_174": {
+   "reason": "message text only: the same ConfigError is raised, only its message changes",
+   "diff": "bb692c105a751ae1"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_185": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "a62efb3f975d3d16"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_21": {
+   "reason": "message text only: the location or key name shown in an error",
+   "diff": "7ffd11eec58fbb23"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_217": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "632a00a3369bbf96"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_22": {
+   "reason": "message text only: the location or key name shown in an error",
+   "diff": "1586706f9d1265c5"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_227": {
+   "reason": "message text only: the default scenario name shown in reports",
+   "diff": "361274abec97985d"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_27": {
+   "reason": "message text only: the location or key name shown in an error",
+   "diff": "8b11bc6a384bed42"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_28": {
+   "reason": "message text only: the location or key name shown in an error",
+   "diff": "08b54394b8fe2e4a"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_40": {
+   "reason": "equivalent: an empty-string fault is refused further down: link_down needs a mapping, node_isolated a node name, inject_routes a mapping with a node",
+   "diff": "96d95837b67d95e9"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_48": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "e2c07a0e64101065"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_62": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "a5f98ee689d9cbd5"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_63": {
+   "reason": "message text only: the location or key name shown in an error",
+   "diff": "4a91fc8e59e3dffa"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_64": {
+   "reason": "message text only: the location or key name shown in an error",
+   "diff": "2f1ed6ec72b27ac7"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_69": {
+   "reason": "message text only: the location or key name shown in an error",
+   "diff": "0ae5d178a9832a63"
+  },
+  "netdryrun.config.x__validate_scenario__mutmut_70": {
+   "reason": "message text only: the location or key name shown in an error",
+   "diff": "9e3a0f2c00fdbe67"
+  },
+  "netdryrun.config.x_load__mutmut_11": {
+   "reason": "message text only: the file name shown in errors",
+   "diff": "44a8d15c79902e56"
+  },
+  "netdryrun.config.x_load__mutmut_13": {
+   "reason": "message text only: the file name shown in errors",
+   "diff": "076ab5a4fd650d79"
+  },
+  "netdryrun.config.x_load__mutmut_16": {
+   "reason": "equivalent: 'UTF-8' and 'utf-8' are the same codec",
+   "diff": "3dc627cd37a9ef13"
+  },
+  "netdryrun.config.x_load__mutmut_17": {
+   "reason": "message text only: the file name shown in errors",
+   "diff": "d75b8c6996b6031e"
+  },
+  "netdryrun.config.x_load__mutmut_19": {
+   "reason": "message text only: an empty file is still refused (as 'top level must be a mapping' instead of 'missing lab')",
+   "diff": "dc684ec0867e5dd4"
+  },
+  "netdryrun.config.x_load__mutmut_21": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "e6f5acdcc359b803"
+  },
+  "netdryrun.config.x_load__mutmut_22": {
+   "reason": "message text only: the file name shown in errors",
+   "diff": "71c6fcc93d1dcfde"
+  },
+  "netdryrun.config.x_load__mutmut_30": {
+   "reason": "message text only: the file name shown in errors",
+   "diff": "e76ab9c921a6c193"
+  },
+  "netdryrun.config.x_load__mutmut_36": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "da72fa9df9476e97"
+  },
+  "netdryrun.config.x_load__mutmut_37": {
+   "reason": "message text only: the file name shown in errors",
+   "diff": "ab11ffd43ed2cba1"
+  },
+  "netdryrun.config.x_load__mutmut_43": {
+   "reason": "message text only: the file name shown in errors",
+   "diff": "6b05de015549bcad"
+  },
+  "netdryrun.config.x_load__mutmut_57": {
+   "reason": "message text only: the file name shown in errors",
+   "diff": "9b33d42f0469e977"
+  },
+  "netdryrun.config.x_load__mutmut_63": {
+   "reason": "message text only: the file name shown in errors",
+   "diff": "f7e9fc8311924b7d"
+  },
+  "netdryrun.config.x_load__mutmut_77": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "786db07ca07ec529"
+  },
+  "netdryrun.config.x_load__mutmut_8": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "80d8469d11928335"
+  },
+  "netdryrun.config.x_load__mutmut_89": {
+   "reason": "message text only: the file name shown in errors",
+   "diff": "c7b481ca6b7220aa"
+  },
+  "netdryrun.config.x_load__mutmut_93": {
+   "reason": "message text only: the file name shown in errors",
+   "diff": "d92d086f1e715714"
+  },
+  "netdryrun.config.x_load_yaml__mutmut_1": {
+   "reason": "message text only: the position or wording of a YAML error, still a ConfigError",
+   "diff": "23d500ccb9c54ea8"
+  },
+  "netdryrun.config.x_load_yaml__mutmut_13": {
+   "reason": "message text only: the position or wording of a YAML error, still a ConfigError",
+   "diff": "b3ef67efbc685f43"
+  },
+  "netdryrun.config.x_load_yaml__mutmut_14": {
+   "reason": "message text only: the position or wording of a YAML error, still a ConfigError",
+   "diff": "235337d73c6f38e4"
+  },
+  "netdryrun.config.x_load_yaml__mutmut_15": {
+   "reason": "message text only: the position or wording of a YAML error, still a ConfigError",
+   "diff": "7bb89f8a1fe5b9c9"
+  },
+  "netdryrun.config.x_load_yaml__mutmut_16": {
+   "reason": "message text only: the position or wording of a YAML error, still a ConfigError",
+   "diff": "6d3b9266fdaad52e"
+  },
+  "netdryrun.config.x_load_yaml__mutmut_18": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "45989af125e1b302"
+  },
+  "netdryrun.config.x_load_yaml__mutmut_19": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "4bf543e57741a0f9"
+  },
+  "netdryrun.config.x_load_yaml__mutmut_2": {
+   "reason": "message text only: the position or wording of a YAML error, still a ConfigError",
+   "diff": "76f084feb86953f3"
+  },
+  "netdryrun.config.x_load_yaml__mutmut_20": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "4f730b0bfa7421d8"
+  },
+  "netdryrun.config.x_load_yaml__mutmut_21": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "ccaa6b2933c56b9f"
+  },
+  "netdryrun.config.x_load_yaml__mutmut_23": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "faaea59def5ace86"
+  },
+  "netdryrun.config.x_load_yaml__mutmut_33": {
+   "reason": "message text only: the position or wording of a YAML error, still a ConfigError",
+   "diff": "b25141ee8dcc079d"
+  },
+  "netdryrun.config.x_load_yaml__mutmut_34": {
+   "reason": "message text only: the position or wording of a YAML error, still a ConfigError",
+   "diff": "0d78e393aee354b5"
+  },
+  "netdryrun.config.x_load_yaml__mutmut_7": {
+   "reason": "message text only: the position or wording of a YAML error, still a ConfigError",
+   "diff": "5d6d958329c8a2c2"
+  },
+  "netdryrun.config.x_load_yaml__mutmut_8": {
+   "reason": "message text only: the position or wording of a YAML error, still a ConfigError",
+   "diff": "4c78c0940387ca39"
+  },
+  "netdryrun.config.x_normalize_as_path__mutmut_1": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "4c7a7dfdd213ec97"
+  },
+  "netdryrun.config.x_normalize_as_path__mutmut_2": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "0c641cac069061ce"
+  },
+  "netdryrun.config.x_normalize_as_path__mutmut_3": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "e13fb204c30bf21d"
+  },
+  "netdryrun.config.x_parse_community__mutmut_35": {
+   "reason": "message text only: part of an error or detail message string",
+   "diff": "8f93f202822e4119"
+  },
+  "netdryrun.config.xǁFaultǁdescribe__mutmut_4": {
+   "reason": "message text only: the default scenario name built from the faults",
+   "diff": "4d4d70e78cb721e7"
+  },
+  "netdryrun.config.xǁFaultǁdescribe__mutmut_7": {
+   "reason": "message text only: the default scenario name built from the faults",
+   "diff": "309956f4b36296cd"
+  },
+  "netdryrun.config.xǁFaultǁdescribe__mutmut_8": {
+   "reason": "message text only: the default scenario name built from the faults",
+   "diff": "1677e5aee66a4236"
+  },
+  "netdryrun.config.xǁ_StrictLoaderǁconstruct_mapping__mutmut_1": {
+   "reason": "equivalent: construction depth; keys are scalars and the constructed mapping is the same",
+   "diff": "6a6ebc4580c3e05d"
+  },
+  "netdryrun.config.xǁ_StrictLoaderǁconstruct_mapping__mutmut_11": {
+   "reason": "equivalent: construction depth; keys are scalars and the constructed mapping is the same",
+   "diff": "2c3e5f41f0391525"
+  },
+  "netdryrun.config.xǁ_StrictLoaderǁconstruct_mapping__mutmut_12": {
+   "reason": "equivalent: construction depth; keys are scalars and the constructed mapping is the same",
+   "diff": "c27ca04a05df391d"
+  },
+  "netdryrun.config.xǁ_StrictLoaderǁconstruct_mapping__mutmut_15": {
+   "reason": "equivalent: after an unhashable key SafeLoader refuses the mapping anyway, so stopping the duplicate scan there changes nothing",
+   "diff": "c385664d1ea4aa1c"
+  },
+  "netdryrun.config.xǁ_StrictLoaderǁconstruct_mapping__mutmut_17": {
+   "reason": "message text only: the text or position of the duplicate-key error, still a ConfigError",
+   "diff": "6ab645810bf14441"
+  },
+  "netdryrun.config.xǁ_StrictLoaderǁconstruct_mapping__mutmut_18": {
+   "reason": "message text only: the text or position of the duplicate-key error, still a ConfigError",
+   "diff": "add7e2910435ee30"
+  },
+  "netdryrun.config.xǁ_StrictLoaderǁconstruct_mapping__mutmut_20": {
+   "reason": "message text only: the text or position of the duplicate-key error, still a ConfigError",
+   "diff": "dd097ebc90235510"
+  },
+  "netdryrun.config.xǁ_StrictLoaderǁconstruct_mapping__mutmut_24": {
+   "reason": "message text only: the text or position of the duplicate-key error, still a ConfigError",
+   "diff": "7d4c7589cd2e1b80"
+  },
+  "netdryrun.config.xǁ_StrictLoaderǁconstruct_mapping__mutmut_25": {
+   "reason": "message text only: the text or position of the duplicate-key error, still a ConfigError",
+   "diff": "54a1068af7238e2c"
+  },
+  "netdryrun.config.xǁ_StrictLoaderǁconstruct_mapping__mutmut_26": {
+   "reason": "message text only: the text or position of the duplicate-key error, still a ConfigError",
+   "diff": "26cf6eeed59a14a7"
+  },
+  "netdryrun.config.xǁ_StrictLoaderǁconstruct_mapping__mutmut_31": {
+   "reason": "equivalent: construction depth; keys are scalars and the constructed mapping is the same",
+   "diff": "2eb201089dc32af8"
+  },
+  "netdryrun.config.xǁ_StrictLoaderǁconstruct_mapping__mutmut_33": {
+   "reason": "equivalent: construction depth; keys are scalars and the constructed mapping is the same",
+   "diff": "845eb5235c2026fa"
+  },
+  "netdryrun.config.xǁ_StrictLoaderǁconstruct_mapping__mutmut_9": {
+   "reason": "equivalent: construction depth; keys are scalars and the constructed mapping is the same",
+   "diff": "fb6d428b7177ce17"
+  },
+  "netdryrun.drivers.base.x_as_int__mutmut_1": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "4427d58b48503dc0"
+  },
+  "netdryrun.drivers.base.x_as_int__mutmut_10": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "1f2cbbf811741ce1"
+  },
+  "netdryrun.drivers.base.x_as_int__mutmut_11": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "8e2df5a5ce969623"
+  },
+  "netdryrun.drivers.base.x_as_int__mutmut_2": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "023e389bcdefa468"
+  },
+  "netdryrun.drivers.base.x_as_int__mutmut_6": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "f70a40405b13e0a6"
+  },
+  "netdryrun.drivers.base.x_as_int__mutmut_7": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "471cfeb0ed310d76"
+  },
+  "netdryrun.drivers.base.x_check_vrf_name__mutmut_6": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "ef55333e2827e4a0"
+  },
+  "netdryrun.drivers.base.x_check_vrf_name__mutmut_7": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "62658c245f999e7c"
+  },
+  "netdryrun.drivers.base.x_load_json__mutmut_11": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "0618f2d0454b24f3"
+  },
+  "netdryrun.drivers.base.x_load_json__mutmut_12": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "f06af9674e875e27"
+  },
+  "netdryrun.drivers.base.x_load_json__mutmut_4": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "febb25c2bd1732fb"
+  },
+  "netdryrun.drivers.base.x_load_json__mutmut_5": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "7909f3ded0abed43"
+  },
+  "netdryrun.drivers.base.x_load_json__mutmut_8": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "0d6a48e6f5b438ad"
+  },
+  "netdryrun.drivers.base.x_load_json__mutmut_9": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "952f3f86928013a9"
+  },
+  "netdryrun.drivers.base.x_network__mutmut_11": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "7c71bcab7eb361ee"
+  },
+  "netdryrun.drivers.base.x_network__mutmut_12": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "2d76887a5bd29299"
+  },
+  "netdryrun.drivers.base.x_network__mutmut_2": {
+   "reason": "equivalent: strict=None is falsy, the same as strict=False",
+   "diff": "50af274eb8707675"
+  },
+  "netdryrun.drivers.base.x_network__mutmut_7": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "1cdeae623bc34399"
+  },
+  "netdryrun.drivers.base.x_network__mutmut_8": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "1dd86904d0cb32f0"
+  },
+  "netdryrun.drivers.base.x_unexpected__mutmut_1": {
+   "reason": "message text only: the output snippet in the error",
+   "diff": "dee42fc42263d0bc"
+  },
+  "netdryrun.drivers.base.x_unexpected__mutmut_2": {
+   "reason": "message text only: the output snippet in the error",
+   "diff": "ebeeecadd073f0fd"
+  },
+  "netdryrun.drivers.base.x_unexpected__mutmut_4": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "44cb3bf0f84ac898"
+  },
+  "netdryrun.drivers.base.x_unexpected__mutmut_5": {
+   "reason": "message text only: the output snippet in the error",
+   "diff": "63f2eb05cc38b90a"
+  },
+  "netdryrun.drivers.base.x_unexpected__mutmut_6": {
+   "reason": "message text only: the output snippet in the error",
+   "diff": "95d108cdf6c9eea8"
+  },
+  "netdryrun.drivers.base.x_unexpected__mutmut_7": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "33017b0e283901f0"
+  },
+  "netdryrun.drivers.base.x_unexpected__mutmut_8": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "c09ed68052896115"
+  },
+  "netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_28": {
+   "reason": "message text only: the last output line quoted in the error",
+   "diff": "59f36e6254c686f0"
+  },
+  "netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_29": {
+   "reason": "message text only: the last output line quoted in the error",
+   "diff": "ef66365799d488a0"
+  },
+  "netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_32": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "5de867ab931b6c89"
+  },
+  "netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_33": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "68714f41c1b4d289"
+  },
+  "netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_37": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "3254e442ac9c218b"
+  },
+  "netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_38": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "9f2c29f2cb29e7e1"
+  },
+  "netdryrun.drivers.base.xǁDriverǁall_routes__mutmut_1": {
+   "reason": "equivalent: default argument of an abstract base-class method that only raises NotImplementedError",
+   "diff": "ad9ef2abf022df26"
+  },
+  "netdryrun.drivers.base.xǁDriverǁall_routes__mutmut_2": {
+   "reason": "equivalent: default argument of an abstract base-class method that only raises NotImplementedError",
+   "diff": "b40a321059f2c012"
+  },
+  "netdryrun.drivers.base.xǁDriverǁall_routes__mutmut_3": {
+   "reason": "equivalent: default argument of an abstract base-class method that only raises NotImplementedError",
+   "diff": "679c76ae7178beb9"
+  },
+  "netdryrun.drivers.base.xǁDriverǁbgp_neighbors__mutmut_1": {
+   "reason": "equivalent: default argument of an abstract base-class method that only raises NotImplementedError",
+   "diff": "6e942bf8e1424cf9"
+  },
+  "netdryrun.drivers.base.xǁDriverǁbgp_neighbors__mutmut_2": {
+   "reason": "equivalent: default argument of an abstract base-class method that only raises NotImplementedError",
+   "diff": "c26c7c2807e89202"
+  },
+  "netdryrun.drivers.base.xǁDriverǁbgp_paths__mutmut_1": {
+   "reason": "equivalent: default argument of an abstract base-class method that only raises NotImplementedError",
+   "diff": "776c1657b3950962"
+  },
+  "netdryrun.drivers.base.xǁDriverǁbgp_paths__mutmut_2": {
+   "reason": "equivalent: default argument of an abstract base-class method that only raises NotImplementedError",
+   "diff": "bd8a7d5890fc4a72"
+  },
+  "netdryrun.drivers.base.xǁDriverǁping__mutmut_1": {
+   "reason": "equivalent: default argument of an abstract base-class method that only raises NotImplementedError",
+   "diff": "f9d238998e6c2f11"
+  },
+  "netdryrun.drivers.base.xǁDriverǁping__mutmut_2": {
+   "reason": "equivalent: default argument of an abstract base-class method that only raises NotImplementedError",
+   "diff": "2478a27511284922"
+  },
+  "netdryrun.drivers.base.xǁDriverǁroutes__mutmut_1": {
+   "reason": "equivalent: default argument of an abstract base-class method that only raises NotImplementedError",
+   "diff": "ed45c173dbf42783"
+  },
+  "netdryrun.drivers.base.xǁDriverǁroutes__mutmut_2": {
+   "reason": "equivalent: default argument of an abstract base-class method that only raises NotImplementedError",
+   "diff": "dca49e257c250c95"
+  },
+  "netdryrun.drivers.eos.x__bgp_entries__mutmut_13": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "b7448e0ee66b47cc"
+  },
+  "netdryrun.drivers.eos.x__bgp_entries__mutmut_2": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "6c94c9ed500d8f30"
+  },
+  "netdryrun.drivers.eos.x__bgp_entries__mutmut_25": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "eee2c36d411c83f2"
+  },
+  "netdryrun.drivers.eos.x__bgp_entries__mutmut_26": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "8d25975485893b08"
+  },
+  "netdryrun.drivers.eos.x__bgp_entries__mutmut_27": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "c035994fbecb85f5"
+  },
+  "netdryrun.drivers.eos.x__bgp_entries__mutmut_28": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "284817930db29970"
+  },
+  "netdryrun.drivers.eos.x__bgp_entries__mutmut_29": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "86b394403070735b"
+  },
+  "netdryrun.drivers.eos.x__bgp_entries__mutmut_30": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "b6a5d6df296c70a1"
+  },
+  "netdryrun.drivers.eos.x__bgp_entries__mutmut_35": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "b872e17f21d6a855"
+  },
+  "netdryrun.drivers.eos.x__bgp_entries__mutmut_36": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "aa8a5916e8a80977"
+  },
+  "netdryrun.drivers.eos.x__bgp_entries__mutmut_37": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "29d964f0aea2feca"
+  },
+  "netdryrun.drivers.eos.x__bgp_entries__mutmut_38": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "ccd250d776eaea95"
+  },
+  "netdryrun.drivers.eos.x__bgp_entries__mutmut_39": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "d58462afbd8e2d2c"
+  },
+  "netdryrun.drivers.eos.x__bgp_entries__mutmut_40": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "a316e9fec4e60f5b"
+  },
+  "netdryrun.drivers.eos.x__bgp_entries__mutmut_8": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "08a2d94f2969d488"
+  },
+  "netdryrun.drivers.eos.x__json__mutmut_10": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "b28984661e329cdc"
+  },
+  "netdryrun.drivers.eos.x__json__mutmut_14": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "73e7b937848eff66"
+  },
+  "netdryrun.drivers.eos.x__json__mutmut_15": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "b9c986b9de7a7361"
+  },
+  "netdryrun.drivers.eos.x__json__mutmut_2": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "34ba1bda56bc6583"
+  },
+  "netdryrun.drivers.eos.x__learned__mutmut_10": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "84cb212a3b0e39cd"
+  },
+  "netdryrun.drivers.eos.x__learned__mutmut_11": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "a647465d1b48a427"
+  },
+  "netdryrun.drivers.eos.x__learned__mutmut_12": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "d1ecb114785edad2"
+  },
+  "netdryrun.drivers.eos.x__learned__mutmut_13": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "0bf369cc1565bc1d"
+  },
+  "netdryrun.drivers.eos.x__learned__mutmut_14": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "98c65e1f5596d662"
+  },
+  "netdryrun.drivers.eos.x__learned__mutmut_9": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "b3529522c1f4ec07"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_1": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "004f76bff24d1f61"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_11": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "daffb94d6dfe0b91"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_17": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "9bacb10eacc9f4a7"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_2": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "a96fe3c15103f863"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_21": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "7ccb41104c55ab9e"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_29": {
+   "reason": "equivalent: an empty or non-string peerState still raises (AttributeError or IndexError, turned into a DriverError by the parser wrapper)",
+   "diff": "553c0b783dfed0d9"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_3": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "235d4c5d1d2a1e87"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_30": {
+   "reason": "equivalent: a non-mapping peer or a missing peerState still raises (AttributeError or KeyError, turned into a DriverError by the parser wrapper)",
+   "diff": "749d2e3a039c278d"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_37": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "2d00124a93d5dec1"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_38": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "ef9e20ff43f04bd4"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_39": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "719d177e3a5fcd5f"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_4": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "9968af0993f5f16b"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_40": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "0c389d343a298289"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_41": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "a4d2489648416e59"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_42": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "1537320094517987"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_5": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "0a27c1f003d41579"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_64": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "f3b73a7ace687792"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_74": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "979a7c06d3a73a07"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_75": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "a897fc91ada18a93"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_76": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "84bc279eabf487f2"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_77": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "9ebdcdf481af27cb"
+  },
+  "netdryrun.drivers.eos.x__table__mutmut_4": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "958eaa7ec28b0e07"
+  },
+  "netdryrun.drivers.eos.x__table__mutmut_5": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "bb7483b4271d2b51"
+  },
+  "netdryrun.drivers.eos.x__table__mutmut_8": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "181d29ffa881384e"
+  },
+  "netdryrun.drivers.eos.x__table__mutmut_9": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "db6ac3204953c6d9"
+  },
+  "netdryrun.drivers.eos.xǁEosDriverǁall_routes__mutmut_3": {
+   "reason": "equivalent: family default 4 vs 5: only family == 6 selects IPv6, every other value reads IPv4",
+   "diff": "1aeb2f2755355f04"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_for_route_check__mutmut_16": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "b75b25d3e782aff0"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_for_route_check__mutmut_2": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "4c4930aaf5f9fa46"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_12": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "97d447da32b8a6d5"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_13": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "51538289ed3a8f90"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_14": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "18f801b369ff4a8e"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_15": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "a3d54de42703d41d"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_16": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "7dce13effa42e90c"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_2": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "5b1331f53d60c448"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_27": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "1f6db5de23502432"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_28": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "26ca4a769130bf1a"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_29": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "a0d42ff735e6d570"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_30": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "d75652ef4a85efd7"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_31": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "4a384ce1fc03334d"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_32": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "b35135ef585afc7e"
+  },
+  "netdryrun.drivers.frr.x__learned__mutmut_10": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "2ed470ee5d67b686"
+  },
+  "netdryrun.drivers.frr.x__learned__mutmut_11": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "6b374f7d584ef989"
+  },
+  "netdryrun.drivers.frr.x__learned__mutmut_12": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "2c1a202b3f35aaa0"
+  },
+  "netdryrun.drivers.frr.x__learned__mutmut_13": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "bb38c5485fb2f855"
+  },
+  "netdryrun.drivers.frr.x__learned__mutmut_8": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "8c5d09c080765daa"
+  },
+  "netdryrun.drivers.frr.x__learned__mutmut_9": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "417966b6ad6b1194"
+  },
+  "netdryrun.drivers.frr.x__route_table__mutmut_10": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "7d96088b6aa52080"
+  },
+  "netdryrun.drivers.frr.x__route_table__mutmut_13": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "3dddfbc78098915e"
+  },
+  "netdryrun.drivers.frr.x__route_table__mutmut_2": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "e9e85b6faee88aa7"
+  },
+  "netdryrun.drivers.frr.x__route_table__mutmut_20": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "e847ae102d35b869"
+  },
+  "netdryrun.drivers.frr.x__route_table__mutmut_21": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "ea6b726cca1236c2"
+  },
+  "netdryrun.drivers.frr.x__route_table__mutmut_22": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "6d82d860c8b9c644"
+  },
+  "netdryrun.drivers.frr.x__route_table__mutmut_23": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "640de4f8e03240cf"
+  },
+  "netdryrun.drivers.frr.x__route_table__mutmut_24": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "bed2654ea13cecfa"
+  },
+  "netdryrun.drivers.frr.x__route_table__mutmut_25": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "e4e57e58b1e77789"
+  },
+  "netdryrun.drivers.frr.x__route_table__mutmut_29": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "452f8d15ad9efbe4"
+  },
+  "netdryrun.drivers.frr.x__route_table__mutmut_30": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "f5840f1596252e1c"
+  },
+  "netdryrun.drivers.frr.x__route_table__mutmut_31": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "b0e51fcee0470994"
+  },
+  "netdryrun.drivers.frr.x__route_table__mutmut_32": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "c3641fb643b37af8"
+  },
+  "netdryrun.drivers.frr.x__route_table__mutmut_33": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "82962ea5c566fe74"
+  },
+  "netdryrun.drivers.frr.x__route_table__mutmut_34": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "4b1151e845c5ae68"
+  },
+  "netdryrun.drivers.frr.x__route_table__mutmut_7": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "9a3c76562c5914e5"
+  },
+  "netdryrun.drivers.frr.x__route_table__mutmut_8": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "7245ec5215625baf"
+  },
+  "netdryrun.drivers.frr.x__route_table__mutmut_9": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "e9e8548b935149b6"
+  },
+  "netdryrun.drivers.frr.xǁFrrDriverǁall_routes__mutmut_3": {
+   "reason": "equivalent: family default 4 vs 5: only family == 6 selects IPv6, every other value reads IPv4",
+   "diff": "f5868264b0c0342c"
+  },
+  "netdryrun.drivers.srlinux.x__bgp_learned__mutmut_10": {
+   "reason": "equivalent: the default origin-protocol is lower-cased before the comparison",
+   "diff": "97bbe3c55120e82f"
+  },
+  "netdryrun.drivers.srlinux.x__json__mutmut_1": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "9345465bc3e939fc"
+  },
+  "netdryrun.drivers.srlinux.x__json__mutmut_10": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "18eefd073906ac1b"
+  },
+  "netdryrun.drivers.srlinux.x__json__mutmut_2": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "31335a870854b118"
+  },
+  "netdryrun.drivers.srlinux.x__json__mutmut_4": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "7b8effee425d78a2"
+  },
+  "netdryrun.drivers.srlinux.x__json__mutmut_9": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "8ba54a775f0b2766"
+  },
+  "netdryrun.drivers.srlinux.x__list__mutmut_10": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "1d735876cf89afdd"
+  },
+  "netdryrun.drivers.srlinux.x__list__mutmut_11": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "bd90ff21d9caf199"
+  },
+  "netdryrun.drivers.srlinux.x__list__mutmut_14": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "ebd8a8ba71c7620d"
+  },
+  "netdryrun.drivers.srlinux.x__list__mutmut_15": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "e5322e26afbcc0fe"
+  },
+  "netdryrun.drivers.srlinux.x__list__mutmut_5": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "219bb7ad7740e5a0"
+  },
+  "netdryrun.drivers.srlinux.x__list__mutmut_6": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "aacb0c0c88860c41"
+  },
+  "netdryrun.drivers.srlinux.x__rib_rows__mutmut_11": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "595f0d4568550fab"
+  },
+  "netdryrun.drivers.srlinux.x__rib_rows__mutmut_13": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "4b1143b213bc504f"
+  },
+  "netdryrun.drivers.srlinux.x__rib_rows__mutmut_19": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "6a6193c731c35825"
+  },
+  "netdryrun.drivers.srlinux.x__rib_rows__mutmut_20": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "bcc9d04ace2bd0d6"
+  },
+  "netdryrun.drivers.srlinux.x__rib_rows__mutmut_21": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "d951ce431bac664f"
+  },
+  "netdryrun.drivers.srlinux.x__rib_rows__mutmut_22": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "4c146b75903c56a6"
+  },
+  "netdryrun.drivers.srlinux.x__rib_rows__mutmut_23": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "0d3414006c4babf0"
+  },
+  "netdryrun.drivers.srlinux.x__rib_rows__mutmut_24": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "9d8b87afbf113535"
+  },
+  "netdryrun.drivers.srlinux.x__rib_rows__mutmut_25": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "4e13c8d4a06b79e1"
+  },
+  "netdryrun.drivers.srlinux.x__rib_rows__mutmut_4": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "6c4598e111047857"
+  },
+  "netdryrun.drivers.srlinux.x_parse_instance_state__mutmut_7": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "c6a54b8cac4636ba"
+  },
+  "netdryrun.drivers.srlinux.x_parse_instance_state__mutmut_9": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "ec5a68db6b855afe"
+  },
+  "netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_10": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "1e921a78f33931ac"
+  },
+  "netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_11": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "510da5dbb49fac3d"
+  },
+  "netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_30": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "80b067b0fa5cf2e2"
+  },
+  "netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_32": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "8b51dfdc3e6d6ec3"
+  },
+  "netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_38": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "389a80466c6dd8ca"
+  },
+  "netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_40": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "5a1198369fc60c13"
+  },
+  "netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_52": {
+   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
+   "diff": "ae10172804a0d3b6"
+  },
+  "netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_8": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "be4c81fbd4e0e253"
+  },
+  "netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_9": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "fc71a8a8d0175c71"
+  },
+  "netdryrun.drivers.srlinux.xǁSrlDriverǁall_routes__mutmut_3": {
+   "reason": "equivalent: family default 4 vs 5: only family == 6 selects IPv6, every other value reads IPv4",
+   "diff": "2b21f88e9018806f"
+  },
+  "netdryrun.drivers.x_check_supported__mutmut_34": {
+   "reason": "message text only: the unsupported-afi error text; the same exception is raised",
+   "diff": "bdd097102fce75ed"
+  },
+  "netdryrun.drivers.x_check_supported__mutmut_35": {
+   "reason": "message text only: the unsupported-afi error text; the same exception is raised",
+   "diff": "e200d1732c7222f9"
+  },
+  "netdryrun.drivers.x_check_supported__mutmut_47": {
+   "reason": "message text only: the key list in the unsupported-key error; the same exception is raised",
+   "diff": "180f0ddfb2212dd0"
+  },
   "netdryrun.drivers.x_detect__mutmut_33": "message text only: the same DriverError is raised, only its message changes",
-  "netdryrun.drivers.x_for_node__mutmut_2": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.x_for_node__mutmut_4": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.drivers.x_for_node__mutmut_9": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_121": "message text only: the VRF shown in a not-established detail",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_122": "message text only: the VRF shown in a not-established detail",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_123": "message text only: the VRF shown in a not-established detail",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_124": "message text only: the text of a detail or error message",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_125": "message text only: the VRF shown in a not-established detail",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_126": "message text only: the text of a detail or error message",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_127": "message text only: the text of a detail or error message",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_135": "message text only: the list of down sessions in a detail",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_141": "message text only: the detail text of a gate sample in the history",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_159": "equivalent: the streak is only compared with >= 2, reached on the second identical sample either way",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_175": "message text only: the detail text of a gate sample in the history",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_180": "message text only: the detail text of a gate sample in the history",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_181": "message text only: the detail text of a gate sample in the history",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_182": "message text only: the detail text of a gate sample in the history",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_188": "equivalent: None and False are both false",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_202": "message text only: a progress or warning line in the log",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_203": "message text only: a progress or warning line in the log",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_211": "message text only: part of an error or detail message string",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_212": "message text only: part of an error or detail message string",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_213": "message text only: part of an error or detail message string",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_214": "message text only: part of an error or detail message string",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_215": "message text only: part of an error or detail message string",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_216": "message text only: part of an error or detail message string",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_217": "message text only: part of an error or detail message string",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_218": "message text only: part of an error or detail message string",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_239": "equivalent: samples_passed defaults to 0",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_58": "equivalent: the first sample always sets the streak (to 0 or 1) before it is read",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_59": "equivalent: an initial value that is always overwritten before it is read",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_60": "equivalent: an initial value that is always overwritten before it is read",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_64": "equivalent: an initial value that is always overwritten before it is read",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_65": "equivalent: an initial value that is always overwritten before it is read",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_66": "equivalent: an initial value that is always overwritten before it is read",
-  "netdryrun.runner.x__bgp_convergence_gate__mutmut_96": "message text only: the detail stays an Unready instance, only its text changes",
-  "netdryrun.runner.x__reach_then_hold__mutmut_13": "equivalent: hold_together([]) returns [], the same as the {} it replaces",
-  "netdryrun.runner.x__reach_then_hold__mutmut_34": "message text only: part of an error or detail message string",
-  "netdryrun.runner.x__reach_then_hold__mutmut_35": "message text only: part of an error or detail message string",
-  "netdryrun.runner.x__reach_then_hold__mutmut_47": "equivalent: the sum of two durations already rounded to 0.1 s rounds the same to 0.01 s",
-  "netdryrun.runner.x__reach_then_hold__mutmut_62": "equivalent: the sum of two durations already rounded to 0.1 s rounds the same to 0.01 s",
-  "netdryrun.runner.x__shape_problem__mutmut_18": "message text only: the wording of a config-shape error",
-  "netdryrun.runner.x__shape_problem__mutmut_19": "message text only: the wording of a config-shape error",
-  "netdryrun.runner.x__shape_problem__mutmut_22": "message text only: the wording of a config-shape error",
-  "netdryrun.runner.x__shape_problem__mutmut_23": "message text only: the wording of a config-shape error",
-  "netdryrun.runner.x__shape_problem__mutmut_26": "message text only: the wording of a config-shape error",
-  "netdryrun.runner.x__shape_problem__mutmut_27": "message text only: the wording of a config-shape error",
-  "netdryrun.runner.x__shape_problem__mutmut_33": "message text only: the wording of a config-shape error",
-  "netdryrun.runner.x__shape_problem__mutmut_41": "message text only: the wording of a config-shape error",
-  "netdryrun.runner.x__shape_problem__mutmut_5": "equivalent: 'UTF-8' and 'utf-8' are the same codec",
-  "netdryrun.runner.x__wait_fault_visible__mutmut_2": "message text only: a progress or warning line in the log",
-  "netdryrun.runner.x__wait_fault_visible__mutmut_20": "message text only: an unreadable node already keeps the wait going; skipping the remaining nodes in that round only shortens the list in the error",
-  "netdryrun.runner.x__wait_fault_visible__mutmut_3": "message text only: a progress or warning line in the log",
-  "netdryrun.runner.x__wait_fault_visible__mutmut_36": "message text only: part of an error or detail message string",
-  "netdryrun.runner.x__wait_fault_visible__mutmut_37": "message text only: part of an error or detail message string",
-  "netdryrun.runner.x__wait_fault_visible__mutmut_38": "message text only: part of an error or detail message string",
-  "netdryrun.runner.x__wait_fault_visible__mutmut_39": "message text only: part of an error or detail message string",
-  "netdryrun.runner.x__wait_fault_visible__mutmut_4": "message text only: a progress or warning line in the log",
-  "netdryrun.runner.x__wait_fault_visible__mutmut_40": "message text only: part of an error or detail message string",
-  "netdryrun.runner.x__wait_fault_visible__mutmut_41": "message text only: part of an error or detail message string",
-  "netdryrun.runner.x__wait_fault_visible__mutmut_42": "message text only: part of an error or detail message string",
-  "netdryrun.runner.x__wait_fault_visible__mutmut_5": "message text only: a progress or warning line in the log",
-  "netdryrun.runner.x__yaml_problem__mutmut_1": "message text only: the position or wording of a YAML error message",
-  "netdryrun.runner.x__yaml_problem__mutmut_10": "message text only: the position or wording of a YAML error message",
-  "netdryrun.runner.x__yaml_problem__mutmut_12": "message text only: the text of a detail or error message",
-  "netdryrun.runner.x__yaml_problem__mutmut_13": "message text only: the text of a detail or error message",
-  "netdryrun.runner.x__yaml_problem__mutmut_14": "message text only: the text of a detail or error message",
-  "netdryrun.runner.x__yaml_problem__mutmut_15": "message text only: the text of a detail or error message",
-  "netdryrun.runner.x__yaml_problem__mutmut_16": "message text only: the text of a detail or error message",
-  "netdryrun.runner.x__yaml_problem__mutmut_17": "message text only: the position or wording of a YAML error message",
-  "netdryrun.runner.x__yaml_problem__mutmut_18": "message text only: the position or wording of a YAML error message",
-  "netdryrun.runner.x__yaml_problem__mutmut_2": "message text only: the position or wording of a YAML error message",
-  "netdryrun.runner.x__yaml_problem__mutmut_23": "message text only: the position or wording of a YAML error message",
-  "netdryrun.runner.x__yaml_problem__mutmut_24": "message text only: the position or wording of a YAML error message",
-  "netdryrun.runner.x__yaml_problem__mutmut_7": "message text only: the position or wording of a YAML error message",
-  "netdryrun.runner.x__yaml_problem__mutmut_8": "message text only: the position or wording of a YAML error message",
-  "netdryrun.runner.x__yaml_problem__mutmut_9": "message text only: the position or wording of a YAML error message",
-  "netdryrun.runner.x_load_config__mutmut_10": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.runner.x_load_config__mutmut_2": "equivalent: unreachable branch: config.load already turns every YAML error into a ConfigError",
-  "netdryrun.runner.x_load_config__mutmut_3": "equivalent: unreachable branch: config.load already turns every YAML error into a ConfigError",
-  "netdryrun.runner.x_load_config__mutmut_4": "equivalent: unreachable branch: config.load already turns every YAML error into a ConfigError",
-  "netdryrun.runner.x_load_config__mutmut_5": "message text only: the file name in the error; still a ConfigError",
-  "netdryrun.runner.x_load_config__mutmut_7": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.runner.x_load_config__mutmut_8": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.runner.x_load_config__mutmut_9": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.runner.x_preflight__mutmut_13": "message text only: the node list in the unknown-node error; the same exception is raised",
-  "netdryrun.runner.x_preflight__mutmut_15": "message text only: the node list in the unknown-node error; the same exception is raised",
-  "netdryrun.runner.x_preflight__mutmut_40": "message text only: the inject_routes error text; the same exception is raised",
-  "netdryrun.runner.x_preflight__mutmut_41": "message text only: the inject_routes error text; the same exception is raised",
-  "netdryrun.runner.x_preflight__mutmut_42": "message text only: the inject_routes error text; the same exception is raised",
-  "netdryrun.runner.x_run__mutmut_117": "message text only: a progress or warning line in the log",
-  "netdryrun.runner.x_run__mutmut_12": "equivalent: None and False are both false",
-  "netdryrun.runner.x_run__mutmut_183": "message text only: only decides whether 'later scenarios skipped' is logged; the loop stops either way",
-  "netdryrun.runner.x_run__mutmut_186": "message text only: a progress or warning line in the log",
-  "netdryrun.runner.x_run__mutmut_19": "message text only: the option name in the settle/hold error",
-  "netdryrun.runner.x_run__mutmut_190": "message text only: the signal name in the 'interrupted' error; the status is error either way",
-  "netdryrun.runner.x_run__mutmut_191": "message text only: the signal name in the 'interrupted' error; the status is error either way",
-  "netdryrun.runner.x_run__mutmut_193": "message text only: the signal name in the 'interrupted' error; the status is error either way",
-  "netdryrun.runner.x_run__mutmut_197": "message text only: the signal name in the 'interrupted' error; the status is error either way",
-  "netdryrun.runner.x_run__mutmut_198": "message text only: the signal name in the 'interrupted' error; the status is error either way",
-  "netdryrun.runner.x_run__mutmut_204": "message text only: part of the internal-error message; the status is error either way",
-  "netdryrun.runner.x_run__mutmut_205": "message text only: part of the internal-error message; the status is error either way",
-  "netdryrun.runner.x_run__mutmut_207": "equivalent: print_exc(file=None) prints to stderr, as file=sys.stderr does",
-  "netdryrun.runner.x_run__mutmut_21": "message text only: the option name in the settle/hold error",
-  "netdryrun.runner.x_run__mutmut_220": "message text only: a progress or warning line in the log",
-  "netdryrun.runner.x_run__mutmut_221": "message text only: a progress or warning line in the log",
-  "netdryrun.runner.x_run__mutmut_222": "message text only: a progress or warning line in the log",
-  "netdryrun.runner.x_run__mutmut_223": "message text only: a progress or warning line in the log",
-  "netdryrun.runner.x_run__mutmut_225": "message text only: only decides whether the cleanup warning is logged",
-  "netdryrun.runner.x_run__mutmut_226": "message text only: only decides whether the cleanup warning is logged",
-  "netdryrun.runner.x_run__mutmut_227": "message text only: a progress or warning line in the log",
-  "netdryrun.runner.x_run__mutmut_228": "message text only: a progress or warning line in the log",
-  "netdryrun.runner.x_run__mutmut_229": "message text only: a progress or warning line in the log",
-  "netdryrun.runner.x_run__mutmut_230": "message text only: a progress or warning line in the log",
-  "netdryrun.runner.x_run__mutmut_231": "message text only: a progress or warning line in the log",
-  "netdryrun.runner.x_run__mutmut_233": "message text only: only decides whether 'lab left running' is logged (lab is never None once deployed)",
-  "netdryrun.runner.x_run__mutmut_234": "message text only: a progress or warning line in the log",
-  "netdryrun.runner.x_run__mutmut_242": "message text only: the signal name in the 'interrupted' error; the status is error either way",
-  "netdryrun.runner.x_run__mutmut_25": "message text only: the option name in the settle/hold error",
-  "netdryrun.runner.x_run__mutmut_26": "message text only: the option name in the settle/hold error",
-  "netdryrun.runner.x_run__mutmut_53": "message text only: a progress or warning line in the log",
-  "netdryrun.runner.x_run__mutmut_60": "message text only: the missing-containers error text; the run still ends in error (exit 2)",
-  "netdryrun.runner.x_run__mutmut_61": "message text only: the missing-containers error becomes the internal-error text; the run still ends in error (exit 2)",
-  "netdryrun.runner.x_run__mutmut_62": "message text only: the missing-containers error text; the run still ends in error (exit 2)",
-  "netdryrun.runner.x_run__mutmut_63": "message text only: the missing-containers error becomes the internal-error text; the run still ends in error (exit 2)",
-  "netdryrun.runner.x_run__mutmut_64": "message text only: a progress or warning line in the log",
-  "netdryrun.runner.x_run__mutmut_87": "equivalent: report.results is still empty when the positive results are added",
-  "netdryrun.runner.x_run_scenario__mutmut_128": "message text only: the text of a failure detail, the verdict is unchanged",
-  "netdryrun.runner.x_run_scenario__mutmut_129": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.runner.x_run_scenario__mutmut_131": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.runner.x_run_scenario__mutmut_132": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.runner.x_run_scenario__mutmut_134": "message text only: the same exception is still raised, only its message changes",
-  "netdryrun.runner.x_run_scenario__mutmut_138": "message text only: a progress or warning line in the log",
-  "netdryrun.runner.x_run_scenario__mutmut_42": "equivalent: _sessions_over_links with no links returns []",
-  "netdryrun.runner.x_run_scenario__mutmut_47": "equivalent: _sessions_over_links does not use its log argument",
-  "netdryrun.runner.x_run_scenario__mutmut_52": "equivalent: _sessions_over_links does not use its log argument",
-  "netdryrun.runner.x_run_scenario__mutmut_66": "message text only: a progress or warning line in the log",
-  "netdryrun.runner.x_run_scenario__mutmut_87": "message text only: a progress or warning line in the log",
-  "netdryrun.runner.x_run_scenario__mutmut_94": "equivalent: results is still empty when the positive results are added"
+  "netdryrun.drivers.x_for_node__mutmut_2": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "d47d65c7450291d1"
+  },
+  "netdryrun.drivers.x_for_node__mutmut_4": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "acd403462d346b59"
+  },
+  "netdryrun.drivers.x_for_node__mutmut_9": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "96d459bdaec6901f"
+  },
+  "netdryrun.runner.x__reach_then_hold__mutmut_13": {
+   "reason": "equivalent: hold_together([]) returns [], the same as the {} it replaces",
+   "diff": "6ac3fbd352aab299"
+  },
+  "netdryrun.runner.x__reach_then_hold__mutmut_34": {
+   "reason": "message text only: part of an error or detail message string",
+   "diff": "02eabb0b75355075"
+  },
+  "netdryrun.runner.x__reach_then_hold__mutmut_35": {
+   "reason": "message text only: part of an error or detail message string",
+   "diff": "4c010c36945fdf8a"
+  },
+  "netdryrun.runner.x__reach_then_hold__mutmut_47": {
+   "reason": "equivalent: the sum of two durations already rounded to 0.1 s rounds the same to 0.01 s",
+   "diff": "b38a1d9cfde5300c"
+  },
+  "netdryrun.runner.x__reach_then_hold__mutmut_62": {
+   "reason": "equivalent: the sum of two durations already rounded to 0.1 s rounds the same to 0.01 s",
+   "diff": "d229fc56dcb6ff50"
+  },
+  "netdryrun.runner.x__shape_problem__mutmut_18": {
+   "reason": "message text only: the wording of a config-shape error",
+   "diff": "1454f76874c8eff6"
+  },
+  "netdryrun.runner.x__shape_problem__mutmut_19": {
+   "reason": "message text only: the wording of a config-shape error",
+   "diff": "b78cfeb30c807370"
+  },
+  "netdryrun.runner.x__shape_problem__mutmut_22": {
+   "reason": "message text only: the wording of a config-shape error",
+   "diff": "936514a9e6132a6b"
+  },
+  "netdryrun.runner.x__shape_problem__mutmut_23": {
+   "reason": "message text only: the wording of a config-shape error",
+   "diff": "78ea5b4d8ddb1fb4"
+  },
+  "netdryrun.runner.x__shape_problem__mutmut_26": {
+   "reason": "message text only: the wording of a config-shape error",
+   "diff": "2b1fd331132a789b"
+  },
+  "netdryrun.runner.x__shape_problem__mutmut_27": {
+   "reason": "message text only: the wording of a config-shape error",
+   "diff": "1d9894cdb4e11cbf"
+  },
+  "netdryrun.runner.x__shape_problem__mutmut_33": {
+   "reason": "message text only: the wording of a config-shape error",
+   "diff": "0056b470ebef7aa9"
+  },
+  "netdryrun.runner.x__shape_problem__mutmut_41": {
+   "reason": "message text only: the wording of a config-shape error",
+   "diff": "55cd2adfbe6615c4"
+  },
+  "netdryrun.runner.x__shape_problem__mutmut_5": {
+   "reason": "equivalent: 'UTF-8' and 'utf-8' are the same codec",
+   "diff": "ce4b591299e2ccee"
+  },
+  "netdryrun.runner.x__wait_fault_visible__mutmut_2": {
+   "reason": "message text only: a progress or warning line in the log",
+   "diff": "89e6d4dd029c9fdb"
+  },
+  "netdryrun.runner.x__wait_fault_visible__mutmut_20": {
+   "reason": "message text only: an unreadable node already keeps the wait going; skipping the remaining nodes in that round only shortens the list in the error",
+   "diff": "feccd47bb5539477"
+  },
+  "netdryrun.runner.x__wait_fault_visible__mutmut_3": {
+   "reason": "message text only: a progress or warning line in the log",
+   "diff": "7d2cccde42e2ed2e"
+  },
+  "netdryrun.runner.x__wait_fault_visible__mutmut_36": {
+   "reason": "message text only: part of an error or detail message string",
+   "diff": "93f8bb3615235f0a"
+  },
+  "netdryrun.runner.x__wait_fault_visible__mutmut_37": {
+   "reason": "message text only: part of an error or detail message string",
+   "diff": "d21813766bb3b115"
+  },
+  "netdryrun.runner.x__wait_fault_visible__mutmut_38": {
+   "reason": "message text only: part of an error or detail message string",
+   "diff": "3e64dc476f4b537d"
+  },
+  "netdryrun.runner.x__wait_fault_visible__mutmut_39": {
+   "reason": "message text only: part of an error or detail message string",
+   "diff": "f5d1b3cb56f2b685"
+  },
+  "netdryrun.runner.x__wait_fault_visible__mutmut_4": {
+   "reason": "message text only: a progress or warning line in the log",
+   "diff": "14325e51db353bfc"
+  },
+  "netdryrun.runner.x__wait_fault_visible__mutmut_40": {
+   "reason": "message text only: part of an error or detail message string",
+   "diff": "2f7b1a2c38a4ac63"
+  },
+  "netdryrun.runner.x__wait_fault_visible__mutmut_41": {
+   "reason": "message text only: part of an error or detail message string",
+   "diff": "5076599b0b4039d4"
+  },
+  "netdryrun.runner.x__wait_fault_visible__mutmut_42": {
+   "reason": "message text only: part of an error or detail message string",
+   "diff": "3883985d8ebd4377"
+  },
+  "netdryrun.runner.x__wait_fault_visible__mutmut_5": {
+   "reason": "message text only: a progress or warning line in the log",
+   "diff": "cabc405acc9518db"
+  },
+  "netdryrun.runner.x__yaml_problem__mutmut_1": {
+   "reason": "message text only: the position or wording of a YAML error message",
+   "diff": "7867679747eda80e"
+  },
+  "netdryrun.runner.x__yaml_problem__mutmut_10": {
+   "reason": "message text only: the position or wording of a YAML error message",
+   "diff": "f92cacd2a4d8a86e"
+  },
+  "netdryrun.runner.x__yaml_problem__mutmut_12": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "1503163518353a41"
+  },
+  "netdryrun.runner.x__yaml_problem__mutmut_13": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "96cf77c3843645d3"
+  },
+  "netdryrun.runner.x__yaml_problem__mutmut_14": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "def09e7cf54b7761"
+  },
+  "netdryrun.runner.x__yaml_problem__mutmut_15": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "90e67865058711fc"
+  },
+  "netdryrun.runner.x__yaml_problem__mutmut_16": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "4fb34992484427b1"
+  },
+  "netdryrun.runner.x__yaml_problem__mutmut_17": {
+   "reason": "message text only: the position or wording of a YAML error message",
+   "diff": "add606766f48abae"
+  },
+  "netdryrun.runner.x__yaml_problem__mutmut_18": {
+   "reason": "message text only: the position or wording of a YAML error message",
+   "diff": "fb4be10ca993508e"
+  },
+  "netdryrun.runner.x__yaml_problem__mutmut_2": {
+   "reason": "message text only: the position or wording of a YAML error message",
+   "diff": "7668ec12543b5501"
+  },
+  "netdryrun.runner.x__yaml_problem__mutmut_23": {
+   "reason": "message text only: the position or wording of a YAML error message",
+   "diff": "9f87eabff9d0c057"
+  },
+  "netdryrun.runner.x__yaml_problem__mutmut_24": {
+   "reason": "message text only: the position or wording of a YAML error message",
+   "diff": "2d49cd34d392df0b"
+  },
+  "netdryrun.runner.x__yaml_problem__mutmut_7": {
+   "reason": "message text only: the position or wording of a YAML error message",
+   "diff": "d3a623faac5692f6"
+  },
+  "netdryrun.runner.x__yaml_problem__mutmut_8": {
+   "reason": "message text only: the position or wording of a YAML error message",
+   "diff": "3b943540fd5bda41"
+  },
+  "netdryrun.runner.x__yaml_problem__mutmut_9": {
+   "reason": "message text only: the position or wording of a YAML error message",
+   "diff": "227982ab86b1ebb6"
+  },
+  "netdryrun.runner.x_load_config__mutmut_10": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "f26dd7c85b09e259"
+  },
+  "netdryrun.runner.x_load_config__mutmut_2": {
+   "reason": "equivalent: unreachable branch: config.load already turns every YAML error into a ConfigError",
+   "diff": "ccc1f436273e40b4"
+  },
+  "netdryrun.runner.x_load_config__mutmut_3": {
+   "reason": "equivalent: unreachable branch: config.load already turns every YAML error into a ConfigError",
+   "diff": "d8cbe897e2d205da"
+  },
+  "netdryrun.runner.x_load_config__mutmut_4": {
+   "reason": "equivalent: unreachable branch: config.load already turns every YAML error into a ConfigError",
+   "diff": "f43e5852135091a5"
+  },
+  "netdryrun.runner.x_load_config__mutmut_5": {
+   "reason": "message text only: the file name in the error; still a ConfigError",
+   "diff": "bd71b126a32cae4a"
+  },
+  "netdryrun.runner.x_load_config__mutmut_7": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "3a2aed4befc8ad66"
+  },
+  "netdryrun.runner.x_load_config__mutmut_8": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "1336685468cbd6c5"
+  },
+  "netdryrun.runner.x_load_config__mutmut_9": {
+   "reason": "message text only: the same exception is still raised, only its message changes",
+   "diff": "1b9158bc9ead26f4"
+  },
+  "netdryrun.runner.x_preflight__mutmut_13": {
+   "reason": "message text only: the node list in the unknown-node error; the same exception is raised",
+   "diff": "c54fe819218de9e1"
+  },
+  "netdryrun.runner.x_preflight__mutmut_15": {
+   "reason": "message text only: the node list in the unknown-node error; the same exception is raised",
+   "diff": "5740501902a700c3"
+  },
+  "netdryrun.runner.x_preflight__mutmut_40": {
+   "reason": "message text only: the inject_routes error text; the same exception is raised",
+   "diff": "1a33a9fb709914ea"
+  },
+  "netdryrun.runner.x_preflight__mutmut_41": {
+   "reason": "message text only: the inject_routes error text; the same exception is raised",
+   "diff": "a34a2635436928eb"
+  },
+  "netdryrun.runner.x_preflight__mutmut_42": {
+   "reason": "message text only: the inject_routes error text; the same exception is raised",
+   "diff": "eb990851dcb9cf63"
+  }
  }
 }
