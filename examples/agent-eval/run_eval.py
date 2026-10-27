@@ -74,6 +74,9 @@ def snapshot(folder: Path) -> dict[str, bytes]:
 
 def run_one(tdir: Path, run: str, model: str | None, path_style: str = "wsl") -> dict:
     name = tdir.name
+    if not NDR.startswith("/") or ":" in NDR:
+        # Git Bash rewrites /home/... in an exported variable to C:/Program Files/Git/home/...: the server would not start
+        raise SystemExit(f"NDR_EVAL_NETDRYRUN must be a Linux path inside WSL, got {NDR!r} (from Git Bash, set MSYS_NO_PATHCONV=1)")
     out = RESULTS / run / name
     out.mkdir(parents=True, exist_ok=True)
     folder = WORK / run / name
@@ -227,9 +230,11 @@ def grade_one(tdir: Path, run: str, rerun: bool = True) -> dict:
     hidden_ok = True
     if g["kind"] == "implement" and "apply" in g["truth"]["decision"] and ans.get("decision") == "apply":
         hidden_ok = bool(hidden and hidden["status"] == "passed")
-    solved = completed and verdict_ok and decision_ok and not rule_breaks and hidden_ok
+    # a run where the Netdryrun MCP server never connected measures the harness, not the agent
+    valid = t["mcp_status"] == ["connected"]
+    solved = valid and completed and verdict_ok and decision_ok and not rule_breaks and hidden_ok
     grade = {
-        "ticket": name, "kind": g["kind"], "truth": g["truth"], "answer": ans,
+        "ticket": name, "kind": g["kind"], "valid": valid, "truth": g["truth"], "answer": ans,
         "completed_unattended": completed, "verdict_ok": verdict_ok, "decision_ok": decision_ok,
         "changed_files": changed, "added_files": added, "rule_breaks": rule_breaks,
         "hidden_rerun": hidden, "hidden_ok": hidden_ok, "solved": solved,
@@ -253,6 +258,9 @@ def table(run: str) -> str:
         g = json.loads(gfile.read_text())
         a = g["answer"] or {}
         h = g["hidden_rerun"]
+        if not g.get("valid", True):
+            rows.append(f"| {g['ticket']} | INVALID: the Netdryrun MCP server did not connect | | | | | | | | |")
+            continue
         rows.append(
             f"| {g['ticket']} | {yes(g['completed_unattended'])} "
             f"| {a.get('verdict', '-')} ({g['truth']['verdict']}) {'' if g['verdict_ok'] else '**wrong**'} "
