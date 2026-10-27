@@ -41,7 +41,7 @@ Deploying lab ndr-frr-broken (3 nodes)...
 FAILED: 5 passed, 1 failed (6 checks)
 ```
 
-The leaked default route was *received but not selected*: r1 kept its own default, so traffic still flowed and the ping passed. A ping test or a config linter would have missed it. Netdryrun counts a route that is in the routing table but not selected as present, so the "must be absent" check fails.
+The leaked default route was *received but not selected*: r1 kept its own default, so traffic still flowed and the ping passed. A ping test or a session check would have missed it. (A static analyzer such as Batfish also catches this particular leak; the [Batfish page](batfish.md) shows one that it misses and the lab catches.) Netdryrun counts a route that is in the routing table but not selected as present, so the "must be absent" check fails.
 
 The check that caught it:
 
@@ -65,7 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.3.0
+      - uses: netdryrun/netdryrun@v0.3.1
         with:
           path: network/        # folder containing netdryrun.yml
 ```
@@ -97,5 +97,5 @@ Requirements: Linux or WSL2, Docker, containerlab, Python 3.10+. Walkthrough: [G
 ## Status
 
 <!-- facts:site_status -->
-Version 0.3.0, early. Works with FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image) on Linux and WSL2. Check types: `bgp_session`, `bgp_prefixes`, `route`, `bgp_route` and `ping` (IPv4/IPv6 unicast BGP sessions, prefix counts, routes, BGP best-path attributes and ping), plus link-down and node-isolation failure scenarios. On the [verdict corpus](corpus.md), Netdryrun judged 24/30 realistic BGP changes correctly (ping-only checks 20/30, all-sessions-up checks 15/30) and 16/18 on the harder v2 (9/18 and 7/18). Both are small benchmarks the maintainers wrote on one FRR topology, with expected verdicts committed before any run, and both ran on Netdryrun 0.2.0: they compare methods, they are not a production reliability estimate. Issues and feedback: [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun/issues).
+Version 0.3.1, early. Works with FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image) on Linux and WSL2. Check types: `bgp_session`, `bgp_prefixes`, `route`, `bgp_route` and `ping` (IPv4/IPv6 unicast BGP sessions, prefix counts, routes, BGP best-path attributes and ping), plus link-down, node-isolation and route-injection (FRR only) failure scenarios. On the [verdict corpus](corpus.md), Netdryrun judged 24/30 realistic BGP changes correctly (ping-only checks 20/30, all-sessions-up checks 15/30) and 16/18 on v2, written after v1 to target its misses (9/18 and 7/18). On v1, Netdryrun approved 5 of the 19 harmful changes; ping-only checks approved 10. Both are small benchmarks the maintainers wrote on one FRR topology, with expected verdicts committed before any run: they compare methods, they are not a production reliability estimate. Provenance: neither ran on a released version. v1 ran on a pre-release build (commit `ec23379`, which called itself 0.2.0; the tagged 0.2.0 added the SONiC and EOS drivers and a scenario-recovery fix, `f6ea560`); v2 on a development build from main after 0.2.0 (it called itself 0.2.0 and recorded no commit) with the then-unreleased `inject_routes` fault (commit `d9da1ad`). A rerun of both on the released 0.3.1 is pending. Issues and feedback: [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun/issues).
 <!-- /facts:site_status -->

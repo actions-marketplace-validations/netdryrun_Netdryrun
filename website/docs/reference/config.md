@@ -45,7 +45,7 @@ Validation is strict: unknown keys inside a check, missing required keys, bad IP
 | `name` | generated | Label used in reports. The default describes the check, for example `r1: BGP session to 10.0.12.2 is established`. |
 | `timeout` | top-level `timeout` | Seconds this check may wait to pass. Positive number. |
 | `hold` | `--hold` (10) | Seconds a [post-convergence check](#convergence-semantics) must hold. Positive number. |
-| `vrf` | `default` | VRF (FRR) or network-instance (SR Linux) to look in. Letters, digits and `. _ : -`, at most 64 characters: the name goes into the device's CLI command, so anything else is refused. |
+| `vrf` | `default` | VRF (FRR) or network-instance (SR Linux) to look in. Letters, digits and `. _ : -`, at most 64 characters: the name goes into the device's CLI command, so anything else is refused (0.3.1 and later; 0.3.0 did not check it). |
 
 IP addresses and prefixes are normalized, so `2001:db8:0::1` in YAML matches `2001:db8::1` on the device. Prefixes with host bits set are reduced to the network (`10.0.0.1/24` becomes `10.0.0.0/24`).
 
@@ -218,14 +218,16 @@ scenarios:
 | Key | Meaning |
 |---|---|
 | `name` | Label shown before each check (default: generated from the faults) |
-| `link_down` | `{node, interface}` or a list of them. Interface names as seen inside the node (`eth1` on FRR, `e1-1` on SR Linux): a Linux interface name of at most 15 letters, digits and `. _ @ -` |
+| `link_down` | `{node, interface}` or a list of them. Interface names as seen inside the node (for example `eth1` on FRR): a Linux interface name of at most 15 letters, digits and `. _ @ -` (checked from 0.3.1). SR Linux links can't be failed yet; fail the FRR or Linux side instead |
 | `node_isolated` | A node name (or list): every lab link of that node goes down |
-| `inject_routes` | `{node, prefixes}` or `{node, count}` (or a list of them): the node announces extra routes. See below |
+| `inject_routes` | `{node, prefixes}` or `{node, count}` (or a list of them): the node announces extra routes. 0.3.1 and later. See below |
 | `checks` | Same check types as the top level, with the same convergence rules |
 
 Scenarios run after the main checks, one at a time. Links and injected routes are always restored afterwards, even if a check fails, and Netdryrun waits for the network to settle before the next scenario. If the network does not recover, the checks that passed before the scenario are reported as failed `[after <scenario>] recovers: ...` checks.
 
 ### Injecting routes
+
+New in 0.3.1: Netdryrun 0.3.0 rejects the key as unknown.
 
 `inject_routes` makes a node announce routes it normally doesn't, so you can test what the rest of the network does with them: a customer leaking more-specifics, a peer announcing someone else's prefix, a flood that should trip a max-prefix limit.
 
@@ -283,6 +285,7 @@ A driver turns device state into a common shape. Netdryrun detects it from the t
 | `ping` success / failure | yes | yes | yes | yes |
 | Failure scenarios on the node's own links | yes | not yet (fail the FRR/Linux side instead) | yes | yes |
 | `inject_routes` on the node | yes | not yet (inject from an FRR neighbor) | not yet | not yet |
+| Tested on a live lab in CI | yes, on every push | yes, on every push | no: parsers tested against output captured from live labs | no: parsers tested against output captured from live labs |
 
 **Received-but-not-selected routes:** on SR Linux and Arista EOS, a BGP route that lost to a static or local route lives only in the BGP table, not the routing table. Both drivers read the BGP table too, so such a route still counts as present for `present: false`.
 

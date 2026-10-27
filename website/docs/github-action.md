@@ -1,6 +1,6 @@
 ---
 title: GitHub Action
-description: Run Netdryrun in GitHub Actions with netdryrun/netdryrun@v0.3.0. Inputs, outputs, example workflows, and security notes for running privileged containerlab labs in CI.
+description: Run Netdryrun in GitHub Actions with netdryrun/netdryrun@v0.3.1. Inputs, outputs, example workflows, and security notes for running privileged containerlab labs in CI.
 ---
 
 # GitHub Action
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.3.0
+      - uses: netdryrun/netdryrun@v0.3.1
         with:
           path: network/        # folder containing netdryrun.yml
 ```
@@ -36,8 +36,8 @@ It needs a Linux runner with Docker. GitHub-hosted `ubuntu-latest` runners work.
 | `hold` | `10` | Seconds a post-convergence check must hold |
 | `pr-comment` | `false` | On pull requests, post one comment with the verdict, failures first, and the evidence for each failed check. Updated in place on every push. Needs `permissions: pull-requests: write` |
 | `github-token` | `${{ github.token }}` | Token used for the PR comment |
-| `cloud` | `false` | Upload the evidence to Netdryrun Cloud (beta). Needs `permissions: id-token: write`; no secrets are configured |
-| `cloud-url` | `https://cloud.netdryrun.com` | Netdryrun Cloud address |
+| `cloud` | `false` | Reserved for Netdryrun Cloud, which is **not available yet**. Setting it today uploads nothing and only adds an "evidence upload failed" warning. Leave it off |
+| `cloud-url` | `https://cloud.netdryrun.com` | Reserved for Netdryrun Cloud (this address does not exist yet) |
 
 ## Outputs
 
@@ -47,7 +47,7 @@ It needs a Linux runner with Docker. GitHub-hosted `ubuntu-latest` runners work.
 | `inconclusive-reason` | Why the run was inconclusive; empty otherwise |
 | `passed` | Number of passed checks |
 | `failed` | Number of failed checks |
-| `evidence-url` | Link to the evidence page, when `cloud` is `true` |
+| `evidence-url` | Reserved for Netdryrun Cloud; always empty today |
 
 ## Examples
 
@@ -64,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.3.0
+      - uses: netdryrun/netdryrun@v0.3.1
         with:
           path: network/
 ```
@@ -72,12 +72,16 @@ jobs:
 ### Use the outputs in a later step
 
 ```yaml
-      - uses: netdryrun/netdryrun@v0.3.0
+      - uses: netdryrun/netdryrun@v0.3.1
         id: ndr
         with:
           path: network/
       - if: always()
-        run: echo "Netdryrun ${{ steps.ndr.outputs.status }}: ${{ steps.ndr.outputs.passed }} passed, ${{ steps.ndr.outputs.failed }} failed"
+        env:
+          NDR_STATUS: ${{ steps.ndr.outputs.status }}
+          NDR_PASSED: ${{ steps.ndr.outputs.passed }}
+          NDR_FAILED: ${{ steps.ndr.outputs.failed }}
+        run: echo "Netdryrun $NDR_STATUS: $NDR_PASSED passed, $NDR_FAILED failed"
 ```
 
 ### Several labs
@@ -92,7 +96,7 @@ jobs:
         lab: [network/core, network/edge]
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.3.0
+      - uses: netdryrun/netdryrun@v0.3.1
         with:
           path: ${{ matrix.lab }}
           artifact-name: netdryrun-${{ strategy.job-index }}
@@ -113,7 +117,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.3.0
+      - uses: netdryrun/netdryrun@v0.3.1
         with:
           path: network/
           pr-comment: true
@@ -123,7 +127,7 @@ jobs:
 
 - **A lab is code that runs as root on the runner.** containerlab starts privileged containers with access to the host. Netdryrun passes the lab process a minimal environment (no job tokens, not the runner user's home directory), but that only narrows exposure; it is not a security boundary.
 - **Run labs from untrusted pull requests (forks) only in jobs with no secrets**, a read-only `GITHUB_TOKEN`, and without `id-token: write`. Never run them under `pull_request_target`.
-- `pr-comment` needs `pull-requests: write`; `cloud` needs `id-token: write`. Grant each only when you use it.
+- `pr-comment` needs `pull-requests: write`. Grant it only when you use it. Don't grant `id-token: write` for the `cloud` input: Netdryrun Cloud is not available yet.
 - Uploaded report artifacts contain raw command output from the lab and are kept for 14 days. Don't put real secrets in lab configs.
-- **The PR comment cannot be steered by lab text.** Check names, details, errors and device output are escaped before they are posted: no HTML, links, images, `@mentions` or `#123` references, and device output stays inside its code block. Report files already in the workspace (committed in the PR, or left by an earlier run on a self-hosted runner) are deleted before the run, and the `status` output is `error` unless the report matches the run's own exit code.
-- **Pass outputs to a shell through `env:`**, not by pasting `${{ steps.<id>.outputs.inconclusive-reason }}` into a `run:` script. The reason can quote lab output; Netdryrun strips quotes, backslashes, `$` and backticks from it, but `env:` is the safe pattern for any action output.
+- **The PR comment cannot be steered by lab text** (0.3.1 and later; 0.3.0 did not escape it). Check names, details, errors and device output are escaped before they are posted: no HTML, links, images, `@mentions` or `#123` references, and device output stays inside its code block. Report files already in the workspace (committed in the PR, or left by an earlier run on a self-hosted runner) are deleted before the run, and the `status` output is `error` unless the report matches the run's own exit code.
+- **Pass outputs to a shell through `env:`**, not by pasting `${{ steps.<id>.outputs.inconclusive-reason }}` into a `run:` script. The reason can quote lab output; from 0.3.1 Netdryrun strips quotes, backslashes, `$` and backticks from it, but `env:` is the safe pattern for any action output.

@@ -9,6 +9,9 @@ description: Netdryrun command-line reference. The run, check and validate comma
 netdryrun run      [path] [options]   deploy the lab, run checks, destroy the lab
 netdryrun check    [path] [options]   run checks against an already running lab
 netdryrun validate [path]             validate netdryrun.yml without running anything
+netdryrun record   topology.clab.yml  snapshot a known-good lab into a netdryrun.yml baseline
+netdryrun mcp                         start the MCP server for AI agents (stdio)
+netdryrun feedback                    open a short feedback form on GitHub
 netdryrun --version
 ```
 
