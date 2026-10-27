@@ -94,6 +94,7 @@ nav:
   - Reference:
       - netdryrun.yml: reference/config.md
       - CLI and reports: reference/cli.md
+      - "Network Change Verdict v1 (spec)": spec/verdict-v1.md
   - GitHub Action: github-action.md
   - Batfish, then Netdryrun: batfish.md
   - AI agents (MCP): ai-agents.md

@@ -17,7 +17,8 @@ Facts (generated from the source): version 0.3.1; check types `bgp_session`, `bg
 - [GitHub Action](https://netdryrun.com/github-action/): inputs, outputs, security notes
 - [Test an FRR change in CI](https://netdryrun.com/guides/frr-ci/): the lab folder, the checks that matter for FRR, a GitHub workflow, gotchas, measured times
 - [Test a SONiC change in CI](https://netdryrun.com/guides/sonic-ci/): getting docker-sonic-vs, configuring it after boot with setup lines, the checks that matter for SONiC, gotchas, measured times
-- [AI agents (MCP)](https://netdryrun.com/ai-agents/): MCP server tools and safety model
+- [AI agents (MCP)](https://netdryrun.com/ai-agents/): MCP server tools, the result contract ([mcp-result-v1.json](https://netdryrun.com/schemas/mcp-result-v1.json)), the agent skill, an AGENTS.md snippet, and the safety model
+- [Network Change Verdict v1](https://netdryrun.com/spec/verdict-v1/): the open, versioned spec of the JSON verdict report ([report-v1.json](https://netdryrun.com/schemas/report-v1.json))
 
 ## Optional
 

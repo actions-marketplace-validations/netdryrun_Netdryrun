@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.3.2 (unreleased)
+
+The agent contract: what an AI agent needs to choose Netdryrun, read its result and act on it safely. Tool names, parameters and behavior are unchanged.
+
+### Added
+
+- **A typed result for the MCP tools.** The results of `dry_run` and `run_checks` are defined by a published JSON Schema, [`mcp-result-v1.json`](https://netdryrun.com/schemas/mcp-result-v1.json), which also covers `validate`, `check_types` and `record_baseline` errors. Results carry `"schema": "netdryrun.mcp-result/v1"`. A test validates the results of real lab runs, and of the tools called over stdio, against it.
+- **The verdict strings are frozen**: `SAFE TO PROCEED`, `DO NOT APPLY THIS CHANGE` and `INCONCLUSIVE: the lab did not reach a testable state; this says nothing about your change. Do not apply it until a run passes.` They never change within v1.
+- **Failed results explain themselves.** A new `failures` list has one entry per failed check: the check name, its node, the one-line `reason`, a short `evidence` excerpt (the command, its exit code and the start of its output, one line, at most 200 characters) and one read-only `next_diagnostic` command for that node in its own CLI, such as `docker exec clab-lab-r1 vtysh -c 'show ip route 0.0.0.0/0'`. Run it on a lab kept with `keep_lab: true`.
+- **An agent skill**, `skills/netdryrun/SKILL.md`, installable from the repository's git URL: before applying a routing change, dry-run it; paste the verdict; stop on inconclusive; never write or weaken checks to make a change pass; use `record_baseline` when there are no checks.
+- **An AGENTS.md snippet** for your own network repositories, on the [AI agents](https://netdryrun.com/ai-agents/#paste-this-into-your-network-repositorys-agentsmd) page.
+- **Network Change Verdict v1**, an open spec page for the `netdryrun.report/v1` format, so other tools can emit the same verdict document: [spec/verdict-v1](https://netdryrun.com/spec/verdict-v1/).
+
+### Changed
+
+- **MCP tool descriptions** now all state when to use the tool (before proposing or applying a routing or policy change), that ping is not a test, the runtime (about 60–120 s per dry run), the requirements (Linux or WSL2, Docker and containerlab with root-equivalent rights; not macOS, not sandboxes without Docker-in-Docker), that inconclusive means stop with at most one retry, and never to invent or weaken checks but to call `record_baseline` when none exist. `dry_run` is named the primary tool.
+- **The MCP Registry description** (`server.json`) is now the opening of the one-sentence definition; the registry caps it at 100 characters.
+
 ## 0.3.1 (unreleased)
 
 Upgrade if you use 0.3.0 or the `netdryrun/netdryrun@v0.3.0` Action: this release closes the injection paths listed under Security, found by a security review after 0.3.0 was tagged.

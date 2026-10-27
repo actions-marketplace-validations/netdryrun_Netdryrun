@@ -171,15 +171,26 @@ Add it to your MCP client (for example Claude Code):
 claude mcp add netdryrun -- netdryrun mcp
 ```
 
-Tools: `dry_run` (deploy, check, destroy, verdict), `run_checks` (against a running lab), `record_baseline` (snapshot a known-good lab into checks), `validate`, `check_types`. Each result carries a separate `verdict` field: `SAFE TO PROCEED`, `DO NOT APPLY THIS CHANGE`, or `INCONCLUSIVE: the lab did not reach a testable state; ...` when the lab never came up. `SAFE TO PROCEED` means only that every check in the file passed in the lab. A change can break something no check looks at and still get it: in our [agent evaluation](https://netdryrun.com/ai-agents/), an agent's "pure refactor" added `redistribute connected` and passed, because no check covered the extra routes. For a change that must not change behavior, record a baseline first.
+Tools: `dry_run` (deploy, check, destroy, verdict), `run_checks` (against a running lab), `record_baseline` (snapshot a known-good lab into checks), `validate`, `check_types`. Each result carries a separate `verdict` field: `SAFE TO PROCEED`, `DO NOT APPLY THIS CHANGE`, or `INCONCLUSIVE: the lab did not reach a testable state; ...` when the lab never came up. `SAFE TO PROCEED` means only that every check in the file passed in the lab. A change can break something no check looks at and still get it: in our [agent evaluation](https://netdryrun.com/ai-agents/), an agent's "pure refactor" added `redistribute connected` and passed, because no check covered the extra routes. For a change that must not change behavior, record a baseline first. From 0.3.2 the verdict strings are frozen, a failed result lists each failed check with its reason, an evidence excerpt and one read-only next diagnostic command, and the result format is a published JSON Schema: [mcp-result-v1.json](https://netdryrun.com/schemas/mcp-result-v1.json).
 
 **Demo** ([examples/agent-demo](https://github.com/netdryrun/netdryrun/tree/main/examples/agent-demo)): the ticket says the customer's new block must reach the upstream and the peer. The tempting change passes every ticket check, session and ping, but leaks routes; Netdryrun rejects it. The two-line fix passes the same checks. (A scripted replay of the two attempts; CI runs it.)
 
 <p align="center"><img alt="Attempt 1 passes the ticket checks but fails five leak guards; attempt 2 passes all 14 checks" src="https://raw.githubusercontent.com/netdryrun/netdryrun/main/.github/assets/netdryrun-agent-demo.gif" width="820"></p>
 
+### The agent skill
+
+[`skills/netdryrun/SKILL.md`](https://github.com/netdryrun/netdryrun/blob/main/skills/netdryrun/SKILL.md) teaches a coding agent the rules: dry-run a routing change before applying it, paste the verdict, stop on inconclusive, never write or weaken checks to make a change pass, and use `record_baseline` when there are no checks. Install it from this repository's git URL (from 0.3.2):
+
+```bash
+git clone --depth 1 https://github.com/netdryrun/netdryrun /tmp/netdryrun
+mkdir -p ~/.claude/skills && cp -r /tmp/netdryrun/skills/netdryrun ~/.claude/skills/   # Claude Code, every project
+```
+
+To give it to everyone working in one repository, copy the folder to `.claude/skills/netdryrun/` there and commit it. Other clients that read Agent Skills (a folder with a `SKILL.md`) take the same folder. The skill expects the MCP server above; without it, the agent falls back to the CLI.
+
 Safety model:
 - The server **never touches production**. It has no tool that pushes config anywhere; it only builds and tests labs.
-- Tool results contain normalized check results, not raw device output. A check's `detail` can still quote a fragment of lab text (a banner, a route description); from 0.3.1 it is kept to one line and capped in length, and it never changes `status` or `verdict`. Raw evidence goes to the JSON report file.
+- Tool results contain normalized check results, not full device output. A check's `detail` can still quote a fragment of lab text (a banner, a route description), and from 0.3.2 each failed check carries a short evidence excerpt; each is kept to one line and capped in length, and none of them changes `status` or `verdict`. Raw evidence goes to the JSON report file.
 - A lab is code: containerlab runs privileged containers. Only point the server at topologies you trust, on a machine you'd let run Docker.
 
 ## How it compares

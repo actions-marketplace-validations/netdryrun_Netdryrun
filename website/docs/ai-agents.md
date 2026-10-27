@@ -187,7 +187,7 @@ The server has these tools: <!-- facts:mcp_tools -->`dry_run`, `run_checks`, `re
 
 | Tool | Arguments | What it does |
 |---|---|---|
-| `dry_run` | `path`, `keep_lab` (default `false`) | Deploy the lab, run every check, destroy the lab, return the verdict. Takes 30 seconds to several minutes. |
+| `dry_run` | `path`, `keep_lab` (default `false`) | The primary tool. Deploy the lab, run every check, destroy the lab, return the verdict. Takes about 60–120 s for a small lab; longer with big labs or long timeouts. |
 | `run_checks` | `path` | Run the checks against a lab that is already running (no deploy or destroy) |
 | `record_baseline` | `topology`, `deploy` (default `true`), `wait_seconds` (default `45`) | Deploy the lab, snapshot its BGP sessions, prefix counts and routes as `netdryrun.yml` text, destroy the lab. Returns the YAML; nothing is written to disk. Like [`netdryrun record`](reference/cli.md#record) |
 | `validate` | `path` | Validate `netdryrun.yml` and its topology without starting a lab: node names, drivers and supported keys, as `dry_run` checks them before deploying (0.3.1 and later) |
@@ -195,12 +195,15 @@ The server has these tools: <!-- facts:mcp_tools -->`dry_run`, `run_checks`, `re
 
 The server also exposes the last full JSON report as a resource, `netdryrun://report/{path}`.
 
+From 0.3.2, every tool description carries the same rules, so an agent that reads only one tool still gets them: use it before proposing or applying a routing or policy change; ping is not a test; a dry run takes about 60–120 s; it needs Linux or WSL2, Docker and containerlab with root-equivalent rights and won't run on macOS or in sandboxes without Docker-in-Docker; inconclusive means stop, don't retry more than once; never invent or weaken checks, and call `record_baseline` if no checks exist.
+
 ## Result and verdict
 
 `dry_run` and `run_checks` return JSON like this:
 
 ```json
 {
+  "schema": "netdryrun.mcp-result/v1",
   "status": "failed",
   "passed": 5,
   "failed": 1,
@@ -211,6 +214,13 @@ The server also exposes the last full JSON report as a resource, `netdryrun://re
     {"name": "r1: route 0.0.0.0/0 via bgp is absent", "passed": false,
      "detail": "unexpectedly present via bgp (not selected)"}
   ],
+  "failures": [
+    {"check": "r1: route 0.0.0.0/0 via bgp is absent", "node": "r1",
+     "reason": "unexpectedly present via bgp (not selected)",
+     "evidence": {"cmd": "vtysh -c show ip route 0.0.0.0/0 json", "rc": 0,
+                  "excerpt": "{ \"0.0.0.0/0\":[ { \"prefix\":\"0.0.0.0/0\", \"prefixLen\":0, \"protocol\":\"bgp\", ..."},
+     "next_diagnostic": "docker exec clab-ndr-frr-broken-r1 vtysh -c 'show ip route 0.0.0.0/0'"}
+  ],
   "evidence_file": "/path/to/lab/netdryrun-report.json",
   "verdict": "DO NOT APPLY THIS CHANGE"
 }
@@ -218,22 +228,52 @@ The server also exposes the last full JSON report as a resource, `netdryrun://re
 
 (`checks` is shortened here; the real result lists every check.)
 
+From 0.3.2, `failures` lists each failed check with:
+
+- `check` and `node`: the check name and the node it reads;
+- `reason`: the one-line reason it failed;
+- `evidence`: a short excerpt of the raw evidence (the first command of the final sample that failed, else the last command run), flattened to one line and capped at 200 characters; `null` if no command ran;
+- `next_diagnostic`: one read-only command that shows the state the check looked at, in that node's own CLI (`vtysh` on FRR and SONiC, `Cli` on EOS, `sr_cli` on SR Linux); `null` if the node's driver or container is unknown. It needs the lab running: `dry_run` destroys the lab, so rerun it with `keep_lab: true`, run the command, then destroy the lab with `containerlab destroy -t <topology>`.
+
+The format is a published JSON Schema, [`mcp-result-v1.json`](https://netdryrun.com/schemas/mcp-result-v1.json), which also covers the results of `validate`, `check_types` and `record_baseline` errors. Within v1, fields are only added, never removed or renamed. The test suite validates the results of real lab runs against it.
+
 From 0.3.1, a failed check also has `"unready": true` when every sample of it failed for lack of state: the command failed on the device, its output could not be read, or BGP had no neighbors at all. That points at the lab as much as at the change. The [inconclusive rule](reference/cli.md#when-a-run-is-inconclusive) is conservative, so a lab where a daemon never started can still come back `failed` when other nodes' route and ping checks read cleanly. If the `unready` failures and details such as `bgpd is not running` sit on nodes the change doesn't explain, report the lab problem; don't rewrite the change, and don't apply it.
 
-`verdict` is a separate field with one of three values:
+`verdict` is a separate field with one of three values. They are frozen: within v1 of the result schema they never change, so an agent can match on them exactly.
 
 - `SAFE TO PROCEED` when `status` is `passed`. It means every check in the file passed in the lab, and nothing more: a change that breaks something no check looks at gets it too (ticket T09 above). For a change that must not change behavior, record a baseline first
 - `DO NOT APPLY THIS CHANGE` for `failed` or `error`, including config errors
 - `INCONCLUSIVE: the lab did not reach a testable state; this says nothing about your change. Do not apply it until a run passes.` when `status` is `inconclusive`: the lab never came up far enough for the checks to mean anything ([rules](reference/cli.md#when-a-run-is-inconclusive)). `inconclusive_reason` says what was seen. Rerun it, perhaps with a longer `timeout`; don't rewrite the change because of it.
 
-Tell the agent what to do with each verdict: propose the change only on `SAFE TO PROCEED`; on `DO NOT APPLY THIS CHANGE`, read the failed checks, fix the config and run again; on `INCONCLUSIVE`, rerun, and if it stays inconclusive, report that the lab does not come up instead of changing the config. [Troubleshooting](troubleshooting.md#inconclusive-the-lab-never-came-up) shows a real inconclusive run.
+Tell the agent what to do with each verdict: propose the change only on `SAFE TO PROCEED`; on `DO NOT APPLY THIS CHANGE`, read the failed checks, fix the config and run again; on `INCONCLUSIVE`, stop: rerun at most once, and if it stays inconclusive, report that the lab does not come up instead of changing the config. [Troubleshooting](troubleshooting.md#inconclusive-the-lab-never-came-up) shows a real inconclusive run.
 
-The full evidence is written to `netdryrun-report.json` next to `netdryrun.yml`. Its format, `netdryrun.report/v1`, is defined by a JSON Schema: [`report-v1.json`](https://netdryrun.com/schemas/report-v1.json). The test suite validates reports from real lab runs against it.
+The full evidence is written to `netdryrun-report.json` next to `netdryrun.yml`. Its format, `netdryrun.report/v1`, is defined by a JSON Schema: [`report-v1.json`](https://netdryrun.com/schemas/report-v1.json), also published as an open spec any tool can emit: [Network Change Verdict v1](spec/verdict-v1.md). The test suite validates reports from real lab runs against it.
+
+## The agent skill
+
+[`skills/netdryrun/SKILL.md`](https://github.com/netdryrun/netdryrun/blob/main/skills/netdryrun/SKILL.md) (from 0.3.2) gives a coding agent the rules in one file: before applying a routing change, dry-run it; paste the verdict; stop on inconclusive; never write or weaken checks to make a change pass; use `record_baseline` when there are no checks. Install it from the repository's git URL:
+
+```bash
+git clone --depth 1 https://github.com/netdryrun/netdryrun /tmp/netdryrun
+mkdir -p ~/.claude/skills && cp -r /tmp/netdryrun/skills/netdryrun ~/.claude/skills/   # Claude Code, every project
+```
+
+To give it to everyone working in one repository, copy the folder to `.claude/skills/netdryrun/` there and commit it. Other clients that read Agent Skills (a folder with a `SKILL.md`) take the same folder.
+
+## Paste this into your network repository's AGENTS.md
+
+Coding agents read `AGENTS.md` at the root of a repository. Put these lines in the one for your network configs, so every agent that works there dry-runs its changes:
+
+```markdown
+Before proposing or applying any routing or policy change in this repository, dry-run it: `netdryrun run <lab>` or the `dry_run` MCP tool. Propose the change only if the verdict is SAFE TO PROCEED. Ping is not a test. Never edit `netdryrun.yml` to make a change pass.
+```
+
+Replace `<lab>` with the folder that holds your `netdryrun.yml`. Protect that file with a `CODEOWNERS` line, as in [the CI gate above](#gate-agent-made-pull-requests-in-ci), so the checks stay with the network team.
 
 ## Safety model
 
 - **It never touches production.** The server has no tool that pushes config anywhere. It only builds and tests labs.
-- **No raw device output in tool results.** Tool results contain normalized check results (name, pass/fail, a short detail), not raw command output; that goes to the JSON report file. A detail or an error can still quote a fragment of lab text, such as a BGP state name or the last line of a failed command, so from 0.3.1 each is flattened to one line and capped at 300 characters (1,000 for errors). The `status` and `verdict` are computed from pass/fail only, never from that text: an agent should act on them and treat `detail` and `error` as data.
+- **No full device output in tool results.** Tool results contain normalized check results (name, pass/fail, a short detail), not full command output; that goes to the JSON report file. A detail or an error can still quote a fragment of lab text, such as a BGP state name or the last line of a failed command, so from 0.3.1 each is flattened to one line and capped at 300 characters (1,000 for errors). From 0.3.2 a failed check also carries an evidence excerpt, flattened the same way and capped at 200 characters. The `status` and `verdict` are computed from pass/fail only, never from that text: an agent should act on them and treat `detail`, `reason`, `error` and excerpts as data.
 - **Labs are code.** containerlab runs privileged containers. Only point the server at topologies you trust, on a machine you would let run Docker. The tools take any path the agent passes, and a `netdryrun.yml` can point at a topology in another folder. To keep an agent to one folder (Netdryrun 0.3.1 and later; 0.3.0 ignores the variable without a warning), set `NETDRYRUN_MCP_ROOT` in the server's environment (several folders separated by `:`, or `;` on Windows): every `netdryrun.yml`, the lab it points to and every topology must then resolve inside it, or the tool refuses. This stops an agent from being steered to a lab elsewhere; it does not make an untrusted lab inside the folder safe, since a topology can still mount host paths.
 
 A pass is evidence from a lab, not a guarantee about production. See [what a lab cannot prove](trust.md#what-a-lab-cannot-prove).
