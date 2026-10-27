@@ -414,6 +414,22 @@ def deployed(topology: Path, setup: dict[str, list[str]], keep: bool, log: Calla
             lab.release_lock()
 
 
+FRR_CONFIGS = ("/etc/frr/frr.conf", "/etc/frr/bgpd.conf")
+
+
+def expects_bgp(exec_fn, node: str) -> bool:
+    """Whether an FRR node is configured to run BGP: `router bgp` in its config file, read inside the
+    container (the bound file is there before FRR has loaded it). Unreadable: assume it does."""
+    seen = False
+    for path in FRR_CONFIGS:
+        rc, out, _err = exec_fn(node, ["cat", path])
+        if rc == 0:
+            seen = True
+            if re.search(r"(?m)^\s*router bgp(\s|$)", out):
+                return True
+    return not seen
+
+
 def real_side(*, nodes: dict[str, str], setup: dict, settle: float, timeout: float, keep_after: bool,
               log: Callable[[str], None]):
     """The default way to get one side's snapshot: deploy, wait for a stable snapshot, run `on_up` (the
@@ -421,8 +437,13 @@ def real_side(*, nodes: dict[str, str], setup: dict, settle: float, timeout: flo
     def side(label: str, topology: Path, on_up=None):
         t0 = time.monotonic()
         with deployed(topology, setup, keep_after and label == "after", log) as lab:
+            def exec_fn(node, argv):
+                r = lab.exec(node, argv, timeout=60)
+                return r.rc, r.stdout, r.stderr
+            bgp_nodes = {n for n, drv in nodes.items() if drv == "frr" and expects_bgp(exec_fn, n)}
             log(f"[{label}] waiting for a stable snapshot (settle {settle:g}s, timeout {timeout:g}s)...")
-            snap = stable_snapshot(lambda: collect(lab, nodes), settle=settle, timeout=timeout, log=log)
+            snap = stable_snapshot(lambda: collect(lab, nodes), settle=settle, timeout=timeout, log=log,
+                                   bgp_nodes=bgp_nodes)
             extra = on_up(lab, topology) if on_up is not None and isinstance(snap, Snapshot) else None
         return snap, round(time.monotonic() - t0, 1), extra
     return side

@@ -99,3 +99,64 @@ def test_a_node_with_an_empty_rib_is_not_ready():
         del lab.items["up1"][k]
     got, _ = run(seq(lab.snap()), timeout=40)
     assert isinstance(got, Inconclusive) and any("up1" in m for m in got.moving)
+
+
+# --- the stability gate can't take a half-converged lab (review finding 8) ----------------------------------
+
+def _no_bgp_yet(node="up1"):
+    """bgpd answers but its config isn't loaded yet: connected routes, no sessions, no BGP paths."""
+    lab = base()
+    lab.drop(node, "session")
+    lab.drop(node, "path")
+    return lab
+
+
+def test_a_node_expected_to_run_bgp_is_not_ready_without_bgp_state():
+    got, _ = run(seq(_no_bgp_yet().snap()), timeout=40)
+    assert isinstance(got, Inconclusive) and any("up1" in m and "BGP" in m for m in got.moving)
+    # the same node, not expected to run BGP (no `router bgp` in its config): ready on its RIB
+    clock = Clock()
+    got = stable_snapshot(seq(_no_bgp_yet().snap()), settle=10, timeout=40, clock=clock, sleep=clock.sleep,
+                          bgp_nodes={"cust1", "edge1", "peer1"})
+    assert not isinstance(got, Inconclusive)
+    # once its sessions come up, the snapshot is taken with them
+    full = base().snap()
+    got, _ = run(seq(_no_bgp_yet().snap(), _no_bgp_yet().snap(), full, full))
+    assert not isinstance(got, Inconclusive) and got.items() == full.items()
+
+
+def test_sessions_held_in_active_are_stably_not_established():
+    """Held in active (raw state moving between active and connect) for 2 samples: stable, and the before
+    snapshot is then an unhealthy baseline (see test_verify_run)."""
+    a, b = base(), base()
+    a.session("edge1", "10.0.9.2", session(None, state="active"))
+    b.session("edge1", "10.0.9.2", session(None, state="connect"))
+    got, clock = run(seq(a.snap(), b.snap(), a.snap()))
+    assert not isinstance(got, Inconclusive) and clock.t == 10
+    from netdryrun.verify.engine import baseline_problems
+    assert baseline_problems(got)
+
+
+def test_an_update_later_than_settle_is_missed_so_settle_must_exceed_it():
+    """Documented limit: two snapshots `settle` apart can't see an update that arrives later (an MRAI or
+    update-delay longer than settle). With settle above that delay, the update is in the snapshot."""
+    early, late = base().snap(), moved(7)
+    def collect_at(clock):
+        return lambda: early if clock.t < 25 else late
+    clock = Clock()
+    got = stable_snapshot(collect_at(clock), settle=10, timeout=120, clock=clock, sleep=clock.sleep)
+    assert got.items() == early.items()                       # settle 10 < the 25 s delay: missed
+    clock = Clock()
+    got = stable_snapshot(collect_at(clock), settle=30, timeout=120, clock=clock, sleep=clock.sleep)
+    assert got.items() == late.items()                        # settle 30 > the delay: seen
+
+
+def test_expects_bgp_reads_the_nodes_config():
+    from netdryrun.verify.run import expects_bgp
+    files = {("r1", "/etc/frr/frr.conf"): "hostname r1\nrouter bgp 65001\n neighbor 10.0.0.2 remote-as 65002\n",
+             ("r2", "/etc/frr/frr.conf"): "hostname r2\nrouter ospf\n"}
+
+    def exec_fn(node, argv):
+        text = files.get((node, argv[1]))
+        return (0, text, "") if text is not None else (1, "", "No such file")
+    assert expects_bgp(exec_fn, "r1") and not expects_bgp(exec_fn, "r2") and expects_bgp(exec_fn, "r3")

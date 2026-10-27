@@ -41,7 +41,7 @@ It deploys the lab with the *before* configs, waits for a stable snapshot, destr
 | `--guards FILE` | see below | The standing guards (a `netdryrun.yml`), run on the *after* lab; they must pass. Its `nodes:` settings (`driver`, `setup`) apply to both labs. See [Standing guards](#standing-guards). |
 | `--config-dir DIR` | | With directory sides: the folder each directory stands for, relative to the topology (for example `configs`), when the directories hold only that folder. Every bind must then resolve inside it. With a git ref, it is only checked to exist in the ref. |
 | `--unobserved NODE` | | A node without a routing stack (a host). Repeat for several. A node verify can't classify is an error, never silently skipped. Bridges are never observed. |
-| `--settle` | `15` | Seconds between the two snapshots that must be identical. |
+| `--settle` | `15` | Seconds between the two snapshots that must be identical. Must exceed the slowest MRAI or `update-delay` in the lab. |
 | `--timeout` | `300` | Seconds to reach a stable snapshot, per lab. |
 | `--hold` | `10` | The standing guards' hold window. |
 | `--allow-unhealthy-baseline` | | Compare even when sessions are down in the *before* lab. |
@@ -194,7 +194,9 @@ FRR commands: `show vrf`, `show bgp vrf all neighbors json`, `show ip route vrf 
 
 ### Convergence
 
-A snapshot is taken when two full snapshots `--settle` seconds apart are identical: every session established or stably not, prefix counts stable, every route and path unchanged, and every node's RIB populated. A command that fails while daemons start is retried until `--timeout`; then the snapshot is unreadable (exit code `2`). If the snapshots never match within `--timeout`, the result is `inconclusive`, naming what kept moving.
+A snapshot is taken when two full snapshots `--settle` seconds apart are identical: every configured session established, or stably not established, on both samples (compared as established or not), prefix counts stable, and every route and path unchanged. Until then a node isn't ready while its RIB is empty or, if its config has `router bgp`, while it has no BGP state at all (no session and no BGP path: bgpd is answering but hasn't loaded its config). A session that is not established in the *before* snapshot makes the baseline unhealthy (exit code `3`) unless `--allow-unhealthy-baseline`.
+
+**`--settle` must exceed the slowest MRAI (advertisement interval) or `update-delay` in the lab.** Two snapshots `settle` apart can't see an update that arrives later than that, so a shorter `settle` can take the snapshot before the last update. A command that fails while daemons start is retried until `--timeout`; then the snapshot is unreadable (exit code `2`). If the snapshots never match within `--timeout`, the result is `inconclusive`, naming what kept moving.
 
 ## The report: netdryrun.verify/v1
 

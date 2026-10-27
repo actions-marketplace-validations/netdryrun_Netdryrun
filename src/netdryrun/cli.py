@@ -291,8 +291,8 @@ def main(argv: list[str] | None = None) -> int:
                        "binds); every bind must resolve inside it")
     p_ver.add_argument("--unobserved", action="append", metavar="NODE", help="a node without a routing stack (a host); "
                        "repeat for several")
-    p_ver.add_argument("--settle", type=_seconds, default=15.0, help="seconds between the two snapshots that must match "
-                       "(default 15)")
+    p_ver.add_argument("--settle", type=_seconds, default=15.0, help="seconds between the two snapshots that must match; must "
+                       "exceed the slowest MRAI or update-delay in the lab (default 15)")
     p_ver.add_argument("--timeout", type=_seconds, default=300.0, help="seconds to reach a stable snapshot (default 300)")
     p_ver.add_argument("--hold", type=_seconds, default=10.0, help="hold window of the standing guards (default 10)")
     p_ver.add_argument("--allow-unhealthy-baseline", action="store_true",

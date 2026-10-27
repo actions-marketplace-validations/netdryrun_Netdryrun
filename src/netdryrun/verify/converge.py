@@ -1,8 +1,14 @@
 """The convergence-stable snapshot: two full snapshots `settle` seconds apart must be identical.
 
-Identical means every item and the derived facts (prefix counts per session): sessions established or
-stably not, prefix counts stable, every route and path unchanged. A node whose RIB is still empty (zebra
-not up, interfaces not configured yet) is not ready, whatever it repeats.
+Identical means every item and the derived facts (prefix counts per session): every configured session
+established, or stably not established, on both samples (compared as established or not, never by raw
+FSM state), prefix counts stable, every route and path unchanged. A node is not ready, whatever it
+repeats, while its RIB is still empty (zebra not up, interfaces not configured yet) or, when it is
+expected to run BGP, while it has no BGP state at all (no session and no BGP path: bgpd answers but its
+config isn't loaded yet).
+
+Two samples `settle` apart can't see an update that arrives later than `settle`: settle must exceed the
+slowest MRAI (advertisement interval) or update-delay in the lab.
 
 A command that fails (vtysh can't reach a daemon that is still starting) is retried until the timeout;
 then the snapshot is unreadable, an error (exit 2), never "nothing changed". Output that doesn't match the
@@ -44,14 +50,21 @@ def _moving(prev: Snapshot, cur: Snapshot, limit: int = 20) -> list[str]:
     return out
 
 
-def _not_ready(snap: Snapshot) -> list[str]:
-    return [f"{n}: no routes in its RIB yet" for n, ns in sorted(snap.nodes.items())
-            if not any(k.kind == "rib" for k in ns.items)]
+def _not_ready(snap: Snapshot, bgp_nodes: set[str] | None = None) -> list[str]:
+    """Why nodes aren't ready. `bgp_nodes`: the nodes expected to run BGP (None: every node)."""
+    out = []
+    for n, ns in sorted(snap.nodes.items()):
+        if not any(k.kind == "rib" for k in ns.items):
+            out.append(f"{n}: no routes in its RIB yet")
+        elif (bgp_nodes is None or n in bgp_nodes) and not any(k.kind in ("session", "path") for k in ns.items):
+            out.append(f"{n}: no BGP state yet (no session, no BGP path)")
+    return out
 
 
 def stable_snapshot(collect: Callable[[], Snapshot], *, settle: float, timeout: float,
                     clock: Callable[[], float] = time.monotonic, sleep: Callable[[float], None] = time.sleep,
-                    log: Callable[[str], None] = lambda _: None) -> Snapshot | Inconclusive:
+                    log: Callable[[str], None] = lambda _: None,
+                    bgp_nodes: set[str] | None = None) -> Snapshot | Inconclusive:
     t0 = clock()
     prev: Snapshot | None = None
     moving: list[str] = []
@@ -66,7 +79,7 @@ def stable_snapshot(collect: Callable[[], Snapshot], *, settle: float, timeout: 
             sleep(POLL)
             continue
         last_failure = ""
-        waiting = _not_ready(cur)
+        waiting = _not_ready(cur, bgp_nodes)
         if waiting:
             prev, moving = None, waiting
         elif prev is not None and prev.stability_view() == cur.stability_view():
