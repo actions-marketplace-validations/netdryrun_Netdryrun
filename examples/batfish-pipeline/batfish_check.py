@@ -5,7 +5,8 @@ Batfish has no stand-alone FRR format: a bare frr.conf is detected as Cisco IOS 
 parsed. Its FRR grammar is used for Cumulus Linux, so each frr.conf is wrapped in the "Cumulus
 concatenated" layout (hostname, an interfaces section, a ports.conf marker, then frr.conf).
 
-Usage: batfish_check.py CONFIG_DIR     (needs a Batfish service; BATFISH_HOST, default localhost)
+Usage: batfish_check.py CONFIG_DIR
+  Needs a Batfish service: BATFISH_HOST (default localhost); waits up to BATFISH_WAIT seconds (default 60) for it.
 Exit codes: 0 every check passed, 1 a check failed, 2 setup error.
 """
 import logging
@@ -35,7 +36,7 @@ def wrap(hostname: str, frr_conf: str) -> str:
 
 def main() -> int:
     if len(sys.argv) != 2:
-        print(__doc__.strip().splitlines()[-2]); return 2
+        print("usage: batfish_check.py CONFIG_DIR"); return 2
     try:
         from pybatfish.client.session import Session
         from pybatfish.datamodel.flow import HeaderConstraints
@@ -50,18 +51,26 @@ def main() -> int:
         results.append(ok)
         print(f"  {'PASS' if ok else 'FAIL'}  {name}" + (f"  ({detail})" if detail else ""), flush=True)
 
+    # A freshly started Batfish container needs a few seconds before it answers.
+    deadline = time.monotonic() + float(os.environ.get("BATFISH_WAIT", "60"))
+    while True:
+        try:
+            bf = Session(host=os.environ.get("BATFISH_HOST", "localhost"))
+            bf.list_networks()
+            break
+        except Exception as e:  # connection refused, service still starting, ...
+            if time.monotonic() > deadline:
+                print(f"Batfish is not reachable: {e}"); return 2
+            time.sleep(1)
+
     t0 = time.monotonic()
     with tempfile.TemporaryDirectory() as snap:
         (Path(snap) / "configs").mkdir()
         for r in ROUTERS:
             conf = (src / f"{r}.conf").read_text()
             (Path(snap) / "configs" / f"{r}.cfg").write_text(wrap(r, conf))
-        try:
-            bf = Session(host=os.environ.get("BATFISH_HOST", "localhost"))
-            bf.set_network("netdryrun-pipeline")
-            bf.init_snapshot(snap, name="candidate", overwrite=True)
-        except Exception as e:  # connection refused, service still starting, ...
-            print(f"Batfish is not reachable: {e}"); return 2
+        bf.set_network("netdryrun-pipeline")
+        bf.init_snapshot(snap, name="candidate", overwrite=True)
     q = bf.q
     print(f"Batfish: snapshot loaded in {time.monotonic() - t0:.1f}s")
 

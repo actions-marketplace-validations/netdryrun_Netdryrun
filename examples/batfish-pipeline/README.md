@@ -2,18 +2,27 @@
 
 A two-stage gate for config changes on the FRR triangle from [`../frr-bgp`](../frr-bgp):
 
-1. **Batfish** analyses the configs: parsing, references, BGP sessions, best paths, a default-route guard, a traceroute and a link-failure fork. Nothing boots; it takes seconds.
+1. **Batfish** analyses the configs: parsing, references, BGP sessions, best paths, a default-route guard, a traceroute and a link-failure fork. Nothing boots; in the runs below it took 3 to 5 seconds.
 2. **Netdryrun™** boots the same configs in a containerlab lab and checks what FRR really does: sessions, prefixes received, best paths, ping, the default-route guard and the same link failure.
 
-`pipeline.sh` runs both stages on a scratch copy. By default the lab is skipped when Batfish fails; `BOTH=1` runs it anyway, which is how the table below was measured.
+`pipeline.sh` runs both stages on a scratch copy; nothing in this folder is modified. By default the lab is skipped when Batfish fails. `BOTH=1` runs the lab anyway, to compare the two stages; the results below were measured that way.
+
+## Run it
+
+You need Linux (or WSL2) with Docker, containerlab and Netdryrun installed, as in [Getting started](https://netdryrun.com/getting-started/), plus Python 3 with `venv`. From the root of a clone of this repository:
 
 ```bash
-docker run -d --name batfish -p 9996:9996 -p 9997:9997 batfish/batfish
 python3 -m venv ~/.venvs/batfish && ~/.venvs/batfish/bin/pip install pybatfish
-BF_PYTHON=~/.venvs/batfish/bin/python examples/batfish-pipeline/pipeline.sh                 # baseline
-BF_PYTHON=~/.venvs/batfish/bin/python examples/batfish-pipeline/pipeline.sh no-policy       # a change
+docker run -d --name batfish -p 9996:9996 -p 9997:9997 batfish/batfish
+export BF_PYTHON=~/.venvs/batfish/bin/python
+examples/batfish-pipeline/pipeline.sh                            # baseline: both stages pass, exit 0
+BOTH=1 examples/batfish-pipeline/pipeline.sh default-leak        # both stages fail, exit 1
+BOTH=1 examples/batfish-pipeline/pipeline.sh route-map-typo      # both stages fail, exit 1
+BOTH=1 examples/batfish-pipeline/pipeline.sh no-policy           # Batfish passes, the lab fails, exit 1
 docker rm -f batfish
 ```
+
+`batfish_check.py` waits up to 60 seconds for the Batfish service to answer, so the first run can start right after `docker run`. Without `BOTH=1`, a change that fails Batfish stops there with exit code 1 and no lab is started. The lab is named `ndr-bf-pipeline`, so run one pipeline at a time on a machine.
 
 [`github-workflow.yml`](github-workflow.yml) is the same pipeline as two GitHub Actions jobs (Batfish as a service container, then the Netdryrun Action). It is an example to copy; this repository's CI does not run it.
 
@@ -47,6 +56,10 @@ Measured on 2026-10-27 on WSL2 (20 cores, 16 GB) with images already pulled: Bat
 **The link failure** (r1-r2 down) was predicted correctly by Batfish (`fork_snapshot` with the interface deactivated) and confirmed by the lab for the baseline. In this small topology it did not show a difference between the model and the routers.
 
 The lab runs of the three bad changes take longer than the baseline because Netdryrun's positive checks wait up to `timeout: 90` seconds for convergence before failing.
+
+## What Batfish does that this example does not show
+
+This test uses a small part of Batfish. It also analyses ACLs and firewall rules, searches every packet that could match a rule rather than the few a ping sends, compares two snapshots to report exactly what a change does, scales to networks far larger than a lab can boot, and supports many vendors whose software cannot run in a container. None of that needs a lab. Netdryrun does not do any of it.
 
 ## How well Batfish parses FRR
 
