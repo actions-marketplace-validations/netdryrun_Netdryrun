@@ -142,6 +142,14 @@ Fix: if the session should be up, it's a finding: look at it as in [the lab neve
   state: down
 ```
 
+## A node without BGP waits a whole timeout
+
+```
+warning: h1 reported no BGP neighbors for 30s; the check was evaluated without BGP convergence
+```
+
+From 0.3.1, a node that answers with no BGP neighbors at all is treated as not converged yet, because that is also what a router answers before its BGP config is applied. Its post-convergence checks (a ping that must fail, for example) wait up to their `timeout`, then run with this warning in their result; the verdict is unchanged. On a node that really doesn't run BGP, lower the `timeout` of those checks to shorten the wait. If the node should have BGP neighbors, its BGP config was never applied: check its startup config or `setup` commands.
+
 ## The fault did not take effect
 
 ```text

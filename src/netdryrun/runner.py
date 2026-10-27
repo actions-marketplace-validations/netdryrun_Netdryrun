@@ -322,15 +322,17 @@ def run(config: Config, *, deploy: bool = True, keep: bool = False, keep_on_fail
         negatives = [c for c in config.checks if is_post_convergence(c)]
         report.results += run_round_robin(positives, drivers, on_result=on_result, clock=_clock, sleep=_sleep)
         if negatives:
+            gate_warnings: dict[int, str] = {}
             not_converged = _bgp_convergence_gate(negatives, config.checks, drivers, log=log,
-                                                  positive_results=report.results)
+                                                  positive_results=report.results, warnings=gate_warnings)
             if not positives:
                 # nothing has proven convergence yet; give the control plane time to come up
                 settle = max(settle, 30.0)
             log(f"Convergence checks done; settling {settle:g}s before post-convergence checks...")
             _sleep(settle)
             ready = [c for c in negatives if id(c) not in not_converged]
-            report.results += hold_together(ready, drivers, hold=hold, on_result=on_result, clock=_clock, sleep=_sleep)
+            report.results += hold_together(ready, drivers, hold=hold, on_result=_with_warnings(gate_warnings, on_result),
+                                            clock=_clock, sleep=_sleep)
             for r in not_converged.values():
                 report.results.append(r)
                 if on_result:
@@ -413,10 +415,28 @@ def run(config: Config, *, deploy: bool = True, keep: bool = False, keep_on_fail
 # session (a down session is a finding, as everywhere else). A node that never answers with BGP state is
 # not gated (it may not run BGP at all; its own checks show a broken node), nor is a ping-only node whose
 # first answer is an error. Prefix counts that keep changing until the deadline don't block.
+#
+# A node that answers with no BGP neighbors at all is NOT converged: that is exactly what a node answers
+# before its BGP config is applied, and a leak can arrive once it is. The gate keeps waiting up to the cap;
+# if the node still reports no neighbors then (it may not run BGP), its checks go ahead, each with a
+# warning in its result that it was evaluated without BGP convergence. The verdict is unchanged.
 # ---------------------------------------------------------------------------------------------------------
 
+def _with_warnings(warnings: dict[int, str], on_result=None):
+    """An on_result callback that first adds the gate's warning (if any) to the result's detail, so the
+    warning is in the report and the console line of each check it concerns. The verdict is unchanged."""
+    def add(r: Result) -> None:
+        w = warnings.get(id(r.check))
+        if w:
+            r.detail = f"{r.detail} (warning: {w})"
+        if on_result:
+            on_result(r)
+    return add
+
+
 def _bgp_convergence_gate(negatives: list[Check], all_checks: list[Check], drivers: dict,
-                          log=lambda _: None, positive_results: list[Result] = ()) -> dict[int, Result]:
+                          log=lambda _: None, positive_results: list[Result] = (),
+                          warnings: dict[int, str] | None = None) -> dict[int, Result]:
     # A node whose positive checks never got usable state on any sample already waited out their timeout:
     # don't wait again (the run is then failed or inconclusive on those checks anyway)
     on_node: dict[str, list[Result]] = {}
@@ -430,7 +450,8 @@ def _bgp_convergence_gate(negatives: list[Check], all_checks: list[Check], drive
     excluded = {(c.node, c.params.get("vrf", "default"), c.params.get("neighbor")) for c in all_checks
                 if c.type == "bgp_session" and c.params.get("state", "established") != "established"}
     deadline = {g: max(c.timeout for c in cs) for g, cs in groups.items()}
-    st = {g: {"streak": 0, "counts": None, "answered": False, "detail": "", "history": []} for g in groups}
+    st = {g: {"streak": 0, "counts": None, "answered": False, "empty": False, "detail": "", "history": []}
+          for g in groups}
     started = _now()
     t0 = _clock()
     pending = set(groups)
@@ -447,10 +468,18 @@ def _bgp_convergence_gate(negatives: list[Check], all_checks: list[Check], drive
                 if first and all(c.type == "ping" for c in groups[g]):
                     pending.discard(g)   # not a BGP speaker; nothing to wait for
                     continue
-                s["streak"], s["detail"] = 0, Unready(f"BGP state unreadable on {node}: {e}")
+                s["streak"], s["detail"], s["empty"] = 0, Unready(f"BGP state unreadable on {node}: {e}"), False
                 s["history"].append(_sample(t, False, s["detail"]))
                 continue
             s["answered"] = True
+            s["empty"] = not nbrs
+            if not nbrs:
+                # No neighbors at all is what a node answers before its BGP config is applied: not converged
+                # (a leak can arrive once it is), so keep waiting, up to the cap
+                where = "" if vrf == "default" else f" (vrf {vrf})"
+                s["streak"], s["detail"] = 0, Unready(f"no BGP neighbors at all on {node}{where}")
+                s["history"].append(_sample(t, False, s["detail"]))
+                continue
             down = sorted(f"{a} ({n.state})" for a, n in nbrs.items()
                           if n.state != "established" and (node, vrf, a) not in excluded)
             if down:
@@ -475,6 +504,15 @@ def _bgp_convergence_gate(negatives: list[Check], all_checks: list[Check], drive
             s = st[g]
             if not s["answered"]:
                 log(f"warning: {g[0]} never returned BGP state; its post-convergence checks start without the BGP gate")
+            elif s["empty"]:
+                # Still no neighbors at the cap: the node may not run BGP at all. Go ahead, but say so on each check
+                where = "" if g[1] == "default" else f" (vrf {g[1]})"
+                text = (f"{g[0]}{where} reported no BGP neighbors for {deadline[g]:g}s; the check was evaluated "
+                        "without BGP convergence")
+                log(f"warning: {text}")
+                if warnings is not None:
+                    for c in groups[g]:
+                        warnings[id(c)] = text
             elif s["streak"] == 0:
                 for c in groups[g]:
                     detail = (f"not evaluated: {s['detail']} after waiting {deadline[g]:g}s. A post-convergence "

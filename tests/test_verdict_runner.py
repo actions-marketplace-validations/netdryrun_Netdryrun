@@ -321,15 +321,15 @@ def test_hold_is_passed_to_the_post_convergence_checks(monkeypatch):
     def routes(start):
         return {"default": lambda t, p: p == "10.9.9.0/24" or t >= start}
 
-    e = make(monkeypatch, r1={"neighbors": up(), "routes": routes(3 + 10 + 15)})
+    e = make(monkeypatch, r1={"neighbors": up("10.0.12.2"), "routes": routes(3 + 10 + 15)})
     assert e.run([route("pos"), leak("neg")], settle=10, hold=20).status == "failed"
-    e = make(monkeypatch, r1={"neighbors": up(), "routes": routes(3 + 10 + 15)})
+    e = make(monkeypatch, r1={"neighbors": up("10.0.12.2"), "routes": routes(3 + 10 + 15)})
     assert e.run([route("pos"), leak("neg")], settle=10, hold=10).status == "passed"
 
 
 def test_checks_wait_on_the_runner_clock(monkeypatch):
     """Durations come from the runner's clock (the one tests and the CLI share), for every phase."""
-    e = make(monkeypatch, r1={"neighbors": up(), "routes": {"default": lambda t, p: p == "10.9.9.0/24" and t >= 6}})
+    e = make(monkeypatch, r1={"neighbors": up("10.0.12.2"), "routes": {"default": lambda t, p: p == "10.9.9.0/24" and t >= 6}})
     rep = e.run([route("pos"), leak("neg")], settle=10, hold=10)
     assert by_name(rep)["pos"].duration == 9.0 and by_name(rep)["neg"].duration == 10.0
     assert e.clock.now == 9 + 3 + 10 + 10   # positives, the gate's second sample, settle, hold
@@ -384,6 +384,27 @@ def test_gate_warning_when_a_node_never_answers(monkeypatch):
              r3={"neighbors_error": DriverError("no bgpd"), "routes": {"default": never}})
     rep = e.run([route("pos"), leak("neg", node="r3", timeout=9)], settle=10, hold=10)
     assert rep.status == "passed" and len(e.logs) == 2
+
+
+def test_node_without_bgp_neighbors_yet_is_not_converged(monkeypatch):
+    """r1's BGP config is applied only at t=40 (until then it reports no neighbors at all), and the leak
+    arrives over the new session at t=50. Only post-convergence checks: the gate must keep waiting."""
+    e = make(monkeypatch, r1={"neighbors": {"default": lambda t: {"10.0.12.2": "established"} if t >= 40 else {}},
+                              "routes": {"default": lambda t, p: t >= 50}})
+    rep = e.run([leak("neg", timeout=60)], settle=10, hold=10)
+    assert rep.status == "failed"
+
+
+def test_node_that_never_reports_bgp_neighbors_is_released_at_the_cap_with_a_warning(monkeypatch):
+    e = make(monkeypatch, r1={"neighbors": up(), "routes": {"default": never}})
+    rep = e.run([leak("neg", timeout=24), leak("neg2", prefix="10.77.0.0/16", timeout=12)], settle=10, hold=10)
+    assert rep.status == "passed"                      # the verdict is unchanged
+    assert e.clock.now == 24 + 30 + 10                 # waited the cap, then the settle and the hold
+    plain = make(monkeypatch, r1={"neighbors": up("10.0.12.2"), "routes": {"default": never}})
+    ref = plain.run([leak("neg", timeout=24), leak("neg2", prefix="10.77.0.0/16", timeout=12)], settle=10, hold=10)
+    for name in ("neg", "neg2"):                       # the warning is recorded on each gated check
+        assert by_name(rep)[name].detail != by_name(ref)[name].detail
+    assert len(e.logs) == len(plain.logs) + 1
 
 
 def test_results_of_every_phase_are_kept(monkeypatch):
@@ -1002,9 +1023,10 @@ def test_wait_fault_visible_fractional_deadline(monkeypatch):
 
 # ----------------------------------------------------------------------------------------------- the BGP gate
 
-def gate(e, negatives, all_checks=None, positive_results=()):
+def gate(e, negatives, all_checks=None, positive_results=(), warnings=None):
     return runner._bgp_convergence_gate(negatives, all_checks if all_checks is not None else negatives, e.drivers,
-                                        log=e.logs.append, positive_results=list(positive_results))
+                                        log=e.logs.append, positive_results=list(positive_results),
+                                        warnings=warnings)
 
 
 def test_gate_needs_two_identical_established_samples(monkeypatch):
@@ -1146,6 +1168,39 @@ def test_gate_node_that_never_answers_goes_ahead_with_a_warning(monkeypatch):
     e = make(monkeypatch)
     e.drivers["r1"].neighbors_error = DriverError("no bgpd")
     assert gate(e, [leak("n", timeout=9)]) == {} and e.clock.now == 9 and len(e.logs) == 1
+
+
+def test_gate_waits_for_a_node_that_reports_no_bgp_neighbors(monkeypatch):
+    e = make(monkeypatch)
+    e.drivers["r1"].neighbors = {"default": lambda t: {"10.0.12.2": "established"} if t >= 7 else {}}
+    warnings = {}
+    assert gate(e, [leak("n", timeout=30)], warnings=warnings) == {} and e.clock.now == 12 and warnings == {}
+    # never any neighbor: released at the cap, not blocked, with a warning for each gated check
+    e = make(monkeypatch)
+    e.drivers["r1"].neighbors = {"default": {}}
+    a, b = leak("a", timeout=9), leak("b", timeout=5)
+    warnings = {}
+    assert gate(e, [a, b], warnings=warnings) == {} and e.clock.now == 9
+    assert set(warnings) == {id(a), id(b)} and all(isinstance(w, str) and w for w in warnings.values())
+    # neighbors seen, then none at the cap: still released with a warning
+    e = make(monkeypatch)
+    e.drivers["r1"].neighbors = {"default": lambda t: {"10.0.12.2": "active"} if t < 3 else {}}
+    warnings = {}
+    assert gate(e, [a], warnings=warnings) == {} and set(warnings) == {id(a)}
+    # no neighbors, then a session that stays down: blocked as before, no warning
+    e = make(monkeypatch)
+    e.drivers["r1"].neighbors = {"default": lambda t: {"10.0.12.2": "active"} if t >= 3 else {}}
+    warnings = {}
+    assert set(gate(e, [a], warnings=warnings)) == {id(a)} and warnings == {}
+
+
+def test_gate_ping_only_node_with_no_bgp_neighbors_is_waited_for(monkeypatch):
+    """The ping-only exemption is for a node whose first answer is an error; {} is an answer."""
+    e = make(monkeypatch)
+    e.drivers["r1"].neighbors = {"default": {}}
+    p = chk("ping", "p", target="10.9.9.9", expect="failure", timeout=9)
+    warnings = {}
+    assert gate(e, [p], warnings=warnings) == {} and e.clock.now == 9 and set(warnings) == {id(p)}
 
 
 def test_gate_groups_are_independent(monkeypatch):
