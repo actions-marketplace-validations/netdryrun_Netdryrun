@@ -879,34 +879,32 @@ def test_scenario_negative_checks_wait_for_the_bgp_gate(monkeypatch):
     [r] = direct(e, sc)
     assert not r.passed
     # a session over a downed link is expected down: it doesn't hold the gate
-    e = make(monkeypatch)
-    e.drivers["r1"].neighbors = {"default": lambda t: {"10.0.12.2": "idle" if e.lab.link_events() else "established",
-                                                       "10.0.13.3": "established"}}
-    e.drivers["r2"].neighbors = {"default": lambda t: {"10.0.12.1": "idle" if e.lab.link_events() else "established"}}
-    e.drivers["r1"].routes_ = {"default": never}
+    e = _r1_with_another_session(monkeypatch, "established")
     [r] = direct(e, Scenario("s", [Fault("link_down", "r1", "eth1")], [leak("neg", node="r1", timeout=60)]))
     assert r.passed and e.clock.now < 60
     # any other session that stays down blocks it: not evaluated, after the cap
-    e = make(monkeypatch)
-    e.drivers["r1"].neighbors = {"default": lambda t: {"10.0.12.2": "idle" if e.lab.link_events() else "established",
-                                                       "10.0.13.3": "active"}}
-    e.drivers["r2"].neighbors = {"default": lambda t: {"10.0.12.1": "idle" if e.lab.link_events() else "established"}}
-    e.drivers["r1"].routes_ = {"default": never}
+    e = _r1_with_another_session(monkeypatch, "active")
     neg = leak("neg", node="r1", timeout=20)
     [r] = direct(e, Scenario("s", [Fault("link_down", "r1", "eth1")], [neg]))
     assert not r.passed and not any(c[0] == "routes" for c in e.drivers["r1"].calls)
     assert [x.check for x in e.results] == [neg]
     # ...unless a check says it is down on purpose (in the scenario, or at the top level)
+    down = chk("bgp_session", "down", neighbor="10.0.13.3", state="down")
     for in_scenario in (True, False):
-        e = make(monkeypatch)
-        e.drivers["r1"].neighbors = {"default": lambda t: {
-            "10.0.12.2": "idle" if e.lab.link_events() else "established", "10.0.13.3": "active"}}
-        e.drivers["r2"].neighbors = {"default": lambda t: {"10.0.12.1": "idle" if e.lab.link_events() else "established"}}
-        e.drivers["r1"].routes_ = {"default": never}
-        down = chk("bgp_session", "down", neighbor="10.0.13.3", state="down")
+        e = _r1_with_another_session(monkeypatch, "active")
         sc = Scenario("s", [Fault("link_down", "r1", "eth1")], [neg] + ([down] if in_scenario else []))
         results = runner.run_scenario(e.lab, sc, e.drivers, settle=10, hold=10, baseline_checks=[] if in_scenario else [down])
         assert all(x.passed for x in results)
+
+
+def _r1_with_another_session(monkeypatch, state):
+    """r1-r2 over r1 eth1 (down once the link is), plus r1's session to 10.0.13.3 in `state`; no leak."""
+    e = make(monkeypatch)
+    e.drivers["r1"].neighbors = {"default": lambda t: {"10.0.12.2": "idle" if e.lab.link_events() else "established",
+                                                       "10.0.13.3": state}}
+    e.drivers["r2"].neighbors = {"default": lambda t: {"10.0.12.1": "idle" if e.lab.link_events() else "established"}}
+    e.drivers["r1"].routes_ = {"default": never}
+    return e
 
 
 def test_scenario_positive_that_fails_in_the_hold(monkeypatch):
