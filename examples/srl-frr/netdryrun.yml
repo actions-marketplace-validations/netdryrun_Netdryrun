@@ -25,3 +25,9 @@ checks:
     node: frr1
     source: 192.168.20.1
     target: 192.168.10.1
+  - type: bgp_route    # BGP attributes of the best path: AS path, local preference, next hop
+    node: srl1
+    prefix: 192.168.20.0/24
+    as_path: "65020"
+    local_pref: 100
+    next_hop: 10.0.100.2

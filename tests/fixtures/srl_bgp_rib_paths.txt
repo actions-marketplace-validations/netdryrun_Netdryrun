@@ -1,0 +1,42 @@
+{
+  "route": [
+    {
+      "prefix": "192.168.20.0/24",
+      "neighbor": "10.2.1.2",
+      "origin-protocol": "bgp",
+      "path-id": 0,
+      "last-modified": "2026-10-27T03:55:35.400Z (47 seconds ago)",
+      "used-route": true,
+      "unused-weight-only": false,
+      "valid-route": true,
+      "best-route": true,
+      "backup-route": false,
+      "stale-route": false,
+      "fib-disabled": false,
+      "pending-delete": false,
+      "neighbor-as": 65020,
+      "group-best": true,
+      "tie-break-reason": "none",
+      "attr-id": "7"
+    },
+    {
+      "prefix": "192.168.20.0/24",
+      "neighbor": "10.2.2.2",
+      "origin-protocol": "bgp",
+      "path-id": 0,
+      "last-modified": "2026-10-27T03:55:35.400Z (47 seconds ago)",
+      "used-route": false,
+      "unused-weight-only": false,
+      "valid-route": true,
+      "best-route": false,
+      "backup-route": false,
+      "stale-route": false,
+      "fib-disabled": false,
+      "pending-delete": false,
+      "neighbor-as": 65020,
+      "group-best": true,
+      "tie-break-reason": "local-pref",
+      "attr-id": "12"
+    }
+  ]
+}

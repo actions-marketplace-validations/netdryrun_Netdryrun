@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import ipaddress
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -12,14 +13,62 @@ CHECK_TYPES = {
     "bgp_session": {"required": ("node", "neighbor"), "optional": ("state", "vrf")},
     "bgp_prefixes": {"required": ("node", "neighbor"), "optional": ("min", "max", "exact", "afi", "vrf")},
     "route": {"required": ("node", "prefix"), "optional": ("present", "protocol", "vrf", "active")},
+    "bgp_route": {"required": ("node", "prefix"), "optional": ("present", "vrf", "communities", "without_communities",
+                                                              "as_path", "as_path_regex", "local_pref", "med", "next_hop")},
     "ping": {"required": ("node", "target"), "optional": ("source", "expect", "vrf", "count", "min_replies")},
 }
+BGP_ATTRIBUTES = ("communities", "without_communities", "as_path", "as_path_regex", "local_pref", "med", "next_hop")
 COMMON_KEYS = ("type", "name", "timeout", "hold")
 BGP_STATES = ("idle", "connect", "active", "opensent", "openconfirm", "established", "down")  # down = any state except established
 
 
 class ConfigError(ValueError):
     pass
+
+
+# Well-known communities (RFC 1997, 3765, 7611, 7999, 8326, 8642, 9494) by the name most CLIs print
+WELL_KNOWN_COMMUNITIES = {
+    "graceful-shutdown": "65535:0", "accept-own": "65535:1", "llgr-stale": "65535:6", "no-llgr": "65535:7",
+    "blackhole": "65535:666", "no-export": "65535:65281", "no-advertise": "65535:65282",
+    "no-export-subconfed": "65535:65283", "local-as": "65535:65283", "no-peer": "65535:65284",
+}
+_COMMUNITY_NAMES = {v: k for k, v in WELL_KNOWN_COMMUNITIES.items() if k != "local-as"}
+
+
+def parse_community(text: str) -> str:
+    """Canonical form of a standard (`65000:100`), large (`65000:1:2`) or well-known (`no-export`)
+    community: numbers without leading zeros, well-known names as their 65535:x value."""
+    t = str(text).strip().lower().replace("_", "-")
+    if t in WELL_KNOWN_COMMUNITIES:
+        return WELL_KNOWN_COMMUNITIES[t]
+    parts = t.split(":")
+    if len(parts) in (2, 3) and all(x.isdigit() for x in parts):
+        nums = [int(x) for x in parts]
+        limit = 0xFFFF if len(parts) == 2 else 0xFFFFFFFF
+        if all(n <= limit for n in nums):
+            return ":".join(str(n) for n in nums)
+    raise ValueError(f"bad community {text!r}: use 65000:100 (standard), 65000:1:2 (large) or a well-known name "
+                     f"({', '.join(sorted(WELL_KNOWN_COMMUNITIES))})")
+
+
+def community_name(canonical: str) -> str:
+    """How a canonical community is shown in reports: well-known ones by name."""
+    return _COMMUNITY_NAMES.get(canonical, canonical)
+
+
+def normalize_as_path(value: Any) -> str:
+    """An AS path as space-separated ASNs; AS sets as {a,b}. "" is the empty path (a locally originated route)."""
+    if isinstance(value, bool):
+        raise ValueError("as_path must be a string such as '65002 65003'")
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, list):
+        return " ".join(str(normalize_as_path(v)) for v in value)
+    text = re.sub(r"\s*,\s*", ",", str(value).strip())
+    tokens = text.split()
+    if not all(re.fullmatch(r"\d+|\{\d+(,\d+)*\}|\(\d+|\d+\)|\(\d+\)", t) for t in tokens):
+        raise ValueError(f"bad as_path {value!r}: use ASNs separated by spaces, for example '65002 65003'")
+    return " ".join(tokens)
 
 
 @dataclass
@@ -79,6 +128,22 @@ def _describe(ctype: str, p: dict[str, Any]) -> str:
         verb = "present" if p.get("present", True) else "absent"
         via = f" via {p['protocol']}" if p.get("protocol") else ""
         return f"{p['node']}: route {p['prefix']}{via} is {verb}"
+    if ctype == "bgp_route":
+        if p.get("present", True) is False:
+            return f"{p['node']}: no BGP path for {p['prefix']}"
+        parts = []
+        if p.get("communities"):
+            parts.append("communities " + " ".join(community_name(c) for c in p["communities"]))
+        if p.get("without_communities"):
+            parts.append("no communities " + " ".join(community_name(c) for c in p["without_communities"]))
+        if "as_path" in p:
+            parts.append(f"as-path '{p['as_path']}'")
+        if "as_path_regex" in p:
+            parts.append(f"as-path matching /{p['as_path_regex']}/")
+        for key, label in (("local_pref", "local-pref"), ("med", "MED"), ("next_hop", "next hop")):
+            if key in p:
+                parts.append(f"{label} {p[key]}")
+        return f"{p['node']}: BGP best path for {p['prefix']} " + (f"has {', '.join(parts)}" if parts else "exists")
     if ctype == "ping":
         exp = p.get("expect", "success")
         src = f" from {p['source']}" if p.get("source") else ""
@@ -104,14 +169,14 @@ def _validate_check(i: int, raw: Any, default_timeout: float) -> Check:
     params = {k: v for k, v in raw.items() if k not in COMMON_KEYS}
     try:
         # canonical spellings so 2001:db8:0::1 in YAML matches 2001:db8::1 on the device
-        if ctype == "route":
+        if ctype in ("route", "bgp_route"):
             params["prefix"] = str(ipaddress.ip_network(str(params["prefix"]), strict=False))
-        for key in ("neighbor", "target", "source"):
+        for key in ("neighbor", "target", "source", "next_hop"):
             if key in params:
                 params[key] = str(ipaddress.ip_address(str(params[key])))
     except ValueError as e:
         raise ConfigError(f"{where}: {e}") from None
-    for key in ("min", "max", "exact", "count", "min_replies"):
+    for key in ("min", "max", "exact", "count", "min_replies", "local_pref", "med"):
         if key in params and (isinstance(params[key], bool) or not isinstance(params[key], int) or params[key] < 0):
             raise ConfigError(f"{where}: {key} must be a non-negative integer")
     if "exact" in params and ({"min", "max"} & set(params)):
@@ -135,9 +200,49 @@ def _validate_check(i: int, raw: Any, default_timeout: float) -> Check:
         raise ConfigError(f"{where}: bgp_prefixes needs at least one of min, max or exact")
     if ctype == "route" and "protocol" in params:
         params["protocol"] = str(params["protocol"]).lower()
+    if ctype == "bgp_route":
+        _validate_bgp_route(where, params)
     timeout = float(raw.get("timeout", default_timeout))
     hold = float(raw["hold"]) if "hold" in raw else None
     return Check(type=ctype, params=params, name=raw.get("name") or _describe(ctype, params), timeout=timeout, hold=hold)
+
+
+def _validate_bgp_route(where: str, params: dict[str, Any]) -> None:
+    if "present" in params and not isinstance(params["present"], bool):
+        raise ConfigError(f"{where}: present must be true or false")
+    attrs = [k for k in BGP_ATTRIBUTES if k in params]
+    if params.get("present", True) is False and attrs:
+        raise ConfigError(f"{where}: present: false means no BGP path at all, so it can't be combined with "
+                          f"{', '.join(attrs)}; to forbid a community on the best path use without_communities")
+    for key in ("communities", "without_communities"):
+        if key not in params:
+            continue
+        raw = params[key] if isinstance(params[key], list) else [params[key]]
+        if not raw:
+            raise ConfigError(f"{where}: {key} must list at least one community")
+        for c in raw:
+            if isinstance(c, (int, float)) and not isinstance(c, bool):
+                # YAML 1.1 reads 65000:10 (and 65000:1:2) unquoted as a base-60 number
+                raise ConfigError(f"{where}: {key}: write communities as quoted strings, for example '65000:10'; "
+                                  "YAML reads some unquoted values like 65000:10 as numbers")
+        try:
+            params[key] = [parse_community(c) for c in raw]
+        except ValueError as e:
+            raise ConfigError(f"{where}: {key}: {e}") from None
+    both = set(params.get("communities", [])) & set(params.get("without_communities", []))
+    if both:
+        raise ConfigError(f"{where}: {', '.join(sorted(both))} is in both communities and without_communities")
+    if "as_path" in params:
+        try:
+            params["as_path"] = normalize_as_path(params["as_path"])
+        except ValueError as e:
+            raise ConfigError(f"{where}: {e}") from None
+    if "as_path_regex" in params:
+        params["as_path_regex"] = str(params["as_path_regex"])
+        try:
+            re.compile(params["as_path_regex"])
+        except re.error as e:
+            raise ConfigError(f"{where}: as_path_regex is not a valid regular expression: {e}") from None
 
 
 def load(path: str | Path) -> Config:

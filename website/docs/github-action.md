@@ -43,7 +43,8 @@ It needs a Linux runner with Docker. GitHub-hosted `ubuntu-latest` runners work.
 
 | Output | Meaning |
 |---|---|
-| `status` | `passed`, `failed` or `error` |
+| `status` | `passed`, `failed`, `error` or `inconclusive` (the lab never reached a testable state, so the run says nothing about the change; the job still fails) |
+| `inconclusive-reason` | Why the run was inconclusive; empty otherwise |
 | `passed` | Number of passed checks |
 | `failed` | Number of failed checks |
 | `evidence-url` | Link to the evidence page, when `cloud` is `true` |

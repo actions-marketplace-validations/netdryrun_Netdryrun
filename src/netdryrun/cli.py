@@ -74,7 +74,7 @@ def _cmd_record(args) -> int:
             lab.deploy()
             time.sleep(args.wait)
         data, warnings = record(topo, include_routes=not args.no_routes, exact_prefixes=not args.min_prefixes,
-                                log=lambda m: print(m, flush=True))
+                                attributes=args.attributes, log=lambda m: print(m, flush=True))
     except LabError as e:
         print(f"lab error: {e}", file=sys.stderr)
         return 2
@@ -128,6 +128,8 @@ def main(argv: list[str] | None = None) -> int:
     p_rec.add_argument("--wait", type=float, default=45.0, help="with --deploy: seconds to let BGP converge (default 45)")
     p_rec.add_argument("--min-prefixes", action="store_true", help="record prefix counts as minimums instead of exact")
     p_rec.add_argument("--no-routes", action="store_true", help="don't record individual BGP routes")
+    p_rec.add_argument("--attributes", action="store_true",
+                       help="also pin each BGP route's AS path, local preference and communities (bgp_route checks)")
     p_rec.add_argument("--force", action="store_true", help="overwrite an existing output file")
 
     sub.add_parser("mcp", help="run the MCP server (stdio) so AI agents can dry-run changes")

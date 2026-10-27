@@ -90,6 +90,8 @@ def blocks(f: dict) -> dict[str, str]:
     losses = {kind: [x for x in c["losses"] if x["expected"] == kind] for kind in ("unsafe", "safe")}
     loss_links = {kind: _join([f"[`{x['id'][:2]}` {x['title']}](corpus/{x['id']}.md)" for x in xs]) for kind, xs in losses.items()}
     checks = _join([f"`{t}`" for t in f["check_types"]])
+    attrs = "bgp_route" in f["check_types"]  # BGP best-path attribute checks exist
+    covers = "BGP sessions, prefix counts, " + ("routes, BGP best-path attributes and ping" if attrs else "routes and ping")
     tools = _join([f"`{t}`" for t in f["mcp_tools"]])
     v = f["version"]
     return {
@@ -97,11 +99,11 @@ def blocks(f: dict) -> dict[str, str]:
                           + corpus_sentence.format(link="[verdict corpus](https://netdryrun.com/corpus/)")
                           + " Feedback and issues are very welcome."),
         "site_status": (f"Version {v}, early. Works with {mid} on Linux and WSL2. Check types: {checks} "
-                        "(IPv4/IPv6 unicast BGP, routes and ping), plus link-down and node-isolation failure scenarios. "
+                        f"(IPv4/IPv6 unicast {covers}), plus link-down and node-isolation failure scenarios. "
                         + corpus_sentence.format(link="[verdict corpus](corpus.md)")
                         + " Issues and feedback: [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun/issues)."),
-        "when_status": (f"It is early (version {v}). Drivers exist for {mid}, and checks cover BGP sessions, prefix counts, "
-                        "routes and ping, with link-down and node-isolation failure scenarios."),
+        "when_status": (f"It is early (version {v}). Drivers exist for {mid}, and checks cover {covers}, "
+                        "with link-down and node-isolation failure scenarios."),
         "llms_summary": (f"> Netdryrun is an open-source tool (Python, Apache-2.0) that tests network changes in a real containerlab "
                          "virtual lab before they reach production. It waits for convergence, checks BGP sessions, prefixes, routes and "
                          f"reachability, and returns a pass/fail verdict with evidence. Supported network OSes: {long_}. "
@@ -111,8 +113,10 @@ def blocks(f: dict) -> dict[str, str]:
                          f"verdict corpus {scores}."),
         "llms_corpus": (f"- [Verdict corpus](https://netdryrun.com/corpus/): {c['cases']} realistic BGP changes with pre-registered "
                         f"verdicts; {scores} correct"),
-        "trust_scope": (f"Version {v} also covers only BGP (IPv4/IPv6 unicast), routes and ping, plus link-down and node-isolation "
-                        "failure scenarios. OSPF/IS-IS adjacencies, path checks and policy attributes are not covered yet."),
+        "trust_scope": (f"Version {v} also covers only BGP (IPv4/IPv6 unicast), routes"
+                        + (", BGP best-path attributes" if attrs else "") + " and ping, plus link-down and node-isolation "
+                        "failure scenarios. OSPF/IS-IS adjacencies and path checks"
+                        + ("" if attrs else " and policy attributes") + " are not covered yet."),
         "built_losses": (f"- **Netdryrun is wrong on {len(c['losses'])} of {c['cases']} cases**: it approved "
                          f"{_count(len(losses['unsafe']), 'harmful change')} and blocked {_count(len(losses['safe']), 'safe one')} "
                          f"([RESULTS.md](https://github.com/netdryrun/netdryrun/blob/main/corpus/RESULTS.md)). They are shown in the same table as the catches.\n"

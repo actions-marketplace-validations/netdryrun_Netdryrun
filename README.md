@@ -105,6 +105,7 @@ Every check also accepts `name`, `timeout` and `vrf`. Ping accepts `expect: fail
 | `bgp_session` | ✅ | ✅ | ✅ | ✅ |
 | `bgp_prefixes` (accepted = received minus rejected by policy) | ✅ | ✅ | ✅ | ✅ |
 | `route` present / absent | ✅ | ✅ | ✅ | ✅ |
+| `bgp_route` best-path attributes: communities (standard, large, well-known), AS path (exact or regex), local preference, MED, next hop | ✅ | ✅ | ✅ | ✅ |
 | `ping` success / failure | ✅ | ✅ | ✅ | ✅ |
 
 ## Commands
@@ -116,7 +117,7 @@ Every check also accepts `name`, `timeout` and `vrf`. Ping accepts `expect: fail
 | `netdryrun validate [path]` | Validate `netdryrun.yml` without running anything |
 | `netdryrun record topology.clab.yml` | Snapshot a known-good lab into a `netdryrun.yml` baseline, so you don't write checks by hand |
 
-Reports: `--json FILE` (full evidence), `--markdown FILE`, `--junit FILE`. Under GitHub Actions, a summary is appended to the job page automatically. Exit codes: `0` passed, `1` a check failed, `2` config or lab error.
+Reports: `--json FILE` (full evidence), `--markdown FILE`, `--junit FILE`. Under GitHub Actions, a summary is appended to the job page automatically. Exit codes: `0` passed, `1` a check failed, `2` config or lab error, `3` inconclusive (the lab never reached a testable state, so the run says nothing about the change).
 
 ## GitHub Action
 
@@ -133,7 +134,7 @@ jobs:
           path: network/        # folder containing netdryrun.yml
 ```
 
-The action installs containerlab, runs the checks, uploads the JSON and JUnit reports as an artifact, and fails the job if any check fails. Outputs: `status`, `passed`, `failed`.
+The action installs containerlab, runs the checks, uploads the JSON and JUnit reports as an artifact, and fails the job if any check fails. Outputs: `status`, `passed`, `failed`, `inconclusive-reason`.
 
 ## For AI agents (MCP)
 
@@ -151,7 +152,7 @@ Add it to your MCP client (for example Claude Code):
 claude mcp add netdryrun -- netdryrun mcp
 ```
 
-Tools: `dry_run` (deploy, check, destroy, verdict), `run_checks` (against a running lab), `validate`, `check_types`. Each result carries a separate `verdict` field: `SAFE TO PROCEED` or `DO NOT APPLY THIS CHANGE`.
+Tools: `dry_run` (deploy, check, destroy, verdict), `run_checks` (against a running lab), `validate`, `check_types`. Each result carries a separate `verdict` field: `SAFE TO PROCEED`, `DO NOT APPLY THIS CHANGE`, or `INCONCLUSIVE: the lab did not reach a testable state; ...` when the lab never came up.
 
 **Demo** ([examples/agent-demo](examples/agent-demo)): the ticket says the customer's new block must reach the upstream and the peer. The tempting change passes every ticket check, session and ping, but leaks routes; Netdryrun rejects it. The two-line fix passes the same checks. (A scripted replay of the two attempts; CI runs it.)
 
@@ -178,14 +179,14 @@ What Netdryrun adds: positive checks wait for convergence, negative checks run o
 ## Honest limits
 
 - Lab routers are not your production routers. A pass on FRR, SR Linux, SONiC VS or Arista cEOS is strong evidence for protocol logic and policy intent, but not proof of hardware, scale or version-specific behavior. For Arista, bring your own licensed cEOS image to test real vendor code.
-- Checks cover IPv4/IPv6 unicast BGP, routes and ping, with link-down and node-isolation failure scenarios. More checks are coming: OSPF/IS-IS adjacencies, path/traceroute, policy.
+- Checks cover IPv4/IPv6 unicast BGP (sessions, prefix counts, best-path attributes), routes and ping, with link-down and node-isolation failure scenarios. More checks are coming: OSPF/IS-IS adjacencies, path/traceroute.
 
 How results are checked, and who writes the code (mostly AI agents): [How it's built](https://netdryrun.com/how-its-built/).
 
 ## Roadmap
 
 - **Outage replays:** famous real-world outages (route leaks, mass withdrawals) rebuilt as runnable labs and check packs. Would your change have caused one?
-- More failure scenarios, more check types (OSPF/IS-IS, policy attributes, traceroute) and drivers
+- More failure scenarios, more check types (OSPF/IS-IS, traceroute) and drivers
 - PR comments with diffs, and signed evidence for change tickets
 
 ## License

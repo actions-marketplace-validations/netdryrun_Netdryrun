@@ -9,7 +9,7 @@ from __future__ import annotations
 import ipaddress
 import json
 
-from .base import BgpNeighbor, Driver, DriverError, Observation, Route
+from .base import BgpNeighbor, BgpPath, Driver, DriverError, Observation, Route, canon_communities
 from .frr import _canon_addr, parse_ping
 
 PROTOCOLS = {"ebgp": "bgp", "ibgp": "bgp", "bgp": "bgp", "connected": "connected", "static": "static",
@@ -65,6 +65,30 @@ def parse_routes(route_text: str, bgp_text: str, prefix: str, vrf: str = "defaul
     return out
 
 
+def parse_bgp_paths(text: str, prefix: str, vrf: str = "default") -> list[BgpPath]:
+    """`show ip bgp <prefix> vrf <vrf> | json`: the best path is the one EOS marks active.
+    A locally originated path has no localPreference or med field; it carries neither attribute."""
+    want = ipaddress.ip_network(prefix)
+    out = []
+    for key, e in (_vrf(_json(text), vrf).get("bgpRouteEntries") or {}).items():
+        if ipaddress.ip_network(key) != want:
+            continue
+        for p in e.get("bgpRoutePaths") or []:
+            detail = p.get("routeDetail") or {}
+            nh = p.get("nextHop") or ""
+            out.append(BgpPath(
+                best=bool((p.get("routeType") or {}).get("active")),
+                as_path=" ".join(str((p.get("asPathEntry") or {}).get("asPath", "")).split()),
+                next_hop=_canon_addr(nh) if nh else None,
+                local_pref=int(p["localPreference"]) if "localPreference" in p else None,
+                med=int(p.get("med", 0)),
+                communities=canon_communities(detail.get("communityList")),
+                large_communities=canon_communities(detail.get("largeCommunityList")),
+                neighbor=(p.get("peerEntry") or {}).get("peerAddr") or None,
+            ))
+    return out
+
+
 class EosDriver(Driver):
     name = "eos"
 
@@ -87,6 +111,11 @@ class EosDriver(Driver):
         rt = self._cli(f"show {fam} route vrf {vrf} {prefix} | json", ev)
         bgp = self._cli(f"show {fam} bgp {prefix} vrf {vrf} | json", ev)
         return Observation(parse_routes(rt, bgp, prefix, vrf), ev)
+
+    def bgp_paths(self, prefix: str, vrf: str = "default") -> Observation:
+        ev: list[dict] = []
+        fam = "ipv6" if ipaddress.ip_network(prefix).version == 6 else "ip"
+        return Observation(parse_bgp_paths(self._cli(f"show {fam} bgp {prefix} vrf {vrf} | json", ev), prefix, vrf), ev)
 
     def all_routes(self, vrf: str = "default", family: int = 4) -> Observation:
         ev: list[dict] = []

@@ -4,7 +4,7 @@ from __future__ import annotations
 import ipaddress
 import json
 
-from .base import BgpNeighbor, Driver, DriverError, Observation, Route
+from .base import BgpNeighbor, BgpPath, Driver, DriverError, Observation, Route, canon_communities, render_as_path
 from .frr import _canon_addr, parse_ping
 
 # SR Linux route-type names -> the shared vocabulary used in netdryrun.yml (FRR's names)
@@ -64,6 +64,46 @@ def parse_routes(text: str, prefix: str, bgp_rib_text: str = "") -> list[Route]:
     return out
 
 
+def parse_rib_paths(text: str, prefix: str) -> list[dict]:
+    """Local-RIB entries for exactly `prefix`, best path first: neighbor, best-route, attr-id."""
+    want = ipaddress.ip_network(prefix)
+    rows = []
+    for r in _json(text).get("route", []):
+        try:
+            if ipaddress.ip_network(str(r.get("prefix"))) == want:
+                rows.append(r)
+        except ValueError:
+            continue
+    return sorted(rows, key=lambda r: not r.get("best-route"))
+
+
+def parse_attr_set(text: str, row: dict, default_local_pref: int | None = None) -> BgpPath:
+    """A local-RIB entry plus its attr-set. The attr-set has no local-pref when the path carries none
+    (eBGP-learned or local); SR Linux then applies the neighbor's configured local-preference."""
+    a = _json(text)
+    if not a:
+        raise DriverError(f"attr-set {row.get('attr-id')} for {row.get('prefix')} not found")
+    segs = [(s.get("type", ""), s.get("member") or []) for s in (a.get("as-path") or {}).get("segment") or []]
+    comms = a.get("communities") or {}
+    nh = a.get("next-hop")
+    return BgpPath(
+        best=bool(row.get("best-route")),
+        as_path=render_as_path(segs),
+        next_hop=_canon_addr(nh) if nh else None,
+        local_pref=int(a["local-pref"]) if "local-pref" in a else default_local_pref,
+        med=int(a.get("med", 0)),
+        communities=canon_communities(comms.get("community")),
+        large_communities=canon_communities(comms.get("large-community")),
+        neighbor=row.get("neighbor"),
+    )
+
+
+def unread_path(row: dict) -> BgpPath:
+    """A path whose attributes were not read (only the first path's are: the best one if any)."""
+    return BgpPath(best=bool(row.get("best-route")), as_path=None, next_hop=None, local_pref=None, med=None,
+                   neighbor=row.get("neighbor"))
+
+
 class SrlDriver(Driver):
     name = "srlinux"
 
@@ -89,6 +129,26 @@ class SrlDriver(Driver):
             ev,
         )
         return Observation(parse_routes(text, prefix, rib), ev)
+
+    def bgp_paths(self, prefix: str, vrf: str = "default") -> Observation:
+        ev: list[dict] = []
+        table = "ipv6-unicast" if ipaddress.ip_network(prefix).version == 6 else "ipv4-unicast"
+        rows = parse_rib_paths(self._cli(
+            f"info from state /network-instance {vrf} bgp-rib afi-safi {table} {table} local-rib route {prefix} "
+            "neighbor * origin-protocol * path-id *", ev), prefix)
+        if not rows:
+            return Observation([], ev)
+        first = rows[0]  # best path first: one attr-set read per sample, not one per path
+        attrs = self._cli(f"info from state /network-instance {vrf} bgp-rib attr-sets attr-set {first.get('attr-id')}", ev)
+        default_lp = None
+        if "local-pref" not in _json(attrs) and first.get("neighbor"):
+            try:
+                lp = _json(self._cli(f"info from state /network-instance {vrf} protocols bgp neighbor "
+                                     f"{first['neighbor']} local-preference", ev)).get("local-preference")
+                default_lp = int(lp) if lp is not None else None
+            except DriverError:
+                pass  # not a configured neighbor (a local route): local-pref stays unknown
+        return Observation([parse_attr_set(attrs, first, default_lp)] + [unread_path(r) for r in rows[1:]], ev)
 
     def all_routes(self, vrf: str = "default", family: int = 4) -> Observation:
         ev: list[dict] = []

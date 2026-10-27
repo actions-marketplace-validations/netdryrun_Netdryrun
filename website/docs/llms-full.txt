@@ -87,7 +87,7 @@ Requirements: Linux or WSL2, Docker, containerlab, Python 3.10+. Walkthrough: [G
 ## Status
 
 
-Version 0.2.0, early. Works with FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image) on Linux and WSL2. Check types: `bgp_session`, `bgp_prefixes`, `route` and `ping` (IPv4/IPv6 unicast BGP, routes and ping), plus link-down and node-isolation failure scenarios. On the [verdict corpus](corpus.md) (30 realistic BGP changes, expected verdicts committed before any run), Netdryrun judged 24/30 correctly, ping-only checks 20/30 and all-sessions-up checks 15/30. Issues and feedback: [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun/issues).
+Version 0.2.0, early. Works with FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image) on Linux and WSL2. Check types: `bgp_session`, `bgp_prefixes`, `route`, `bgp_route` and `ping` (IPv4/IPv6 unicast BGP sessions, prefix counts, routes, BGP best-path attributes and ping), plus link-down and node-isolation failure scenarios. On the [verdict corpus](corpus.md) (30 realistic BGP changes, expected verdicts committed before any run), Netdryrun judged 24/30 correctly, ping-only checks 20/30 and all-sessions-up checks 15/30. Issues and feedback: [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun/issues).
 
 
 ---
@@ -137,10 +137,10 @@ Each run deploys the lab, runs the checks, prints one line per check and destroy
 
 | Example | Topology | Checks | Expected | Exit code |
 |---|---|---|---|---|
-| `examples/frr-bgp` | Triangle of three FRR routers (r1, r2, r3), eBGP | 2 sessions, prefix count 1 to 10, route present via BGP, ping, default route absent | `PASSED: 6 passed, 0 failed` | `0` |
-| `examples/srl-frr` | Nokia SR Linux (`srl1`) peering eBGP with FRR (`frr1`) | 2 sessions, a BGP route on each side, a ping in each direction | `PASSED: 6 passed, 0 failed` | `0` |
-| `examples/sonic-frr` | SONiC VS (`sonic1`, configured by `setup` commands) peering eBGP with FRR (`frr1`) | a session, a BGP route on each side, a ping, a prefix count, a port-down scenario | `PASSED` | `0` |
-| `examples/frr-bgp-broken` | Same triangle, but r2 adds `default-originate` toward r1 | Same 6 checks as `frr-bgp` | `FAILED: 5 passed, 1 failed`; the default route check fails | `1` |
+| `examples/frr-bgp` | Triangle of three FRR routers (r1, r2, r3), eBGP | 2 sessions, prefix count 1 to 10, route present via BGP, ping, best-path AS path and next hop, default route absent, and a link-failure scenario (reroute via r3) | `PASSED: 11 passed, 0 failed` | `0` |
+| `examples/srl-frr` | Nokia SR Linux (`srl1`) peering eBGP with FRR (`frr1`) | 2 sessions, a BGP route on each side, a ping in each direction, best-path attributes on `srl1` | `PASSED: 7 passed, 0 failed` | `0` |
+| `examples/sonic-frr` | SONiC VS (`sonic1`, configured by `setup` commands) peering eBGP with FRR (`frr1`) | a session, a BGP route on each side, a ping, a prefix count, best-path attributes, a port-down scenario | `PASSED` | `0` |
+| `examples/frr-bgp-broken` | Same triangle, but r2 adds `default-originate` toward r1 | The first 6 checks of `frr-bgp`, without the scenario | `FAILED: 5 passed, 1 failed`; the default route check fails | `1` |
 
 The broken example is the one shown on the [home page](index.md#a-failing-run). r1 receives the leaked default route but does not select it, so the ping still works. The route check catches it because a received-but-not-selected route counts as present.
 
@@ -236,7 +236,7 @@ Validation is strict: unknown keys inside a check, missing required keys, bad IP
 
 | Key | Default | Meaning |
 |---|---|---|
-| `type` | required | `bgp_session`, `bgp_prefixes`, `route` or `ping` |
+| `type` | required | `bgp_session`, `bgp_prefixes`, `route`, `bgp_route` or `ping` |
 | `node` | required | Node name from the topology (for example `r1`) |
 | `name` | generated | Label used in reports. The default describes the check, for example `r1: BGP session to 10.0.12.2 is established`. |
 | `timeout` | top-level `timeout` | Seconds this check may wait to pass. Positive number. |
@@ -317,6 +317,48 @@ A route is present in (or absent from) the routing table.
   protocol: bgp
 ```
 
+### bgp_route
+
+Attributes of the BGP **best path** for a prefix: communities, AS path, local preference, MED, next hop. Many real policy bugs live here: a route that is still present but lost its community, got the wrong local preference, or now goes the long way. `route` reads the routing table; `bgp_route` reads the BGP table.
+
+| Key | Required | Default | Meaning |
+|---|---|---|---|
+| `prefix` | yes | | IPv4 or IPv6 prefix, matched exactly |
+| `communities` | no | | The best path must carry **all** of these. Standard (`'65000:100'`), large (`'65000:1:2'`) or well-known names (`no-export`, `no-advertise`, `no-peer`, `blackhole`, `graceful-shutdown`, `accept-own`, `llgr-stale`, `no-llgr`, `no-export-subconfed`) |
+| `without_communities` | no | | The best path must carry **none** of these. Same forms as `communities` |
+| `as_path` | no | | Exact AS path, ASNs separated by spaces: `"65002 65003"`. `""` is the empty path of a locally originated route. AS sets are written `{65004,65005}` |
+| `as_path_regex` | no | | Python regular expression searched in the AS path string, for example `"^65002 "` (learned from 65002) or `"(^| )65666( |$)"` (passes through 65666) |
+| `local_pref` | no | | Exact local preference |
+| `med` | no | | Exact MED. A path without MED counts as `0`, as best-path selection treats it by default |
+| `next_hop` | no | | Exact next hop address |
+| `present` | no | `true` | `false` means no path at all for the prefix in the BGP table, best or not |
+| `vrf` | no | `default` | VRF or network-instance |
+
+Rules:
+
+- Without attribute keys, the check passes when a best path exists.
+- **Quote communities.** YAML reads some unquoted values as numbers (`65000:10` is a base-60 number to YAML 1.1), so an unquoted community that YAML turns into a number is a config error.
+- A community can't be in both `communities` and `without_communities`.
+- `present: false` can't be combined with attribute keys. To forbid a community on the best path, use `without_communities`.
+- The check fails if there is no path, or no best path (for example when the next hop is unreachable). The failure detail shows what the best path actually carries.
+- **Local preference** is the effective value: a path without a LOCAL_PREF attribute (eBGP-learned or local) gets the device's default (FRR and SONiC: `bgp default local-preference`; SR Linux: the neighbor's `local-preference`; Arista EOS reports it directly). The exception is a locally originated path on Arista EOS, which reports no local preference; asserting `local_pref` on it fails with "not set".
+- **Next hop** is the address the device reports. For an IPv6 path FRR may list only the link-local next hop.
+- `present: false` and `without_communities` make it a post-convergence check: a "must not carry" check could pass on a transient best path before the real one arrives, so it must hold instead.
+
+```yaml
+- type: bgp_route         # customer routes are tagged and preferred
+  node: r1
+  prefix: 192.168.20.0/24
+  communities: ["65000:100", no-export]
+  local_pref: 200
+  as_path: "65020"
+
+- type: bgp_route         # the internal tag must never reach the peer
+  node: peer1
+  prefix: 192.168.20.0/24
+  without_communities: ["65000:666"]
+```
+
 ### ping
 
 Reachability from a node.
@@ -378,7 +420,8 @@ Networks need time to converge, and some checks are trivially true before they d
 
 **Post-convergence checks** are the ones that would pass on a network that has not come up yet:
 
-- routes that must be absent (`present: false`)
+- routes that must be absent (`present: false` on `route` or `bgp_route`)
+- best paths that must not carry a community (`without_communities`)
 - pings that must fail (`expect: failure`)
 - sessions expected in a state other than `established`
 - prefix counts with an upper bound (`max` or `exact`), since 0 prefixes satisfies `max: 10` while BGP is still starting
@@ -404,6 +447,7 @@ A driver turns device state into a common shape. Netdryrun detects it from the t
 | `bgp_session` | yes | yes | yes | yes |
 | `bgp_prefixes` (accepted = received minus rejected by policy) | yes | yes | yes | yes |
 | `route` present / absent | yes | yes | yes | yes |
+| `bgp_route`: communities (standard, large, well-known), AS path, local preference, MED, next hop, absent | yes | yes | yes | yes |
 | `ping` success / failure | yes | yes | yes | yes |
 | Failure scenarios on the node's own links | yes | not yet (fail the FRR/Linux side instead) | yes | yes |
 
@@ -415,8 +459,12 @@ A driver turns device state into a common shape. Netdryrun detects it from the t
 
 | Driver | Source of state |
 |---|---|
-| FRR | `vtysh -c "show ... json"`; accepted prefixes from `acceptedPrefixCounter` |
-| SR Linux | `sr_cli --output-format json "info from state ..."`; accepted = `received-routes` minus `rejected-routes` |
+| FRR | `vtysh -c "show ... json"`; accepted prefixes from `acceptedPrefixCounter`; `bgp_route` from `show bgp <afi> unicast <prefix> json` |
+| SR Linux | `sr_cli --output-format json "info from state ..."`; accepted = `received-routes` minus `rejected-routes`; `bgp_route` from the `bgp-rib` local RIB and its `attr-sets` |
+| Arista EOS | `Cli -c "show ... \| json"`; `bgp_route` from `show ip bgp <prefix> vrf <vrf>` (the best path is the `active` one) |
+| SONiC | the FRR commands, through `vtysh` inside the container |
+
+If a driver can't read a `bgp_route` attribute, the run stops before deploying with "`<key>` is not supported on `<driver>`" (exit code `2`) instead of guessing. Today every driver reads every attribute.
 
 Every command and its raw output is kept in the [JSON report](cli.md#json).
 
@@ -467,7 +515,7 @@ Loads and validates `netdryrun.yml` and prints the parsed checks. It does not ne
 
 ```text
 $ netdryrun validate examples/frr-bgp
-OK: examples/frr-bgp/netdryrun.yml (6 checks, lab .../examples/frr-bgp/topology.clab.yml)
+OK: examples/frr-bgp/netdryrun.yml (7 checks, lab .../examples/frr-bgp/topology.clab.yml)
   - [bgp_session] r1: BGP session to 10.0.12.2 is established
   ...
 ```
@@ -487,6 +535,7 @@ Snapshots a known-good lab into a `netdryrun.yml` baseline: every established BG
 | `--wait SECONDS` | With `--deploy`: time for BGP to converge before recording (default 45) |
 | `--min-prefixes` | Record prefix counts as minimums instead of exact |
 | `--no-routes` | Don't record individual routes |
+| `--attributes` | Also record a `bgp_route` check per BGP route, pinning its best path's AS path, local preference and communities (not MED or next hop, which follow the topology) |
 | `--force` | Overwrite an existing file |
 
 ## Options
@@ -518,6 +567,24 @@ When a lab is kept, Netdryrun prints the command to destroy it. See [convergence
 | `0` | `passed` | Every check passed |
 | `1` | `failed` | At least one check failed |
 | `2` | `error` | Config error, or the lab could not be deployed or reached (containerlab or Docker missing, deploy failed, containers not running, unknown driver) |
+| `3` | `inconclusive` | Checks failed, but the lab never reached a state where they mean anything: the result says nothing about the change. Rules below |
+
+### When a run is inconclusive
+
+A run is `inconclusive` instead of `failed` only when **all** of these hold. The rules are deliberately conservative: when in doubt, the run is `failed`.
+
+1. At least one check failed, and there was no lab or config error (that is `error`).
+2. No positive check passed on **any** sample, anywhere in the run, scenarios included. One passing sample anywhere shows a working network, so the failures are findings.
+3. No post-convergence check failed with readable state. A leaked route, or a session that is up but must be down, proves a working control plane.
+4. Every failed check is on a node that never gave usable state. That means every sample of every `bgp_session` and `bgp_prefixes` check on the node was *unready*: the state command failed or its output could not be read (a CLI that isn't up yet), or BGP had no neighbors at all on the node. A node with no session or prefix checks qualifies only if every sample of every check on it was unready.
+
+A configured BGP session that is down (`idle`, `active`, `connect`, ...) is never unready. An ASN typo, a wrong neighbor address or a shutdown look exactly like a slow lab from the outside, so they stay `failed`. A routing table without the route, and a ping with no replies, are findings for the same reason. So a `timeout` that is merely too short for configured sessions to establish gives `failed`, not `inconclusive`; `inconclusive` is for a node whose CLI or BGP never came up at all.
+
+Known limit: a change that deletes a node's entire BGP configuration looks like a NOS that never started BGP, so it is reported `inconclusive`. It is still never `passed`.
+
+What to do: rerun, raise `timeout`, or check that the lab boots (`containerlab inspect`). Don't change the network change because of an inconclusive run.
+
+The JSON report says why in `inconclusive_reason`, and each unready sample in `history` has `"unready": true`.
 
 ## GitHub Actions step summary
 
@@ -541,11 +608,12 @@ FAILED: 5 passed, 1 failed (6 checks)
 | Field | Type | Meaning |
 |---|---|---|
 | `schema` | string | Always `netdryrun.report/v1` |
-| `status` | string | `passed`, `failed` or `error` |
+| `status` | string | `passed`, `failed`, `error` or `inconclusive` (new after 0.2.0; a reader should treat any status it does not know as not passed) |
 | `lab` | string | containerlab lab name |
 | `config` | string | Path of the `netdryrun.yml` that was run |
 | `started`, `finished` | string | UTC timestamps (ISO 8601) |
 | `error` | string or null | Lab or driver error, if the run could not complete |
+| `inconclusive_reason` | string or null | Why the run is `inconclusive` ([rules](#when-a-run-is-inconclusive)); null otherwise |
 | `environment` | object | `netdryrun`, `containerlab` and `python` versions, `host` platform, and `nodes` (each with `kind` and `image`) |
 | `summary` | object | `passed`, `failed`, `total` |
 | `checks` | array | One object per check, in file order (below) |
@@ -562,14 +630,14 @@ Each entry in `checks`:
 | `attempts` | integer | Number of samples taken |
 | `duration_s` | number | Seconds spent on the check |
 | `started` | string | UTC timestamp |
-| `history` | array | Every sample (last 50): `t` (seconds since start), `passed`, `detail` |
+| `history` | array | Every sample (last 50): `t` (seconds since start), `passed`, `detail`, and `unready: true` on a failing sample where the node gave no usable state |
 | `evidence` | array | Raw commands from the final sample: `node`, `cmd`, `rc`, `output`, `stderr` |
 
 Long outputs are truncated (the last 20,000 characters of command output are kept).
 
 ### Markdown
 
-`--markdown FILE` writes a short summary: a heading (passed, failed, or could not run), the pass/fail counts and lab name, a table of checks with failures first, and a footer with the Netdryrun and containerlab versions. This is the same text appended to the GitHub Actions step summary.
+`--markdown FILE` writes a short summary: a heading (passed, failed, inconclusive, or could not run), the reason when inconclusive, the pass/fail counts and lab name, a table of checks with failures first, and a footer with the Netdryrun and containerlab versions. This is the same text appended to the GitHub Actions step summary.
 
 ### JUnit XML
 
@@ -577,6 +645,7 @@ Long outputs are truncated (the last 20,000 characters of command output are kep
 
 - `classname` is `netdryrun.<type>`, for example `netdryrun.route`
 - a failed check has a `<failure>` whose `message` is the detail and whose body is the evidence as JSON
+- in an `inconclusive` run, failed checks have an `<error>` instead of a `<failure>` (they could not run meaningfully), and they count as `errors`, not `failures`
 - a lab error adds a testcase named `lab` with an `<error>` element
 
 
@@ -623,7 +692,8 @@ It needs a Linux runner with Docker. GitHub-hosted `ubuntu-latest` runners work.
 
 | Output | Meaning |
 |---|---|
-| `status` | `passed`, `failed` or `error` |
+| `status` | `passed`, `failed`, `error` or `inconclusive` (the lab never reached a testable state, so the run says nothing about the change; the job still fails) |
+| `inconclusive-reason` | Why the run was inconclusive; empty otherwise |
 | `passed` | Number of passed checks |
 | `failed` | Number of failed checks |
 | `evidence-url` | Link to the evidence page, when `cloud` is `true` |
@@ -773,10 +843,11 @@ The server also exposes the last full JSON report as a resource, `netdryrun://re
 
 (`checks` is shortened here; the real result lists every check.)
 
-`verdict` is a separate field with one of two values:
+`verdict` is a separate field with one of three values:
 
 - `SAFE TO PROCEED` when `status` is `passed`
 - `DO NOT APPLY THIS CHANGE` for `failed` or `error`, including config errors
+- `INCONCLUSIVE: the lab did not reach a testable state; this says nothing about your change. Do not apply it until a run passes.` when `status` is `inconclusive`: the lab never came up far enough for the checks to mean anything ([rules](reference/cli.md#when-a-run-is-inconclusive)). `inconclusive_reason` says what was seen. Rerun it, perhaps with a longer `timeout`; don't rewrite the change because of it.
 
 The full evidence is written to `netdryrun-report.json` next to `netdryrun.yml`.
 
@@ -1004,7 +1075,7 @@ Netdryrun adds a test layer on top of a containerlab lab:
 - every run produces one pass/fail result, a CI-friendly exit code, and a JSON evidence file
 
 
-It is early (version 0.2.0). Drivers exist for FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image), and checks cover BGP sessions, prefix counts, routes and ping, with link-down and node-isolation failure scenarios.
+It is early (version 0.2.0). Drivers exist for FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image), and checks cover BGP sessions, prefix counts, routes, BGP best-path attributes and ping, with link-down and node-isolation failure scenarios.
 
 It does not do static analysis, build labs for you, or test production devices.
 
@@ -1050,7 +1121,7 @@ A Netdryrun pass means the change behaved correctly in a lab. The lab runs real 
 - **Timing at scale.** Convergence time in a small lab says little about convergence time in a large production network.
 
 
-Version 0.2.0 also covers only BGP (IPv4/IPv6 unicast), routes and ping, plus link-down and node-isolation failure scenarios. OSPF/IS-IS adjacencies, path checks and policy attributes are not covered yet.
+Version 0.2.0 also covers only BGP (IPv4/IPv6 unicast), routes, BGP best-path attributes and ping, plus link-down and node-isolation failure scenarios. OSPF/IS-IS adjacencies and path checks are not covered yet.
 
 
 ## Running untrusted labs
@@ -1091,13 +1162,13 @@ These are the interfaces other tools and agents rely on:
 
 | Interface | Stable contract |
 |---|---|
-| CLI | command names, flags, and exit codes (`0` passed, `1` failed, `2` error) |
+| CLI | command names, flags, and exit codes (`0` passed, `1` failed, `2` error, `3` inconclusive) |
 | `netdryrun.yml` | check types and keys; a file that validated keeps validating |
 | JSON report | the `schema` field (`netdryrun.report/v1`); fields are only added within a schema version, never removed or renamed |
 | GitHub Action | input and output names and their meaning; pin a tag or a commit SHA |
 | MCP server | tool names, their arguments, and the `status` and `verdict` fields |
 
-Removing or renaming any of these, or changing their meaning, is a breaking change.
+Removing or renaming any of these, or changing their meaning, is a breaking change. Adding is not: a new check type, a new report field, or a new `status` value (`inconclusive` was added after 0.2.0). Treat any status you don't know as not passed.
 
 ## Deprecation
 

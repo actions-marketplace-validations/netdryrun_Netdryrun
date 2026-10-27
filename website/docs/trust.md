@@ -30,7 +30,7 @@ A Netdryrun pass means the change behaved correctly in a lab. The lab runs real 
 - **Timing at scale.** Convergence time in a small lab says little about convergence time in a large production network.
 
 <!-- facts:trust_scope -->
-Version 0.2.0 also covers only BGP (IPv4/IPv6 unicast), routes and ping, plus link-down and node-isolation failure scenarios. OSPF/IS-IS adjacencies, path checks and policy attributes are not covered yet.
+Version 0.2.0 also covers only BGP (IPv4/IPv6 unicast), routes, BGP best-path attributes and ping, plus link-down and node-isolation failure scenarios. OSPF/IS-IS adjacencies and path checks are not covered yet.
 <!-- /facts:trust_scope -->
 
 ## Running untrusted labs

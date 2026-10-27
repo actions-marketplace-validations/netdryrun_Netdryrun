@@ -13,8 +13,11 @@ If you are an AI agent (or building one) that proposes or applies network config
 | exit code `0`, `status: passed` | Every check passed after convergence | Present the change with the evidence. This proves only the checks that exist, in this lab |
 | exit code `1`, `status: failed` | At least one check failed | Read `checks[].detail` and `checks[].evidence` for the failed ones, fix the config, rerun |
 | exit code `2`, `status: error` | Config or lab problem (bad YAML, unknown node, lab didn't start) | Fix the setup; this says nothing about your change |
+| exit code `3`, `status: inconclusive` | Checks failed, but the lab never reached a testable state: nothing passed anywhere, and the failing nodes never returned usable BGP state (CLI not answering, or no BGP neighbors at all). `inconclusive_reason` says what was seen | Rerun, perhaps with a longer `timeout`. Don't rewrite your change because of it, and don't apply it either: this says nothing about your change |
 
-JSON report: `schema: netdryrun.report/v1`, with `checks[]` of `{name, type, params, passed, detail, attempts, duration_s, history, evidence}`.
+JSON report: `schema: netdryrun.report/v1`, with `status`, `inconclusive_reason` and `checks[]` of `{name, type, params, passed, detail, attempts, duration_s, history, evidence}`. Treat any status other than `passed` as "not safe to apply".
+
+A configured session that is down always counts as `failed`, never `inconclusive`: an ASN typo looks exactly like a slow lab. Exact rules: https://netdryrun.com/reference/cli/#when-a-run-is-inconclusive
 
 ## Rules
 - **Never treat a pass as proof of production safety.** It covers the checks that exist, on the network OSes in the lab (<!-- facts:agents_platforms -->FRR, SR Linux, SONiC and Arista EOS<!-- /facts:agents_platforms -->), in steady state and in the defined failure scenarios.
@@ -22,6 +25,6 @@ JSON report: `schema: netdryrun.report/v1`, with `checks[]` of `{name, type, par
 - Netdryrun never touches production devices. Only run topologies you were given or created in the lab folder.
 
 ## MCP
-`netdryrun mcp` starts an MCP server (stdio) with the tools <!-- facts:mcp_tools -->`dry_run`, `run_checks`, `record_baseline`, `validate` and `check_types`<!-- /facts:mcp_tools -->. Each result has a separate `verdict` field: `SAFE TO PROCEED` or `DO NOT APPLY THIS CHANGE`. Add it with `claude mcp add netdryrun -- netdryrun mcp`, or run it with `uvx netdryrun mcp`.
+`netdryrun mcp` starts an MCP server (stdio) with the tools <!-- facts:mcp_tools -->`dry_run`, `run_checks`, `record_baseline`, `validate` and `check_types`<!-- /facts:mcp_tools -->. Each result has a separate `verdict` field: `SAFE TO PROCEED`, `DO NOT APPLY THIS CHANGE`, or `INCONCLUSIVE: the lab did not reach a testable state; this says nothing about your change. Do not apply it until a run passes.` Add it with `claude mcp add netdryrun -- netdryrun mcp`, or run it with `uvx netdryrun mcp`.
 
 Docs: https://netdryrun.com/ai-agents/ · Full docs in one file: https://netdryrun.com/llms-full.txt
