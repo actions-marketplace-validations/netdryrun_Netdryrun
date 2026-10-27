@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Try it in your browser:** a devcontainer (`.devcontainer/`, containerlab's Docker-in-Docker image with containerlab 0.81.1, Netdryrun installed from the checkout, FRR image pre-pulled) and an "Open in GitHub Codespaces" badge, so the agent demo runs with nothing installed.
 - **Agent demo** (`examples/agent-demo`): a ticket, a tempting change that passes the ticket checks but leaks routes (rejected), and the proper fix (accepted). `demo.sh` replays it and checks that attempt 1 fails only on the leak guards; CI runs it on pushes to `main` and on pull requests.
 - MCP server reports its version and website in `serverInfo`.
 

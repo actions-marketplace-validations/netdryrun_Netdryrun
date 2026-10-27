@@ -1,0 +1,25 @@
+// Zero-install trial: GitHub Codespaces (or any devcontainer host) with Docker-in-Docker and
+// containerlab, so the examples run in the browser. Try: bash examples/agent-demo/demo.sh
+{
+  "name": "Netdryrun",
+  // containerlab's own devcontainer image (Docker-in-Docker, containerlab preinstalled).
+  // The tag is the containerlab version; keep it in step with action.yml.
+  "image": "ghcr.io/srl-labs/containerlab/devcontainer-dind-slim:0.81.1",
+  // 2 cores / 8 GB is the smallest Codespaces machine and runs the 4 FRR routers of the agent
+  // demo comfortably (the demo passes in about 70 s). It uses 2 of the free monthly core-hours per
+  // hour: GitHub Free's 120 core-hours are about 60 hours on this machine.
+  "hostRequirements": {
+    "cpus": 2,
+    "memory": "8gb",
+    "storage": "32gb"
+  },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "customizations": {
+    "codespaces": {
+      "openFiles": ["examples/agent-demo/README.md"]
+    },
+    "vscode": {
+      "extensions": ["redhat.vscode-yaml"]
+    }
+  }
+}
