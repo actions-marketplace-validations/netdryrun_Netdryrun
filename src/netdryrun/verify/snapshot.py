@@ -374,23 +374,24 @@ class BgpPath:
 
 @dataclass(frozen=True)
 class Session:
-    state: str                      # lower-case FSM state, e.g. "established", "active", "idle"
+    # The raw FSM state ("established", "active", "idle", ...) is evidence only (compare=False): sessions are
+    # compared as established or not (`established`, derived from it), so "active" vs "connect" is no change.
+    state: str = field(compare=False)
     remote_as: int | None
     local_as: int | None
     afis: tuple[str, ...]           # address families configured on the session, e.g. ("ipv4-unicast",)
     local_address: str | None       # the session's local address while established
-    # Derived or collection-only facts: never part of the diff (compare=False), but part of stability.
+    # Derived facts: never part of the diff (compare=False), but part of stability.
     prefix_counts: tuple[tuple[str, int], ...] = field(default=(), compare=False)
     soft_reconfig_in: tuple[str, ...] = field(default=(), compare=False)
+    established: bool = field(init=False)
 
     def __post_init__(self):
-        _require(bool(self.state) and self.state == self.state.lower(), f"session: bad state {self.state!r}")
+        _require(isinstance(self.state, str) and bool(self.state) and self.state == self.state.lower(),
+                 f"session: bad state {self.state!r}")
         _require(all(a in AFI_SAFIS for a in self.afis) and list(self.afis) == sorted(set(self.afis)),
                  f"session: bad address families {self.afis!r}")
-
-    @property
-    def established(self) -> bool:
-        return self.state == "established"
+        object.__setattr__(self, "established", self.state == "established")
 
 
 VALUE_TYPES = {"session": Session, "rib": tuple[RibEntry, ...], "path": BgpPath, "adj_out": BgpAttrs, "adj_in": BgpAttrs}
@@ -566,14 +567,19 @@ def decode(tp, data, where: str):
     if is_dataclass(tp):
         if not isinstance(data, dict):
             raise SnapshotError(f"{where}: expected an object, got {str(data)[:60]!r}")
-        names = [f.name for f in fields(tp)]
-        unknown = sorted(set(data) - set(names))
+        names = [f.name for f in fields(tp) if f.init]
+        derived = [f.name for f in fields(tp) if not f.init]     # computed by the class; checked when stored
+        unknown = sorted(set(data) - set(names) - set(derived))
         missing = [n for n in names if n not in data]
         if unknown or missing:
             raise SnapshotError(f"{where}: {tp.__name__} has unknown field(s) {unknown} / missing field(s) {missing}")
         hints = typing.get_type_hints(tp)
         try:
-            return tp(**{n: decode(hints[n], data[n], f"{where}.{n}") for n in names})
+            value = tp(**{n: decode(hints[n], data[n], f"{where}.{n}") for n in names})
         except TypeError as e:
             raise SnapshotError(f"{where}: {e}") from None
+        for n in derived:
+            if n in data and data[n] != getattr(value, n):
+                raise SnapshotError(f"{where}: {n} is {data[n]!r}, but the other fields make it {getattr(value, n)!r}")
+        return value
     raise SnapshotError(f"{where}: cannot decode type {tp!r}")   # pragma: no cover - a programming error

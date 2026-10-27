@@ -512,3 +512,18 @@ def test_advertisement_added_without_a_best_path_to_compare_with():
     after.adj_out("edge1", "198.51.100.9", "10.77.0.0/24", attrs(as_path="", next_hop="198.51.100.8"))
     m = run(base(), after, [{**ADV, "prefix": "10.77.0.0/24"}])
     assert m.status == "failed" and m.not_happened
+
+
+# --- sessions compare as established or not; the raw FSM state is evidence only (review finding 7) ----------
+
+def test_sessions_compare_established_or_not_never_the_raw_state():
+    before, after = base(), base()
+    before.session("edge1", "10.0.9.2", session(None, state="active"))
+    after.session("edge1", "10.0.9.2", session(None, state="connect"))
+    assert diff(before.snap(), after.snap()) == []
+    assert before.snap().stability_view() == after.snap().stability_view()
+    states = {it["value"]["state"] for it in after.snap().to_json()["nodes"]["edge1"]["items"] if it["key"]["kind"] == "session"}
+    assert "connect" in states                                         # the raw state stays in the evidence
+    after.session("edge1", "10.0.3.2", session(None, state="idle", remote_as=65003))
+    (d,) = [d for d in diff(before.snap(), after.snap()) if d.key.kind == "session"]
+    assert d.key.neighbor == "10.0.3.2" and "established" in d.fields and "state" not in d.fields
