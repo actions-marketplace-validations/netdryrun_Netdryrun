@@ -477,3 +477,29 @@ def test_self_check_both_sides_resolved_to_the_same_configs(tmp_path):
     other = {**same, "configs/r1.conf": "cc"}
     vrun.check_sides(mk("before", same, same), mk("after", other, other), logs.append)
     assert "configs/r1.conf" in logs[-1] and "configs/r2.conf" not in logs[-1]
+
+
+# --- binds outside the config folder come from each side too (review finding 2) -----------------------------
+
+def test_binds_outside_the_config_folder_come_from_each_ref(tmp_path):
+    lab = repo_lab(tmp_path)
+    (lab / "shared" / "vtysh.conf").write_text("! vtysh after\n")
+    git(lab, "commit", "-q", "-am", "after")
+    (lab / "shared" / "vtysh.conf").write_text("! vtysh in the working tree\n")
+    side = capture_side(base().snap())
+    vrun.verify(str(lab / "topology.clab.yml"), "HEAD~1", "HEAD", str(intent_file(tmp_path, "intent: []\n")),
+                config_dir_name="configs", side_fn=side)
+    assert side.calls["before"]["shared/vtysh.conf"] == b"service integrated-vtysh-config\n"
+    assert side.calls["after"]["shared/vtysh.conf"] == b"! vtysh after\n"
+
+
+def test_a_bound_file_left_out_by_export_ignore_is_exit_2(tmp_path):
+    lab = repo_lab(tmp_path)
+    (lab / ".gitattributes").write_text("configs/edge1.conf export-ignore\n")
+    git(lab, "add", ".gitattributes")
+    git(lab, "commit", "-q", "-m", "export-ignore")
+    side = capture_side(base().snap())
+    res = vrun.verify(str(lab / "topology.clab.yml"), "HEAD", "HEAD", str(intent_file(tmp_path, "intent: []\n")),
+                      side_fn=side)
+    assert res.exit_code == 2 and "export-ignore" in res.error and "configs/edge1.conf" in res.error
+    assert not side.calls

@@ -52,7 +52,7 @@ It deploys the lab with the *before* configs, waits for a stable snapshot, destr
 Each side is built in its own temporary folder, never shared with the other side or with your working tree: the whole repository tree at the ref (`git archive`), or the whole directory. Every bind and `startup-config` of the topology is then resolved inside that side's tree, the way containerlab resolves it: relative to the topology's folder, with `${VAR}`, `~`, `..` and symlinks followed.
 
 - **A bind that resolves outside the side's tree is an error** (exit code `2`): an absolute path, `~/...`, a variable pointing elsewhere, or a symlink leading out would be the same file on both sides.
-- A bound file missing from a side is an error.
+- A bound file missing from a side is an error. With a git ref, a bound file left out of `git archive` by `export-ignore` in `.gitattributes` is an error too, and the message says so.
 - **Self-check before booting:** verify hashes every bound file on each side, checks that it holds that side's own bytes, and prints which bound files differ between the sides. If the sides differ in bound files but every bound file hashes the same in the two lab folders, it stops with "both sides resolved to the same configs" (exit code `2`).
 
 ## The intent file

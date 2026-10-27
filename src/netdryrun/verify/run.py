@@ -44,6 +44,12 @@ class VerifyInputError(RuntimeError):
     """Bad arguments: an unreadable side, a different topology, a config directory that can't be found."""
 
 
+class MissingBind(VerifyInputError):
+    def __init__(self, msg: str, path: Path):
+        super().__init__(msg)
+        self.path = path
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
@@ -117,7 +123,7 @@ def resolve_bind(src: str, topo_dir: Path, root: Path, where: str) -> Path:
         raise VerifyInputError(f"{where}: the topology binds {src}, which resolves outside the side's tree (to {real}); "
                                "both sides would share it. Bind files by a relative path inside the lab's tree")
     if not real.exists():
-        raise VerifyInputError(f"{where}: {src} is missing (the topology binds it)")
+        raise MissingBind(f"{where}: {src} is missing (the topology binds it)", real)
     return real
 
 
@@ -290,7 +296,16 @@ def _hash_binds(side: Side) -> None:
     root = _real(side.root)
     files: dict[str, Path] = {}
     for src in bind_sources(side.topology):
-        real = resolve_bind(src, side.topology.parent, side.root, where)
+        try:
+            real = resolve_bind(src, side.topology.parent, side.root, where)
+        except MissingBind as e:
+            if side.is_ref:
+                rel = e.path.relative_to(root).as_posix()
+                if _cat_files(side.repo, side.commit, [rel])[rel] is not None:
+                    raise VerifyInputError(f"{where}: {src} ({rel}) is in that ref but not in its `git archive`: "
+                                           "excluded by export-ignore in .gitattributes. verify builds the side from "
+                                           "the archive; remove the export-ignore for bound files") from None
+            raise
         for f in _files(real):
             files[src if f == real else f"{src}/{f.relative_to(real).as_posix()}"] = _real(f)
     side.bound = {k: _sha256(f.read_bytes()) for k, f in files.items()}
