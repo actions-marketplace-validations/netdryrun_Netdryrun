@@ -5,7 +5,7 @@ description: Real Netdryrun errors and how to fix them. containerlab not install
 
 # Troubleshooting
 
-Each error below was reproduced on purpose with Netdryrun™ 0.2.0 and containerlab 0.81.1 on WSL2 (Ubuntu 22.04). The output is copied from those runs.
+Each error below was reproduced on purpose on WSL2 (Ubuntu 22.04) with containerlab 0.81.1, using Netdryrun™ 0.2.0, and 0.3.0 for the inconclusive case. The output is copied from those runs. Rerun on 0.3.0, the missing-containerlab and unknown-node errors print the same messages.
 
 Exit code `2` means the run could not complete (a config error or a lab error). Exit code `1` means a check failed. See [exit codes](reference/cli.md#exit-codes).
 
@@ -276,7 +276,40 @@ Fixes:
 - **Make the lab faster.** Lower `timeout` in `netdryrun.yml` so a broken change fails sooner, and pull images in advance so the first call does not wait on a download.
 - **If the client cannot wait that long**, let the agent run `netdryrun run <folder>` in a shell and read `netdryrun-report.json`.
 
-<!-- TODO(v0.3): add the `inconclusive` status here once ndr/v03 is merged: what it means, which errors produce it, and how it differs from `error`. -->
+## Inconclusive: the lab never came up
+
+Exit code `3` means checks failed, but the lab never reached a testable state, so the result says nothing about your change. Reproduced with Netdryrun 0.3.0 by turning off `bgpd` in the FRR `daemons` file of a copy of `examples/frr-bgp` (and `timeout: 30`):
+
+```text
+$ netdryrun run . --json report.json
+Netdryrun 0.3.0: 7 checks from netdryrun.yml
+Deploying lab ndrdocs-nobgp (3 nodes)...
+  [FAIL] r1: BGP session to 10.0.12.2 is established -- error: `vtysh -c show bgp neighbors json` failed on r1 (rc=1): bgpd is not running (33.1s)
+  [FAIL] r1: BGP session to 10.0.13.2 is established -- error: `vtysh -c show bgp neighbors json` failed on r1 (rc=1): bgpd is not running (33.1s)
+  [FAIL] r1: route 192.168.3.0/24 via bgp is present -- not active via bgp; seen: nothing (33.1s)
+  [FAIL] r1: ping 192.168.3.1 from 192.168.1.1 expects success -- 0/3 replies (need 2) (33.1s)
+  [FAIL] r1: BGP best path for 192.168.2.0/24 has as-path '65002', next hop 10.0.12.2 -- error: `vtysh -c show bgp ipv4 unicast 192.168.2.0/24 json` failed on r1 (rc=1): bgpd is not running (33.1s)
+Convergence checks done; settling 10s before post-convergence checks...
+  [FAIL] r1: prefixes from 10.0.12.2 >= 1 and <= 10 -- error: `vtysh -c show bgp neighbors json` failed on r1 (rc=1): bgpd is not running (30.1s)
+  [PASS] r1: route 0.0.0.0/0 via bgp is absent -- absent (held 10s, 5 samples) (10.1s)
+Destroying lab...
+INCONCLUSIVE: the lab did not reach a testable state: r1 never returned usable BGP state (r1: error: `vtysh -c show bgp neighbors json` failed on r1 (rc=1): bgpd is not running), and no check passed on any sample. Rerun with a longer timeout, or check that the lab boots (6 of 7 checks failed; this says nothing about the change)
+  wrote json report: report.json
+```
+
+The JSON report has the same text in `inconclusive_reason`, and every unready sample in `history` is marked:
+
+```json
+{"t": 33.1, "passed": false, "detail": "error: `vtysh -c show bgp neighbors json` failed on r1 (rc=1): bgpd is not running", "unready": true}
+```
+
+How it differs from the other results:
+
+- **`error` (exit `2`):** the run could not start or finish: a config error, a missing tool, a failed deploy.
+- **`failed` (exit `1`):** the lab was up and something is wrong. A configured BGP session that is down (an ASN typo, as in [the lab never converges](#the-lab-never-converges-timeout)) is `failed`, not `inconclusive`.
+- **`inconclusive` (exit `3`):** no positive check passed on any sample, and every failed check is on a node whose CLI or BGP never answered.
+
+Fix: check that the lab boots (`containerlab inspect`, `docker logs <container>`), that the routing daemon is enabled, and that `timeout` is long enough for slow NOSes, then rerun. One known limit: a change that deletes a node's whole BGP config looks the same and is reported `inconclusive`. It is still never `passed`. See the [full rules](reference/cli.md#when-a-run-is-inconclusive).
 
 ## Still stuck
 

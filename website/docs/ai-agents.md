@@ -127,7 +127,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.2.0
+      - uses: netdryrun/netdryrun@v0.3.0
         with:
           path: network/
           pr-comment: true
@@ -184,7 +184,7 @@ The server also exposes the last full JSON report as a resource, `netdryrun://re
 - `DO NOT APPLY THIS CHANGE` for `failed` or `error`, including config errors
 - `INCONCLUSIVE: the lab did not reach a testable state; this says nothing about your change. Do not apply it until a run passes.` when `status` is `inconclusive`: the lab never came up far enough for the checks to mean anything ([rules](reference/cli.md#when-a-run-is-inconclusive)). `inconclusive_reason` says what was seen. Rerun it, perhaps with a longer `timeout`; don't rewrite the change because of it.
 
-<!-- TODO(v0.3): document the `inconclusive` status and its verdict here once ndr/v03 is merged. -->
+Tell the agent what to do with each verdict: propose the change only on `SAFE TO PROCEED`; on `DO NOT APPLY THIS CHANGE`, read the failed checks, fix the config and run again; on `INCONCLUSIVE`, rerun, and if it stays inconclusive, report that the lab does not come up instead of changing the config. [Troubleshooting](troubleshooting.md#inconclusive-the-lab-never-came-up) shows a real inconclusive run.
 
 The full evidence is written to `netdryrun-report.json` next to `netdryrun.yml`.
 

@@ -21,7 +21,11 @@ It does not prove:
 
 See [what a lab cannot prove](trust.md#what-a-lab-cannot-prove). The [verdict corpus](corpus.md) shows where Netdryrun was right and wrong on 30 realistic changes.
 
-<!-- TODO(v0.3): explain the `inconclusive` status here (a run that could not reach a verdict) once ndr/v03 is merged. -->
+## What does "inconclusive" mean?
+
+A run is `inconclusive` (exit code `3`) when checks failed but the lab never reached a state where they mean anything, for example a node whose BGP daemon never started. It says nothing about the change, good or bad: rerun, raise `timeout`, or check that the lab boots. Don't change the network change because of it, and don't apply it either: only `passed` means go.
+
+The rules are conservative. A configured session that is down, a missing route or a failed ping is always `failed`, because an ASN typo looks exactly like a slow lab from the outside. See [when a run is inconclusive](reference/cli.md#when-a-run-is-inconclusive) and [troubleshooting](troubleshooting.md#inconclusive-the-lab-never-came-up).
 
 ## How is it different from Batfish, pyATS or netlab?
 
@@ -62,11 +66,11 @@ Plan for the sum of your nodes plus a few hundred MB for Docker and containerlab
 
 ## How long does a run take, and what does CI cost?
 
-On GitHub-hosted `ubuntu-latest` runners, measured from three CI runs on `main` (2026-10-27):
+On GitHub-hosted `ubuntu-latest` runners, measured from three CI runs on `main` on 2026-10-27, before 0.3.0 added a few checks per example:
 
 | CI job | What it does | Time |
 |---|---|---|
-| `e2e (frr-bgp)` | Install containerlab and Netdryrun, pull FRR, run 6 checks and a link-failure scenario | 100 to 107 s |
+| `e2e (frr-bgp)` | Install containerlab and Netdryrun, pull FRR, run the checks and a link-failure scenario | 100 to 107 s |
 | `e2e (srl-frr)` | The same with SR Linux and FRR (the SR Linux image is 3.2 GB) | 88 to 107 s |
 | `catches-bad-change` | Run `frr-bgp-broken` and expect it to fail | 54 to 66 s |
 | `agent-demo` | Replay the agent demo: two full runs | 82 to 94 s |

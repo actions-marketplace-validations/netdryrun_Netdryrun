@@ -14,24 +14,24 @@ netdryrun run examples/frr-bgp
 
 ## At a glance
 
-Times are wall-clock for `netdryrun run` on WSL2 (20 cores, 16 GB) with images already pulled, measured on 2026-10-27 with Netdryrun™ 0.2.0 and containerlab 0.81.1. They include deploying and destroying the lab. The first run of each example also pulls its images.
+Times are wall-clock for `netdryrun run` on WSL2 (20 cores, 16 GB) with images already pulled, measured on 2026-10-27 with containerlab 0.81.1 and Netdryrun™ 0.3.0 (`frr-bgp-broken` and `agent-demo`: 0.2.0; their checks did not change in 0.3.0). They include deploying and destroying the lab. The first run of each example also pulls its images.
 
 | Example | Network OS | Shows | Expected | Exit | Time |
 |---|---|---|---|---|---|
-| [frr-bgp](#frr-bgp) | FRR | Basic checks, a leak guard, a link-failure scenario | `PASSED: 9 passed, 0 failed` | `0` | 90 s |
+| [frr-bgp](#frr-bgp) | FRR | Basic checks, best-path attributes, a leak guard, a link-failure scenario | `PASSED: 11 passed, 0 failed` | `0` | 84 s |
 | [frr-bgp-broken](#frr-bgp-broken) | FRR | A leaked default route caught | `FAILED: 5 passed, 1 failed` | `1` | 45 s |
-| [srl-frr](#srl-frr) | Nokia SR Linux + FRR | Mixed vendors | `PASSED: 6 passed, 0 failed` | `0` | 103 s |
-| [sonic-frr](#sonic-frr) | SONiC VS + FRR | Configuring a NOS after boot, a port-down scenario | `PASSED: 7 passed, 0 failed` | `0` | 114 s |
-| [arista-frr](#arista-frr) | Arista cEOS + FRR (your image) | A bring-your-own vendor image | `PASSED: 9 passed, 0 failed` | `0` | 110 s |
+| [srl-frr](#srl-frr) | Nokia SR Linux + FRR | Mixed vendors | `PASSED: 7 passed, 0 failed` | `0` | 60 s |
+| [sonic-frr](#sonic-frr) | SONiC VS + FRR | Configuring a NOS after boot, a port-down scenario | `PASSED: 8 passed, 0 failed` | `0` | 90 s |
+| [arista-frr](#arista-frr) | Arista cEOS + FRR (your image) | A bring-your-own vendor image | `PASSED: 10 passed, 0 failed` | `0` | 92 s |
 | [agent-demo](#agent-demo) `demo.sh` | FRR | An agent's leaky change rejected, the fix accepted | `Demo OK` | `0` | 65 s |
 
 ## frr-bgp
 
 [`examples/frr-bgp`](https://github.com/netdryrun/netdryrun/tree/main/examples/frr-bgp): three FRR routers (r1, r2, r3) in a triangle, each in its own AS, each announcing one LAN over eBGP.
 
-**Shows:** the basic check types, a negative check and a failure scenario. r1 checks both BGP sessions, a prefix count between 1 and 10 (a leak guard), a route to r3's LAN, a ping to it, and that no default route arrives. The scenario takes the r1-r2 link down and checks that r2's LAN is still reachable through r3 and that the session over the failed link is down.
+**Shows:** the basic check types, a negative check and a failure scenario. r1 checks both BGP sessions, a prefix count between 1 and 10 (a leak guard), a route to r3's LAN, a ping to it, the AS path and next hop of the best path to r2's LAN (a `bgp_route` check), and that no default route arrives. The scenario takes the r1-r2 link down and checks that r2's LAN is still reachable through r3, that the best path now goes through r3 (AS path `65003 65002`), and that the session over the failed link is down.
 
-**Expected:** `PASSED: 9 passed, 0 failed (9 checks)`, exit code `0`.
+**Expected:** `PASSED: 11 passed, 0 failed (11 checks)`, exit code `0`.
 
 This is the lab the [tutorial](tutorial.md) uses as "your lab".
 
@@ -53,25 +53,25 @@ CI runs this example on every push and expects it to fail.
 
 [`examples/srl-frr`](https://github.com/netdryrun/netdryrun/tree/main/examples/srl-frr): a Nokia SR Linux router (`srl1`) peering eBGP with FRR (`frr1`).
 
-**Shows:** a mixed-vendor lab. Both sessions, a BGP route on each side and a ping in each direction. SR Linux boots slower, so the file sets `timeout: 120`.
+**Shows:** a mixed-vendor lab. Both sessions, a BGP route on each side, a ping in each direction, and the best path's AS path, local preference and next hop on `srl1`. SR Linux boots slower, so the file sets `timeout: 120`.
 
-**Expected:** `PASSED: 6 passed, 0 failed (6 checks)`, exit code `0`. The SR Linux image is about 3.2 GB.
+**Expected:** `PASSED: 7 passed, 0 failed (7 checks)`, exit code `0`. The SR Linux image is about 3.2 GB.
 
 ## sonic-frr
 
 [`examples/sonic-frr`](https://github.com/netdryrun/netdryrun/tree/main/examples/sonic-frr): SONiC VS (`sonic1`, the `docker-sonic-vs` image) peering eBGP with FRR (`frr1`).
 
-**Shows:** a NOS that is configured after boot. SONiC VS has no startup config here; `setup` commands in `netdryrun.yml` wait for its services, set the interface addresses and configure BGP. Checks: the session, a route on each side, a ping, a prefix count, and a scenario that takes the SONiC port `Ethernet0` down and checks that the session drops and the route is withdrawn.
+**Shows:** a NOS that is configured after boot. SONiC VS has no startup config here; `setup` commands in `netdryrun.yml` wait for its services, set the interface addresses and configure BGP. Checks: the session, a route on each side, a ping, a prefix count, best-path attributes on `sonic1`, and a scenario that takes the SONiC port `Ethernet0` down and checks that the session drops and the route is withdrawn.
 
-**Expected:** `PASSED: 7 passed, 0 failed (7 checks)`, exit code `0`. `setup` waits for SONiC's services, so this example takes the longest.
+**Expected:** `PASSED: 8 passed, 0 failed (8 checks)`, exit code `0`. `setup` waits for SONiC's services before any check runs.
 
 ## arista-frr
 
 [`examples/arista-frr`](https://github.com/netdryrun/netdryrun/tree/main/examples/arista-frr): an Arista cEOS router (`ceos1`) peering eBGP with FRR (`frr1`).
 
-**Shows:** a vendor image you bring yourself. cEOS-lab is free from arista.com with an account but can't be redistributed, so import it as `ceos:4.36.3M` first (the comment in `topology.clab.yml` shows how). Checks: both sessions, a prefix count, a route on each side, a ping, no default route at the Arista, and a scenario that takes the link down from the FRR side.
+**Shows:** a vendor image you bring yourself. cEOS-lab is free from arista.com with an account but can't be redistributed, so import it as `ceos:4.36.3M` first (the comment in `topology.clab.yml` shows how). Checks: both sessions, a prefix count, a route on each side, a ping, best-path attributes on `ceos1`, no default route at the Arista, and a scenario that takes the link down from the FRR side.
 
-**Expected:** `PASSED: 9 passed, 0 failed (9 checks)`, exit code `0`. Without the image, the run stops with exit code `2`; see [the cEOS image is missing](troubleshooting.md#the-ceos-image-is-missing).
+**Expected:** `PASSED: 10 passed, 0 failed (10 checks)`, exit code `0`. Without the image, the run stops with exit code `2`; see [the cEOS image is missing](troubleshooting.md#the-ceos-image-is-missing).
 
 ## agent-demo
 
