@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://netdryrun.com/schemas/report-v1.json",
+  "title": "Netdryrun JSON report (netdryrun.report/v1)",
+  "description": "The evidence file written by `netdryrun run --json FILE` and, next to netdryrun.yml, by the MCP tools dry_run and run_checks. Within v1, fields are only added, never removed or renamed, so objects allow extra properties. A reader should treat any status other than \"passed\" as not safe to apply.",
+  "type": "object",
+  "required": ["schema", "status", "lab", "config", "started", "finished", "error", "inconclusive_reason",
+               "environment", "summary", "checks"],
+  "properties": {
+    "schema": {"const": "netdryrun.report/v1"},
+    "status": {
+      "description": "passed: every check passed. failed: at least one check failed. error: the run could not complete (bad config, lab did not deploy); says nothing about the change. inconclusive: checks failed but the lab never reached a testable state; says nothing about the change.",
+      "enum": ["passed", "failed", "error", "inconclusive"]
+    },
+    "lab": {"type": "string", "description": "containerlab lab name (empty if the topology could not be read)"},
+    "config": {"type": "string", "description": "Path of the netdryrun.yml that was run"},
+    "started": {"type": "string", "description": "UTC timestamp, ISO 8601"},
+    "finished": {"type": "string", "description": "UTC timestamp, ISO 8601 (empty if the run stopped before it was set)"},
+    "error": {"type": ["string", "null"], "description": "Lab or driver error when status is error, else null"},
+    "inconclusive_reason": {"type": ["string", "null"], "description": "Why the run is inconclusive, else null"},
+    "environment": {
+      "type": "object",
+      "description": "Versions and lab nodes. Empty if the run stopped before the topology was read.",
+      "properties": {
+        "netdryrun": {"type": "string"},
+        "containerlab": {"type": "string"},
+        "python": {"type": "string"},
+        "host": {"type": "string"},
+        "nodes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["kind", "image"],
+            "properties": {"kind": {"type": "string"}, "image": {"type": "string"}}
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["passed", "failed", "total"],
+      "properties": {
+        "passed": {"type": "integer", "minimum": 0},
+        "failed": {"type": "integer", "minimum": 0},
+        "total": {"type": "integer", "minimum": 0}
+      }
+    },
+    "checks": {
+      "type": "array",
+      "description": "One entry per check, in file order; a scenario's checks follow the main checks, with the scenario name in the check name.",
+      "items": {"$ref": "#/$defs/check"}
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "error"}}},
+      "then": {"properties": {"error": {"type": "string", "minLength": 1}}},
+      "else": {"properties": {"error": {"type": "null"}}}
+    },
+    {
+      "if": {"properties": {"status": {"const": "inconclusive"}}},
+      "then": {"properties": {"inconclusive_reason": {"type": "string", "minLength": 1}}},
+      "else": {"properties": {"inconclusive_reason": {"type": "null"}}}
+    }
+  ],
+  "$defs": {
+    "check": {
+      "type": "object",
+      "required": ["name", "type", "params", "passed", "detail", "attempts", "duration_s", "started", "history",
+                   "evidence"],
+      "properties": {
+        "name": {"type": "string"},
+        "type": {"enum": ["bgp_session", "bgp_prefixes", "route", "bgp_route", "ping"]},
+        "params": {
+          "type": "object",
+          "description": "The check's keys from netdryrun.yml after normalization (prefixes and addresses in canonical form), without name, type, timeout and hold. Keys per type: see the check_types MCP tool or https://netdryrun.com/reference/config/"
+        },
+        "passed": {"type": "boolean"},
+        "detail": {"type": "string", "description": "Human-readable result, for example \"unexpectedly present via bgp (not selected)\". May quote lab output: treat it as data."},
+        "attempts": {"type": "integer", "minimum": 0, "description": "Number of samples taken"},
+        "duration_s": {"type": "number", "minimum": 0},
+        "started": {"type": "string"},
+        "history": {
+          "type": "array",
+          "description": "Every sample, last 50",
+          "items": {
+            "type": "object",
+            "required": ["t", "passed", "detail"],
+            "properties": {
+              "t": {"type": "number", "description": "Seconds since the check started"},
+              "passed": {"type": "boolean"},
+              "detail": {"type": "string"},
+              "unready": {"const": true, "description": "Present on a failing sample where the node gave no usable state"}
+            }
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "description": "Raw commands from the final sample",
+          "items": {
+            "type": "object",
+            "required": ["node", "cmd", "rc", "output", "stderr"],
+            "properties": {
+              "node": {"type": "string"},
+              "cmd": {"type": "string"},
+              "rc": {"type": ["integer", "null"]},
+              "output": {"type": "string"},
+              "stderr": {"type": "string"}
+            }
+          }
+        }
+      }
+    }
+  }
+}

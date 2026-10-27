@@ -150,3 +150,15 @@ def test_other_statuses_unchanged():
     assert err.status == "error" and err.exit_code == 2 and err.inconclusive_reason is None
     ok = _report([result(SESSION, passed=True, samples_passed=2)])
     assert ok.status == "passed" and ok.exit_code == 0 and _summary(ok, None)["verdict"] == "SAFE TO PROCEED"
+
+
+def test_summary_flags_failed_checks_that_never_got_state():
+    # A failed run can still be a broken lab (bgpd off on every router, say) when other nodes' route and
+    # ping checks read cleanly: the status stays failed, but the agent sees which failures had no state.
+    rep = _report([result(SESSION, unready=10, detail="error: bgpd is not running"),
+                   result(check("route", node="r2", prefix="10.9.0.0/16"), detail="not active via bgp; seen: nothing")])
+    assert rep.status == "failed"
+    s = _summary(rep, None)
+    assert s["checks"][0]["unready"] is True and "unready" not in s["checks"][1]
+    ok = _summary(_report([result(SESSION, passed=True, samples_passed=2)]), None)
+    assert "unready" not in ok["checks"][0]

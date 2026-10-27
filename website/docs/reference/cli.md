@@ -118,7 +118,7 @@ FAILED: 5 passed, 1 failed (6 checks)
 
 ### JSON
 
-`--json FILE` writes the full evidence. Schema identifier: `netdryrun.report/v1`.
+`--json FILE` writes the full evidence. Schema identifier: `netdryrun.report/v1`. Formal definition: [`report-v1.json`](https://netdryrun.com/schemas/report-v1.json), a JSON Schema (draft 2020-12) that the test suite checks real reports against. Within v1 fields are only added, so validate with extra properties allowed (the schema does).
 
 | Field | Type | Meaning |
 |---|---|---|

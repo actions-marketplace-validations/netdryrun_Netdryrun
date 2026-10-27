@@ -177,6 +177,7 @@ The server also exposes the last full JSON report as a resource, `netdryrun://re
   "passed": 5,
   "failed": 1,
   "error": null,
+  "inconclusive_reason": null,
   "lab": "ndr-frr-broken",
   "checks": [
     {"name": "r1: route 0.0.0.0/0 via bgp is absent", "passed": false,
@@ -189,6 +190,8 @@ The server also exposes the last full JSON report as a resource, `netdryrun://re
 
 (`checks` is shortened here; the real result lists every check.)
 
+A failed check also has `"unready": true` when every sample of it failed for lack of state: the command failed on the device, its output could not be read, or BGP had no neighbors at all. That points at the lab as much as at the change. The [inconclusive rule](reference/cli.md#when-a-run-is-inconclusive) is conservative, so a lab where a daemon never started can still come back `failed` when other nodes' route and ping checks read cleanly. If the `unready` failures and details such as `bgpd is not running` sit on nodes the change doesn't explain, report the lab problem; don't rewrite the change, and don't apply it.
+
 `verdict` is a separate field with one of three values:
 
 - `SAFE TO PROCEED` when `status` is `passed`
@@ -197,7 +200,7 @@ The server also exposes the last full JSON report as a resource, `netdryrun://re
 
 Tell the agent what to do with each verdict: propose the change only on `SAFE TO PROCEED`; on `DO NOT APPLY THIS CHANGE`, read the failed checks, fix the config and run again; on `INCONCLUSIVE`, rerun, and if it stays inconclusive, report that the lab does not come up instead of changing the config. [Troubleshooting](troubleshooting.md#inconclusive-the-lab-never-came-up) shows a real inconclusive run.
 
-The full evidence is written to `netdryrun-report.json` next to `netdryrun.yml`.
+The full evidence is written to `netdryrun-report.json` next to `netdryrun.yml`. Its format, `netdryrun.report/v1`, is defined by a JSON Schema: [`report-v1.json`](https://netdryrun.com/schemas/report-v1.json). The test suite validates reports from real lab runs against it.
 
 ## Safety model
 

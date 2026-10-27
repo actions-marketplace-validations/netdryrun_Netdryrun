@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **Agent evaluation** (`examples/agent-eval/`): ten pre-registered tickets on the example labs, each with a hidden grader, worked by fresh headless Claude Code agents that had only `AGENTS.md`, the AI agents page and the MCP tools. Results, misses included: [RESULTS.md](examples/agent-eval/RESULTS.md).
+- **JSON Schema for the report**: `website/docs/schemas/report-v1.json`, published at https://netdryrun.com/schemas/report-v1.json (draft 2020-12). Tests validate reports from real lab runs against it.
+- **MCP: `"unready": true` on a failed check that never got usable state** from its node (the command failed, or BGP had no neighbors at all). The inconclusive rule is conservative, so a lab with `bgpd` off on every router still comes back `failed` when other nodes' route and ping checks read cleanly; the flag and `AGENTS.md` now help an agent tell that from a bad change. Found by the agent evaluation's broken-lab ticket.
+
 - **`inject_routes` failure fault** (FRR nodes): a scenario makes a node announce extra routes (`prefixes`, or `count` consecutive ones from `from`, optional `as_path` prepend), then removes them. Use it to test that a max-prefix limit or an import filter holds when a customer or peer misbehaves. Prefixes the node already has configured, and non-FRR nodes, are refused before anything changes.
 - **Verdict Corpus v2** (`corpus/v2/`, `python corpus/run.py --corpus v2`): its own base lab, intent spec and 18 pre-registered cases that re-express the v1 misses (unexpected routes, latent risks, rigid prefix counts, a vendor-default label) and add new changes. v1 results are unchanged.
 - **Fix: the Markdown summary and PR comment of a big lab.** A GitHub comment holds at most 65,536 characters, and the summary listed every check (about 90 characters each), so above roughly 700 checks (a recorded 20-node lab gets there) the Action's `pr-comment` was rejected with a misleading permissions warning. The table now stops before the limit, failures first, and says how many checks it left out; the JSON and JUnit reports still have every check. Found by a 20-node scale test.

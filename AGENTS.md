@@ -11,11 +11,11 @@ If you are an AI agent (or building one) that proposes or applies network config
 | Signal | Meaning | What you should do |
 |---|---|---|
 | exit code `0`, `status: passed` | Every check passed after convergence | Present the change with the evidence. This proves only the checks that exist, in this lab |
-| exit code `1`, `status: failed` | At least one check failed | Read `checks[].detail` and `checks[].evidence` for the failed ones, fix the config, rerun |
+| exit code `1`, `status: failed` | At least one check failed | Read `checks[].detail` and `checks[].evidence` for the failed ones, fix the config, rerun. First rule out a broken lab: the inconclusive rule is conservative, so a lab where a daemon never started can still come back `failed`. If failed checks have `unready: true` (MCP) or details like `error: ... bgpd is not running` on nodes your change doesn't explain, report the lab problem instead of rewriting the change, and don't apply it |
 | exit code `2`, `status: error` | Config or lab problem (bad YAML, unknown node, lab didn't start) | Fix the setup; this says nothing about your change |
 | exit code `3`, `status: inconclusive` | Checks failed, but the lab never reached a testable state: nothing passed anywhere, and the failing nodes never returned usable BGP state (CLI not answering, or no BGP neighbors at all). `inconclusive_reason` says what was seen | Rerun, perhaps with a longer `timeout`. Don't rewrite your change because of it, and don't apply it either: this says nothing about your change |
 
-JSON report: `schema: netdryrun.report/v1`, with `status`, `inconclusive_reason` and `checks[]` of `{name, type, params, passed, detail, attempts, duration_s, history, evidence}`. Treat any status other than `passed` as "not safe to apply".
+JSON report: `schema: netdryrun.report/v1`, with `status`, `inconclusive_reason` and `checks[]` of `{name, type, params, passed, detail, attempts, duration_s, history, evidence}`. Treat any status other than `passed` as "not safe to apply". JSON Schema: https://netdryrun.com/schemas/report-v1.json
 
 A configured session that is down always counts as `failed`, never `inconclusive`: an ASN typo looks exactly like a slow lab. Exact rules: https://netdryrun.com/reference/cli/#when-a-run-is-inconclusive
 
