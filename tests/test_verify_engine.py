@@ -477,3 +477,38 @@ def test_best_path_on_the_old_best_path_changing_a_listed_attribute_is_undeclare
     m = run(before, after, lines)
     assert m.status == "failed" and undeclared(m) == {("path", "edge1", "198.51.100.0/24")}
     assert {d.key.neighbor for d in m.undeclared} == {"10.0.3.2"}
+
+
+# --- advertisement goes: added carries the best path, or the declared values (review finding 6) -------------
+
+ADV = {"prefix": "10.100.0.0/24", "advertisement": {"node": "edge1", "neighbor": "198.51.100.9"}, "goes": "added"}
+
+
+def _advertise_to_the_outside(**kw):
+    after = base()
+    after.adj_out("edge1", "198.51.100.9", "10.100.0.0/24", attrs(**{"as_path": "65101", "next_hop": "198.51.100.8", **kw}))
+    return after
+
+
+def test_advertisement_added_must_carry_the_best_paths_attributes():
+    assert run(base(), _advertise_to_the_outside(), [ADV]).status == "matched"
+    for kw in ({"as_path": "65101 65101 65101"}, {"communities": ["no-export"]}, {"med": 50}, {"origin": "incomplete"},
+               {"large": ("65000:1:2",)}):
+        m = run(base(), _advertise_to_the_outside(**kw), [ADV])
+        assert m.status == "failed" and m.not_happened, kw
+        assert undeclared(m) == {("adj_out", "edge1", "10.100.0.0/24")}
+
+
+def test_advertisement_added_with_declared_values():
+    after = _advertise_to_the_outside(as_path="65101 65101 65101", communities=["no-export"])
+    line = {**ADV, "with": {"as_path": "65101 65101 65101", "communities": ["no-export"]}}
+    assert run(base(), after, [line]).status == "matched"
+    assert run(base(), after, [{**ADV, "with": {"as_path": "65101 65101 65101"}}]).status == "failed"   # communities unlisted
+    assert run(base(), after, [{**ADV, "with": {"as_path": "65101 65101", "communities": ["no-export"]}}]).status == "failed"
+
+
+def test_advertisement_added_without_a_best_path_to_compare_with():
+    after = base()
+    after.adj_out("edge1", "198.51.100.9", "10.77.0.0/24", attrs(as_path="", next_hop="198.51.100.8"))
+    m = run(base(), after, [{**ADV, "prefix": "10.77.0.0/24"}])
+    assert m.status == "failed" and m.not_happened

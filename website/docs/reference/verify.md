@@ -147,6 +147,18 @@ intent:
 
 `to:` follows the `best_path_on` rule (listed exact, the rest frozen); `from` can't be set.
 
+`goes: added` has an attribute limit too. **Without `with:`**, the new advertisement must carry the node's own best path for the prefix: no outbound rewrite. Its AS path, origin, MED, communities (standard, extended and large) and, where it is sent, local preference must equal the best path's. **With `with:`**, the listed attributes must equal the given values, and the rest still equal the best path's:
+
+```yaml
+intent:
+  - prefix: 10.100.0.0/24
+    advertisement: {node: edge1, neighbor: 198.51.100.9}
+    goes: added
+    with: {as_path: "65101 65101 65101", communities: [no-export]}   # an outbound prepend and no-export
+```
+
+`with:` accepts the `to:` attributes and goes with `goes: added` only. A node without a BGP best path for the prefix can't satisfy `goes: added`.
+
 ### allow_anywhere
 
 ```yaml

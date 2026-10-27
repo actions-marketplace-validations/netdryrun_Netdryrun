@@ -14,7 +14,8 @@
         including_received_only: true
       - prefix: 198.51.100.0/24
         advertisement: {node: edge1, neighbor: 192.0.2.9}
-        goes: added                           # or removed, or to: {...}
+        goes: added                           # or removed, or to: {...}; added carries the best path's
+                                              # attributes, or the ones given in with: {...}
     allow_anywhere: ["10.200.*.0/24"]          # `*` = one whole octet; /16 reach at most; explicit length
 
 Validation is strict: an unknown key, a wrong type, a prefix with host bits, two lines about the same
@@ -49,7 +50,7 @@ LINE_KEYS = {
     "disappears_from": {"prefix", "vrf", "disappears_from", "including_received_only"},
     "best_path_on": {"prefix", "vrf", "best_path_on", "to"},
     "session": {"session", "goes"},
-    "advertisement": {"prefix", "vrf", "advertisement", "goes", "to"},
+    "advertisement": {"prefix", "vrf", "advertisement", "goes", "to", "with"},
 }
 SESSION_KEYS = ("node", "neighbor", "vrf", "afi")
 ADVERTISEMENT_KEYS = ("node", "neighbor")
@@ -301,10 +302,16 @@ def _line(i: int, raw) -> Line:
         raise IntentError(f"{where}: an advertisement line needs exactly one of `goes: added|removed` or `to:`")
     if has_goes and raw["goes"] not in ("added", "removed"):
         raise IntentError(f"{where}: goes must be added or removed for an advertisement, got {raw['goes']!r}")
-    to = _attrs(where, "to", raw["to"], tuple(a for a in BGP_ATTRS if a != "from")) if has_to else {}
+    adv_attrs = tuple(a for a in BGP_ATTRS if a != "from")
+    to = _attrs(where, "to", raw["to"], adv_attrs) if has_to else {}
+    if "with" in raw and raw.get("goes") != "added":
+        raise IntentError(f"{where}: `with:` goes with `goes: added` only (the new advertisement's attributes)")
+    pins = _attrs(where, "with", raw["with"], adv_attrs) if "with" in raw else {}
     change = raw["goes"] if has_goes else "changes to " + ", ".join(f"{k}={_show(v)}" for k, v in to.items())
+    if pins:
+        change += " with " + ", ".join(f"{k}={_show(v)}" for k, v in pins.items())
     text = f"{prefix}{in_vrf} advertised by {adv['node']} to {nbr}: {change}"
-    return Line(i, form, text, prefix, vrf, (adv["node"],), to=to, neighbor=nbr, goes=raw.get("goes"))
+    return Line(i, form, text, prefix, vrf, (adv["node"],), pins=pins, to=to, neighbor=nbr, goes=raw.get("goes"))
 
 
 def _show(v) -> str:

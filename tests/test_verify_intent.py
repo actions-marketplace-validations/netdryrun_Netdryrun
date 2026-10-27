@@ -153,3 +153,13 @@ def test_allow_anywhere_glob_reach_and_matching():
     assert v6.matches("2001:db8:1:5::/64", "default") and v6.matches("2001:0db8:0001:ffff::/64", "default")
     assert not v6.matches("2001:db8:2:5::/64", "default") and not v6.matches("2001:db8:1:5::/80", "default")
     assert not v6.matches("10.200.7.0/24", "default") and not v4.matches("2001:db8:1:5::/64", "default")
+
+
+def test_advertisement_with_is_only_for_goes_added():
+    adv = {"prefix": "10.0.0.0/24", "advertisement": {"node": "a", "neighbor": "10.0.0.1"}}
+    ln = parse([{**adv, "goes": "added", "with": {"as_path": "65000 65000", "med": 5}}]).lines[0]
+    assert ln.pins == {"as_path": AsPath.parse("65000 65000"), "med": 5}
+    for bad in ({**adv, "goes": "removed", "with": {"med": 5}}, {**adv, "to": {"med": 5}, "with": {"med": 5}},
+                {**adv, "goes": "added", "with": {"from": "10.0.0.1"}}, {**adv, "goes": "added", "with": {"protocol": "bgp"}}):
+        with pytest.raises(IntentError):
+            parse([bad])

@@ -24,8 +24,9 @@ What each form explains (and nothing else):
                         advertisements over it (in its address family), and the RIB entries of prefixes
                         that were learned only over it and are now gone. Nothing else: a failover to a
                         backup path is a best-path change and needs its own line.
-  advertisement         exactly that node's advertisement of the prefix to that neighbor (added, removed,
-                        or changed in the listed attributes).
+  advertisement         exactly that node's advertisement of the prefix to that neighbor: removed; changed
+                        in the listed attributes; or added, carrying the node's best path's attributes (no
+                        outbound rewrite), or the values given in `with:` (the rest as on the best path).
   allow_anywhere        any item whose prefix equals an entry or matches an explicit glob (in that VRF).
 """
 from __future__ import annotations
@@ -43,6 +44,9 @@ STATE_TEXT = {"absent": "absent", "received": "received (not selected)", "select
 # resolution to change, listing from allows the peer's own facts to change.
 ATTR_FIELDS = {"next_hop": ("next_hops",), "from": ()}
 COUPLED = {"next_hop": ("next_hop_resolution",), "from": ("peer_type", "peer_router_id")}
+# What a new advertisement must carry from the node's best path (outbound policy can rewrite these; the next
+# hop, weight and, on eBGP, local preference follow protocol rules). local_pref only where it is sent.
+ADV_ATTRS = ("as_path", "origin", "med", "local_pref", "communities", "ext_communities", "large_communities")
 
 
 class VerifyError(RuntimeError):
@@ -478,6 +482,19 @@ def _advertisement(ctx: _Ctx, ln: Line) -> LineResult:
     if ln.goes == "added":
         if b or not a:
             return LineResult(ln, False, f"{where} {'already existed before' if b else 'did not appear'}")
+        best = ctx.after.route(ln.node, ln.vrf, afi, ln.prefix).best()
+        if best is None:
+            return LineResult(ln, False, f"{where} appeared, but {ln.node} has no BGP best path for it to compare "
+                                         "the advertised attributes with")
+        want = {**attrs_view(best[1].attrs), **ln.pins}
+        for adv in a.values():
+            got = attrs_view(adv)
+            names = [k for k in ADV_ATTRS if k != "local_pref" or adv.local_pref is not None or k in ln.pins]
+            names += [k for k in ln.pins if k not in names]
+            bad = [f"{k} is {show(got[k])}, {'declared' if k in ln.pins else 'the best path has'} {show(want[k])}"
+                   for k in names if got[k] != want[k]]
+            if bad:
+                return LineResult(ln, False, f"{where}: " + "; ".join(bad))
     elif ln.goes == "removed":
         if a or not b:
             return LineResult(ln, False, f"{where} {'is still there' if a else 'did not exist before'}")
