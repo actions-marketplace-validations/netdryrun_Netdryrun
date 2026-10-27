@@ -9,7 +9,7 @@ description: What personal data netdryrun.com, the Netdryrun tool and our email 
 
 ## Who is responsible
 
-Victor Khen ("we"). Netdryrun is run by an individual; no company has been formed. Contact for anything about your data: [hello@netdryrun.com](mailto:hello@netdryrun.com).
+Netdryrun is operated by Victor Khen, Taiwan ("we"). Contact for anything about your data: [hello@netdryrun.com](mailto:hello@netdryrun.com).
 
 ## The short version
 
