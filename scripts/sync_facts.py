@@ -158,7 +158,7 @@ def blocks(f: dict) -> dict[str, str]:
                          "virtual lab before they reach production. It waits for convergence, checks BGP sessions, prefixes, routes and "
                          f"reachability, and returns a pass/fail verdict with evidence. Supported network OSes: {long_}. "
                          "It runs locally, in GitHub Actions, or as an MCP server for AI agents.\n\n"
-                         f"Install: `pip install netdryrun` (current version {v}). Source: https://github.com/netdryrun/netdryrun\n\n"
+                         f"Install: `pipx install netdryrun` (or `uv tool install netdryrun`; current version {v}). Source: https://github.com/netdryrun/netdryrun\n\n"
                          f"Facts (generated from the source): version {v}; check types {checks}; MCP tools {tools}; "
                          f"verdict corpus {scores}."),
         "llms_corpus": (f"- [Verdict corpus](https://netdryrun.com/corpus/): {c['cases']} realistic BGP changes with pre-registered "

@@ -78,7 +78,7 @@ Fastest start on your own topology: `netdryrun record my-lab/topology.clab.yml -
 
 
 ```bash
-pip install netdryrun
+pipx install netdryrun          # Ubuntu 24.04+: sudo apt install pipx && pipx ensurepath first
 netdryrun run path/to/folder    # the folder containing netdryrun.yml
 ```
 

@@ -83,7 +83,7 @@ Fastest start on your own topology: `netdryrun record my-lab/topology.clab.yml -
 
 
 ```bash
-pip install netdryrun
+pipx install netdryrun          # Ubuntu 24.04+: sudo apt install pipx && pipx ensurepath first
 netdryrun run path/to/folder    # the folder containing netdryrun.yml
 ```
 
@@ -141,9 +141,11 @@ containerlab needs root (or a user in the right groups) to create the lab. Run N
 ## Install
 
 ```bash
-pip install netdryrun
+pipx install netdryrun
 netdryrun --version
 ```
+
+On Ubuntu 24.04 and Debian 12 a plain `pip install` outside a virtualenv is refused ("externally managed environment"), so use pipx: `sudo apt install pipx && pipx ensurepath`, then open a new terminal. `uv tool install netdryrun`, or `pip install netdryrun` inside an activated virtualenv, work too.
 
 The MCP server for AI agents is included: run `netdryrun mcp`. See [AI agents](ai-agents.md).
 
@@ -2037,8 +2039,10 @@ AI agents are starting to change networks. Netdryrun™ includes an [MCP](https:
 ## Set up the MCP server
 
 ```bash
-pip install netdryrun
+pipx install netdryrun   # or uv tool install netdryrun
 ```
+
+On Ubuntu 24.04 and Debian 12, install pipx with `sudo apt install pipx && pipx ensurepath` and open a new terminal; a plain `pip install` outside a virtualenv is refused there.
 
 The MCP server is built in: `netdryrun mcp` starts it over stdio. The same requirements apply as for the CLI: Linux or WSL2, Docker, containerlab. The server runs labs on the machine where it runs.
 

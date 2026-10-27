@@ -21,8 +21,10 @@ AI agents are starting to change networks. Netdryrun™ includes an [MCP](https:
 ## Set up the MCP server
 
 ```bash
-pip install netdryrun
+pipx install netdryrun   # or uv tool install netdryrun
 ```
+
+On Ubuntu 24.04 and Debian 12, install pipx with `sudo apt install pipx && pipx ensurepath` and open a new terminal; a plain `pip install` outside a virtualenv is refused there.
 
 The MCP server is built in: `netdryrun mcp` starts it over stdio. The same requirements apply as for the CLI: Linux or WSL2, Docker, containerlab. The server runs labs on the machine where it runs.
 

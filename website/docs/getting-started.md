@@ -36,9 +36,11 @@ containerlab needs root (or a user in the right groups) to create the lab. Run N
 ## Install
 
 ```bash
-pip install netdryrun
+pipx install netdryrun
 netdryrun --version
 ```
+
+On Ubuntu 24.04 and Debian 12 a plain `pip install` outside a virtualenv is refused ("externally managed environment"), so use pipx: `sudo apt install pipx && pipx ensurepath`, then open a new terminal. `uv tool install netdryrun`, or `pip install netdryrun` inside an activated virtualenv, work too.
 
 The MCP server for AI agents is included: run `netdryrun mcp`. See [AI agents](ai-agents.md).
 

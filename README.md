@@ -51,10 +51,10 @@ A route-leaking change is rejected, then the fix passes every check. It uses you
 
 ### On your own machine
 
-Requirements: Linux or WSL2, Docker, [containerlab](https://containerlab.dev/install/), Python 3.10+.
+Requirements: Linux or WSL2, Docker, [containerlab](https://containerlab.dev/install/), Python 3.10+. On Ubuntu 24.04 and Debian 12 a plain `pip install` outside a virtualenv is refused ("externally managed environment"), so use pipx: `sudo apt install pipx && pipx ensurepath`, then open a new terminal. `uv tool install netdryrun`, or `pip install netdryrun` inside an activated virtualenv, work too.
 
 ```bash
-pip install netdryrun
+pipx install netdryrun
 git clone https://github.com/netdryrun/netdryrun && cd netdryrun
 netdryrun run examples/frr-bgp          # 3 FRR routers, should pass
 netdryrun run examples/srl-frr          # SR Linux + FRR, should pass
@@ -162,7 +162,7 @@ The action installs containerlab, runs the checks, uploads the JSON and JUnit re
 AI agents are starting to change networks. Netdryrun gives them a safety gate: an [MCP](https://modelcontextprotocol.io) server that lets an agent dry-run its change in a real lab and proceed only if every check passes.
 
 ```bash
-pip install netdryrun
+pipx install netdryrun   # or uv tool install netdryrun
 ```
 
 Add it to your MCP client (for example Claude Code):
