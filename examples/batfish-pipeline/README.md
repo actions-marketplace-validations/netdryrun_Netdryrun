@@ -12,8 +12,8 @@ A two-stage gate for config changes on the FRR triangle from [`../frr-bgp`](../f
 You need Linux (or WSL2) with Docker, containerlab and Netdryrun installed, as in [Getting started](https://netdryrun.com/getting-started/), plus Python 3 with `venv`. From the root of a clone of this repository:
 
 ```bash
-python3 -m venv ~/.venvs/batfish && ~/.venvs/batfish/bin/pip install pybatfish
-docker run -d --name batfish -p 9996:9996 -p 9997:9997 batfish/batfish
+python3 -m venv ~/.venvs/batfish && ~/.venvs/batfish/bin/pip install pybatfish==2026.9.17.3748
+docker run -d --name batfish -p 9996:9996 -p 9997:9997 batfish/batfish:2026.08.27.3685
 export BF_PYTHON=~/.venvs/batfish/bin/python
 examples/batfish-pipeline/pipeline.sh                            # baseline: both stages pass, exit 0
 BOTH=1 examples/batfish-pipeline/pipeline.sh default-leak        # both stages fail, exit 1
@@ -22,7 +22,9 @@ BOTH=1 examples/batfish-pipeline/pipeline.sh no-policy           # Batfish passe
 docker rm -f batfish
 ```
 
-`batfish_check.py` waits up to 60 seconds for the Batfish service to answer, so the first run can start right after `docker run`. Without `BOTH=1`, a change that fails Batfish stops there with exit code 1 and no lab is started. The lab is named `ndr-bf-pipeline`, so run one pipeline at a time on a machine.
+`batfish_check.py` waits up to 60 seconds for the Batfish service to answer, so the first run can start right after `docker run`. If ports 9996 and 9997 are taken, map others and set `BATFISH_PORT` to the first one. Without `BOTH=1`, a change that fails Batfish stops there with exit code 1 and no lab is started. Netdryrun's JSON reports go to `batfish-pipeline-reports/` in the current folder (set `OUT` to change that). The lab is named `ndr-bf-pipeline`, so run one pipeline at a time on a machine.
+
+Exit codes: 0 both stages passed, 1 a stage failed, 2 setup error (including any Batfish error that is not a failed check), 3 the lab run was inconclusive.
 
 [`github-workflow.yml`](github-workflow.yml) is the same pipeline as two GitHub Actions jobs (Batfish as a service container, then the Netdryrun Action). It is an example to copy; this repository's CI does not run it.
 

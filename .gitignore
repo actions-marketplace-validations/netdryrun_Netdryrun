@@ -5,6 +5,7 @@ build/
 dist/
 netdryrun-report.json
 netdryrun-junit.xml
+batfish-pipeline-reports/
 .pytest_cache/
 
 # MkDocs Material privacy plugin download cache

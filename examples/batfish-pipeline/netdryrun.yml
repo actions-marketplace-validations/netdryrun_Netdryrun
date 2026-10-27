@@ -33,6 +33,11 @@ checks:
     prefix: 0.0.0.0/0
     protocol: bgp
     present: false
+  - type: route          # nor r3 (Batfish checks every router)
+    node: r3
+    prefix: 0.0.0.0/0
+    protocol: bgp
+    present: false
 
 scenarios:
   - name: r1-r2 link fails

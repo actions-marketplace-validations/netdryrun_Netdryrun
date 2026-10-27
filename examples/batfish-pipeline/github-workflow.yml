@@ -1,6 +1,6 @@
 # Example workflow: copy to .github/workflows/ in your repository and adapt the paths.
-# Job 1 runs Batfish on every push (seconds, nothing boots). Job 2 boots the lab with Netdryrun,
-# only if Batfish passed. Not run by this repository's CI.
+# Job 1 runs Batfish on every push; nothing boots. Job 2 boots the lab with Netdryrun, only if
+# Batfish passed. Not run by this repository's CI.
 name: network change gate
 
 on:
@@ -16,26 +16,19 @@ jobs:
     timeout-minutes: 10
     services:
       batfish:
-        image: batfish/batfish
+        image: batfish/batfish:2026.08.27.3685
         ports: ["9996:9996", "9997:9997"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install pybatfish
-      - name: Wait for the Batfish service
-        run: |
-          for _ in $(seq 60); do
-            python -c 'from pybatfish.client.session import Session; Session(host="localhost").list_networks()' 2>/dev/null && exit 0
-            sleep 2
-          done
-          echo "Batfish did not start"; exit 1
-      - name: Analyse the configs
+      - run: pip install pybatfish==2026.9.17.3748
+      - name: Analyse the configs   # waits up to 60 s for the Batfish service to answer
         run: python examples/batfish-pipeline/batfish_check.py examples/batfish-pipeline/configs
 
   netdryrun:
-    needs: batfish
+    needs: batfish   # boot the lab only if Batfish passed
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
