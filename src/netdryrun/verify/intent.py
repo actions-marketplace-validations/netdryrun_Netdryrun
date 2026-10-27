@@ -439,11 +439,16 @@ def load_intent(path) -> Intent:
         text = p.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as e:
         raise IntentError(f"{p}: cannot read the intent file: {e}") from None
+    return parse_intent_text(text, str(p))
+
+
+def parse_intent_text(text: str, source: str = "<intent>") -> Intent:
+    """An intent given as YAML (or JSON) text rather than a file: the same validation as a file."""
     try:
-        data = load_yaml(text, str(p))
+        data = load_yaml(text, source)
     except ConfigError as e:
         raise IntentError(str(e)) from None
-    return parse_intent(data, str(p))
+    return parse_intent(data, source)
 
 
 def check_nodes(intent: Intent, nodes: dict[str, str]) -> None:

@@ -33,7 +33,7 @@ from ..lab import Lab, LabError
 from .converge import Inconclusive, stable_snapshot
 from .engine import VerifyError, baseline_problems, match
 from .frr import FrrCollector
-from .intent import IntentError, check_nodes, load_intent
+from .intent import IntentError, check_nodes, load_intent, parse_intent_text
 from .report import ALLOW_WARNING, INTENT_EDITED_WARNING, NO_GUARDS_WARNING, VerifyResult
 from .snapshot import Snapshot, SnapshotError
 
@@ -510,14 +510,18 @@ def load_guards(path: str | None, before_spec: str, before: Side):
 def verify(topology: str, before: str, after: str, intent_path: str, *, guards: str | None = None,
            config_dir_name: str | None = None, unobserved: list[str] = (), settle: float = 15.0,
            timeout: float = 300.0, hold: float = 10.0, allow_unhealthy_baseline: bool = False, keep: bool = False,
-           log: Callable[[str], None] = lambda _: None, side_fn=None, intent_source: str = "cli") -> VerifyResult:
+           log: Callable[[str], None] = lambda _: None, side_fn=None, intent_source: str = "cli",
+           intent_text: str | None = None) -> VerifyResult:
     """`intent_source` says who supplied the intent (the CLI user, an MCP caller, the Action); the report
-    echoes it next to the intent."""
+    echoes it next to the intent. `intent_text`, when given, is the intent itself (YAML or JSON) instead of
+    the file at `intent_path`: an MCP caller passes the ticket's intent inline. Inline text is in neither
+    side's tree, so it can't be flagged as edited by the change."""
     res = VerifyResult(status="error", topology=str(topology), before_spec=before, after_spec=after,
                        run_id=uuid.uuid4().hex[:12], started=_now(), intent_supplied_by=intent_source)
     work = Path(tempfile.mkdtemp(prefix="netdryrun-verify-"))
     try:
-        res.intent = load_intent(intent_path)
+        res.intent = (parse_intent_text(intent_text, "inline intent") if intent_text is not None
+                      else load_intent(intent_path))
         if res.intent.allow:
             res.warnings.append(ALLOW_WARNING)
         topo = Path(topology)
@@ -529,7 +533,7 @@ def verify(topology: str, before: str, after: str, intent_path: str, *, guards: 
         aside = materialize(after, "after", topo, work, config_dir_name)
         res.before_spec, res.after_spec = f"{before}: {bside.desc}", f"{after}: {aside.desc}"
         check_sides(bside, aside, log)
-        if intent_edited(Path(intent_path), bside, aside):
+        if intent_text is None and intent_edited(Path(intent_path), bside, aside):
             res.warnings.append(INTENT_EDITED_WARNING)
         before_topo, after_topo = bside.topology, aside.topology
         gcfg, gsource, res.guards_source = load_guards(guards, before, bside)

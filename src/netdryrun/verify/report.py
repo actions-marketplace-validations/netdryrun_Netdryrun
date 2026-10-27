@@ -239,3 +239,68 @@ def console(r: VerifyResult, max_items: int = 40) -> str:
     if r.status in ("matched", "no_change"):
         lines.append(NOTICE)
     return "\n".join(lines)
+
+
+MD_HEAD = {
+    "matched": "✅ Netdryrun verify: INTENT MATCHED",
+    "no_change": "✅ Netdryrun verify: NO BEHAVIOR CHANGE",
+    "failed": "❌ Netdryrun verify: UNDECLARED CHANGES: DO NOT APPLY",
+    "inconclusive": "⏸️ Netdryrun verify: INCONCLUSIVE",
+    "unhealthy_baseline": "⏸️ Netdryrun verify: INCONCLUSIVE: UNHEALTHY BASELINE",
+    "error": "⚠️ Netdryrun verify: ERROR: NO VERDICT",
+}
+
+
+def markdown(r: VerifyResult, max_items: int = 40) -> str:
+    """The PR comment (and job summary) of a verify run: the verdict, the declared intent echoed for the
+    reviewer, the undeclared items each with its next diagnostic, the declared lines that didn't happen and
+    the standing guards. Everything that can come from a config or the lab is made inert (no HTML, links or
+    mentions), as in the run report."""
+    from ..report import MAX_MARKDOWN, _md_block, _md_cell, _md_code
+
+    d = to_dict(r)
+    lines = [f"### {MD_HEAD[r.status]}", ""]
+    if d["intent"] is not None:
+        lines.append(f"**Declared intent** ({_md_cell(d['intent']['source'])}, supplied by "
+                     f"{_md_cell(d['intent']['supplied_by'])}): review it; explained is not the same as safe.")
+        lines += [""] + [f"{i}. {_md_cell(t)}" for i, t in enumerate(d["intent"]["lines"])] \
+            if d["intent"]["lines"] else ["", "- none: nothing may change"]
+        lines += [f"- allow_anywhere: {_md_code(p)} (weakens the verdict)" for p in d["intent"]["allow_anywhere"]]
+        lines.append("")
+    lines += [f"> ⚠️ {_md_cell(w)}" for w in r.warnings] + ([""] if r.warnings else [])
+    if r.error:
+        lines += _md_block(r.error) + [""]
+    if d["inconclusive"]:
+        lines += [f"> {_md_cell(d['inconclusive']['side'])}: {_md_cell(d['inconclusive']['reason'])}", ">",
+                  f"> {INCONCLUSIVE_ADVICE}", ""]
+        lines += [f"- moving: {_md_cell(x)}" for x in d["inconclusive"]["moving"][:max_items]]
+    lines += [f"- baseline: {_md_cell(p)}" for p in r.baseline_problems]
+    tail = []
+    if d["undeclared"]:
+        tail += [f"**Undeclared changes ({len(d['undeclared'])})**", ""]
+        for it in d["undeclared"][:max_items]:
+            tail.append(f"- {_md_cell(it['summary'])}<br>next: {_md_code(it['next_diagnostic'])}")
+        if len(d["undeclared"]) > max_items:
+            tail.append(f"- … and {len(d['undeclared']) - max_items} more (see the JSON report)")
+        tail.append("")
+    if d["not_happened"]:
+        tail += ["**Declared but didn't happen**", ""]
+        tail += [f"- [{x['intent']}] {_md_cell(x['line'])}: {_md_cell(x['reason'])}" for x in d["not_happened"]]
+        tail.append("")
+    if d["declared"]:
+        tail += ["**Declared and observed**", ""]
+        tail += [f"- [{x['intent']}] {_md_cell(x['line'])} ({len(x['items'])} item(s))" for x in d["declared"]]
+        tail.append("")
+    for a in d["allowed"]:
+        tail.append(f"- allowed by {_md_code(a['pattern'])}: {len(a['routes'])} route(s)")
+    if r.guards is not None:
+        tail += [f"**Standing guards** ({_md_cell(r.guards.get('source'))}): {_md_cell(r.guards.get('status'))}, "
+                 f"{r.guards.get('passed', 0)} passed, {r.guards.get('failed', 0)} failed", ""]
+        tail += [f"- {_md_cell(f['check'])}: {_md_cell(f['reason'])}" for f in r.guards.get("failures", [])[:max_items]]
+    elif r.status in ("matched", "no_change", "failed"):
+        tail.append("**Standing guards:** none ran.")
+    tail += ["", f"<sub>{_md_cell(NOTICE)} Run {_md_cell(r.run_id)} · full evidence in the JSON report.</sub>"]
+    text = "\n".join(lines + tail) + "\n"
+    if len(text) > MAX_MARKDOWN:    # a GitHub comment holds at most 65536 characters
+        return markdown(r, max_items=max(1, max_items // 2)) if max_items > 1 else text[:MAX_MARKDOWN - 100] + "\n…\n"
+    return text

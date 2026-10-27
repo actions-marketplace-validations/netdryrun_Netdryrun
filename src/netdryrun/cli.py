@@ -187,7 +187,7 @@ def _cmd_verify(args) -> int:
         res = verify(args.topology, args.before, args.after, args.intent, guards=args.guards,
                      config_dir_name=args.config_dir, unobserved=args.unobserved or [], settle=args.settle,
                      timeout=args.timeout, hold=args.hold, allow_unhealthy_baseline=args.allow_unhealthy_baseline,
-                     keep=args.keep, log=lambda m: print(m, flush=True))
+                     keep=args.keep, log=lambda m: print(m, flush=True), intent_source=args.intent_source)
     except KeyboardInterrupt as e:
         signum = getattr(e, "signum", signal.SIGINT)
         print(f"\nInterrupted: no verdict ({signal_name(signum)}). The labs were cleaned up unless --keep was set.",
@@ -202,6 +202,13 @@ def _cmd_verify(args) -> int:
             print(f"could not write {args.json}: {reason}; the verdict was {res.verdict}", file=sys.stderr)
             return 2
         print(f"  wrote JSON report: {args.json}")
+    if args.markdown:
+        try:
+            Path(args.markdown).write_text(vreport.markdown(res), encoding="utf-8")
+        except (OSError, ValueError, TypeError) as e:
+            reason = (e.strerror if isinstance(e, OSError) else None) or e
+            print(f"could not write {args.markdown}: {reason}; the verdict was {res.verdict}", file=sys.stderr)
+            return 2
     return res.exit_code
 
 
@@ -284,6 +291,9 @@ def main(argv: list[str] | None = None) -> int:
                        "the change")
     p_ver.add_argument("--intent", required=True, metavar="FILE", help="the intent file (what the change is meant to do)")
     p_ver.add_argument("--json", metavar="FILE", help="write the netdryrun.verify/v1 report as JSON")
+    p_ver.add_argument("--markdown", metavar="FILE", help="write a Markdown summary (for PR comments)")
+    p_ver.add_argument("--intent-source", choices=("cli", "action"), default="cli",
+                       help="who supplied the intent, echoed next to it in the report (the GitHub Action passes action)")
     p_ver.add_argument("--guards", metavar="FILE", help="standing guards (netdryrun.yml) run on the after lab; read "
                        "from the --before ref when it is a git ref (default there: the netdryrun.yml next to the "
                        "topology); with a directory --before, only this path")
