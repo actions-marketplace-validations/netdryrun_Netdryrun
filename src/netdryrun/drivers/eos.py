@@ -167,6 +167,8 @@ def parse_bgp_paths(text: str, prefix: str, vrf: str = "default") -> list[BgpPat
 
 class EosDriver(Driver):
     name = "eos"
+    # bgp_neighbors reads the IPv4 and IPv6 unicast summaries only: an EVPN count would always read 0
+    unsupported_afis = frozenset({"evpn"})
 
     def _cli(self, command: str, evidence: list[dict]) -> str:
         return self._exec(["Cli", "-p", "15", "-c", command], evidence)

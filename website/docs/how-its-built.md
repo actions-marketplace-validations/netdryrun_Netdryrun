@@ -73,6 +73,8 @@ A second workflow, [`published-action.yml`](https://github.com/netdryrun/netdryr
 
 SONiC and Arista EOS are not in CI yet (cEOS is an image each user downloads from Arista). Their unit tests parse output captured from real lab runs ([`tests/fixtures`](https://github.com/netdryrun/netdryrun/tree/main/tests/fixtures)).
 
+Every release also goes through a seven-layer release gate, from linting and mutation testing of the verdict logic to chaos runs on the built package, described in [RELEASING.md](https://github.com/netdryrun/netdryrun/blob/main/RELEASING.md); from the next release on, each release's results are committed in `releases/<version>/GATE.md`.
+
 ## Performance on a 20-node fabric
 
 On a 20-node leaf-spine fabric (4 spines, 16 leaves, FRR, 64 links), `netdryrun record` produced 560 checks in 11 seconds, and a full `netdryrun run` (deploy, convergence, all checks, destroy) took 65 seconds. A deliberately broken change failed exactly the 83 checks it should have. Full numbers, memory use and limits are in the [FAQ](faq.md#a-20-node-lab). These come from one-off runs on the maintainer's machine; the topology and the reports are not published yet, so you can't check them the way you can check the corpus.

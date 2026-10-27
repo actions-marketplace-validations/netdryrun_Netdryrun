@@ -15,7 +15,7 @@ GitHub starts a Linux machine with Docker, containerlab 0.81.1 and Netdryrun ins
 bash examples/agent-demo/demo.sh
 ```
 
-The [agent demo](https://github.com/netdryrun/netdryrun/tree/main/examples/agent-demo) boots four FRR routers twice, which takes a little over a minute. The first change opens the filters to make a ticket work and is rejected by the leak guards; the second adds two prefix-list lines and passes all 14 checks. The run ends with `Demo OK`. The other FRR examples (`netdryrun run examples/frr-bgp`, `examples/frr-bgp-broken`) work the same way.
+The [agent demo](https://github.com/netdryrun/netdryrun/tree/main/examples/agent-demo) boots four FRR routers twice, which takes about 65 s. The first change opens the filters to make a ticket work and is rejected by the leak guards; the second adds two prefix-list lines and passes all 14 checks. The run ends with `Demo OK`. The other FRR examples (`netdryrun run examples/frr-bgp`, `examples/frr-bgp-broken`) work the same way.
 
 The codespace runs on the 2-core machine and uses your GitHub account's free Codespaces allowance (GitHub Free includes 120 core-hours and 15 GB of storage a month, so about 60 hours on this machine; Pro includes 180 core-hours). Stop or delete the codespace when you're done ([github.com/codespaces](https://github.com/codespaces)) so it doesn't use more. VM-based nodes (vrnetlab) don't work in Codespaces, which has no nested virtualization.
 

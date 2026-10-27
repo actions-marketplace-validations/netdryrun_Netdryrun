@@ -177,6 +177,8 @@ class Driver:
 
     # bgp_route keys this driver cannot read; a check that uses one is a setup error, never a guess
     unsupported_bgp_attributes: frozenset[str] = frozenset()
+    # bgp_prefixes address families this driver has no prefix counts for (refused before deploying)
+    unsupported_afis: frozenset[str] = frozenset()
 
     def bgp_paths(self, prefix: str, vrf: str = "default") -> Observation:
         """Every path for exactly `prefix` in the BGP table (list[BgpPath]), best path flagged."""

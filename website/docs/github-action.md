@@ -36,7 +36,7 @@ It needs a Linux runner with Docker. GitHub-hosted `ubuntu-latest` runners work.
 | `hold` | `10` | Seconds a post-convergence check must hold |
 | `pr-comment` | `false` | On pull requests, post one comment with the verdict, failures first, and the evidence for each failed check. Updated in place on every push. Needs `permissions: pull-requests: write` |
 | `github-token` | `${{ github.token }}` | Token used for the PR comment |
-| `cloud` | `false` | Reserved for Netdryrun Cloud, which is **not available yet**. Setting it today uploads nothing and only adds an "evidence upload failed" warning. Leave it off |
+| `cloud` | `false` | Reserved for Netdryrun Cloud, which is **not available yet**. With `true`, the action tries to POST the JSON report to `cloud-url` with a GitHub OIDC token; that address doesn't resolve today, so nothing is uploaded and you only get a warning ("evidence upload failed", or "needs 'permissions: id-token: write'" without that permission). Leave it off |
 | `cloud-url` | `https://cloud.netdryrun.com` | Reserved for Netdryrun Cloud (this address does not exist yet) |
 
 ## Outputs

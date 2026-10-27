@@ -36,10 +36,18 @@ def for_node(lab: Lab, node: str, override: str | None = None) -> Driver:
 
 
 def check_supported(lab: Lab, check, override: str | None = None) -> None:
-    """Refuse, before deploying, a bgp_route key the node's driver cannot read (never guess a value)."""
-    if check.type != "bgp_route" or check.node not in lab.nodes:
+    """Refuse, before deploying, a check the node's driver cannot read (never guess a value): a bgp_route key
+    the driver doesn't support, or an address family it has no prefix counts for."""
+    if check.type not in ("bgp_route", "bgp_prefixes") or check.node not in lab.nodes:
         return
     name = override or detect(lab.nodes[check.node])
+    if check.type == "bgp_prefixes":
+        afi = check.params.get("afi", "ipv4-unicast")
+        if afi in getattr(DRIVERS.get(name), "unsupported_afis", ()):
+            # the count would read as 0, which passes max and exact: refuse instead
+            raise DriverError(f"{check.name}: afi {afi} is not supported on {name} (the {name} driver reads "
+                              "ipv4-unicast and ipv6-unicast prefix counts only)")
+        return
     cls = DRIVERS.get(name)
     keys = sorted(set(check.params) & set(cls.unsupported_bgp_attributes)) if cls else []
     if keys:

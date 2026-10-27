@@ -107,7 +107,7 @@ The image comes from the SONiC build server, not a registry. To get it and run t
     Demo OK: attempt 1 rejected by 5 leak guards with every other check passing; attempt 2 passed every check.
     ```
 
-    Attempt 1 ends `FAILED: 9 passed, 5 failed (14 checks)`, attempt 2 `PASSED: 14 passed, 0 failed (14 checks)`. The two runs together took 65 seconds.
+    Attempt 1 ends `FAILED: 9 passed, 5 failed (14 checks)`, attempt 2 `PASSED: 14 passed, 0 failed (14 checks)`. The two runs together took about 65 s.
 
 - `netdryrun run examples/agent-demo` shows the starting point, before anyone has worked the ticket: the guards pass and the 3 ticket checks fail, `FAILED: 11 passed, 3 failed (14 checks)`, exit code `1`. It took 119 seconds, because the failing ticket checks wait for their timeout.
 

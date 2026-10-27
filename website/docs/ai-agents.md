@@ -188,7 +188,7 @@ The server has these tools: <!-- facts:mcp_tools -->`dry_run`, `run_checks`, `re
 | `dry_run` | `path`, `keep_lab` (default `false`) | Deploy the lab, run every check, destroy the lab, return the verdict. Takes 30 seconds to several minutes. |
 | `run_checks` | `path` | Run the checks against a lab that is already running (no deploy or destroy) |
 | `record_baseline` | `topology`, `deploy` (default `true`), `wait_seconds` (default `45`) | Deploy the lab, snapshot its BGP sessions, prefix counts and routes as `netdryrun.yml` text, destroy the lab. Returns the YAML; nothing is written to disk. Like [`netdryrun record`](reference/cli.md#record) |
-| `validate` | `path` | Validate `netdryrun.yml` without starting a lab |
+| `validate` | `path` | Validate `netdryrun.yml` and its topology without starting a lab: node names, drivers and supported keys, as `dry_run` checks them before deploying (0.3.1 and later) |
 | `check_types` | | List supported check types and their keys, to help write `netdryrun.yml` |
 
 The server also exposes the last full JSON report as a resource, `netdryrun://report/{path}`.

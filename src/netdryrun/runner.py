@@ -226,6 +226,42 @@ def _check_duration(name: str, value) -> None:
         raise RunError(f"{name} must be a number of seconds >= 0, got {value!r}")
 
 
+def preflight(config: Config, lab: Lab, *, full: bool = False) -> None:
+    """The checks that need only the config and the topology file: run() makes them before deploying, and
+    `netdryrun validate` makes them too. Raises LabError or DriverError.
+
+    full=True (validate) also checks what run() only finds out after deploying: that every node a check
+    reads has a driver (detected from its kind and image, or set in nodes.<node>.driver), and that no link
+    fault targets an SR Linux node."""
+    wanted = {c.node for c in config.checks} | {c.node for sc in config.scenarios for c in sc.checks} \
+        | {f.node for sc in config.scenarios for f in sc.faults} | set(config.setup)
+    unknown = sorted(wanted - set(lab.nodes))
+    if unknown:
+        raise LabError(f"unknown node(s) {', '.join(unknown)}; the topology has {', '.join(lab.nodes)}")
+    all_checks = config.checks + [c for sc in config.scenarios for c in sc.checks]
+    if full:
+        for node in sorted({c.node for c in all_checks} - set(config.drivers)):
+            detect(lab.nodes[node])
+    for c in all_checks:
+        check_supported(lab, c, config.drivers.get(c.node))
+    for f in (f for sc in config.scenarios for f in sc.faults if f.kind == "inject_routes"):
+        driver = config.drivers.get(f.node) or detect(lab.nodes[f.node])
+        if driver != "frr":
+            raise LabError(f"inject_routes on {f.node} ({driver}) is not supported yet: it needs an FRR node; "
+                           "inject the routes from an FRR neighbor instead")
+    if full:
+        for f in (f for sc in config.scenarios for f in sc.faults if f.kind != "inject_routes"):
+            lab._require_linux_links(f.node)
+
+
+def check_topology(config: Config) -> Lab:
+    """`netdryrun validate` past the file itself: load the topology (strictly) and make every pre-deploy
+    check, without Docker or containerlab. Raises LabError or DriverError."""
+    lab = Lab(config.lab)
+    preflight(config, lab, full=True)
+    return lab
+
+
 def run(config: Config, *, deploy: bool = True, keep: bool = False, keep_on_failure: bool = False,
         settle: float = 10.0, hold: float = 10.0,
         on_result: Callable[[Result], None] | None = None, log: Callable[[str], None] = lambda _: None) -> RunReport:
@@ -246,19 +282,8 @@ def run(config: Config, *, deploy: bool = True, keep: bool = False, keep_on_fail
             "host": platform.platform(),
             "nodes": {n.name: {"kind": n.kind, "image": n.image} for n in lab.nodes.values()},
         }
-        # Every node a check or a fault names must exist, before anything is deployed
-        wanted = {c.node for c in config.checks} | {c.node for sc in config.scenarios for c in sc.checks} \
-            | {f.node for sc in config.scenarios for f in sc.faults} | set(config.setup)
-        unknown = sorted(wanted - set(lab.nodes))
-        if unknown:
-            raise LabError(f"unknown node(s) {', '.join(unknown)}; the topology has {', '.join(lab.nodes)}")
-        for c in config.checks + [c for sc in config.scenarios for c in sc.checks]:
-            check_supported(lab, c, config.drivers.get(c.node))
-        for f in (f for sc in config.scenarios for f in sc.faults if f.kind == "inject_routes"):
-            driver = config.drivers.get(f.node) or detect(lab.nodes[f.node])
-            if driver != "frr":
-                raise LabError(f"inject_routes on {f.node} ({driver}) is not supported yet: it needs an FRR node; "
-                               "inject the routes from an FRR neighbor instead")
+        # Every node a check or a fault names must exist, and every check be readable, before deploying
+        preflight(config, lab)
         if deploy:
             # Two runs of the same lab would redeploy each other's containers and destroy them under each
             # other's checks. Refuse instead: a lock for runs on this host, and Docker for everything else.

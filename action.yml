@@ -37,10 +37,10 @@ inputs:
     description: Token for the PR comment
     default: ${{ github.token }}
   cloud:
-    description: "Upload the evidence to Netdryrun Cloud (needs permissions id-token: write; no secrets)"
+    description: "Reserved; Netdryrun Cloud is not available yet. If true (and the job has permissions id-token: write), the action requests a GitHub OIDC token and POSTs the JSON report to cloud-url; today that address does not resolve, so the upload fails with a warning and the run, its outputs and the job result are unaffected. Leave it false"
     default: "false"
   cloud-url:
-    description: Netdryrun Cloud address
+    description: "Reserved; the Netdryrun Cloud address that cloud: true would upload the JSON report to (https only). Netdryrun Cloud is not available yet"
     default: https://cloud.netdryrun.com
 
 outputs:

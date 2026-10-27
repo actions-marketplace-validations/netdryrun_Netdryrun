@@ -87,18 +87,42 @@ def _md_block(text: str) -> list[str]:
     return [fence, str(text), fence]
 
 
+# Lines that say which route or path the device selected: the proof behind "(not selected)" or "best path".
+# They often sit after the window around the prefix (FRR lists the losing BGP route before the selected one).
+_PROOF = re.compile(r'"(selected|installed|bestpath|best-route)"\s*:')
+_PROOF_CONTEXT = re.compile(r'"(protocol|route-type|routeType)"\s*:')
+MAX_PROOF_LINES = 8
+
+
 def _evidence_excerpt(output: str, params: dict, max_lines: int = 15) -> str:
     """The part of a raw command output a reviewer needs: lines mentioning the prefix or neighbor
-    under test (with a little context), else the first lines. Kept short enough to paste in a PR."""
+    under test (with a little context), else the first lines, plus any later line that shows what the
+    device selected (with the protocol it belongs to). Kept short enough to paste in a PR."""
     rows = output.splitlines()
+    if len(rows) <= max_lines:
+        return "\n".join(rows)
     keys = [str(params[k]) for k in ("prefix", "neighbor", "target") if params.get(k)]
-    if keys and len(rows) > max_lines:
-        hits = [i for i, row in enumerate(rows) if any(k in row for k in keys)]
-        if hits:
-            start = max(0, hits[0] - 2)
-            rows = rows[start:start + max_lines]
-            return "\n".join(rows + ["..."])
-    return "\n".join(rows[:max_lines] + (["..."] if len(rows) > max_lines else []))
+    hits = [i for i, row in enumerate(rows) if any(k in row for k in keys)] if keys else []
+    start = max(0, hits[0] - 2) if hits else 0
+    end = start + max_lines          # rows[start:end] is the window
+    shown = list(range(start, min(end, len(rows))))
+    extra: list[int] = []
+    for i in range(end, len(rows)):
+        if len(extra) >= MAX_PROOF_LINES or not _PROOF.search(rows[i]):
+            continue
+        ctx = next((j for j in range(i - 1, end - 1, -1) if _PROOF_CONTEXT.search(rows[j])), None)
+        for j in (ctx, i):
+            if j is not None and j not in extra:
+                extra.append(j)
+    out, last = [], None
+    for i in shown + sorted(extra):
+        if last is not None and i != last + 1:
+            out.append("...")
+        out.append(rows[i])
+        last = i
+    if last is not None and last < len(rows) - 1:
+        out.append("...")
+    return "\n".join(out)
 
 
 def to_markdown(rep: RunReport) -> str:
@@ -116,12 +140,15 @@ def to_markdown(rep: RunReport) -> str:
     tail = []
     failures = [r for r in rep.results if not r.passed]
     for r in failures[:5]:
-        ev = r.evidence[-1] if r.evidence else None
-        if not ev:
+        # every command of the final sample (a route check reads the routing table and the BGP table)
+        evs = [ev for ev in r.evidence[-3:] if ev]
+        if not evs:
             continue
-        out = _evidence_excerpt(ev.get("output") or ev.get("stderr") or "", r.check.params)
-        tail += ["", f"<details><summary>Evidence: {_md_cell(r.check.name)}</summary>", "",
-                 _md_code(f"{ev['node']}$ {ev['cmd']}"), "", *_md_block(out), "", "</details>"]
+        tail += ["", f"<details><summary>Evidence: {_md_cell(r.check.name)}</summary>"]
+        for ev in evs:
+            out = _evidence_excerpt(ev.get("output") or ev.get("stderr") or "", r.check.params)
+            tail += ["", _md_code(f"{ev['node']}$ {ev['cmd']}"), "", *_md_block(out)]
+        tail += ["", "</details>"]
     env = rep.environment
     tail += ["", f"<sub>netdryrun {_md_cell(env.get('netdryrun', '?'))} · "
              f"containerlab {_md_cell(env.get('containerlab', '?'))} · "

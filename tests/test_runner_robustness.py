@@ -427,6 +427,8 @@ def test_negative_settle_in_the_api_is_an_error_before_deploying(tmp_path, monke
 @pytest.mark.parametrize("topology,message", [
     ("name: t\ntopology:\n  nodes: [r1, r2]\n", "topology.nodes must be a mapping"),
     ("name: t\ntopology: {nodes: {r1: {kind: linux}\n", "topology is not valid YAML"),
+    # duplicate keys are refused in the topology too (PyYAML alone keeps the second one silently)
+    ("name: t\ntopology: {nodes: {r1: {kind: linux}}}\nname: u\n", "duplicate key 'name' (first defined on line 1)"),
 ])
 def test_bad_topology_exits_2_and_writes_the_report(tmp_path, capsys, topology, message):
     folder = _lab_folder(tmp_path)
@@ -525,3 +527,50 @@ def test_ping_that_did_not_run_is_still_an_error():
     d = _ping_driver("", "ping: bind: Cannot assign requested address\n", 2)
     ok, detail, _ = _ping(d, {"target": "10.9.9.9", "source": "192.0.2.1", "expect": "failure"})
     assert not ok and detail.startswith("error: ping did not run")
+
+
+# ----------------------------------------------- validate reads the topology and makes run's pre-deploy checks
+
+@pytest.mark.parametrize("topology,checks,message", [
+    ("nodes:\n    r1: {kind: linux, image: frr}", "- {type: bgp_session, node: r9, neighbor: 10.0.0.2}",
+     "unknown node(s) r9"),
+    ("nodes:\n    r1: {kind: linux, image: alpine}", "- {type: bgp_session, node: r1, neighbor: 10.0.0.2}",
+     "cannot detect driver for node r1"),
+    ("nodes:\n    r1: {kind: arista_ceos, image: 'ceos:4.36.3M'}",
+     "- {type: bgp_prefixes, node: r1, neighbor: 10.0.0.2, max: 0, afi: evpn}", "afi evpn is not supported on eos"),
+    ("nodes: {r1: {kind: linux, image: frr}\n", "- {type: bgp_session, node: r1, neighbor: 10.0.0.2}",
+     "topology is not valid YAML"),
+])
+def test_validate_makes_the_pre_deploy_checks_of_run(tmp_path, capsys, topology, checks, message):
+    (tmp_path / "t.clab.yml").write_text(f"name: t\ntopology:\n  {topology}\n")
+    (tmp_path / "netdryrun.yml").write_text(f"lab: t.clab.yml\nchecks:\n  {checks}\n")
+    assert main(["validate", str(tmp_path)]) == 2
+    err = capsys.readouterr().err
+    assert message in err and "Traceback" not in err and len(err.strip().splitlines()) == 1
+
+
+def test_validate_refuses_a_link_fault_on_sr_linux(tmp_path, capsys):
+    (tmp_path / "t.clab.yml").write_text("name: t\ntopology:\n  nodes:\n    srl1: {kind: nokia_srlinux}\n"
+                                         "    frr1: {kind: linux, image: frr}\n")
+    (tmp_path / "netdryrun.yml").write_text(
+        "lab: t.clab.yml\nchecks:\n  - {type: bgp_session, node: frr1, neighbor: 10.0.0.1}\n"
+        "scenarios:\n  - link_down: {node: srl1, interface: e1-1}\n"
+        "    checks:\n      - {type: bgp_session, node: frr1, neighbor: 10.0.0.1, state: down}\n")
+    assert main(["validate", str(tmp_path)]) == 2
+    assert "failure scenarios on SR Linux nodes (srl1) are not supported yet" in capsys.readouterr().err
+
+
+def test_validate_passes_a_good_config_without_docker(tmp_path, capsys, monkeypatch):
+    monkeypatch.setenv("PATH", str(tmp_path))   # no containerlab, no docker: validate must not need them
+    assert main(["validate", str(_lab_folder(tmp_path))]) == 0
+    assert "OK:" in capsys.readouterr().out
+
+
+def test_mcp_validate_reports_an_unknown_node(tmp_path):
+    pytest.importorskip("mcp")
+    from netdryrun import mcp_server
+
+    folder = _lab_folder(tmp_path)
+    (folder / "netdryrun.yml").write_text("lab: t.clab.yml\nchecks:\n  - {type: bgp_session, node: r9, neighbor: 10.0.0.2}\n")
+    data = json.loads(mcp_server.validate(str(folder)))
+    assert data["valid"] is False and "unknown node(s) r9" in data["error"]
