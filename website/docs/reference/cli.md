@@ -10,6 +10,7 @@ netdryrun run      [path] [options]   deploy the lab, run checks, destroy the la
 netdryrun check    [path] [options]   run checks against an already running lab
 netdryrun validate [path]             validate netdryrun.yml without running anything
 netdryrun record   topology.clab.yml  snapshot a known-good lab into a netdryrun.yml baseline
+netdryrun verify   topology.clab.yml  compare the lab before and after a change against a declared intent (0.4, FRR only)
 netdryrun mcp                         start the MCP server for AI agents (stdio)
 netdryrun feedback                    open a short feedback form on GitHub
 netdryrun --version
@@ -18,6 +19,8 @@ netdryrun --version
 `--debug` (before or after the command: `netdryrun --debug run` or `netdryrun run --debug`) prints the Python traceback of an internal error. Setting `NETDRYRUN_DEBUG=1` does the same.
 
 `path` is `netdryrun.yml` or the folder containing it. Default: the current folder.
+
+`verify` has its own page: [verify](verify.md).
 
 ## Commands
 

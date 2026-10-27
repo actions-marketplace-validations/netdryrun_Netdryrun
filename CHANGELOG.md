@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.0 (unreleased)
+
+### Added
+
+- **`netdryrun verify` (0.4, FRR only).** The verdict an agent gets without writing checks: declare what a change is meant to do, and every other difference in the network's behavior fails. `netdryrun verify topology.clab.yml --before <dir|git-ref> --after <dir|git-ref> --intent intent.yml [--json report.json]` deploys the lab with each config set (the topology must be identical on both sides, or exit code `2`), takes a snapshot once two full snapshots `--settle` seconds apart are identical, and matches the diff against the intent. Reference: [verify](https://netdryrun.com/reference/verify/).
+  - **The snapshot**: BGP sessions; routes of every protocol with selected versus received-only, FIB-installed, next hops and their resolution, distance and metric; every BGP path per prefix (source, AS path with AS_SEQUENCE order kept and AS_SET as a sorted set, origin, next hop, local preference, MED, weight, standard, extended and large communities in one canonical form, cluster list, originator ID); the Adj-RIB-Out of every established session, including neighbors outside the lab; and received routes before inbound policy where `soft-reconfiguration inbound` keeps them. Keys include VRF, AFI and SAFI. FRR output is validated strictly: an unknown or missing field, a VRF missing from one output, an unsupported address family or an unnumbered neighbor is exit code `2`, never a smaller snapshot.
+  - **The intent language**: `appears_on` (selected and FIB-installed by default; `with:` pins the source, next hop, AS path and more), `disappears_from` (selected before; `including_received_only` for received-only routes), `best_path_on` with `to:` (listed values exact, everything else frozen), `session ... goes: down` (covers only the routes learned over that session, both ends, per address family), `advertisement` (one node's advertisement to one neighbor, for outbound changes toward peers outside the lab), and `allow_anywhere` (exact prefixes or explicit globs, expanded in the report; never supernet containment; a warning in every report that uses it).
+  - **Verdicts**: `INTENT MATCHED`, `NO BEHAVIOR CHANGE` (empty diff, empty intent), `UNDECLARED CHANGES: DO NOT APPLY` (an undeclared difference, a declared change that didn't happen, or a failed standing guard), `INCONCLUSIVE` (exit code `3`; retry at most once, then escalate), and an unhealthy baseline (sessions down before the change; `--allow-unhealthy-baseline` to go on). `verify` never prints `SAFE TO PROCEED`, and every report echoes the intent at the top: explained is not the same as safe.
+  - **Standing guards**: `--guards netdryrun.yml` runs your checks on the after lab, and they must pass. With a git ref as `--before`, the guards are read from that ref, never from the change.
+  - **The report** `netdryrun.verify/v1`, with a published JSON Schema ([`verify-v1.json`](https://netdryrun.com/schemas/verify-v1.json)): every undeclared item with a `next_diagnostic` command for its node, every declared change that didn't happen, what each intent line explained, the guards, and both snapshots with the raw output of every command as evidence.
+- The FRR fixtures for the new collector are synthetic until a live capture replaces them (each starts with `# synthetic, to be replaced by live capture`).
+
 ## 0.3.2 (unreleased)
 
 The agent contract: what an AI agent needs to choose Netdryrun, read its result and act on it safely. Tool names, parameters and behavior are unchanged.

@@ -1594,6 +1594,7 @@ netdryrun run      [path] [options]   deploy the lab, run checks, destroy the la
 netdryrun check    [path] [options]   run checks against an already running lab
 netdryrun validate [path]             validate netdryrun.yml without running anything
 netdryrun record   topology.clab.yml  snapshot a known-good lab into a netdryrun.yml baseline
+netdryrun verify   topology.clab.yml  compare the lab before and after a change against a declared intent (0.4, FRR only)
 netdryrun mcp                         start the MCP server for AI agents (stdio)
 netdryrun feedback                    open a short feedback form on GitHub
 netdryrun --version
@@ -1602,6 +1603,8 @@ netdryrun --version
 `--debug` (before or after the command: `netdryrun --debug run` or `netdryrun run --debug`) prints the Python traceback of an internal error. Setting `NETDRYRUN_DEBUG=1` does the same.
 
 `path` is `netdryrun.yml` or the folder containing it. Default: the current folder.
+
+`verify` has its own page: [verify](verify.md).
 
 ## Commands
 
@@ -1774,6 +1777,187 @@ Long outputs are truncated (the last 20,000 characters of command output are kep
 - a failed check has a `<failure>` whose `message` is the detail and whose body is the evidence as JSON
 - in an `inconclusive` run, failed checks have an `<error>` instead of a `<failure>` (they could not run meaningfully), and they count as `errors`, not `failures`
 - a lab error adds a testcase named `lab` with an `<error>` element
+
+
+---
+Source: https://netdryrun.com/reference/verify/
+
+# verify
+
+!!! note "0.4, FRR only"
+    `netdryrun verify` is new in 0.4 and is not released yet. It snapshots FRR nodes only; SR Linux, SONiC and Arista EOS follow. A topology with a node of another kind is refused (exit code `2`).
+
+Checks test what someone thought of. `verify` inverts that: **you declare what the change is meant to do, and every other difference in the network's behavior fails.**
+
+```text
+netdryrun verify topology.clab.yml --before <dir|git-ref> --after <dir|git-ref> --intent intent.yml [--json report.json]
+```
+
+It deploys the lab with the *before* configs, waits for a stable snapshot, destroys the lab, then does the same with the *after* configs (and runs the standing guards on that lab). Then it compares the two snapshots and matches every difference against the intent. Two cold boots: about 2 × 60 to 120 seconds.
+
+## The verdict
+
+| Status | Verdict | Exit code | Meaning |
+|---|---|---|---|
+| `matched` | `INTENT MATCHED` | `0` | Every difference is declared, and every declaration happened. |
+| `no_change` | `NO BEHAVIOR CHANGE` | `0` | The snapshots are identical and the intent declares nothing. |
+| `failed` | `UNDECLARED CHANGES: DO NOT APPLY` | `1` | A difference nobody declared, a declared change that didn't happen, or a standing guard that failed (`failed_because` says which). |
+| `error` | `ERROR: NO VERDICT` | `2` | A bad intent, a different topology, a side that can't be read, an unreadable snapshot, or a lab problem. "Couldn't read" is never "nothing changed". |
+| `inconclusive` | `INCONCLUSIVE` | `3` | A lab's state never stopped moving within `--timeout`. Retry at most once, then escalate: this says nothing about the change. |
+| `unhealthy_baseline` | `INCONCLUSIVE: UNHEALTHY BASELINE` | `3` | BGP sessions are down in the *before* lab. Fix the baseline, or pass `--allow-unhealthy-baseline` to compare anyway. |
+
+**Explained is not the same as safe.** The report echoes the declared intent at the top, for a human to review: an intent that declares a leak explains the leak. `verify` never prints `SAFE TO PROCEED`. A verdict covers the observed control-plane state of this lab (sessions, RIB, BGP paths and advertisements), nothing else.
+
+**The intent must come from outside the change**: the ticket, the operator, or the base branch. A pass is never earned by copying the undeclared items into the intent.
+
+## Options
+
+| Option | Default | |
+|---|---|---|
+| `--before`, `--after` | required | The config folder the topology binds, as a directory or a git ref. For a ref, the folder at the same path in that ref's tree is used, and the topology file in the ref must be byte-identical to the one given (exit code `2` otherwise: verify compares configs on one topology). A directory wins over a ref of the same name. |
+| `--intent` | required | The intent file. |
+| `--json FILE` | | Write the `netdryrun.verify/v1` report. |
+| `--guards FILE` | | The standing guards (a `netdryrun.yml`), run on the *after* lab; they must pass. When `--before` is a git ref, the file is read from that ref (the base), never from the change. Its `nodes:` settings (`driver`, `setup`) apply to both labs. |
+| `--config-dir DIR` | detected | The folder `--before`/`--after` replace, relative to the topology. By default, the one folder every relative bind of the topology is in (`.` if they sit next to it). |
+| `--unobserved NODE` | | A node without a routing stack (a host). Repeat for several. A node verify can't classify is an error, never silently skipped. Bridges are never observed. |
+| `--settle` | `15` | Seconds between the two snapshots that must be identical. |
+| `--timeout` | `300` | Seconds to reach a stable snapshot, per lab. |
+| `--hold` | `10` | The standing guards' hold window. |
+| `--allow-unhealthy-baseline` | | Compare even when sessions are down in the *before* lab. |
+| `--keep` | | Leave the *after* lab running, to run the `next_diagnostic` commands. |
+
+## The intent file
+
+One line per prefix or session, so a set of related differences is one line. A line without `vrf:` means the default VRF only.
+
+```yaml
+intent:
+  - prefix: 10.101.0.0/24              # the customer's new block
+    appears_on: [edge1, up1, peer1]
+  - prefix: 203.0.113.0/24
+    best_path_on: edge1
+    to: {local_pref: 200}
+  - session: {node: edge1, neighbor: 10.0.9.2}
+    goes: down
+  - prefix: 192.0.2.128/25
+    disappears_from: [cust1]
+allow_anywhere: ["10.200.*.0/24"]
+```
+
+`intent: []` declares that nothing changes. A file without `intent:`, an unknown key, a wrong type, a prefix with host bits, two lines about the same route on the same node, or a node that is not in the topology is an error (exit code `2`).
+
+### appears_on
+
+The route is absent on each listed node before (no RIB entry, BGP path or received route), and after the change it is **selected and installed in the FIB** (`state: installed`, the default). `state: selected` accepts a selected route that isn't in the FIB; `state: received` expects it received but not selected.
+
+The report shows, per node, where the new route was learned from, its next hop and AS path. `with:` pins any of them:
+
+```yaml
+intent:
+  - prefix: 10.101.0.0/24
+    appears_on: [up1]
+    with: {from: 10.0.2.1, next_hop: 10.0.2.1, as_path: "65000 65101", protocol: bgp}
+```
+
+`with:` accepts `from`, `next_hop`, `as_path`, `origin`, `local_pref`, `med`, `weight`, `communities`, `ext_communities`, `large_communities`, `cluster_list`, `originator_id`, `protocol`, `distance` and `metric`. Each value must equal exactly; communities are the exact set.
+
+It explains every new item for that prefix on the listed nodes, and every advertisement of the prefix *to* a listed node. An advertisement to any other neighbor, inside or outside the lab, needs its own line (see [advertisement](#advertisement)). Best-path changes on routes that already existed always need their own line.
+
+### disappears_from
+
+The route was **selected** on each listed node before, and after the change it has no RIB entry and no BGP path there. It explains those removals and the withdrawn advertisements to the listed nodes.
+
+A route that was only received (kept by `soft-reconfiguration inbound`, not selected) is a different kind of difference. Removing `soft-reconfiguration inbound` makes those routes vanish, and that is a difference too. Declare it with `including_received_only: true`, which also accepts a route that was received-only before and requires that nothing of it is left.
+
+### best_path_on
+
+```yaml
+intent:
+  - prefix: 203.0.113.0/24
+    best_path_on: edge1
+    to: {local_pref: 200}
+```
+
+One meaning: **every listed value must equal exactly after the change, and every attribute not listed stays frozen.** If the winner changes to another neighbor's path, `from`, `next_hop` and the AS path change too, and each must be listed. At least one listed value must actually change. `to:` accepts `from`, `next_hop`, `as_path`, `origin`, `local_pref`, `med`, `weight`, `communities`, `ext_communities`, `large_communities`, `cluster_list` and `originator_id`.
+
+It explains, on that node: the best flag moving between paths; changes to the old and new best paths in the listed attributes only; the BGP RIB entry's next hops (when `next_hop` is listed) or metric (when `med` is); and advertisements of the prefix, by the node or to it, that differ only in listed attributes and carry the new best path's values. A downstream node whose best path changes needs its own line. A lost backup path is never explained by a best-path line.
+
+### session ... goes: down
+
+```yaml
+intent:
+  - session: {node: edge1, neighbor: 10.0.9.2, afi: ipv4-unicast}
+    goes: down
+```
+
+The session was established before and isn't after (or is gone). It covers both ends of that one session when both are lab nodes, and **only the routes learned over it**: the paths, received routes and advertisements over the session in its address family, and the RIB entries of prefixes that were learned only over it and are now gone. The report lists them. A failover to a backup path is a best-path change on that node and needs its own line; so does a route disappearing from another node. `afi:` is required when the session carries several address families (one line per family).
+
+### advertisement
+
+What one node advertises to one neighbor, including neighbors outside the lab: an outbound prepend, a `no-export`, a new advertisement toward a transit.
+
+```yaml
+intent:
+  - prefix: 192.0.2.0/24
+    advertisement: {node: edge1, neighbor: 198.51.100.9}
+    to: {as_path: "65000 65000"}       # or: goes: added | removed
+```
+
+`to:` follows the `best_path_on` rule (listed exact, the rest frozen); `from` can't be set.
+
+### allow_anywhere
+
+```yaml
+intent: []
+allow_anywhere: ["10.200.*.0/24", {prefix: 10.9.0.0/16, vrf: cust}]
+```
+
+Accepts every difference for the listed prefixes, on every node: churn you accept. An entry matches a prefix exactly, or is an explicit glob on the prefix text (`*`, `?`, `[0-3]`) that names at least the first octet and a prefix length. It never matches by containment: `10.0.0.0/8` doesn't cover `10.1.0.0/16`. The report lists every prefix each glob matched. Sessions are never covered.
+
+`allow_anywhere` weakens the verdict, and every report that uses it carries a warning: a change that adds or widens it should need a second approver (CODEOWNERS). The CLI can't enforce that.
+
+## What is compared: the snapshot
+
+After convergence, for every FRR node, in every VRF:
+
+- **BGP sessions**: (neighbor, VRF) → state, ASNs, address families, local address. Prefix counts are derived and never matched on their own.
+- **Routes, every protocol** (`kernel`, `connected`, `local`, `static`, `ospf`, `isis`, `bgp` and the rest): (VRF, AFI, SAFI, prefix, protocol) → selected or not, installed in the FIB or not, administrative distance, metric (the OSPF cost, for example), and the next hops with their resolution (recursive next hops keep the next hops that resolve them; IPv6 link-local next hops keep their interface).
+- **Every BGP path per prefix**, not only the best: (neighbor or `local`, add-path ID) → best, multipath, valid, origin, AS path, next hops (accessible, IGP metric), local preference, MED, weight, standard, extended and large communities, cluster list, originator ID, atomic aggregate, aggregator.
+- **Adj-RIB-Out per session**: what each node advertises to each established neighbor, with the advertised attributes, including neighbors that aren't lab nodes.
+- **Received routes before inbound policy**, where `soft-reconfiguration inbound` keeps them.
+
+Normalisation: AS_SEQUENCE order is kept and AS_SET is a sorted set; ASNs are asplain; well-known communities have one form (`no-export` is `65535:65281`); ECMP next-hop sets are compared as sets; absent attributes (MED, local preference) are compared as parsed, never replaced by defaults. Uptimes, timers, counters, table versions and interface indexes are never compared.
+
+Strict reading: verify validates the device output against what it knows. An unknown field, a missing field, a VRF missing from one output, an address family verify doesn't snapshot (EVPN, VPN, labeled unicast) or an unnumbered BGP neighbor is an error (exit code `2`), never a smaller snapshot. The raw output of every command is kept in the report's evidence.
+
+FRR commands: `show vrf`, `show bgp vrf all neighbors json`, `show ip route vrf all json`, `show ipv6 route vrf all json`, `show bgp vrf all ipv4|ipv6 unicast detail json`, and per established session `show bgp [vrf V] ipv4|ipv6 unicast neighbors N advertised-routes detail json` (plus `received-routes` where soft reconfiguration is on).
+
+### Convergence
+
+A snapshot is taken when two full snapshots `--settle` seconds apart are identical: every session established or stably not, prefix counts stable, every route and path unchanged, and every node's RIB populated. A command that fails while daemons start is retried until `--timeout`; then the snapshot is unreadable (exit code `2`). If the snapshots never match within `--timeout`, the result is `inconclusive`, naming what kept moving.
+
+## The report: netdryrun.verify/v1
+
+JSON Schema: [verify-v1.json](https://netdryrun.com/schemas/verify-v1.json).
+
+```json
+{"schema": "netdryrun.verify/v1", "verdict": "UNDECLARED CHANGES: DO NOT APPLY", "status": "failed",
+ "intent": {"source": "intent.yml", "supplied_by": "cli", "lines": ["10.101.0.0/24 appears on up1, peer1"]},
+ "failed_because": ["undeclared"],
+ "undeclared": [{"kind": "rib", "node": "edge1", "vrf": "default", "afi": "ipv4", "safi": "unicast",
+                 "prefix": "10.101.0.0/24", "protocol": "bgp", "change": "added",
+                 "route_before": "absent", "route_after": "selected and in the FIB",
+                 "summary": "edge1 10.101.0.0/24 [bgp]: added",
+                 "next_diagnostic": "docker exec clab-ndr-agent-demo-edge1 vtysh -c 'show ip route 10.101.0.0/24'"}],
+ "not_happened": [], "declared": [], "allowed": [], "guards": null,
+ "evidence": {"before": {"schema": "netdryrun.snapshot/v1"}, "after": {"schema": "netdryrun.snapshot/v1"}}}
+```
+
+(Abridged: every item also has `fields`, `before` and `after`, and the report has `run_id`, `warnings`, `baseline`, `timings` and more.) Undeclared items come first; each has one `next_diagnostic`, a read-only command for its node (run it on a lab kept with `--keep`). `not_happened` lists every declared change that didn't happen, with the reason. `declared` lists what each line explained.
+
+## Not in 0.4
+
+Topology changes; SR Linux, SONiC and Arista EOS nodes; EVPN, VPN and labeled-unicast address families; unnumbered BGP sessions; the data plane beyond the standing guards' ping checks; the MCP tool and the GitHub Action's `mode: verify` (next).
 
 
 ---
