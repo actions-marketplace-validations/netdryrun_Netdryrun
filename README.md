@@ -33,6 +33,20 @@ That run caught a leaked default route that was *received but not selected*. A p
 
 ## Quick start
 
+### Try it in your browser (no install)
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/netdryrun/netdryrun?quickstart=1)
+
+The codespace comes with Docker, containerlab and Netdryrun already installed. When the terminal shows `Ready`, run:
+
+```bash
+bash examples/agent-demo/demo.sh
+```
+
+A route-leaking change is rejected, then the fix passes every check. It uses your GitHub account's free Codespaces hours (2-core machine). [Details](https://netdryrun.com/getting-started/#try-it-in-your-browser).
+
+### On your own machine
+
 Requirements: Linux or WSL2, Docker, [containerlab](https://containerlab.dev/install/), Python 3.10+.
 
 ```bash
