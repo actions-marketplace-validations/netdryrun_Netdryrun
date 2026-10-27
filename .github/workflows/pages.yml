@@ -58,7 +58,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Submit sitemap URLs to IndexNow
         run: |
-          KEY=$(basename website/docs/*.txt .txt | grep -E '^[0-9a-f]{32}$' | head -1)
+          KEY=$(basename -s .txt website/docs/*.txt | grep -E '^[0-9a-f]{32}$' | head -1)
           sleep 30
           URLS=$(curl -fsSL https://netdryrun.com/sitemap.xml | grep -oE '<loc>[^<]+</loc>' | sed -E 's#</?loc>##g' | python3 -c "import json,sys;print(json.dumps([l.strip() for l in sys.stdin if l.strip()]))")
           curl -fsS -X POST https://api.indexnow.org/indexnow -H 'Content-Type: application/json; charset=utf-8' \
