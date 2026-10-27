@@ -54,6 +54,9 @@ extra_css:
 # Publish /.well-known/security.txt (MkDocs skips dot-folders by default)
 exclude_docs: |
   !.well-known/
+  # Drafts until the owner's legal name and contact address are filled in. Never publish placeholders.
+  privacy.md
+  legal-notice.md
 
 plugins:
   - search
