@@ -21,7 +21,7 @@ Times are wall-clock for `netdryrun run` on WSL2 (20 cores, 16 GB) with images a
 | [frr-bgp](#frr-bgp) | FRR | Basic checks, best-path attributes, a leak guard, a link-failure scenario | `PASSED: 11 passed, 0 failed` | `0` | 84 s |
 | [frr-bgp-broken](#frr-bgp-broken) | FRR | A leaked default route caught | `FAILED: 5 passed, 1 failed` | `1` | 45 s |
 | [srl-frr](#srl-frr) | Nokia SR Linux + FRR | Mixed vendors | `PASSED: 7 passed, 0 failed` | `0` | 60 s |
-| [srl-hidden-leak](#srl-hidden-leak) | Nokia SR Linux + FRR | A leaked default that ping, sessions and the routing table miss, on both NOSes | `PASSED: 9 passed, 0 failed`; each leak `FAILED: 8 passed, 1 failed` | `0`; `1` | 58 to 84 s |
+| [srl-hidden-leak](#srl-hidden-leak) | Nokia SR Linux + FRR | A leaked default that ping, sessions and the routing table miss, on both NOSes | `PASSED: 9 passed, 0 failed`; each leak `FAILED: 8 passed, 1 failed` | `0`; `1` | 52 to 84 s |
 | [sonic-frr](#sonic-frr) | SONiC VS + FRR | Configuring a NOS after boot, a port-down scenario | `PASSED: 8 passed, 0 failed` | `0` | 90 s |
 | [arista-frr](#arista-frr) | Arista cEOS + FRR (your image) | A bring-your-own vendor image | `PASSED: 10 passed, 0 failed` | `0` | 92 s |
 | [agent-demo](#agent-demo) `demo.sh` | FRR | An agent's leaky change rejected, the fix accepted | `Demo OK` | `0` | 65 s |
@@ -72,7 +72,7 @@ CI runs this example on every push and expects it to fail.
   [FAIL] srl1: no BGP path for 0.0.0.0/0 -- unexpectedly in the BGP table (1 path(s); as-path '65020', next hop 10.0.100.2, local-pref 100, MED 0, communities none) (2.4s)
 ```
 
-Needs the SR Linux fix in the changelog's Unreleased section: 0.3.0 counts `srl1`'s own static default as a BGP path, so the good configs fail. Its times in the table were measured with that fix (0.3.0 plus the fix), over six runs on 2026-10-27; the README lists each one.
+Needs the SR Linux fix in the changelog's Unreleased section: 0.3.0 counts `srl1`'s own static default as a BGP path, so the good configs fail. Its times in the table were measured with that fix (0.3.0 plus the fix), over nine runs on 2026-10-27; the README lists each one.
 
 ## sonic-frr
 

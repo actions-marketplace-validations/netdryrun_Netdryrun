@@ -246,13 +246,13 @@ With the SR Linux leak (`leaks/srl1.cli` over `configs/srl1.cli`), it's the guar
 FAILED: 8 passed, 1 failed (9 checks)
 ```
 
-Exit code `0` for the pass, `1` for each fail, so a CI job fails on the leak. Wall-clock for `netdryrun run`, including deploying and destroying the lab, with images already pulled. Measured on 2026-10-27 on WSL2 (20 cores, 16 GB), containerlab 0.81.1, SR Linux 26.7.2, FRR 10.4.1, Netdryrun 0.3.0 plus the unreleased SR Linux fix. Two rounds: the first from the development worktree, the second from a fresh clone following this README:
+Exit code `0` for the pass, `1` for each fail, so a CI job fails on the leak. Wall-clock for `netdryrun run`, including deploying and destroying the lab, with images already pulled. Measured on 2026-10-27 on WSL2 (20 cores, 16 GB), containerlab 0.81.1, SR Linux 26.7.2, FRR 10.4.1, Netdryrun 0.3.0 plus the unreleased SR Linux fix. Three rounds: the first from the development worktree, then two from a fresh clone following this README (the last on commit `1cbef33`):
 
 | Run | Result | Exit | Times |
 |---|---|---|---|
-| Good configs | `PASSED: 9 passed, 0 failed` | `0` | 84 s; 60 s and 58 s |
-| FRR leak (`leaks/frr1.conf`) | `FAILED: 8 passed, 1 failed` | `1` | 80 s; 57 s |
-| SR Linux leak (`leaks/srl1.cli`) | `FAILED: 8 passed, 1 failed` | `1` | 55 s; 59 s |
+| Good configs | `PASSED: 9 passed, 0 failed` | `0` | 84 s; 60 s and 58 s; 61 s |
+| FRR leak (`leaks/frr1.conf`) | `FAILED: 8 passed, 1 failed` | `1` | 80 s; 57 s; 52 s |
+| SR Linux leak (`leaks/srl1.cli`) | `FAILED: 8 passed, 1 failed` | `1` | 55 s; 59 s; 60 s |
 
 Most of the difference between runs is how long SR Linux takes to bring BGP up (14 to 34 s in these runs).
 
