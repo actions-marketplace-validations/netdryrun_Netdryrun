@@ -128,24 +128,28 @@ def blocks(f: dict) -> dict[str, str]:
         provenance = f"neither ran on a released version. v1 ran on {ran(c)}; v2 on {ran(c2)}"
     else:
         provenance = f"v1 ran on {ran(c)}; v2 on {ran(c2)}"
-    pending = (f" A rerun of both on the released {v} is pending." if c["dev_build"] or c2["dev_build"] else "")
-    corpus_sentence = (f"On the {{link}}, Netdryrun judged {c['netdryrun']}/{c['cases']} realistic BGP changes correctly "
-                       f"(ping-only checks {c['ping']}/{c['cases']}, all-sessions-up checks {c['sessions']}/{c['cases']}) and "
-                       f"{c2['netdryrun']}/{c2['cases']} on v2, written after v1 to target its misses "
-                       f"({c2['ping']}/{c2['cases']} and {c2['sessions']}/{c2['cases']}). "
-                       f"On v1, Netdryrun approved {c['netdryrun_approved_harmful']} of the {c['harmful']} harmful changes; ping-only checks "
-                       f"approved {c['ping_approved_harmful']}. "
+    historical = bool(c["dev_build"] or c2["dev_build"])
+    pending = f" A rerun of both on the released {v} is pending." if historical else ""
+    losses = {kind: [x for x in c["losses"] if x["expected"] == kind] for kind in ("unsafe", "safe")}
+    safe = c["cases"] - c["harmful"]
+    corpus_sentence = ((f"Historical results, from builds before {v}: " if historical else "")
+                       + ("o" if historical else "O") + f"n the {{link}} v1 ({c['cases']} realistic BGP changes: {c['harmful']} harmful, {safe} safe), "
+                       f"Netdryrun judged {c['netdryrun']}/{c['cases']} correctly, ping-only checks {c['ping']}/{c['cases']} and "
+                       f"all-sessions-up checks {c['sessions']}/{c['cases']}. Netdryrun approved "
+                       f"{c['netdryrun_approved_harmful']} of the {c['harmful']} harmful changes (ping-only checks: "
+                       f"{c['ping_approved_harmful']} of {c['harmful']}) and blocked {len(losses['safe'])} of the {safe} safe ones. "
+                       f"On v2 ({c2['cases']} cases written after v1 to target v1's misses): Netdryrun {c2['netdryrun']}/{c2['cases']}, "
+                       f"ping-only {c2['ping']}/{c2['cases']}, all-sessions-up {c2['sessions']}/{c2['cases']}. "
                        f"Both are small benchmarks the maintainers wrote on one FRR topology, with expected verdicts committed "
                        f"before any run: they compare methods, they are not a production reliability estimate. "
                        f"Provenance: {provenance}.{pending}")
-    losses = {kind: [x for x in c["losses"] if x["expected"] == kind] for kind in ("unsafe", "safe")}
     checks = _join([f"`{t}`" for t in f["check_types"]])
     attrs = "bgp_route" in f["check_types"]  # BGP best-path attribute checks exist
     covers = "BGP sessions, prefix counts, " + ("routes, BGP best-path attributes and ping" if attrs else "routes and ping")
     tools = _join([f"`{t}`" for t in f["mcp_tools"]])
     scen = _join(["link-down", "node-isolation", *(["route-injection (FRR only)"] if f["route_injection"] else [])])
     return {
-        "readme_status": (f"> Status: **v{v}, early.** Works today with {long_} on Linux and WSL2. "
+        "readme_status": (f"> Status: **v{v}, early.** Runs on Linux and WSL2, with drivers for {long_}. "
                           + corpus_sentence.format(link="[verdict corpus](https://netdryrun.com/corpus/)")
                           + " Feedback and issues are very welcome."),
         "site_status": (f"Version {v}, early. Works with {mid} on Linux and WSL2. Check types: {checks} "
