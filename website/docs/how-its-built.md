@@ -34,16 +34,28 @@ The [Verdict Corpus](corpus.md) measures Netdryrun on realistic BGP changes, eac
 - **Everything reruns.** The runner ([`corpus/run.py`](https://github.com/netdryrun/netdryrun/blob/main/corpus/run.py)), every case and the raw output ([`results.json`](https://github.com/netdryrun/netdryrun/blob/main/corpus/results/results.json)) are public. `python corpus/run.py` reruns v1 and `--corpus v2` reruns v2. The GitHub workflow does the same on a hosted runner and lists any verdict that differs.
 - **Limit of this evidence:** git commit dates come from the author's machine. The history proves the order of the commits and that the cases were not changed; it is not an independent timestamp.
 
-## Published losses
+## Every miss, and what it changed
+
+A test you always pass tells you nothing. Netdryrun's misses stay in the published results, at the same size as its catches, and each one has driven a specific improvement.
 
 <!-- facts:built_losses -->
-- **Netdryrun is wrong on 6 of 30 cases**: it approved 5 harmful changes and blocked 1 safe one ([RESULTS.md](https://github.com/netdryrun/netdryrun/blob/main/corpus/RESULTS.md)). They are shown in the same table as the catches.
-    - Approved although harmful: [`12` send-community removed on the pe1 to pe2 iBGP session](corpus/12-ibgp-send-community-dropped.md), [`18` redistribute connected added on pe1](corpus/18-redistribute-connected.md), [`21` Customer maximum-prefix safety limit removed](corpus/21-customer-max-prefix-removed.md), [`23` pe1 accidentally originates 8.8.8.0/24](corpus/23-fat-finger-third-party-origin.md) and [`30` Peer inbound filter replaced with permit-all](corpus/30-peer-import-filter-removed.md).
-    - Blocked although safe: [`06` Customer announces a second allowed /24](corpus/06-customer-adds-prefix.md).
+**Verdict Corpus v1: wrong on 6 of 30 cases.** It approved 5 harmful changes and blocked 1 safe one ([RESULTS.md](https://github.com/netdryrun/netdryrun/blob/main/corpus/RESULTS.md)).
 <!-- /facts:built_losses -->
-- **v2 misses 2 of 18:** case 04, a mistyped aggregate (its case file predicted the miss), and case 18, a deleted discard route that causes a routing loop no check probes ([v2 results](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/RESULTS.md)).
-- **One of our own labels was wrong.** [Case 12](corpus/12-ibgp-send-community-dropped.md) expected a change to be harmful; on FRR it is a no-op. The label stays as committed and the score was not corrected in our favour. The finding and a script that reproduces it are in [AMENDMENTS.md](https://github.com/netdryrun/netdryrun/blob/main/corpus/AMENDMENTS.md).
-- **Every v1 miss is explained:** two were gaps in the intent spec ([18](corpus/18-redistribute-connected.md), [23](corpus/23-fat-finger-third-party-origin.md)) and two were risks no steady-state check can see ([21](corpus/21-customer-max-prefix-removed.md), [30](corpus/30-peer-import-filter-removed.md)). Failure scenarios, added since, catch the v2 versions of those two (v2 cases 05, 06 and 11).
+
+**Verdict Corpus v2: wrong on 2 of 18 cases**, both harmful changes approved ([v2 results](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/RESULTS.md)).
+
+| Case | Outcome | Root cause | What changed | Status |
+|---|---|---|---|---|
+| v1 [06](corpus/06-customer-adds-prefix.md): customer announces a second allowed /24 | Blocked a safe change | The intent spec pinned exactly 2 prefixes towards the upstream and peer, so normal customer growth looked like a leak | v2 checks a range (2 to 51 prefixes); the growth cases 07 and 08 pass | Fixed |
+| v1 [12](corpus/12-ibgp-send-community-dropped.md): send-community removed on iBGP | Approved | **Our label was wrong.** On FRR, communities are sent by default, so the change is a no-op ([AMENDMENTS.md](https://github.com/netdryrun/netdryrun/blob/main/corpus/AMENDMENTS.md), with a reproduction script) | Scored as a loss anyway, never corrected in our favour. v2 case 09 tests the corrected expectation and case 10 the truly harmful variant; both judged correctly | Label error |
+| v1 [18](corpus/18-redistribute-connected.md): redistribute connected on pe1 | Approved | Spec gap: nothing checked for infrastructure routes leaving the AS | New intent I6: no link or loopback routes at the customer, upstream or peer. v2 case 02 (the same mistake on pe2) caught | Fixed |
+| v1 [23](corpus/23-fat-finger-third-party-origin.md): pe1 originates 8.8.8.0/24 | Approved | Spec gap: nothing checked for third-party space | New intent I7, a sentinel list of well-known prefixes. v2 case 03 caught | Partly fixed (see v2 04) |
+| v1 [21](corpus/21-customer-max-prefix-removed.md): customer max-prefix removed | Approved | Latent risk, invisible until the customer misbehaves | New `inject_routes` failure scenario: the customer floods 200 prefixes. v2 cases 05 and 11 caught | Fixed |
+| v1 [30](corpus/30-peer-import-filter-removed.md): peer inbound filter replaced with permit-all | Approved | Latent risk, invisible until the peer misbehaves | The same scenario type, with the peer announcing routes it does not own. v2 case 06 caught | Fixed |
+| v2 04: redundant aggregate mistyped as 192.0.12.0/24 | Approved | I7 checks only a few well-known prefixes; nothing bounds what the customer receives | Predicted as a likely miss in the case file before the run | Open |
+| v2 18: discard route for the aggregate deleted | Approved | Causes a routing loop for unused addresses inside the aggregate; no check sends traffic there | A reachability check towards unused space would catch it | Open |
+
+Two caveats apply. v2 was written after seeing v1's misses, so its improvements are measured on cases designed by the same team. And the corpus runs on FRR only, with one topology.
 
 ## Continuous integration with live labs
 

@@ -88,7 +88,6 @@ def blocks(f: dict) -> dict[str, str]:
                        f"Netdryrun judged {c['netdryrun']}/{c['cases']} correctly, ping-only checks {c['ping']}/{c['cases']} "
                        f"and all-sessions-up checks {c['sessions']}/{c['cases']}.")
     losses = {kind: [x for x in c["losses"] if x["expected"] == kind] for kind in ("unsafe", "safe")}
-    loss_links = {kind: _join([f"[`{x['id'][:2]}` {x['title']}](corpus/{x['id']}.md)" for x in xs]) for kind, xs in losses.items()}
     checks = _join([f"`{t}`" for t in f["check_types"]])
     attrs = "bgp_route" in f["check_types"]  # BGP best-path attribute checks exist
     covers = "BGP sessions, prefix counts, " + ("routes, BGP best-path attributes and ping" if attrs else "routes and ping")
@@ -117,11 +116,9 @@ def blocks(f: dict) -> dict[str, str]:
                         + (", BGP best-path attributes" if attrs else "") + " and ping, plus link-down and node-isolation "
                         "failure scenarios. OSPF/IS-IS adjacencies and path checks"
                         + ("" if attrs else " and policy attributes") + " are not covered yet."),
-        "built_losses": (f"- **Netdryrun is wrong on {len(c['losses'])} of {c['cases']} cases**: it approved "
+        "built_losses": (f"**Verdict Corpus v1: wrong on {len(c['losses'])} of {c['cases']} cases.** It approved "
                          f"{_count(len(losses['unsafe']), 'harmful change')} and blocked {_count(len(losses['safe']), 'safe one')} "
-                         f"([RESULTS.md](https://github.com/netdryrun/netdryrun/blob/main/corpus/RESULTS.md)). They are shown in the same table as the catches.\n"
-                         f"    - Approved although harmful: {loss_links['unsafe'] or 'none'}.\n"
-                         f"    - Blocked although safe: {loss_links['safe'] or 'none'}."),
+                         f"([RESULTS.md](https://github.com/netdryrun/netdryrun/blob/main/corpus/RESULTS.md))."),
         "agents_platforms": short,
         "faq_platforms": long_,
         "mcp_tools": tools,
