@@ -5,7 +5,7 @@ site_description: >-
   containerlab virtual lab before they reach production, with a pass/fail
   verdict and evidence.
 site_author: Netdryrun
-copyright: 'Netdryrun™ is open source under the Apache-2.0 license. Netdryrun and the Netdryrun logo are trademarks. <a href="/trust/">Trust and privacy</a> · <a href="/support/">Support</a> · <a href="/contact/">Contact</a>'
+copyright: 'Netdryrun™ is open source under the Apache-2.0 license. Netdryrun and the Netdryrun logo are trademarks. <a href="/privacy/">Privacy</a> · <a href="/trust/">Trust</a> · <a href="/support/">Support</a> · <a href="/contact/">Contact</a>'
 
 repo_url: https://github.com/netdryrun/netdryrun
 repo_name: netdryrun/netdryrun
@@ -54,8 +54,7 @@ extra_css:
 # Publish /.well-known/security.txt (MkDocs skips dot-folders by default)
 exclude_docs: |
   !.well-known/
-  # Drafts until the owner's legal name and contact address are filled in. Never publish placeholders.
-  privacy.md
+  # Draft until the owner has a postal address to publish. Never publish placeholders.
   legal-notice.md
 
 plugins:
@@ -92,6 +91,7 @@ nav:
   - Trust and security: trust.md
   - Support and versioning: support.md
   - Contact: contact.md
+  - Privacy notice: privacy.md
 
 extra:
   social:

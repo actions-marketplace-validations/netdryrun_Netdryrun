@@ -5,11 +5,11 @@ description: What personal data netdryrun.com, the Netdryrun tool and our email 
 
 # Privacy notice
 
-*Last updated: [DATE]*
+*Last updated: 27 October 2026*
 
 ## Who is responsible
 
-[OWNER LEGAL NAME], [CONTACT ADDRESS] ("we"). Netdryrun is run by an individual; no company has been formed. Privacy questions: [hello@netdryrun.com](mailto:hello@netdryrun.com).
+Victor Khen ("we"). Netdryrun is run by an individual; no company has been formed. Contact for anything about your data: [hello@netdryrun.com](mailto:hello@netdryrun.com).
 
 ## The short version
 
