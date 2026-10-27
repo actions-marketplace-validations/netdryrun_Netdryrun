@@ -1,0 +1,10 @@
+# Keeps the SHA-pinned GitHub Actions current (Scorecard's Dependency-Update-Tool check).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directories: ["/"]
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]

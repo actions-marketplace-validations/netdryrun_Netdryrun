@@ -5,6 +5,8 @@
   </picture>
 </p>
 
+[![CI](https://github.com/netdryrun/netdryrun/actions/workflows/ci.yml/badge.svg)](https://github.com/netdryrun/netdryrun/actions/workflows/ci.yml) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/netdryrun/netdryrun/badge)](https://scorecard.dev/viewer/?uri=github.com/netdryrun/netdryrun)
+
 **Test network changes before they touch production.**
 
 Netdryrun™ boots your topology as a real virtual network ([containerlab](https://containerlab.dev)), applies your configs, and checks how the network actually *behaves*: BGP sessions, prefix counts, routes, reachability. It catches mistakes like route leaks before they reach production, and leaves evidence a reviewer can trust.
@@ -175,6 +177,8 @@ What Netdryrun adds: positive checks wait for convergence, negative checks run o
 
 - Open-source routers are not your vendor's routers. FRR and SR Linux pass/fail is strong evidence for protocol logic and policy intent, but not proof of vendor-specific behavior. Running your own licensed vendor images is on the roadmap.
 - v0.1 covers IPv4/IPv6 unicast BGP, routes and ping. More checks are coming: OSPF/IS-IS adjacencies, path/traceroute, policy, failure scenarios.
+
+How results are checked, and who writes the code (mostly AI agents): [How it's built](https://netdryrun.com/how-its-built/).
 
 ## Roadmap
 

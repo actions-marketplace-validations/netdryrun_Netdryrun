@@ -18,6 +18,7 @@ Install: `pip install netdryrun` (version 0.2.0). Source: https://github.com/net
 - [When to use what](https://netdryrun.com/when-to-use-what/): Batfish, netlab, pyATS/Genie, containerlab and Netdryrun compared
 - [Trust and security](https://netdryrun.com/trust/): license, releases, security contact, limits, privacy
 - [Verdict corpus](https://netdryrun.com/corpus/): benchmark of realistic changes (results pending)
+- [How it's built](https://netdryrun.com/how-its-built/): AI agents write most of the code; how results are checked, with evidence links; what is not claimed
 
 ## Full documentation
 
