@@ -1,0 +1,9 @@
+{
+  "ticket": "T01-new-block",
+  "run": "run1",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_s": 70.3,
+  "folder": "C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\run1\\T01-new-block",
+  "model_requested": null
+}

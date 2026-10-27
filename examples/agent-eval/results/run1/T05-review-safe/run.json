@@ -1,0 +1,9 @@
+{
+  "ticket": "T05-review-safe",
+  "run": "run1",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_s": 59.2,
+  "folder": "C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\run1\\T05-review-safe",
+  "model_requested": null
+}

@@ -1,0 +1,9 @@
+{
+  "ticket": "T03-review-open-filters",
+  "run": "run1",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_s": 59.7,
+  "folder": "C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\run1\\T03-review-open-filters",
+  "model_requested": null
+}

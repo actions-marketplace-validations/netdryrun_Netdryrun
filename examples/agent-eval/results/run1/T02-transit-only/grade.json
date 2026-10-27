@@ -1,0 +1,59 @@
+{
+  "ticket": "T02-transit-only",
+  "kind": "implement",
+  "truth": {
+    "verdict": "safe",
+    "decision": [
+      "apply"
+    ]
+  },
+  "answer": {
+    "verdict": "safe",
+    "decision": "apply",
+    "netdryrun_status": "passed",
+    "changed_files": [
+      "configs/edge1.conf"
+    ],
+    "reason": "Added 10.101.0.0/24 to CUSTOMER-IN and split OUR-ROUTES into TO-UPSTREAM-PFX (with 10.101.0.0/24) and TO-PEER-PFX (without it). Netdryrun run passed all 14 checks: the new block reaches up1 and the internet, peer1 does not receive it, and all guards/leak-guards hold."
+  },
+  "completed_unattended": true,
+  "verdict_ok": true,
+  "decision_ok": true,
+  "changed_files": [
+    "configs/edge1.conf"
+  ],
+  "added_files": [],
+  "rule_breaks": [],
+  "hidden_rerun": {
+    "exit_code": 0,
+    "status": "passed",
+    "failed_checks": [],
+    "checks": 16,
+    "attempts": 1,
+    "error": null,
+    "log_tail": null
+  },
+  "hidden_ok": true,
+  "solved": true,
+  "tool_calls": 13,
+  "netdryrun_calls": 1,
+  "lab_runs": 1,
+  "tools": {
+    "Edit": 2,
+    "Glob": 1,
+    "Read": 9,
+    "mcp__netdryrun__dry_run": 1
+  },
+  "turns": 14,
+  "wall_s": 87.9,
+  "agent_duration_s": 84.9,
+  "cost_usd": 0.2772595,
+  "model": "claude-opus-4-7[1m]",
+  "claude_code_version": "2.1.116",
+  "mcp_status": [
+    "connected"
+  ],
+  "permission_denials": [],
+  "tool_errors": [],
+  "timed_out": false
+}
