@@ -405,6 +405,7 @@ def test_node_that_never_reports_bgp_neighbors_is_released_at_the_cap_with_a_war
     ref = plain.run([leak("neg", timeout=24), leak("neg2", prefix="10.77.0.0/16", timeout=12)], settle=10, hold=10)
     for name in ("neg", "neg2"):                       # the warning is recorded on each gated check
         assert by_name(rep)[name].detail != by_name(ref)[name].detail
+        assert by_name(rep)[name].detail.startswith(by_name(ref)[name].detail)   # the check's own detail is kept
     assert len(e.logs) == len(plain.logs) + 1
 
 
@@ -1530,3 +1531,126 @@ def test_config_files_are_read_as_utf8(monkeypatch, tmp_path):
     (tmp_path / "netdryrun.yml").write_text("timeout: soon\n", encoding="utf-8")
     runner._shape_problem(tmp_path / "netdryrun.yml")
     assert seen and all(enc is not None and codecs.lookup(enc).name == "utf-8" for enc in seen)
+
+
+# ----------------------------------------------------------------------------------------------- re-audit of the 0.3.1 review fixes
+
+def test_gate_unreadable_after_no_neighbors_blocks_at_the_cap(monkeypatch):
+    """No neighbors first, then BGP state that can't be read until the cap: the last answer is not
+    "no neighbors" any more, so the node is blocked (not released as a node without BGP)."""
+    e = make(monkeypatch)
+    e.drivers["r1"].neighbors = {"default": {}}
+    e.drivers["r1"].neighbors_error = lambda t: DriverError("x") if t >= 3 else None
+    a = leak("a", timeout=9)
+    warnings = {}
+    assert set(gate(e, [a], warnings=warnings)) == {id(a)} and warnings == {}
+
+
+def test_gate_no_neighbors_sample_resets_the_streak(monkeypatch):
+    """established, none, established (same counts), then down: the empty sample breaks the streak, so the
+    gate never sees 2 identical established samples in a row and blocks at the cap."""
+    e = make(monkeypatch)
+
+    def nbrs(t):
+        t = round(t)
+        if t == 3:
+            return {}
+        return {"10.0.12.2": "established" if t in (0, 6) else "active"}
+
+    e.drivers["r1"].neighbors = {"default": nbrs}
+    a = leak("a", timeout=15)
+    blocked = gate(e, [a])
+    assert set(blocked) == {id(a)}
+    assert [h["passed"] for h in blocked[id(a)].history][:3] == [True, False, True]
+
+
+def test_gate_blocked_result_counts_no_neighbor_samples_as_unready(monkeypatch):
+    """A blocked node's samples with no neighbors at all are failing, unready samples (they decide whether
+    the run is inconclusive); a session that is down is a failing, readable sample."""
+    e = make(monkeypatch)
+    e.drivers["r1"].neighbors = {"default": lambda t: {"10.0.12.2": "active"} if t >= 3 else {}}
+    [r] = gate(e, [leak("a", timeout=9)]).values()
+    assert r.attempts == 4 and r.samples_unready == 1 and r.samples_passed == 0
+    assert [bool(h.get("unready")) for h in r.history] == [True, False, False, False]
+    assert all(h["passed"] is False for h in r.history)
+
+
+def test_gate_no_neighbors_group_does_not_stop_the_round(monkeypatch):
+    e = make(monkeypatch)
+    e.drivers["r1"].neighbors = {"default": {}}                             # sorted first, empty every round
+    e.drivers["r2"].neighbors = {"default": {"10.0.12.1": "active"}}
+    a, b = leak("a", timeout=9), leak("b", node="r2", timeout=6)
+    blocked = gate(e, [a, b])
+    assert set(blocked) == {id(b)}
+    assert [x[2] for x in e.drivers["r2"].calls] == [0.0, 3.0, 6.0]
+
+
+def test_run_scenario_gate_ignores_sessions_a_top_level_check_expects_down(monkeypatch):
+    """run() hands the top-level checks to each scenario: a session a top-level bgp_session check expects
+    down doesn't hold the scenario's BGP gate."""
+    e = _r1_with_another_session(monkeypatch, "active")
+    down = chk("bgp_session", "down", neighbor="10.0.13.3", state="down")
+    sc = Scenario("s", [Fault("link_down", "r1", "eth1")], [leak("[s] neg", node="r1", timeout=20)])
+    rep = e.run([down], [sc], settle=10, hold=10)
+    assert rep.status == "passed" and all(r.passed for r in rep.results)
+    assert any(c[0] == "routes" for c in e.drivers["r1"].calls)       # the scenario's check was evaluated
+
+
+def test_run_scenario_gate_skips_a_node_whose_positive_checks_never_got_state(monkeypatch):
+    """As at the top level: a scenario node whose positive checks never got usable state is not gated."""
+    e = make(monkeypatch)
+    e.drivers["r1"].neighbors = {"default": {"10.0.13.3": "active", "10.0.14.4": "active"}}
+    e.drivers["r1"].routes_ = {}                                         # every route read fails: unready
+    pos = route("pos", node="r1", timeout=9)
+    neg = chk("bgp_session", "neg", node="r1", neighbor="10.0.13.3", state="down", timeout=30)
+    sc = Scenario("s", [Fault("inject_routes", "r2", prefixes=["10.66.0.0/16"])], [pos, neg])
+    results = {r.check.name: r for r in direct(e, sc)}
+    assert results["pos"].passed is False and results["pos"].samples_unready == results["pos"].attempts
+    assert results["neg"].passed is True
+
+
+def test_run_scenario_holds_post_convergence_checks_for_its_hold(monkeypatch):
+    """The scenario's hold applies to its post-convergence checks: settle to t=10, the gate releases at 13,
+    the leak comes 15 s into the hold. Caught with hold=20, not with 10."""
+    for hold, caught in ((20, True), (10, False)):
+        e = make(monkeypatch)
+        e.drivers["r3"].neighbors = up("10.0.23.2")
+        e.drivers["r3"].routes_ = {"default": lambda t, p: t >= 13 + 15}
+        [r] = direct(e, Scenario("s", [Fault("link_down", "r1", "eth1")], [leak("neg", node="r3", timeout=30)]),
+                     hold=hold)
+        assert r.passed is not caught
+
+
+def test_run_scenario_far_end_without_a_driver(monkeypatch):
+    """A host at the far end of a downed link that no driver can read has nothing to watch; the scenario
+    goes on and its checks are judged."""
+    e = make(monkeypatch)
+    e.drivers["r1"].neighbors = {"default": {}}
+
+    def driver_for(n):
+        if n == "r2":
+            raise DriverError("cannot detect driver for node r2")
+        return e.drivers[n]
+
+    results = direct(e, Scenario("s", [Fault("link_down", "r1", "eth1")], [route("x", node="r3")]),
+                     driver_for=driver_for)
+    assert [r.passed for r in results] == [True]
+    assert e.lab.link_events() == [("r1", "eth1", False), ("r1", "eth1", True)]
+
+
+def test_run_scenario_gate_warning_is_added_to_each_check(monkeypatch):
+    """A scenario node that reports no BGP neighbors up to the cap: its post-convergence checks go ahead,
+    each with the gate's warning added to its own detail. The verdict is unchanged."""
+    def scenario():
+        return Scenario("s", [Fault("link_down", "r1", "eth1")], [leak("neg", node="r3", timeout=12)])
+
+    e = make(monkeypatch)                                                  # r3 reports no neighbors
+    e.drivers["r3"].routes_ = {"default": never}
+    [r] = direct(e, scenario())
+    ref_env = make(monkeypatch)
+    ref_env.drivers["r3"].neighbors = up("10.0.23.2")
+    ref_env.drivers["r3"].routes_ = {"default": never}
+    [ref] = direct(ref_env, scenario())
+    assert r.passed and ref.passed
+    assert r.detail != ref.detail and r.detail.startswith(ref.detail)
+    assert e.results[0].detail == r.detail

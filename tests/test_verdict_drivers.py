@@ -1071,6 +1071,11 @@ def test_eos_json_and_vrf_helpers():
             eos._vrf("c", data, "red")
         # only "the VRF is not in a well-formed answer" means there is nothing there
         assert isinstance(exc.value, NoSuchInstance) is (data == {"vrfs": {}})
+    # a well-formed answer that lists other VRFs (not only an empty one): the VRF isn't there
+    with pytest.raises(NoSuchInstance):
+        eos._vrf("c", {"vrfs": {"default": {}, "blue": {}}}, "red")
+    with pytest.raises(NoSuchInstance):
+        EosDriver(Lab([("bgp summary", eos_summary("red"))]), "r1").bgp_neighbors("blue")
     assert eos._table("c", {"k": {}}, "k") == {}
     for entry in ({}, {"k": []}, {"k": None}):
         with pytest.raises(DriverError):

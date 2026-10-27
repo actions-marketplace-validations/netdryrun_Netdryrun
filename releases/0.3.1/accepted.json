@@ -320,6 +320,30 @@
    "reason": "message text only: the node list in the inconclusive reason",
    "diff": "4277af972274d2ff"
   },
+  "netdryrun.checks.x_is_post_convergence__mutmut_13": {
+   "reason": "equivalent: only present `is False` matters; a missing key gives None or True, neither is False",
+   "diff": "a54ee3b873eccce1"
+  },
+  "netdryrun.checks.x_is_post_convergence__mutmut_15": {
+   "reason": "equivalent: only present `is False` matters; a missing key gives None or True, neither is False",
+   "diff": "f99b6607097f558f"
+  },
+  "netdryrun.checks.x_is_post_convergence__mutmut_32": {
+   "reason": "equivalent: only expect == 'failure' matters; a missing key gives a default that is not 'failure' either way",
+   "diff": "f225b0c7e0661c7f"
+  },
+  "netdryrun.checks.x_is_post_convergence__mutmut_34": {
+   "reason": "equivalent: only expect == 'failure' matters; a missing key gives a default that is not 'failure' either way",
+   "diff": "31543023a1dd6a1e"
+  },
+  "netdryrun.checks.x_is_post_convergence__mutmut_37": {
+   "reason": "equivalent: only expect == 'failure' matters; a missing key gives a default that is not 'failure' either way",
+   "diff": "650cf5f3d9374b0a"
+  },
+  "netdryrun.checks.x_is_post_convergence__mutmut_38": {
+   "reason": "equivalent: only expect == 'failure' matters; a missing key gives a default that is not 'failure' either way",
+   "diff": "a8d7b82d1560029f"
+  },
   "netdryrun.checks.x_run_round_robin__mutmut_71": {
    "reason": "equivalent: unreachable branch: the round-robin timeout only ends a check on a failing sample, so a finished check is never 'not passed but ok'",
    "diff": "cf30660ae75c2c65"
@@ -787,6 +811,198 @@
   "netdryrun.config.x__validate_bgp_route__mutmut_84": {
    "reason": "message text only: the same exception is still raised, only its message changes",
    "diff": "30fafc57c8754032"
+  },
+  "netdryrun.config.x__validate_check__mutmut_106": {
+   "reason": "equivalent: ipaddress.ip_network only tests strict for truth; None and False both normalize host bits",
+   "diff": "6615cf6257c361bc"
+  },
+  "netdryrun.config.x__validate_check__mutmut_150": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "bf73ccfcee8436ae"
+  },
+  "netdryrun.config.x__validate_check__mutmut_178": {
+   "reason": "equivalent: float('INF') == float('inf'); float() parses infinity case-insensitively",
+   "diff": "eb75197777b509e8"
+  },
+  "netdryrun.config.x__validate_check__mutmut_199": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "672fd97bac0d10a2"
+  },
+  "netdryrun.config.x__validate_check__mutmut_229": {
+   "reason": "equivalent: the default state is lowercased before it is checked and stored, so 'ESTABLISHED' gives 'established'",
+   "diff": "02518b204779f8bb"
+  },
+  "netdryrun.config.x__validate_check__mutmut_236": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "3fd291c67ab3ffc5"
+  },
+  "netdryrun.config.x__validate_check__mutmut_237": {
+   "reason": "message text only: the 'did you mean' hint of a ConfigError raised either way (_suggest(None) gives no hint; exit 2 either way)",
+   "diff": "37704837a0505218"
+  },
+  "netdryrun.config.x__validate_check__mutmut_280": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "24019fe3d55ffdc4"
+  },
+  "netdryrun.config.x__validate_check__mutmut_304": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "9585a9a1e9f57e77"
+  },
+  "netdryrun.config.x__validate_check__mutmut_305": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "79c0205db3ed9ac7"
+  },
+  "netdryrun.config.x__validate_check__mutmut_306": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "4e437121894d1620"
+  },
+  "netdryrun.config.x__validate_check__mutmut_307": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "0a362c30e70d386b"
+  },
+  "netdryrun.config.x__validate_check__mutmut_308": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "89d45a465f561262"
+  },
+  "netdryrun.config.x__validate_check__mutmut_309": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "e350aca71ad4b53a"
+  },
+  "netdryrun.config.x__validate_check__mutmut_311": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "2e8dccdd296e9d89"
+  },
+  "netdryrun.config.x__validate_check__mutmut_312": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "1a39e133c5d78d88"
+  },
+  "netdryrun.config.x__validate_check__mutmut_313": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "2b18063d60e57d8d"
+  },
+  "netdryrun.config.x__validate_check__mutmut_314": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "7df4fead14751e45"
+  },
+  "netdryrun.config.x__validate_check__mutmut_315": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "ba951cea0b68fdc6"
+  },
+  "netdryrun.config.x__validate_check__mutmut_316": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "f193868cadeb4bb0"
+  },
+  "netdryrun.config.x__validate_check__mutmut_317": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "85ea48b21ba47b0c"
+  },
+  "netdryrun.config.x__validate_check__mutmut_326": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "103d6c14617ce79a"
+  },
+  "netdryrun.config.x__validate_check__mutmut_333": {
+   "reason": "equivalent: only present `is False` matters; a missing key gives None or True, neither is False",
+   "diff": "6ba4235bcf6b6894"
+  },
+  "netdryrun.config.x__validate_check__mutmut_335": {
+   "reason": "equivalent: only present `is False` matters; a missing key gives None or True, neither is False",
+   "diff": "c56449fb91a9bfc2"
+  },
+  "netdryrun.config.x__validate_check__mutmut_345": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "dc6031dd7df50fb6"
+  },
+  "netdryrun.config.x__validate_check__mutmut_346": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "f2c9d0d041c5f0a1"
+  },
+  "netdryrun.config.x__validate_check__mutmut_358": {
+   "reason": "equivalent: the default expect is lowercased before it is checked and stored, so 'SUCCESS' gives 'success'",
+   "diff": "7c23e9d52344704c"
+  },
+  "netdryrun.config.x__validate_check__mutmut_368": {
+   "reason": "message text only: the 'did you mean' hint of a ConfigError raised either way (_suggest(None) gives no hint; exit 2 either way)",
+   "diff": "fa1377878125d36d"
+  },
+  "netdryrun.config.x__validate_check__mutmut_372": {
+   "reason": "message text only: the 'did you mean' hint of a ConfigError raised either way (_suggest(None) gives no hint; exit 2 either way)",
+   "diff": "c051d177799dd8e3"
+  },
+  "netdryrun.config.x__validate_check__mutmut_373": {
+   "reason": "message text only: the 'did you mean' hint of a ConfigError raised either way (_suggest(None) gives no hint; exit 2 either way)",
+   "diff": "36c5a8dfa294efef"
+  },
+  "netdryrun.config.x__validate_check__mutmut_374": {
+   "reason": "message text only: the 'did you mean' hint of a ConfigError raised either way (_suggest(None) gives no hint; exit 2 either way)",
+   "diff": "7954333b7e0d595e"
+  },
+  "netdryrun.config.x__validate_check__mutmut_375": {
+   "reason": "message text only: the 'did you mean' hint of a ConfigError raised either way (_suggest(None) gives no hint; exit 2 either way)",
+   "diff": "fe561eb2d34bde6d"
+  },
+  "netdryrun.config.x__validate_check__mutmut_407": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "10f44b7b026ca8fb"
+  },
+  "netdryrun.config.x__validate_check__mutmut_408": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "daf681f40ef221ad"
+  },
+  "netdryrun.config.x__validate_check__mutmut_434": {
+   "reason": "message text only: `where` appears only inside ConfigError texts; the same inputs are accepted or refused",
+   "diff": "23ce5d186875a38c"
+  },
+  "netdryrun.config.x__validate_check__mutmut_441": {
+   "reason": "message text only: `where` appears only inside ConfigError texts; the same inputs are accepted or refused",
+   "diff": "2971850090d27457"
+  },
+  "netdryrun.config.x__validate_check__mutmut_457": {
+   "reason": "message text only: `where` appears only inside ConfigError texts; the same inputs are accepted or refused",
+   "diff": "175139cdd54cdae3"
+  },
+  "netdryrun.config.x__validate_check__mutmut_493": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "f16d764b6f4c45fc"
+  },
+  "netdryrun.config.x__validate_check__mutmut_494": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "629fa3ec34b72c88"
+  },
+  "netdryrun.config.x__validate_check__mutmut_495": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "954b89f5efa6a312"
+  },
+  "netdryrun.config.x__validate_check__mutmut_496": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "e01826279fd18f35"
+  },
+  "netdryrun.config.x__validate_check__mutmut_497": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "4f30fa127fec7247"
+  },
+  "netdryrun.config.x__validate_check__mutmut_498": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "6d73117f0277ba8d"
+  },
+  "netdryrun.config.x__validate_check__mutmut_51": {
+   "reason": "message text only: `where` appears only inside ConfigError texts; the same inputs are accepted or refused",
+   "diff": "a96f52be2b7147c7"
+  },
+  "netdryrun.config.x__validate_check__mutmut_63": {
+   "reason": "message text only: `where` appears only inside ConfigError texts; the same inputs are accepted or refused",
+   "diff": "5c2f58e78e5774cb"
+  },
+  "netdryrun.config.x__validate_check__mutmut_88": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "df4547d4b91a9314"
+  },
+  "netdryrun.config.x__validate_check__mutmut_94": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "bfb6d8785a720814"
+  },
+  "netdryrun.config.x__validate_check__mutmut_95": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "19bc7dafaeb51914"
   },
   "netdryrun.config.x__validate_nodes__mutmut_17": {
    "reason": "message text only: the same exception is still raised, only its message changes",
@@ -1496,9 +1712,85 @@
    "reason": "message text only: the same exception is still raised, only its message changes",
    "diff": "db6ac3204953c6d9"
   },
+  "netdryrun.drivers.eos.x__vrf__mutmut_12": {
+   "reason": "message text only: the text of the NoSuchInstance raised either way",
+   "diff": "f9f70159b8385cac"
+  },
+  "netdryrun.drivers.eos.x__vrf__mutmut_14": {
+   "reason": "message text only: the text of the NoSuchInstance raised either way",
+   "diff": "3760c7fad85e833c"
+  },
+  "netdryrun.drivers.eos.x__vrf__mutmut_20": {
+   "reason": "message text only: the text of the NoSuchInstance raised either way",
+   "diff": "fe214041462dd117"
+  },
+  "netdryrun.drivers.eos.x__vrf__mutmut_21": {
+   "reason": "message text only: the text of the NoSuchInstance raised either way",
+   "diff": "627c74d0799cb825"
+  },
+  "netdryrun.drivers.eos.x__vrf__mutmut_22": {
+   "reason": "message text only: the text of the NoSuchInstance raised either way",
+   "diff": "3969df2c5e2a4cce"
+  },
+  "netdryrun.drivers.eos.x__vrf__mutmut_23": {
+   "reason": "message text only: the text of the NoSuchInstance raised either way",
+   "diff": "b6b4f59f02181930"
+  },
+  "netdryrun.drivers.eos.x__vrf__mutmut_26": {
+   "reason": "message text only: the text of the unexpected-output DriverError raised either way",
+   "diff": "1574dfe3e983632f"
+  },
+  "netdryrun.drivers.eos.x__vrf__mutmut_27": {
+   "reason": "message text only: the text of the unexpected-output DriverError raised either way",
+   "diff": "0fd34b2a5fd921a1"
+  },
+  "netdryrun.drivers.eos.x__vrf__mutmut_30": {
+   "reason": "message text only: the text of the unexpected-output DriverError raised either way",
+   "diff": "36c0d1736deed8e9"
+  },
+  "netdryrun.drivers.eos.x__vrf__mutmut_31": {
+   "reason": "message text only: the text of the unexpected-output DriverError raised either way",
+   "diff": "5b75b1b56fb4dcbd"
+  },
+  "netdryrun.drivers.eos.x__vrf__mutmut_6": {
+   "reason": "message text only: the text of the unexpected-output DriverError raised either way",
+   "diff": "e2a7beea3a5abc6b"
+  },
+  "netdryrun.drivers.eos.x__vrf__mutmut_7": {
+   "reason": "message text only: the text of the unexpected-output DriverError raised either way",
+   "diff": "5bfc5879a0adab73"
+  },
   "netdryrun.drivers.eos.xǁEosDriverǁall_routes__mutmut_3": {
    "reason": "equivalent: family default 4 vs 5: only family == 6 selects IPv6, every other value reads IPv4",
    "diff": "1aeb2f2755355f04"
+  },
+  "netdryrun.drivers.frr.x__bgp_json__mutmut_18": {
+   "reason": "message text only: the text of the NoSuchInstance raised either way",
+   "diff": "4299cd884cb945ed"
+  },
+  "netdryrun.drivers.frr.x__bgp_json__mutmut_2": {
+   "reason": "message text only: the text of the DriverError raised either way",
+   "diff": "5229bbaf13963c07"
+  },
+  "netdryrun.drivers.frr.x__bgp_json__mutmut_21": {
+   "reason": "message text only: the text of the DriverError raised either way",
+   "diff": "1323bfb67756aebc"
+  },
+  "netdryrun.drivers.frr.x__bgp_json__mutmut_29": {
+   "reason": "message text only: the text of the NoSuchInstance raised either way",
+   "diff": "f56d93f66c1e6958"
+  },
+  "netdryrun.drivers.frr.x__bgp_json__mutmut_30": {
+   "reason": "message text only: the text of the NoSuchInstance raised either way",
+   "diff": "1b62d0ce9835dfbf"
+  },
+  "netdryrun.drivers.frr.x__bgp_json__mutmut_7": {
+   "reason": "message text only: the text of the DriverError raised either way",
+   "diff": "f86b68e146bf2555"
+  },
+  "netdryrun.drivers.frr.x__bgp_json__mutmut_8": {
+   "reason": "message text only: the text of the DriverError raised either way",
+   "diff": "729e23e81a856286"
   },
   "netdryrun.drivers.frr.x__bgp_paths_for_route_check__mutmut_16": {
    "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
@@ -1651,6 +1943,22 @@
   "netdryrun.drivers.frr.x__route_table__mutmut_9": {
    "reason": "message text only: the same exception is still raised, only its message changes",
    "diff": "e9e8548b935149b6"
+  },
+  "netdryrun.drivers.frr.xǁFrrDriverǁ_confirm_vrf__mutmut_12": {
+   "reason": "message text only: the text of the NoSuchInstance raised either way",
+   "diff": "469e6af154216306"
+  },
+  "netdryrun.drivers.frr.xǁFrrDriverǁ_confirm_vrf__mutmut_14": {
+   "reason": "message text only: the text of the NoSuchInstance raised either way",
+   "diff": "8fd8cb6ad10042f5"
+  },
+  "netdryrun.drivers.frr.xǁFrrDriverǁ_confirm_vrf__mutmut_16": {
+   "reason": "message text only: the text of the NoSuchInstance raised either way",
+   "diff": "ce67a4bedd07e98d"
+  },
+  "netdryrun.drivers.frr.xǁFrrDriverǁ_confirm_vrf__mutmut_17": {
+   "reason": "message text only: the text of the NoSuchInstance raised either way",
+   "diff": "55fac487bcc84d9b"
   },
   "netdryrun.drivers.frr.xǁFrrDriverǁall_routes__mutmut_3": {
    "reason": "equivalent: family default 4 vs 5: only family == 6 selects IPv6, every other value reads IPv4",
@@ -1817,6 +2125,278 @@
    "reason": "message text only: the same exception is still raised, only its message changes",
    "diff": "96d459bdaec6901f"
   },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_104": {
+   "reason": "message text only: the detail text of a failing gate sample; it is still an Unready detail, so the sample stays unready",
+   "diff": "ac95f31087d79d23"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_128": {
+   "reason": "message text only: the VRF part of the no-neighbors detail text; it is still an Unready detail",
+   "diff": "7ba89f46e72febda"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_129": {
+   "reason": "message text only: the VRF part of the no-neighbors detail text; it is still an Unready detail",
+   "diff": "eabd1d328ee0fece"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_130": {
+   "reason": "message text only: the VRF part of the no-neighbors detail text; it is still an Unready detail",
+   "diff": "0681379c2d4a6a13"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_131": {
+   "reason": "message text only: the VRF part of the no-neighbors detail text; it is still an Unready detail",
+   "diff": "b7ad6d8cdeadf662"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_132": {
+   "reason": "message text only: the VRF part of the no-neighbors detail text; it is still an Unready detail",
+   "diff": "5402da036675e048"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_133": {
+   "reason": "message text only: the VRF part of the no-neighbors detail text; it is still an Unready detail",
+   "diff": "dec2b113b959f29b"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_134": {
+   "reason": "message text only: the VRF part of the no-neighbors detail text; it is still an Unready detail",
+   "diff": "74acdcec77ba49e2"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_141": {
+   "reason": "message text only: the detail text of a failing gate sample; it is still an Unready detail, so the sample stays unready",
+   "diff": "55814c4db1d02935"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_162": {
+   "reason": "message text only: the detail text of a gate result or gate warning; same verdict, same passed/unready sample flags and counts",
+   "diff": "2e0b5c40fdad098c"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_163": {
+   "reason": "message text only: the detail text of a gate result or gate warning; same verdict, same passed/unready sample flags and counts",
+   "diff": "50309a24a835ed9e"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_164": {
+   "reason": "message text only: the detail text of a gate result or gate warning; same verdict, same passed/unready sample flags and counts",
+   "diff": "8e84baf559213cb6"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_165": {
+   "reason": "message text only: the detail text of a gate result or gate warning; same verdict, same passed/unready sample flags and counts",
+   "diff": "da64eadd016750db"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_166": {
+   "reason": "message text only: the detail text of a gate result or gate warning; same verdict, same passed/unready sample flags and counts",
+   "diff": "1a51157e5cd4d51b"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_167": {
+   "reason": "message text only: the detail text of a gate result or gate warning; same verdict, same passed/unready sample flags and counts",
+   "diff": "c805ec028e0f058e"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_168": {
+   "reason": "message text only: the detail text of a gate result or gate warning; same verdict, same passed/unready sample flags and counts",
+   "diff": "9cde3f7d77df32bd"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_176": {
+   "reason": "message text only: the detail text of a gate result or gate warning; same verdict, same passed/unready sample flags and counts",
+   "diff": "d7e7cdc3ff0f37b0"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_182": {
+   "reason": "message text only: the detail text of a down-session history sample (a plain string either way, never unready)",
+   "diff": "470b1fb07d8ac4c9"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_200": {
+   "reason": "equivalent: the streak is only compared with >= 2 and == 0, and a streak that grows by 2 instead of 1 crosses both on the same sample",
+   "diff": "64c6a7cf6a4e010d"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_216": {
+   "reason": "message text only: the detail text of one history sample; its passed and unready flags are unchanged",
+   "diff": "370447a47c05cde4"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_221": {
+   "reason": "message text only: the detail text of one history sample; its passed and unready flags are unchanged",
+   "diff": "72ce1dd5f71624c0"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_222": {
+   "reason": "message text only: the detail text of one history sample; its passed and unready flags are unchanged",
+   "diff": "fbdc8df283462bee"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_223": {
+   "reason": "message text only: the detail text of one history sample; its passed and unready flags are unchanged",
+   "diff": "434cf44d34e9823c"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_229": {
+   "reason": "equivalent: `first` is only tested for truth; None and False are both false",
+   "diff": "93227f965a847fb4"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_243": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "914e1a302a26c0c0"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_244": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "75b5e5235745915d"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_247": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "a50dd170cc851d53"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_248": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "8875fdcfee48dd1a"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_249": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "7d5e9afed5d7c852"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_250": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "28d9c19ea8fed663"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_252": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "7dd6fb4682f96357"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_253": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "9ca28868732e1f40"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_254": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "757b0b90ec070e18"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_255": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "9ccc01f0ac3db359"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_257": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "f19e16f8e04c5d5a"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_258": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "d69a32e618f8f7a6"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_259": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "7babbbbd916af6a3"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_260": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "4e49d2463004d7dc"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_261": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "5ff4d646b722d680"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_272": {
+   "reason": "message text only: the text of a not-evaluated detail; the result is still failed with the same samples and counts",
+   "diff": "97c0ae923f537e7c"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_273": {
+   "reason": "message text only: the text of a not-evaluated detail; the result is still failed with the same samples and counts",
+   "diff": "72e8dc429046df37"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_274": {
+   "reason": "message text only: the text of a not-evaluated detail; the result is still failed with the same samples and counts",
+   "diff": "8ec4818cb67c6063"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_275": {
+   "reason": "message text only: the text of a not-evaluated detail; the result is still failed with the same samples and counts",
+   "diff": "31fa667cc902c419"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_276": {
+   "reason": "message text only: the text of a not-evaluated detail; the result is still failed with the same samples and counts",
+   "diff": "ea3b56bb3a20bd73"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_277": {
+   "reason": "message text only: the text of a not-evaluated detail; the result is still failed with the same samples and counts",
+   "diff": "272c7c9aab130396"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_278": {
+   "reason": "message text only: the text of a not-evaluated detail; the result is still failed with the same samples and counts",
+   "diff": "53fac908668beb42"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_279": {
+   "reason": "message text only: the text of a not-evaluated detail; the result is still failed with the same samples and counts",
+   "diff": "34b16ff7095c1555"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_300": {
+   "reason": "equivalent: Result.samples_passed defaults to 0, the value passed explicitly",
+   "diff": "3137e23bf03eb8e5"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_61": {
+   "reason": "equivalent: the initial streak is never read: every answer sets it, and the first established sample gets 1 because counts != None",
+   "diff": "8d28e214b6455ad5"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_62": {
+   "reason": "equivalent: the initial counts are never read: they are compared only once the streak is > 0, which only an established sample that also sets counts makes",
+   "diff": "8c384ab56833b1d6"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_63": {
+   "reason": "equivalent: the initial counts are never read: they are compared only once the streak is > 0, which only an established sample that also sets counts makes",
+   "diff": "bb3ae7ba6a1cc112"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_67": {
+   "reason": "equivalent: the initial empty flag is never read: every answer sets it, and it is read only for a node that answered",
+   "diff": "17176ac7421c908f"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_68": {
+   "reason": "equivalent: the initial empty flag is never read: every answer sets it, and it is read only for a node that answered",
+   "diff": "38b9dfb360801697"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_69": {
+   "reason": "equivalent: the initial empty flag is never read: every answer sets it, and it is read only for a node that answered",
+   "diff": "605c8e4789d59794"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_70": {
+   "reason": "equivalent: the initial detail is never read: every failing sample sets it before it is used (and it is only message text)",
+   "diff": "b54d80120459763a"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_71": {
+   "reason": "equivalent: the initial detail is never read: every failing sample sets it before it is used (and it is only message text)",
+   "diff": "0a2a6d72eb95a4b4"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_72": {
+   "reason": "equivalent: the initial detail is never read: every failing sample sets it before it is used (and it is only message text)",
+   "diff": "61a3a258415e6e02"
+  },
+  "netdryrun.runner.x__link_sessions__mutmut_12": {
+   "reason": "message text only: the text of the LabError raised either way when BGP state can't be read before a fault (exit 2)",
+   "diff": "79f316540513a610"
+  },
+  "netdryrun.runner.x__link_sessions__mutmut_13": {
+   "reason": "message text only: the text of the LabError raised either way when BGP state can't be read before a fault (exit 2)",
+   "diff": "d588be6f0db5609a"
+  },
+  "netdryrun.runner.x__link_sessions__mutmut_14": {
+   "reason": "message text only: the text of the LabError raised either way when BGP state can't be read before a fault (exit 2)",
+   "diff": "3acbb02b2f9b4ca6"
+  },
+  "netdryrun.runner.x__link_sessions__mutmut_15": {
+   "reason": "message text only: the text of the LabError raised either way when BGP state can't be read before a fault (exit 2)",
+   "diff": "791244faeeab8dc0"
+  },
+  "netdryrun.runner.x__link_sessions__mutmut_16": {
+   "reason": "message text only: the text of the LabError raised either way when BGP state can't be read before a fault (exit 2)",
+   "diff": "50ee31b34cc8a66e"
+  },
+  "netdryrun.runner.x__link_sessions__mutmut_17": {
+   "reason": "message text only: the text of the LabError raised either way when BGP state can't be read before a fault (exit 2)",
+   "diff": "872b4e90700344a8"
+  },
+  "netdryrun.runner.x__link_sessions__mutmut_18": {
+   "reason": "message text only: the text of the LabError raised either way when BGP state can't be read before a fault (exit 2)",
+   "diff": "9be27a8fbd48113c"
+  },
+  "netdryrun.runner.x__link_sessions__mutmut_19": {
+   "reason": "message text only: the text of the LabError raised either way when BGP state can't be read before a fault (exit 2)",
+   "diff": "91d3a376846a0333"
+  },
+  "netdryrun.runner.x__link_sessions__mutmut_20": {
+   "reason": "message text only: the text of the LabError raised either way when BGP state can't be read before a fault (exit 2)",
+   "diff": "28fde9aab46bdff9"
+  },
+  "netdryrun.runner.x__link_sessions__mutmut_21": {
+   "reason": "message text only: the text of the LabError raised either way when BGP state can't be read before a fault (exit 2)",
+   "diff": "a1f76fc8fbe910a0"
+  },
+  "netdryrun.runner.x__link_sessions__mutmut_7": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "f2a8ea13778f272d"
+  },
   "netdryrun.runner.x__reach_then_hold__mutmut_13": {
    "reason": "equivalent: hold_together([]) returns [], the same as the {} it replaces",
    "diff": "6ac3fbd352aab299"
@@ -1836,6 +2416,10 @@
   "netdryrun.runner.x__reach_then_hold__mutmut_62": {
    "reason": "equivalent: the sum of two durations already rounded to 0.1 s rounds the same to 0.01 s",
    "diff": "d229fc56dcb6ff50"
+  },
+  "netdryrun.runner.x__sessions_over_links__mutmut_12": {
+   "reason": "message text only: without log=, _link_sessions logs to its no-op default; only a log line is lost",
+   "diff": "16a2e80dca9f33cf"
   },
   "netdryrun.runner.x__shape_problem__mutmut_18": {
    "reason": "message text only: the wording of a config-shape error",
@@ -2032,6 +2616,202 @@
   "netdryrun.runner.x_preflight__mutmut_42": {
    "reason": "message text only: the inject_routes error text; the same exception is raised",
    "diff": "eb990851dcb9cf63"
+  },
+  "netdryrun.runner.x_run__mutmut_12": {
+   "reason": "equivalent: `deployed` is only tested for truth; None and False are both false",
+   "diff": "e07f9bfe552104df"
+  },
+  "netdryrun.runner.x_run__mutmut_120": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "4cfe589b5924c6c4"
+  },
+  "netdryrun.runner.x_run__mutmut_19": {
+   "reason": "message text only: the option name in the RunError text for a bad --settle/--hold (RunError, exit 2, either way)",
+   "diff": "f053812298a599c8"
+  },
+  "netdryrun.runner.x_run__mutmut_192": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "1db9225927731611"
+  },
+  "netdryrun.runner.x_run__mutmut_195": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "f964d0577ebe3728"
+  },
+  "netdryrun.runner.x_run__mutmut_199": {
+   "reason": "message text only: the signal name in report.error of an interrupted run; status stays error and the exit code comes from the exception's signum",
+   "diff": "d09ed2f115d4149b"
+  },
+  "netdryrun.runner.x_run__mutmut_200": {
+   "reason": "message text only: the signal name in report.error of an interrupted run; status stays error and the exit code comes from the exception's signum",
+   "diff": "f00b0a82a8def9d3"
+  },
+  "netdryrun.runner.x_run__mutmut_202": {
+   "reason": "message text only: the signal name in report.error of an interrupted run; status stays error and the exit code comes from the exception's signum",
+   "diff": "a219c80c647aad6e"
+  },
+  "netdryrun.runner.x_run__mutmut_206": {
+   "reason": "message text only: the signal name in report.error of an interrupted run; status stays error and the exit code comes from the exception's signum",
+   "diff": "05f296894939312f"
+  },
+  "netdryrun.runner.x_run__mutmut_207": {
+   "reason": "message text only: the signal name in report.error of an interrupted run; status stays error and the exit code comes from the exception's signum",
+   "diff": "1611b9b54fe7ece7"
+  },
+  "netdryrun.runner.x_run__mutmut_21": {
+   "reason": "message text only: the option name in the RunError text for a bad --settle/--hold (RunError, exit 2, either way)",
+   "diff": "d823544d1da34df3"
+  },
+  "netdryrun.runner.x_run__mutmut_213": {
+   "reason": "message text only: the internal-error text in report.error; status error, exit 2, either way",
+   "diff": "20d0e5517f9e61bc"
+  },
+  "netdryrun.runner.x_run__mutmut_214": {
+   "reason": "message text only: the internal-error text in report.error; status error, exit 2, either way",
+   "diff": "6d21e9e7897ca0c6"
+  },
+  "netdryrun.runner.x_run__mutmut_216": {
+   "reason": "equivalent: traceback.print_exc(file=None) prints to sys.stderr, as file=sys.stderr does",
+   "diff": "4680df0532227e21"
+  },
+  "netdryrun.runner.x_run__mutmut_229": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "505376c73f32ff3a"
+  },
+  "netdryrun.runner.x_run__mutmut_230": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "78ef0d1503f02e1d"
+  },
+  "netdryrun.runner.x_run__mutmut_231": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "eebcabfde0fb1a98"
+  },
+  "netdryrun.runner.x_run__mutmut_232": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "27bd823a81250772"
+  },
+  "netdryrun.runner.x_run__mutmut_234": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "ea00455b1edd59ef"
+  },
+  "netdryrun.runner.x_run__mutmut_235": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "353d0d2ad80d941d"
+  },
+  "netdryrun.runner.x_run__mutmut_236": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "3c6b6ba96168d834"
+  },
+  "netdryrun.runner.x_run__mutmut_237": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "70c2429c1a4bdf59"
+  },
+  "netdryrun.runner.x_run__mutmut_238": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "a764027699951b3e"
+  },
+  "netdryrun.runner.x_run__mutmut_239": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "97ff75e02301aa75"
+  },
+  "netdryrun.runner.x_run__mutmut_240": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "2cbd0fe5b504e5e9"
+  },
+  "netdryrun.runner.x_run__mutmut_242": {
+   "reason": "message text only: deployed implies lab is set, so the changed branch can never run and only the 'left running' log line is lost",
+   "diff": "1227cc7263b74a0a"
+  },
+  "netdryrun.runner.x_run__mutmut_243": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "4a0ea563b82d0fb9"
+  },
+  "netdryrun.runner.x_run__mutmut_25": {
+   "reason": "message text only: the option name in the RunError text for a bad --settle/--hold (RunError, exit 2, either way)",
+   "diff": "c044d2b24be061b5"
+  },
+  "netdryrun.runner.x_run__mutmut_251": {
+   "reason": "message text only: the signal name in report.error of an interrupted run; status stays error and the exit code comes from the exception's signum",
+   "diff": "ee0e80535db56e93"
+  },
+  "netdryrun.runner.x_run__mutmut_26": {
+   "reason": "message text only: the option name in the RunError text for a bad --settle/--hold (RunError, exit 2, either way)",
+   "diff": "79c4a3fbc9facb87"
+  },
+  "netdryrun.runner.x_run__mutmut_53": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "0965c8c33add1bc8"
+  },
+  "netdryrun.runner.x_run__mutmut_60": {
+   "reason": "message text only: the text of the 'containers not running' LabError (status error, exit 2)",
+   "diff": "9f21f8d4f120ef3d"
+  },
+  "netdryrun.runner.x_run__mutmut_61": {
+   "reason": "message text only: building the 'containers not running' text fails with TypeError instead of LabError; run() reports it as an error either way (status error, exit 2)",
+   "diff": "12c169cddaecf570"
+  },
+  "netdryrun.runner.x_run__mutmut_62": {
+   "reason": "message text only: the text of the 'containers not running' LabError (status error, exit 2)",
+   "diff": "5b46a05fc46503a9"
+  },
+  "netdryrun.runner.x_run__mutmut_63": {
+   "reason": "message text only: building the 'containers not running' text fails with TypeError instead of LabError; run() reports it as an error either way (status error, exit 2)",
+   "diff": "0c72cf33a913e87d"
+  },
+  "netdryrun.runner.x_run__mutmut_64": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "76fb8129209aea0d"
+  },
+  "netdryrun.runner.x_run__mutmut_87": {
+   "reason": "equivalent: report.results is still empty here, so assigning the positive results equals appending them",
+   "diff": "599a5df6ec16c320"
+  },
+  "netdryrun.runner.x_run_scenario__mutmut_105": {
+   "reason": "equivalent: results is still empty here, so binding it to pos_results equals extending it (same items returned)",
+   "diff": "25894bc7a1ed8027"
+  },
+  "netdryrun.runner.x_run_scenario__mutmut_120": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "dc9fb2f7e81bb3fd"
+  },
+  "netdryrun.runner.x_run_scenario__mutmut_169": {
+   "reason": "message text only: the text of the 'could not restore' LabError raised either way (exit 2)",
+   "diff": "0d93d4e129f3aacc"
+  },
+  "netdryrun.runner.x_run_scenario__mutmut_170": {
+   "reason": "message text only: the text of the 'could not restore' LabError raised either way (exit 2)",
+   "diff": "2221a63e67d25759"
+  },
+  "netdryrun.runner.x_run_scenario__mutmut_172": {
+   "reason": "message text only: the text of the 'could not restore' LabError raised either way (exit 2)",
+   "diff": "3a90bc2fb9562e39"
+  },
+  "netdryrun.runner.x_run_scenario__mutmut_173": {
+   "reason": "message text only: the text of the 'could not restore' LabError raised either way (exit 2)",
+   "diff": "234da78da8ed3f52"
+  },
+  "netdryrun.runner.x_run_scenario__mutmut_175": {
+   "reason": "message text only: the text of the 'could not restore' LabError raised either way (exit 2)",
+   "diff": "7076bbe99146c26b"
+  },
+  "netdryrun.runner.x_run_scenario__mutmut_179": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "cdf0fcd7346b7863"
+  },
+  "netdryrun.runner.x_run_scenario__mutmut_42": {
+   "reason": "equivalent: with no links, _link_sessions reads nothing and returns two empty lists, the else value",
+   "diff": "ba873bc762444035"
+  },
+  "netdryrun.runner.x_run_scenario__mutmut_52": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "732388f8f58201a1"
+  },
+  "netdryrun.runner.x_run_scenario__mutmut_68": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "ec1ab554c6f6bc14"
+  },
+  "netdryrun.runner.x_run_scenario__mutmut_89": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "2bb1fbbbf917afc3"
   }
  }
 }
