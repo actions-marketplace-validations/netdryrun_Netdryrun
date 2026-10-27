@@ -23,6 +23,8 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: python -m pip install -e ".[dev]"
       - run: pytest -q
+      - name: Public facts match the source (version, platforms, corpus scores, llms-full.txt)
+        run: python scripts/sync_facts.py --check
 
   e2e:
     needs: unit

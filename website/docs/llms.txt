@@ -1,8 +1,12 @@
 # Netdryrun
 
-> Netdryrun is an open-source tool (Python, Apache-2.0) that tests network changes in a real containerlab virtual lab before they reach production. It waits for convergence, checks BGP sessions, prefixes, routes and reachability, and returns a pass/fail verdict with evidence. Supported network OSes: FRR, Nokia SR Linux, SONiC, Arista EOS (cEOS). It runs locally, in GitHub Actions, or as an MCP server for AI agents.
+<!-- facts:llms_summary -->
+> Netdryrun is an open-source tool (Python, Apache-2.0) that tests network changes in a real containerlab virtual lab before they reach production. It waits for convergence, checks BGP sessions, prefixes, routes and reachability, and returns a pass/fail verdict with evidence. Supported network OSes: FRR, Nokia SR Linux, SONiC (docker-sonic-vs) and Arista EOS (cEOS, bring your own image). It runs locally, in GitHub Actions, or as an MCP server for AI agents.
 
-Install: `pip install netdryrun` (version 0.2.0). Source: https://github.com/netdryrun/netdryrun
+Install: `pip install netdryrun` (current version 0.2.0). Source: https://github.com/netdryrun/netdryrun
+
+Facts (generated from the source): version 0.2.0; check types `bgp_session`, `bgp_prefixes`, `route` and `ping`; MCP tools `dry_run`, `run_checks`, `record_baseline`, `validate` and `check_types`; verdict corpus Netdryrun 24/30, ping-only 20/30, sessions-up 15/30.
+<!-- /facts:llms_summary -->
 
 ## Docs
 
@@ -17,7 +21,9 @@ Install: `pip install netdryrun` (version 0.2.0). Source: https://github.com/net
 
 - [When to use what](https://netdryrun.com/when-to-use-what/): Batfish, netlab, pyATS/Genie, containerlab and Netdryrun compared
 - [Trust and security](https://netdryrun.com/trust/): license, releases, security contact, limits, privacy
-- [Verdict corpus](https://netdryrun.com/corpus/): benchmark of realistic changes (results pending)
+<!-- facts:llms_corpus -->
+- [Verdict corpus](https://netdryrun.com/corpus/): 30 realistic BGP changes with pre-registered verdicts; Netdryrun 24/30, ping-only 20/30, sessions-up 15/30 correct
+<!-- /facts:llms_corpus -->
 
 ## Full documentation
 

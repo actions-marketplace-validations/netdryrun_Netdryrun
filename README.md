@@ -23,7 +23,9 @@ FAILED: 5 passed, 1 failed (6 checks)
 
 That run caught a leaked default route that was *received but not selected*. A ping test or a config linter would have missed it.
 
-> Status: **v0.2, early.** Works today with FRR, Nokia SR Linux, SONiC (docker-sonic-vs) and Arista EOS (cEOS-lab, bring your own image) on Linux and WSL2. Feedback and issues are very welcome.
+<!-- facts:readme_status -->
+> Status: **v0.2.0, early.** Works today with FRR, Nokia SR Linux, SONiC (docker-sonic-vs) and Arista EOS (cEOS, bring your own image) on Linux and WSL2. On the [verdict corpus](https://netdryrun.com/corpus/) (30 realistic BGP changes, expected verdicts committed before any run), Netdryrun judged 24/30 correctly, ping-only checks 20/30 and all-sessions-up checks 15/30. Feedback and issues are very welcome.
+<!-- /facts:readme_status -->
 
 ## Why
 
@@ -124,7 +126,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.1.0
+      - uses: netdryrun/netdryrun@v0.2.0
         with:
           path: network/        # folder containing netdryrun.yml
 ```
@@ -173,13 +175,13 @@ What Netdryrun adds: positive checks wait for convergence, negative checks run o
 
 ## Honest limits
 
-- Open-source routers are not your vendor's routers. FRR and SR Linux pass/fail is strong evidence for protocol logic and policy intent, but not proof of vendor-specific behavior. Running your own licensed vendor images is on the roadmap.
-- v0.1 covers IPv4/IPv6 unicast BGP, routes and ping. More checks are coming: OSPF/IS-IS adjacencies, path/traceroute, policy, failure scenarios.
+- Lab routers are not your production routers. A pass on FRR, SR Linux, SONiC VS or Arista cEOS is strong evidence for protocol logic and policy intent, but not proof of hardware, scale or version-specific behavior. For Arista, bring your own licensed cEOS image to test real vendor code.
+- Checks cover IPv4/IPv6 unicast BGP, routes and ping, with link-down and node-isolation failure scenarios. More checks are coming: OSPF/IS-IS adjacencies, path/traceroute, policy.
 
 ## Roadmap
 
 - **Outage replays:** famous real-world outages (route leaks, mass withdrawals) rebuilt as runnable labs and check packs. Would your change have caused one?
-- Failure scenarios (link down, node down), more check types (OSPF/IS-IS, policy attributes, traceroute) and drivers
+- More failure scenarios, more check types (OSPF/IS-IS, policy attributes, traceroute) and drivers
 - PR comments with diffs, and signed evidence for change tickets
 
 ## License
