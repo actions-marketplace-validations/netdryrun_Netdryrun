@@ -277,14 +277,17 @@ def main(argv: list[str] | None = None) -> int:
                            formatter_class=argparse.RawDescriptionHelpFormatter,
                            help="compare the lab before and after a change against a declared intent (0.4, FRR only)")
     p_ver.add_argument("topology", help="containerlab topology file (the same on both sides)")
-    p_ver.add_argument("--before", required=True, metavar="DIR|REF", help="config folder or git ref before the change")
-    p_ver.add_argument("--after", required=True, metavar="DIR|REF", help="config folder or git ref after the change")
+    p_ver.add_argument("--before", required=True, metavar="DIR|REF", help="git ref, or a directory holding the lab's tree, before "
+                       "the change")
+    p_ver.add_argument("--after", required=True, metavar="DIR|REF", help="git ref, or a directory holding the lab's tree, after "
+                       "the change")
     p_ver.add_argument("--intent", required=True, metavar="FILE", help="the intent file (what the change is meant to do)")
     p_ver.add_argument("--json", metavar="FILE", help="write the netdryrun.verify/v1 report as JSON")
     p_ver.add_argument("--guards", metavar="FILE", help="standing guards (netdryrun.yml) run on the after lab; read "
                        "from the --before ref when it is a git ref")
-    p_ver.add_argument("--config-dir", metavar="DIR", help="the folder --before/--after replace, relative to the "
-                       "topology (default: the one folder the topology binds files from)")
+    p_ver.add_argument("--config-dir", metavar="DIR", help="with directory sides: the folder each directory stands "
+                       "for, relative to the topology (default: the folder holding the topology and every file it "
+                       "binds); every bind must resolve inside it")
     p_ver.add_argument("--unobserved", action="append", metavar="NODE", help="a node without a routing stack (a host); "
                        "repeat for several")
     p_ver.add_argument("--settle", type=_seconds, default=15.0, help="seconds between the two snapshots that must match "

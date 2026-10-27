@@ -1,15 +1,20 @@
 """`netdryrun verify`: deploy the lab with the before configs, snapshot it, destroy it; the same with the
 after configs (and the standing guards on the after lab); then match the diff against the intent.
 
-`--before` and `--after` each name the config directory the topology binds: a directory, or a git ref
-whose tree holds it (at the same path as in the working tree). A directory wins over a ref of the same
-name. The lab is built in a temporary folder from the topology file (byte for byte), the side's config
-directory, and every other file the topology binds. With a git ref, the topology file in that ref must be
-identical to the given one: verify compares configs on one topology (exit 2 otherwise).
+`--before` and `--after` each name one side: a git ref (the repository's whole tree at that ref) or a
+directory (standing for the folder of the working tree that holds the topology and every file it binds;
+with --config-dir, for that folder only). A directory wins over a ref of the same name. Each side is
+built in its own temporary folder, and every bind of the topology is resolved inside that side's tree:
+a bind that resolves outside it (an absolute path, `~`, a variable, `..` or a symlink leading out) would
+be the same file on both sides, and is exit 2. The topology file must be identical on both sides: verify
+compares configs on one topology (exit 2 otherwise).
 """
 from __future__ import annotations
 
+import hashlib
 import io
+import os
+import re
 import shutil
 import subprocess
 import tarfile
@@ -17,7 +22,7 @@ import tempfile
 import time
 import uuid
 from contextlib import contextmanager
-from dataclasses import replace
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Callable
@@ -71,38 +76,78 @@ def bind_sources(topology: Path) -> list[str]:
         sc = b.get("startup-config")
         if isinstance(sc, str) and "\n" not in sc:
             out.append(sc)
+    return list(dict.fromkeys(out))
+
+
+_VAR = re.compile(r"\$(?:\{([A-Za-z_][A-Za-z0-9_]*)(?:(:?[-=])([^}]*))?\}|([A-Za-z_][A-Za-z0-9_]*))")
+
+
+def expand_bind(src: str) -> str:
+    """A bind source as containerlab reads it: `${VAR}`, `${VAR:=default}`, `$VAR` and a leading `~`
+    expanded. An unset variable without a default is an error (the path can't be known)."""
+    def sub(m: re.Match) -> str:
+        name, op, default = m.group(1) or m.group(4), m.group(2), m.group(3)
+        val = os.environ.get(name)
+        if op is not None and (val is None or (op.startswith(":") and val == "")):
+            return default or ""
+        if val is None:
+            raise VerifyInputError(f"the topology binds {src!r}, but ${name} is not set")
+        return val
+    out = _VAR.sub(sub, src)
+    if out == "~" or out.startswith("~/"):
+        out = os.path.expanduser(out)
     return out
 
 
-def config_dir(topology: Path, explicit: str | None) -> PurePosixPath:
-    """The config directory, relative to the topology's folder: --config-dir, or the one folder every
-    relative bind source is in ('.' when they sit next to the topology)."""
-    if explicit is not None:
-        rel = PurePosixPath(explicit.replace("\\", "/"))
-        if rel.is_absolute() or ".." in rel.parts:
-            raise VerifyInputError(f"--config-dir must be a folder inside the topology's folder, got {explicit!r}")
-        return rel
-    rel_sources = [PurePosixPath(s) for s in bind_sources(topology) if not PurePosixPath(s).is_absolute()]
-    if not rel_sources:
-        raise VerifyInputError(f"{topology}: binds no config files by relative path; name the config folder with --config-dir")
-    tops = {s.parts[0] if len(s.parts) > 1 else "." for s in rel_sources}
-    if len(tops) != 1:
-        raise VerifyInputError(f"{topology}: binds files from several folders ({', '.join(sorted(tops))}); name the one "
-                               "--before/--after replace with --config-dir")
-    return PurePosixPath(tops.pop())
+def _real(p: Path) -> Path:
+    return Path(os.path.realpath(p))
 
 
-def _inside(path: PurePosixPath, folder: PurePosixPath) -> bool:
-    return str(folder) == "." or path.parts[:len(folder.parts)] == folder.parts
+def _within(p: Path, root: Path) -> bool:
+    return p == root or p.is_relative_to(root)
+
+
+def resolve_bind(src: str, topo_dir: Path, root: Path, where: str) -> Path:
+    """The file or folder a bind source points at, resolved like containerlab does (relative to the
+    topology's folder, variables and `~` expanded, `..` and symlinks followed). It must lie inside `root`,
+    the side's own tree: anything outside would be the same file on both sides (exit 2)."""
+    p = Path(expand_bind(src))
+    real = _real(p if p.is_absolute() else topo_dir / p)
+    if not _within(real, _real(root)):
+        raise VerifyInputError(f"{where}: the topology binds {src}, which resolves outside the side's tree (to {real}); "
+                               "both sides would share it. Bind files by a relative path inside the lab's tree")
+    if not real.exists():
+        raise VerifyInputError(f"{where}: {src} is missing (the topology binds it)")
+    return real
+
+
+def bind_anchor(topology: Path) -> Path:
+    """The smallest folder of the working tree that holds the topology and every file it binds by
+    relative path: a directory given as a side mirrors this folder."""
+    topo_dir = topology.resolve().parent
+    parts = [topo_dir]
+    for src in bind_sources(topology):
+        p = Path(expand_bind(src))
+        if not p.is_absolute():
+            parts.append(Path(os.path.normpath(topo_dir / p)))
+    return Path(os.path.commonpath([str(x) for x in parts]))
+
+
+def _sha256(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def _files(real: Path) -> list[Path]:
+    return [real] if real.is_file() else sorted(f for f in real.rglob("*") if f.is_file())
 
 
 # ---------------------------------------------------------------------------------------------------------
 # Sides
 # ---------------------------------------------------------------------------------------------------------
 
-def _git(args: list[str], cwd: Path, binary: bool = False):
+def _git(args: list[str], cwd: Path, binary: bool = False, stdin: bytes | None = None):
     try:
-        p = subprocess.run(["git", *args], cwd=cwd, capture_output=True, timeout=120, text=not binary)
+        p = subprocess.run(["git", *args], cwd=cwd, capture_output=True, timeout=120, text=not binary, input=stdin)
     except (OSError, subprocess.TimeoutExpired) as e:
         raise VerifyInputError(f"git {' '.join(args)}: {e}") from None
     if p.returncode != 0:
@@ -112,81 +157,169 @@ def _git(args: list[str], cwd: Path, binary: bool = False):
 
 
 def _extract(tar_bytes: bytes, dest: Path) -> None:
+    """A `git archive` tar into dest: regular files and folders first, then symlinks as they are (never
+    followed while extracting; a bind through one is resolved later and must stay inside the tree)."""
     with tarfile.open(fileobj=io.BytesIO(tar_bytes)) as tf:
-        for m in tf.getmembers():
+        members = tf.getmembers()
+        for m in members:
             p = PurePosixPath(m.name)
-            if p.is_absolute() or ".." in p.parts or m.issym() or m.islnk() or m.isdev():
-                if m.issym() or m.islnk():
-                    continue   # a symlink in the repository is not followed
+            if p.is_absolute() or ".." in p.parts or m.isdev() or m.islnk():
                 raise VerifyInputError(f"git archive: refusing member {m.name!r}")
-        tf.extractall(dest, members=[m for m in tf.getmembers() if not (m.issym() or m.islnk())])
+        tf.extractall(dest, members=[m for m in members if not m.issym()])
+        for m in members:
+            if m.issym():
+                link = dest / Path(*PurePosixPath(m.name).parts)
+                if not link.exists() and not link.is_symlink():
+                    link.parent.mkdir(parents=True, exist_ok=True)
+                    os.symlink(m.linkname, link)
 
 
-def materialize(spec: str, label: str, topology: Path, cfg_rel: PurePosixPath, work: Path) -> tuple[Path, str, Path]:
-    """Build one side's lab folder. Returns (its topology file, a description of the side, the folder the
-    side's tree was read from: the directory itself, or the extracted git tree's root)."""
+def _cat_files(repo: Path, commit: str, paths: list[str]) -> dict[str, bytes | None]:
+    """The blobs at commit:path (None for a path that is not a file there), in one `git cat-file --batch`."""
+    if not paths:
+        return {}
+    data = _git(["cat-file", "--batch"], repo, binary=True, stdin="".join(f"{commit}:{p}\n" for p in paths).encode())
+    out: dict[str, bytes | None] = {}
+    pos = 0
+    for p in paths:
+        nl = data.index(b"\n", pos)
+        header = data[pos:nl].decode("utf-8", "replace").split()
+        pos = nl + 1
+        if len(header) == 3:
+            size = int(header[2])
+            out[p] = data[pos:pos + size] if header[1] == "blob" else None
+            pos += size + 1
+        else:
+            out[p] = None    # "<object> missing"
+    return out
+
+
+@dataclass
+class Side:
+    """One side's lab tree, materialized in its own folder. Every bind of `topology` resolves inside `root`."""
+    label: str
+    topology: Path                      # the side's copy of the topology file
+    desc: str
+    root: Path                          # the side's own tree
+    bound: dict[str, str] = field(default_factory=dict)     # bound file (as the topology names it) -> sha256 booted
+    sources: dict[str, str] = field(default_factory=dict)   # ... -> sha256 of that file in the side's source
+    repo: Path | None = None            # a git ref: the repository's working tree
+    commit: str = ""
+    given_dir: Path | None = None       # a directory: the directory given
+    mount: Path | None = None           # a directory: the working-tree folder it stands for
+
+    @property
+    def is_ref(self) -> bool:
+        return bool(self.commit)
+
+    def locate(self, path: Path) -> Path | None:
+        """Where a working-tree path (or a path inside the directory given) is in this side's tree."""
+        p = _real(Path(path))
+        bases = [self.repo] if self.is_ref else [self.given_dir, self.mount]
+        for base_dir in bases:
+            if base_dir is not None and _within(p, _real(base_dir)):
+                return self.root / p.relative_to(_real(base_dir))
+        return None
+
+
+def _hint(topology: Path, config_hint: str | None) -> Path | None:
+    if config_hint is None:
+        return None
+    rel = Path(config_hint.replace("\\", "/"))
+    if rel.is_absolute():
+        raise VerifyInputError(f"--config-dir must be relative to the topology's folder, got {config_hint!r}")
+    return Path(os.path.normpath(topology.parent / rel))
+
+
+def materialize(spec: str, label: str, topology: Path, work: Path, config_hint: str | None = None) -> Side:
+    """Build one side's lab tree in work/<label>, isolated from the other side and from the working tree.
+
+    A git ref: the repository's whole tree at that ref (`git archive`); the topology in it must be
+    byte-identical to the one given. A directory: that directory, standing for the folder of the working
+    tree that holds the topology and everything it binds (or, with --config-dir, for that folder only).
+    Every bind is then resolved in the side's own tree, and must stay inside it."""
     topology = topology.resolve()
-    topo_dir = topology.parent
     out = work / label
-    out.mkdir(parents=True)
     side_dir = Path(spec)
     if side_dir.is_dir():
-        root = side_dir.resolve()
-        desc = f"directory {spec}"
-        tree_root = root
-        if str(cfg_rel) == "." and (root / topology.name).is_file() \
-                and (root / topology.name).read_bytes() != topology.read_bytes():
-            raise VerifyInputError(f"{label}: {root / topology.name} differs from {topology}; verify compares configs "
-                                   "on one topology")
+        given = side_dir.resolve()
+        mount = _hint(topology, config_hint) or bind_anchor(topology)
+        anchor = Path(os.path.commonpath([str(mount), str(topology.parent)]))
+        root = out / mount.relative_to(anchor)
+        shutil.copytree(given, root, symlinks=True, ignore=shutil.ignore_patterns(".git"))
+        topo = out / topology.relative_to(anchor)
+        if topo.exists() and topo.read_bytes() != topology.read_bytes():
+            raise VerifyInputError(f"{label} (directory {spec}): its {topo.name} differs from {topology}; verify "
+                                   "compares configs on one topology")
+        topo.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(topology, topo)
+        side = Side(label, topo, f"directory {spec}", root, given_dir=given, mount=mount)
     else:
-        repo = Path(str(_git(["rev-parse", "--show-toplevel"], topo_dir)).strip())
+        repo = _real(Path(str(_git(["rev-parse", "--show-toplevel"], topology.parent)).strip()))
         try:
             commit = str(_git(["rev-parse", "--verify", "--quiet", f"{spec}^{{commit}}"], repo)).strip()
         except VerifyInputError:
             raise VerifyInputError(f"--{label} {spec!r} is neither a directory nor a git ref in {repo}") from None
-        tree_root = work / f"{label}-tree"
-        tree_root.mkdir()
-        _extract(_git(["archive", "--format=tar", commit], repo, binary=True), tree_root)
         try:
-            rel = topology.relative_to(repo.resolve())
+            rel = _real(topology).relative_to(repo)
         except ValueError:
             raise VerifyInputError(f"{topology} is not inside the git repository {repo}") from None
-        ref_topo = tree_root / rel
-        if not ref_topo.is_file():
+        out.mkdir(parents=True)
+        _extract(_git(["archive", "--format=tar", commit], repo, binary=True), out)
+        topo = out / rel
+        if not topo.is_file():
             raise VerifyInputError(f"{label} ({spec}): the topology {rel.as_posix()} doesn't exist in that ref; verify "
                                    "compares configs on one topology")
-        if ref_topo.read_bytes() != topology.read_bytes():
+        if topo.read_bytes() != topology.read_bytes():
             raise VerifyInputError(f"{label} ({spec}): the topology {rel.as_posix()} differs from {topology}; verify "
                                    "compares configs on one topology")
-        root = ref_topo.parent / Path(*cfg_rel.parts) if str(cfg_rel) != "." else ref_topo.parent
-        desc = f"git ref {spec} ({commit[:12]})"
-        if not root.is_dir():
-            raise VerifyInputError(f"{label} ({spec}): the config folder {cfg_rel} doesn't exist in that ref")
-    target = out if str(cfg_rel) == "." else out / Path(*cfg_rel.parts)
-    shutil.copytree(root, target, dirs_exist_ok=True, symlinks=False)
-    shutil.copyfile(topology, out / topology.name)
-    for src in bind_sources(topology):
-        p = PurePosixPath(src)
-        if p.is_absolute():
-            if _inside(PurePosixPath(Path(src).as_posix()), PurePosixPath((topo_dir / Path(*cfg_rel.parts)).as_posix())):
-                raise VerifyInputError(f"the topology binds {src} by absolute path inside the config folder, so both "
-                                       "sides would use the same file; bind it by relative path")
-            continue
-        dest = out / Path(*p.parts)
-        if _inside(p, cfg_rel):
-            if not dest.exists():
-                raise VerifyInputError(f"{label} ({desc}): {src} is missing (the topology binds it)")
-            continue
-        orig = topo_dir / Path(*p.parts)
-        if not orig.exists():
-            raise VerifyInputError(f"the topology binds {src}, which doesn't exist")
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        if orig.is_dir():
-            shutil.copytree(orig, dest, dirs_exist_ok=True)
-        else:
-            shutil.copyfile(orig, dest)
-    return out / topology.name, desc, tree_root
+        if config_hint is not None:
+            in_tree = Path(os.path.normpath(topo.parent / config_hint.replace("\\", "/")))
+            if not _within(in_tree, out) or not in_tree.is_dir():
+                raise VerifyInputError(f"{label} ({spec}): the config folder {config_hint} doesn't exist in that ref")
+        side = Side(label, topo, f"git ref {spec} ({commit[:12]})", out, repo=repo, commit=commit)
+    _hash_binds(side)
+    return side
 
+
+def _hash_binds(side: Side) -> None:
+    """Record what each bind points at in the side's tree (sha256 of every file), and the same file in the
+    side's source (the ref's blob, or the directory given). They must agree: the lab boots the side's own
+    bytes, never a file the other side or the working tree put there."""
+    where = f"{side.label} ({side.desc})"
+    root = _real(side.root)
+    files: dict[str, Path] = {}
+    for src in bind_sources(side.topology):
+        real = resolve_bind(src, side.topology.parent, side.root, where)
+        for f in _files(real):
+            files[src if f == real else f"{src}/{f.relative_to(real).as_posix()}"] = _real(f)
+    side.bound = {k: _sha256(f.read_bytes()) for k, f in files.items()}
+    rels = {k: f.relative_to(root).as_posix() for k, f in files.items()}
+    if side.is_ref:
+        blobs = _cat_files(side.repo, side.commit, sorted(set(rels.values())))
+        side.sources = {k: _sha256(blobs[r]) for k, r in rels.items() if blobs.get(r) is not None}
+    else:
+        side.sources = {k: _sha256((side.given_dir / r).read_bytes()) for k, r in rels.items()
+                        if (side.given_dir / r).is_file()}
+    wrong = sorted(k for k in side.bound if side.sources.get(k) != side.bound[k])
+    if wrong:
+        raise VerifyInputError(f"{where}: the lab folder doesn't hold the side's own bytes for {', '.join(wrong)}; "
+                               "refusing to compare")
+
+
+def check_sides(before: Side, after: Side, log: Callable[[str], None]) -> list[str]:
+    """The self-check before booting: print which bound files differ between the sides. If the sources
+    differ but every bound file hashes the same, the two sides collapsed into one (exit 2)."""
+    keys = sorted(set(before.bound) | set(after.bound))
+    differ = [k for k in keys if before.bound.get(k) != after.bound.get(k)]
+    src_differ = [k for k in keys if before.sources.get(k) != after.sources.get(k)]
+    if src_differ and not differ:
+        raise VerifyInputError(f"both sides resolved to the same configs: {', '.join(src_differ)} differ between "
+                               f"{before.desc} and {after.desc}, but every bound file hashes the same in the two lab "
+                               "folders; refusing to compare")
+    log(f"bound files that differ between the sides: {', '.join(differ)}" if differ
+        else "no bound file differs between the sides")
+    return differ
 
 # ---------------------------------------------------------------------------------------------------------
 # Nodes
@@ -293,19 +426,21 @@ def run_guards(cfg, topology: Path, settle: float, hold: float, log) -> dict:
                          for r in rep.results if not r.passed]}
 
 
-def load_guards(path: str, before_spec: str, before_tree: Path | None, repo_rel: Path | None):
+def load_guards(path: str, before_spec: str, before: Side):
     """The standing guards. With a git ref as --before, they are read from that ref (the base branch),
     never from the working tree; with a directory, from the path given."""
     from ..runner import load_config
 
-    if before_tree is not None and repo_rel is not None:
-        p = before_tree / repo_rel
+    if before.is_ref:
+        p = before.locate(Path(path))
+        if p is None:
+            raise VerifyInputError(f"--guards {path} is outside the git repository {before.repo}")
         if p.is_dir():
             p = p / "netdryrun.yml"
         if not p.is_file():
             raise VerifyInputError(f"--guards {path}: not in the before ref ({before_spec}); the standing guards are "
                                    "read from the base, never from the change")
-        return load_config(p), f"{repo_rel.as_posix()} at {before_spec}"
+        return load_config(p), f"{p.relative_to(before.root).as_posix()} at {before_spec}"
     return load_config(path), str(path)
 
 
@@ -329,21 +464,14 @@ def verify(topology: str, before: str, after: str, intent_path: str, *, guards: 
             raise VerifyInputError(f"{topology}: topology not found")
         lab = Lab(topo)
         res.containers = {n: nd.container for n, nd in lab.nodes.items()}
-        cfg_rel = config_dir(topo, config_dir_name)
-        before_topo, bdesc, btree = materialize(before, "before", topo, cfg_rel, work)
-        after_topo, adesc, _ = materialize(after, "after", topo, cfg_rel, work)
-        res.before_spec, res.after_spec = f"{before}: {bdesc}", f"{after}: {adesc}"
+        bside = materialize(before, "before", topo, work, config_dir_name)
+        aside = materialize(after, "after", topo, work, config_dir_name)
+        res.before_spec, res.after_spec = f"{before}: {bside.desc}", f"{after}: {aside.desc}"
+        check_sides(bside, aside, log)
+        before_topo, after_topo = bside.topology, aside.topology
         gcfg, gsource = None, None
         if guards:
-            is_ref = not Path(before).is_dir()
-            repo_rel = None
-            if is_ref:
-                repo = Path(str(_git(["rev-parse", "--show-toplevel"], topo.resolve().parent)).strip()).resolve()
-                try:
-                    repo_rel = Path(guards).resolve().relative_to(repo)
-                except ValueError:
-                    raise VerifyInputError(f"--guards {guards} is outside the git repository {repo}") from None
-            gcfg, gsource = load_guards(guards, before, btree if is_ref else None, repo_rel)
+            gcfg, gsource = load_guards(guards, before, bside)
         nodes = classify_nodes(lab, gcfg.drivers if gcfg else {}, list(unobserved))
         check_nodes(res.intent, nodes)
         side = side_fn or real_side(nodes=nodes, setup=gcfg.setup if gcfg else {}, settle=settle, timeout=timeout,

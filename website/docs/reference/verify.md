@@ -35,17 +35,25 @@ It deploys the lab with the *before* configs, waits for a stable snapshot, destr
 
 | Option | Default | |
 |---|---|---|
-| `--before`, `--after` | required | The config folder the topology binds, as a directory or a git ref. For a ref, the folder at the same path in that ref's tree is used, and the topology file in the ref must be byte-identical to the one given (exit code `2` otherwise: verify compares configs on one topology). A directory wins over a ref of the same name. |
+| `--before`, `--after` | required | One side each: a git ref or a directory. A **git ref** is the repository's whole tree at that ref, and the topology file in it must be byte-identical to the one given (exit code `2` otherwise: verify compares configs on one topology). A **directory** stands for the folder that holds the topology and every file it binds (for `lab/topo/t.clab.yml` binding `../configs/r1.conf`, a copy of `lab/`, with `configs/r1.conf` in it). A directory wins over a ref of the same name. See [How each side is built](#how-each-side-is-built). |
 | `--intent` | required | The intent file. |
 | `--json FILE` | | Write the `netdryrun.verify/v1` report. |
 | `--guards FILE` | | The standing guards (a `netdryrun.yml`), run on the *after* lab; they must pass. When `--before` is a git ref, the file is read from that ref (the base), never from the change. Its `nodes:` settings (`driver`, `setup`) apply to both labs. |
-| `--config-dir DIR` | detected | The folder `--before`/`--after` replace, relative to the topology. By default, the one folder every relative bind of the topology is in (`.` if they sit next to it). |
+| `--config-dir DIR` | | With directory sides: the folder each directory stands for, relative to the topology (for example `configs`), when the directories hold only that folder. Every bind must then resolve inside it. With a git ref, it is only checked to exist in the ref. |
 | `--unobserved NODE` | | A node without a routing stack (a host). Repeat for several. A node verify can't classify is an error, never silently skipped. Bridges are never observed. |
 | `--settle` | `15` | Seconds between the two snapshots that must be identical. |
 | `--timeout` | `300` | Seconds to reach a stable snapshot, per lab. |
 | `--hold` | `10` | The standing guards' hold window. |
 | `--allow-unhealthy-baseline` | | Compare even when sessions are down in the *before* lab. |
 | `--keep` | | Leave the *after* lab running, to run the `next_diagnostic` commands. |
+
+### How each side is built
+
+Each side is built in its own temporary folder, never shared with the other side or with your working tree: the whole repository tree at the ref (`git archive`), or the whole directory. Every bind and `startup-config` of the topology is then resolved inside that side's tree, the way containerlab resolves it: relative to the topology's folder, with `${VAR}`, `~`, `..` and symlinks followed.
+
+- **A bind that resolves outside the side's tree is an error** (exit code `2`): an absolute path, `~/...`, a variable pointing elsewhere, or a symlink leading out would be the same file on both sides.
+- A bound file missing from a side is an error.
+- **Self-check before booting:** verify hashes every bound file on each side, checks that it holds that side's own bytes, and prints which bound files differ between the sides. If the sides differ in bound files but every bound file hashes the same in the two lab folders, it stops with "both sides resolved to the same configs" (exit code `2`).
 
 ## The intent file
 

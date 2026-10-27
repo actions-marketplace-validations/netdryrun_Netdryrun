@@ -3,7 +3,7 @@ node classification, the verdict statuses and exit codes, the guards, the report
 import json
 import shutil
 import subprocess
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 
 import pytest
 
@@ -59,10 +59,12 @@ def make_lab(tmp_path: Path, topo: str = TOPO) -> Path:
 
 
 def side_dir(tmp_path: Path, lab: Path, name: str, edit: str | None = None) -> Path:
+    """A directory side: a copy of the lab's tree (its configs and every other bound file)."""
     d = tmp_path / name
-    shutil.copytree(lab / "configs", d)
+    for sub in ("configs", "shared"):
+        shutil.copytree(lab / sub, d / sub)
     if edit:
-        (d / "edge1.conf").write_text(edit)
+        (d / "configs" / "edge1.conf").write_text(edit)
     return d
 
 
@@ -95,7 +97,6 @@ def run_verify(tmp_path, before_snap, after_snap, intent_text=NEW_BLOCK, guards=
     b = side_dir(tmp_path, lab, "before")
     a = side_dir(tmp_path, lab, "after", edit="! edge1 after\n")
     side = fake_side(before_snap, after_snap, guards=guards, raise_on=kw.pop("raise_on", None))
-    kw.setdefault("config_dir_name", "configs")
     res = vrun.verify(str(lab / "topology.clab.yml"), str(b), str(a), str(intent_file(tmp_path, intent_text)),
                       side_fn=side, **kw)
     return res, side
@@ -210,33 +211,30 @@ def test_unknown_node_in_the_intent_is_exit_2(tmp_path):
 
 # --- sides and the topology rule ---------------------------------------------------------------------------
 
-def test_config_dir_detection(tmp_path):
+def test_bind_anchor(tmp_path):
     lab = make_lab(tmp_path)
     topo = lab / "topology.clab.yml"
-    with pytest.raises(vrun.VerifyInputError):           # configs/ and shared/
-        vrun.config_dir(topo, None)
-    assert vrun.config_dir(topo, "configs") == PurePosixPath("configs")
-    topo.write_text(TOPO.replace("shared/vtysh.conf", "configs/vtysh.conf"))
-    assert vrun.config_dir(topo, None) == PurePosixPath("configs")
-    assert vrun.config_dir(ROOT / "examples/agent-demo/topology.clab.yml", None) == PurePosixPath("configs")
-    for bad in ("../x", "/etc"):
-        with pytest.raises(vrun.VerifyInputError):
-            vrun.config_dir(topo, bad)
+    assert vrun.bind_anchor(topo) == lab.resolve()                     # configs/ and shared/ next to it
+    (lab / "topo").mkdir()
+    (lab / "topo" / "t.clab.yml").write_text(TOPO.replace("configs/", "../configs/").replace("shared/", "../shared/"))
+    assert vrun.bind_anchor(lab / "topo" / "t.clab.yml") == lab.resolve()
+    agent = ROOT / "examples/agent-demo/topology.clab.yml"
+    assert vrun.bind_anchor(agent) == agent.resolve().parent
 
 
 def test_a_side_missing_a_bound_file_is_an_error(tmp_path):
     lab = make_lab(tmp_path)
     side = side_dir(tmp_path, lab, "before")
-    (side / "up1.conf").unlink()
-    with pytest.raises(vrun.VerifyInputError):
-        vrun.materialize(str(side), "before", lab / "topology.clab.yml", PurePosixPath("configs"), tmp_path / "w")
+    (side / "configs" / "up1.conf").unlink()
+    with pytest.raises(vrun.VerifyInputError, match="missing"):
+        vrun.materialize(str(side), "before", lab / "topology.clab.yml", tmp_path / "w")
 
 
 def test_a_side_that_is_neither_a_directory_nor_a_ref(tmp_path):
     lab = make_lab(tmp_path)
     git(lab, "init", "-q")
     with pytest.raises(vrun.VerifyInputError):
-        vrun.materialize("no-such-ref", "before", lab / "topology.clab.yml", PurePosixPath("configs"), tmp_path / "w")
+        vrun.materialize("no-such-ref", "before", lab / "topology.clab.yml", tmp_path / "w")
 
 
 def git(cwd: Path, *args: str) -> str:
@@ -260,10 +258,12 @@ def repo_lab(tmp_path: Path) -> Path:
 def test_git_ref_side(tmp_path):
     lab = repo_lab(tmp_path)
     (lab / "configs" / "edge1.conf").write_text("! edge1 after\n")
-    topo, desc, tree = vrun.materialize("HEAD", "before", lab / "topology.clab.yml", PurePosixPath("configs"),
-                                        tmp_path / "w")
-    assert "git ref HEAD" in desc and (topo.parent / "configs" / "edge1.conf").read_text() == "! edge1.conf before\n"
+    side = vrun.materialize("HEAD", "before", lab / "topology.clab.yml", tmp_path / "w")
+    topo = side.topology
+    assert "git ref HEAD" in side.desc and (topo.parent / "configs" / "edge1.conf").read_text() == "! edge1.conf before\n"
     assert topo.read_bytes() == (lab / "topology.clab.yml").read_bytes()
+    assert set(side.bound) == {"configs/daemons", "shared/vtysh.conf", "configs/cust1.conf", "configs/edge1.conf",
+                               "configs/up1.conf", "configs/peer1.conf"} and side.bound == side.sources
 
 
 def test_topology_changed_since_the_ref_is_exit_2(tmp_path):
@@ -293,9 +293,8 @@ def test_guards_are_read_from_the_before_ref(tmp_path, monkeypatch):
     def side(label, topology, on_up=None):
         extra = on_up(None, topology) if on_up else None
         return (base().snap(), 1.0, extra)
-    res = vrun.verify(str(lab / "topology.clab.yml"), "HEAD", str(lab / "configs"),
-                      str(intent_file(tmp_path, "intent: []\n")), config_dir_name="configs",
-                      guards=str(lab / "netdryrun.yml"), side_fn=side)
+    res = vrun.verify(str(lab / "topology.clab.yml"), "HEAD", str(lab),
+                      str(intent_file(tmp_path, "intent: []\n")), guards=str(lab / "netdryrun.yml"), side_fn=side)
     assert res.status == "no_change", res.error
     assert seen["checks"] == 2 and res.guards["source"] == "netdryrun.yml at HEAD"
     validate(res)
@@ -349,3 +348,132 @@ def test_console_echoes_the_intent_first(tmp_path):
 def test_schema_is_valid():
     jsonschema.Draft202012Validator.check_schema(SCHEMA)
     assert SCHEMA["properties"]["schema"]["const"] == vreport.SCHEMA
+
+
+# --- each side is a whole, isolated tree (review finding 1) ------------------------------------------------
+
+NESTED_TOPO = """name: nlab
+topology:
+  defaults: {kind: linux, image: quay.io/frrouting/frr:10.4.1}
+  nodes:
+    r1: {binds: ["../configs/r1.conf:/etc/frr/frr.conf"]}
+    r2: {binds: ["../configs/r2.conf:/etc/frr/frr.conf"]}
+"""
+
+
+def bound_bytes(topology: Path) -> dict[str, bytes]:
+    """What each bind of a materialized topology points at, read the way containerlab resolves it."""
+    import os
+    return {src: (topology.parent / os.path.expandvars(src)).read_bytes() for src in vrun.bind_sources(topology)}
+
+
+def capture_side(snap):
+    calls = {}
+
+    def side(label, topology, on_up=None):
+        calls[label] = bound_bytes(Path(topology))
+        return snap, 1.0, None
+    side.calls = calls
+    return side
+
+
+def nested_repo(tmp_path: Path) -> Path:
+    lab = tmp_path / "lab"
+    (lab / "topo").mkdir(parents=True)
+    (lab / "configs").mkdir()
+    (lab / "topo" / "t.clab.yml").write_text(NESTED_TOPO)
+    for r in ("r1", "r2"):
+        (lab / "configs" / f"{r}.conf").write_text(f"! {r} before\n")
+    git(lab, "init", "-q")
+    git(lab, "add", ".")
+    git(lab, "commit", "-q", "-m", "before")
+    (lab / "configs" / "r1.conf").write_text("! r1 after\n")
+    git(lab, "commit", "-q", "-am", "after")
+    return lab
+
+
+def test_parent_relative_binds_keep_each_side_on_its_own_configs(tmp_path):
+    lab = nested_repo(tmp_path)
+    side = capture_side(base().snap())
+    res = vrun.verify(str(lab / "topo" / "t.clab.yml"), "HEAD~1", "HEAD", str(intent_file(tmp_path, "intent: []\n")),
+                      side_fn=side, unobserved=["r1", "r2"])
+    assert res.error == "" or "both sides" not in res.error
+    assert side.calls["before"]["../configs/r1.conf"] == b"! r1 before\n"
+    assert side.calls["after"]["../configs/r1.conf"] == b"! r1 after\n"
+    assert side.calls["before"]["../configs/r2.conf"] == side.calls["after"]["../configs/r2.conf"]
+
+
+def test_parent_relative_binds_with_directory_sides(tmp_path):
+    lab = nested_repo(tmp_path)
+    b, a = tmp_path / "b", tmp_path / "a"
+    for d, text in ((b, "! r1 before\n"), (a, "! r1 after\n")):
+        shutil.copytree(lab / "configs", d / "configs")
+        (d / "configs" / "r1.conf").write_text(text)
+    side = capture_side(base().snap())
+    vrun.verify(str(lab / "topo" / "t.clab.yml"), str(b), str(a), str(intent_file(tmp_path, "intent: []\n")),
+                side_fn=side, unobserved=["r1", "r2"])
+    assert side.calls["before"]["../configs/r1.conf"] == b"! r1 before\n"
+    assert side.calls["after"]["../configs/r1.conf"] == b"! r1 after\n"
+
+
+def test_narrow_config_dir_on_directory_sides_never_shares_a_file(tmp_path):
+    """With --config-dir, a directory side is that folder only: a bind outside it would come from somewhere
+    shared by both sides, so it is exit 2."""
+    lab = make_lab(tmp_path)
+    b, a = tmp_path / "before", tmp_path / "after"          # each the config folder only
+    shutil.copytree(lab / "configs", b)
+    shutil.copytree(lab / "configs", a)
+    (a / "edge1.conf").write_text("! edge1 after\n")
+    side = fake_side(base().snap(), base().snap())
+    res = vrun.verify(str(lab / "topology.clab.yml"), str(b), str(a), str(intent_file(tmp_path, "intent: []\n")),
+                      config_dir_name="configs", side_fn=side)
+    assert res.exit_code == 2 and "shared/vtysh.conf" in res.error and not side.calls
+
+
+@pytest.mark.parametrize("bind", ["/etc/frr/r1.conf", "~/r1.conf", "${NDR_TEST_CFG}/r1.conf", "../../elsewhere/r1.conf",
+                                  "link/r1.conf"])
+def test_a_bind_outside_the_side_tree_is_exit_2(tmp_path, monkeypatch, bind):
+    lab = nested_repo(tmp_path)
+    (tmp_path / "elsewhere").mkdir()
+    (tmp_path / "elsewhere" / "r1.conf").write_text("! shared\n")
+    monkeypatch.setenv("NDR_TEST_CFG", str(tmp_path / "elsewhere"))
+    (lab / "topo" / "link").symlink_to(tmp_path / "elsewhere")
+    topo = lab / "topo" / "t.clab.yml"
+    topo.write_text(NESTED_TOPO.replace("../configs/r1.conf", bind))
+    git(lab, "add", ".")
+    git(lab, "commit", "-q", "-m", "bind outside")
+    git(lab, "tag", "b")
+    side = capture_side(base().snap())
+    res = vrun.verify(str(topo), "b", "HEAD", str(intent_file(tmp_path, "intent: []\n")), side_fn=side,
+                      unobserved=["r1", "r2"])
+    assert res.exit_code == 2 and "resolves outside" in res.error and not side.calls
+
+
+def test_env_and_parent_binds_inside_the_tree_resolve_per_side(tmp_path, monkeypatch):
+    lab = nested_repo(tmp_path)
+    monkeypatch.setenv("NDR_TEST_DIR", "configs")
+    topo = lab / "topo" / "t.clab.yml"
+    topo.write_text(NESTED_TOPO.replace("../configs/r1.conf", "../${NDR_TEST_DIR}/r1.conf"))
+    git(lab, "commit", "-q", "-am", "env bind")
+    (lab / "configs" / "r1.conf").write_text("! r1 third\n")
+    git(lab, "commit", "-q", "-am", "third")
+    side = capture_side(base().snap())
+    vrun.verify(str(topo), "HEAD~1", "HEAD", str(intent_file(tmp_path, "intent: []\n")), side_fn=side,
+                unobserved=["r1", "r2"])
+    assert side.calls["before"]["../${NDR_TEST_DIR}/r1.conf"] == b"! r1 after\n"   # captured as written
+    assert side.calls["after"]["../${NDR_TEST_DIR}/r1.conf"] == b"! r1 third\n"
+
+
+def test_self_check_both_sides_resolved_to_the_same_configs(tmp_path):
+    def mk(label, bound, sources):
+        return vrun.Side(label=label, topology=tmp_path / "t.clab.yml", desc=label, root=tmp_path, bound=bound,
+                         sources=sources)
+    logs = []
+    same = {"configs/r1.conf": "aa", "configs/r2.conf": "bb"}
+    with pytest.raises(vrun.VerifyInputError, match="both sides resolved to the same configs"):
+        vrun.check_sides(mk("before", same, same), mk("after", same, {**same, "configs/r1.conf": "cc"}), logs.append)
+    vrun.check_sides(mk("before", same, same), mk("after", same, same), logs.append)
+    assert logs[-1].startswith("no bound file differs")
+    other = {**same, "configs/r1.conf": "cc"}
+    vrun.check_sides(mk("before", same, same), mk("after", other, other), logs.append)
+    assert "configs/r1.conf" in logs[-1] and "configs/r2.conf" not in logs[-1]
