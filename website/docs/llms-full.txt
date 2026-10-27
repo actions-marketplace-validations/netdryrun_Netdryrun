@@ -667,7 +667,7 @@ Source: https://netdryrun.com/examples/
 
 # Examples
 
-The repository's [`examples/`](https://github.com/netdryrun/netdryrun/tree/main/examples) folder has one lab per supported network OS, a deliberately broken change, and the AI agent demo. Each folder holds a containerlab topology, the router configs and a `netdryrun.yml`.
+The repository's [`examples/`](https://github.com/netdryrun/netdryrun/tree/main/examples) folder has one lab per supported network OS, a deliberately broken change, the AI agent demo, and a Batfish-then-lab pipeline. Each folder holds a containerlab topology, the router configs and a `netdryrun.yml`.
 
 ```bash
 git clone https://github.com/netdryrun/netdryrun && cd netdryrun
@@ -686,6 +686,7 @@ Times are wall-clock for `netdryrun run` on WSL2 (20 cores, 16 GB) with images a
 | [sonic-frr](#sonic-frr) | SONiC VS + FRR | Configuring a NOS after boot, a port-down scenario | `PASSED: 8 passed, 0 failed` | `0` | 90 s |
 | [arista-frr](#arista-frr) | Arista cEOS + FRR (your image) | A bring-your-own vendor image | `PASSED: 10 passed, 0 failed` | `0` | 92 s |
 | [agent-demo](#agent-demo) `demo.sh` | FRR | An agent's leaky change rejected, the fix accepted | `Demo OK` | `0` | 65 s |
+| [batfish-pipeline](#batfish-pipeline) | FRR | Batfish first, then the lab; three bad changes | `PASSED: 9 passed, 0 failed` | `0` | 74 s |
 
 ## frr-bgp
 
@@ -752,6 +753,14 @@ CI runs this example on every push and expects it to fail.
     Attempt 1 ends `FAILED: 9 passed, 5 failed (14 checks)`, attempt 2 `PASSED: 14 passed, 0 failed (14 checks)`. The two runs together took 65 seconds.
 
 - `netdryrun run examples/agent-demo` shows the starting point, before anyone has worked the ticket: the guards pass and the 3 ticket checks fail, `FAILED: 11 passed, 3 failed (14 checks)`, exit code `1`. It took 119 seconds, because the failing ticket checks wait for their timeout.
+
+## batfish-pipeline
+
+[`examples/batfish-pipeline`](https://github.com/netdryrun/netdryrun/tree/main/examples/batfish-pipeline): the `frr-bgp` triangle behind a two-stage gate. `pipeline.sh` runs Batfish on the configs first (seconds, nothing boots), then the lab. It needs a running Batfish service and `pybatfish`.
+
+**Shows:** what each stage catches. Three changes to r2 are in `changes/`: a leaked default route and a route-map typo (Batfish fails them in seconds) and a switch to FRR's `traditional` defaults, which Batfish passes but the lab fails. See [Batfish, then Netdryrun](batfish.md) for the measured results.
+
+**Expected:** `pipeline.sh` with no change: Batfish `8 passed, 0 failed`, then `PASSED: 9 passed, 0 failed (9 checks)`, exit code `0`. The time in the table includes both stages, with the Batfish service already running.
 
 ## Use an example as a template
 
@@ -1367,6 +1376,109 @@ jobs:
 - Uploaded report artifacts contain raw command output from the lab and are kept for 14 days. Don't put real secrets in lab configs.
 - **The PR comment cannot be steered by lab text.** Check names, details, errors and device output are escaped before they are posted: no HTML, links, images, `@mentions` or `#123` references, and device output stays inside its code block. Report files already in the workspace (committed in the PR, or left by an earlier run on a self-hosted runner) are deleted before the run, and the `status` output is `error` unless the report matches the run's own exit code.
 - **Pass outputs to a shell through `env:`**, not by pasting `${{ steps.<id>.outputs.inconclusive-reason }}` into a `run:` script. The reason can quote lab output; Netdryrun strips quotes, backslashes, `$` and backticks from it, but `env:` is the safe pattern for any action output.
+
+
+---
+Source: https://netdryrun.com/batfish/
+
+# Batfish, then Netdryrun
+
+[Batfish](https://batfish.org) and Netdryrun™ answer different questions. Batfish reads configs and models the network: it is fast and needs nothing to boot. Netdryrun boots the configs in a containerlab lab and checks what the routing software really does. Run Batfish first on every commit, and boot the lab only when it passes.
+
+This page reports one measured run of that pipeline: four versions of a small FRR network, each tested by both stages. The code is in [`examples/batfish-pipeline`](https://github.com/netdryrun/netdryrun/tree/main/examples/batfish-pipeline).
+
+## The pipeline
+
+The network is the FRR triangle from [`examples/frr-bgp`](examples.md#frr-bgp): three routers, each in its own AS, each announcing one LAN over eBGP.
+
+1. **Batfish** (`batfish_check.py`, 8 checks): every config parses, no undefined references, all six BGP sessions establish, r1's best paths to the two other LANs, no router learns a default route, a traceroute from r1's LAN to r2's LAN, and the best path after the r1-r2 link fails (a forked snapshot with the interface deactivated).
+2. **Netdryrun** (`netdryrun.yml`, 9 checks): r1's two BGP sessions, the prefix count from r2, the route to r2's LAN and its best path, a ping, the same default-route guard, and the same link failure.
+
+The two stages state the same intent, as far as each tool can express it.
+
+```yaml title=".github/workflows/network-gate.yml"
+name: network change gate
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  batfish:
+    runs-on: ubuntu-latest
+    services:
+      batfish:
+        image: batfish/batfish
+        ports: ["9996:9996", "9997:9997"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pybatfish
+      - name: Wait for the Batfish service
+        run: |
+          for i in $(seq 60); do
+            python -c 'from pybatfish.client.session import Session; Session(host="localhost").list_networks()' 2>/dev/null && exit 0
+            sleep 2
+          done
+          exit 1
+      - run: python examples/batfish-pipeline/batfish_check.py examples/batfish-pipeline/configs
+
+  netdryrun:
+    needs: batfish          # boot the lab only if Batfish passed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: netdryrun/netdryrun@v0.3.0
+        with:
+          path: examples/batfish-pipeline
+```
+
+The workflow is an example to copy: this repository's CI does not run it. The measurements below come from the equivalent local script, `pipeline.sh`.
+
+## Results
+
+Measured on 2026-10-27 on WSL2 (20 cores, 16 GB) with images already pulled: Batfish 2026.08.27.3685, pybatfish 2026.9.17.3748, Netdryrun 0.3.0, containerlab 0.81.1, FRR 10.4.1. The `batfish/batfish` service container was ready to answer 3.3 s after `docker run`. Lab times include deploying and destroying the lab. Each change below replaces r2's config.
+
+| Change to r2 | Batfish | Netdryrun lab | Who caught it |
+|---|---|---|---|
+| None (baseline) | pass, 4 s | pass, 70 s | Both pass |
+| Adds `default-originate` toward r1 | **fail**, 3 s | **fail**, 68 s | Both; Batfish first |
+| Route-map name typo (`ALLOW-AL`) toward r1 | **fail**, 5 s | **fail**, 179 s | Both; Batfish first, but its route model predicts the wrong outcome |
+| Switches to `frr defaults traditional` and drops the "allow all" route-maps | pass, 3 s | **fail**, 266 s | **Only the lab** |
+
+### Caught by Batfish first: a leaked default route
+
+r2 starts sending r1 a default route. Batfish reports, three seconds after the commit, that r1 learns `0.0.0.0/0` from r2 and passes it on to r3. The lab finds the same leak on r1 (received but not selected) after about a minute. Stopping at the Batfish stage saves the lab run.
+
+The route-map typo is also caught first: Batfish's `undefinedReferences` question names the missing `ALLOW-AL` and its line. Its routing model, though, still predicts that r1 uses the direct path to r2. FRR denies everything through a route-map that does not exist, so in the lab r1 receives nothing from r2 and reaches r2's LAN through r3. Ping still works; only the best-path check and the prefix count fail. The gate would fail in both stages, but only the lab shows what the network would really do.
+
+### Seen only by the lab: an FRR default
+
+FRR has enabled `bgp ebgp-requires-policy` by default since 7.4 under the `traditional` profile (it is off under `datacenter`). An eBGP neighbor with no inbound and outbound policy then receives nothing and sends nothing, but the session still comes up. In the lab, r2 shows `(Policy) (Policy)` for both neighbors and 0 prefixes each way, and 6 of the 9 checks fail: r2's LAN is unreachable from r1, even after the link-failure scenario.
+
+Batfish passed this change. It accepted `frr defaults traditional` without modelling what that profile implies, and predicted every route as before. When `bgp ebgp-requires-policy` is written out explicitly, Batfish reports it as an unrecognized line rather than applying it.
+
+### Where they agreed
+
+For the r1-r2 link failure, Batfish's forked snapshot predicted the same failover path (AS path `65003 65002` through r3) that the lab measured. In a topology this small, failover did not show any convergence behavior that the model missed.
+
+## How well Batfish parses FRR
+
+Batfish's FRR support is partial, and the way you feed it configs matters:
+
+- **A bare `frr.conf` is detected as Cisco IOS.** On these configs the status was `PARTIALLY_UNRECOGNIZED`: the `frr defaults` line was not recognized, and interfaces were renamed (`eth1` became `Ethernet1`). The BGP answers happened to be right, but FRR syntax was being read with IOS semantics.
+- **Batfish's FRR grammar belongs to its Cumulus Linux support.** Wrapped in the "Cumulus concatenated" layout (a hostname line, an interfaces section, a `ports.conf` marker, then `frr.conf`), the same three configs parse as `CUMULUS_CONCATENATED` with status `PASSED`, no warnings, and the lab's interface names. `batfish_check.py` does this wrapping.
+- **What is supported is the subset Cumulus used.** In this test, the defaults profile is accepted but not modelled, and `bgp ebgp-requires-policy` is not recognized at all. Make the gate fail on any file that does not parse cleanly (`fileParseStatus`, `parseWarning`), as the example script does.
+
+These findings cover only BGP with route-maps on three FRR routers. Batfish's support for other vendors (Cisco, Juniper, Arista, Palo Alto and more) is much broader and is not tested here.
+
+## Takeaways
+
+- Put Batfish first. It is cheap, it fails in seconds, it names the file and line, and here it caught two of the three bad changes before any lab booted.
+- Keep the lab stage. The change that passed Batfish broke every route through r2, because of a vendor default that the model does not know about.
+- Watch for disagreements, not only for failures. On the route-map typo, both stages failed, but Batfish's prediction of the outcome was wrong.
+
+See also [When to use what](when-to-use-what.md) for how Batfish, pyATS/Genie, containerlab and Netdryrun compare.
 
 
 ---
@@ -2338,6 +2450,8 @@ A reasonable pipeline uses more than one:
 4. **pyATS / Genie** (or similar) for pre- and post-change checks on the production devices during the change window.
 
 None of these steps proves the change is safe on its own. Each one removes a different class of mistakes.
+
+[Batfish, then Netdryrun](batfish.md) shows steps 1 and 3 together on a small FRR network, with measured times. In that test, Batfish caught two of three bad changes in seconds, before any lab booted; the third depended on an FRR default that only the running routers showed.
 
 
 ---

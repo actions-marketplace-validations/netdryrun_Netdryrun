@@ -176,7 +176,8 @@ def main() -> int:
     for rel in ("README.md", "AGENTS.md", "website/docs/index.md", "website/docs/when-to-use-what.md",
                 "website/docs/llms.txt", "website/docs/github-action.md", "website/docs/trust.md",
                 "website/docs/how-its-built.md", "website/docs/ai-agents.md", "website/docs/faq.md",
-                "website/docs/tutorial.md", "website/docs/examples.md", "website/docs/troubleshooting.md"):
+                "website/docs/tutorial.md", "website/docs/examples.md", "website/docs/troubleshooting.md",
+                "website/docs/batfish.md"):
         path = ROOT / rel
         old = path.read_text(encoding="utf-8")
         new = sync_blocks(old, values, rel, problems)
