@@ -1176,6 +1176,11 @@ def cell(text: str) -> str:
     return str(text).replace("|", "\\|").replace("\n", " ")
 
 
+def ready_to_publish(blockers, skipped, majors, missing, notes) -> bool:
+    """Everything is in except the proof that can only run after publishing."""
+    return not (blockers or skipped or majors or notes) and missing == ["after-publish"]
+
+
 def render(args) -> tuple[str, bool]:
     """GATE.md from every recorded layer, and whether the release is cleared."""
     folder = out_dir(args)
@@ -1189,7 +1194,7 @@ def render(args) -> tuple[str, bool]:
     for name, rec in records.items():
         for c in rec["checks"]:
             key = f"{name}/{c['id']}"
-            if c["status"] == FAIL and c["severity"] == MAJOR and key in accepted:
+            if c["status"] in (FAIL, SKIP) and c["severity"] == MAJOR and key in accepted:
                 c["status"], c["summary"] = ACCEPTED, f"{c['summary']} (accepted: {accepted[key]})"
             if c["status"] == FAIL and c["severity"] == BLOCKER:
                 blockers.append(f"{key}: {c['title']}")
@@ -1211,6 +1216,9 @@ def render(args) -> tuple[str, bool]:
         verdict = f"**NOT CLEARED**: {len(blockers)} BLOCKER check(s) failed."
     elif cleared:
         verdict = "**CLEARED**: every layer ran on the same clean commit; no BLOCKER failed or was skipped; every MAJOR passed or was accepted."
+    elif ready_to_publish(blockers, skipped, majors, missing, notes):
+        verdict = ("**READY TO PUBLISH**: every layer before publishing ran on the same clean commit; no BLOCKER failed "
+                   "or was skipped; every MAJOR passed or was accepted. Tag it, then run `after-publish` to clear it.")
     else:
         verdict = "**INCOMPLETE**: no BLOCKER failed, but the gate is not complete (see below)."
 
@@ -1371,7 +1379,8 @@ def main() -> int:
 
     if args.layer == "report":
         text, cleared = render(args)
-        print(f"wrote {write_out(args, 'GATE.md', text)}: {'CLEARED' if cleared else 'not cleared'}")
+        state = "CLEARED" if cleared else "READY TO PUBLISH" if "**READY TO PUBLISH**" in text else "not cleared"
+        print(f"wrote {write_out(args, 'GATE.md', text)}: {state}")
         return 0 if cleared else 1
 
     names = ["static", "unit", "mutation", "live"] if args.layer == "all" else [args.layer]
