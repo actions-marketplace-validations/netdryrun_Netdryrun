@@ -336,74 +336,206 @@
    "reason": "message text only: the default check name shown in reports",
    "diff": "119883003608ce08"
   },
-  "netdryrun.config.x__describe__mutmut_109": "message text only: the default check name shown in reports",
+  "netdryrun.config.x__describe__mutmut_109": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "be516ffa1f60add1"
+  },
   "netdryrun.config.x__describe__mutmut_11": {
    "reason": "message text only: the default check name shown in reports",
    "diff": "d7b11751bd2d98a1"
   },
-  "netdryrun.config.x__describe__mutmut_110": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_111": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_114": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_115": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_117": "message text only: the default check name shown in reports",
+  "netdryrun.config.x__describe__mutmut_110": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "5dc028f6f0f80f8c"
+  },
+  "netdryrun.config.x__describe__mutmut_111": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "79bfc099077352f1"
+  },
+  "netdryrun.config.x__describe__mutmut_114": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "b23cac60bb962b3d"
+  },
+  "netdryrun.config.x__describe__mutmut_115": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "a4f5076d3a1abf07"
+  },
+  "netdryrun.config.x__describe__mutmut_117": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "425d313b5c0632b1"
+  },
   "netdryrun.config.x__describe__mutmut_12": {
    "reason": "message text only: the default check name shown in reports",
    "diff": "92a3d5ebe6413744"
   },
-  "netdryrun.config.x__describe__mutmut_121": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_122": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_127": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_128": "message text only: the default check name shown in reports",
+  "netdryrun.config.x__describe__mutmut_121": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "02e46c0bbf923a9d"
+  },
+  "netdryrun.config.x__describe__mutmut_122": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "46d29fcd0d5f1988"
+  },
+  "netdryrun.config.x__describe__mutmut_127": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "e7f275c554373380"
+  },
+  "netdryrun.config.x__describe__mutmut_128": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "41a170e241487249"
+  },
   "netdryrun.config.x__describe__mutmut_13": {
    "reason": "message text only: the default check name shown in reports",
    "diff": "864b4e2fa06f7140"
   },
-  "netdryrun.config.x__describe__mutmut_133": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_134": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_135": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_136": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_137": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_138": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_139": "message text only: the default check name shown in reports",
+  "netdryrun.config.x__describe__mutmut_133": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "480a8263261bf31a"
+  },
+  "netdryrun.config.x__describe__mutmut_134": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "92fe1f063e40778d"
+  },
+  "netdryrun.config.x__describe__mutmut_135": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "12ee689027933637"
+  },
+  "netdryrun.config.x__describe__mutmut_136": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "277db75f2f94208e"
+  },
+  "netdryrun.config.x__describe__mutmut_137": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "90ba7efaaad59095"
+  },
+  "netdryrun.config.x__describe__mutmut_138": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "8a8b5c96bb7f953c"
+  },
+  "netdryrun.config.x__describe__mutmut_139": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "f03b52a600e84b59"
+  },
   "netdryrun.config.x__describe__mutmut_14": {
    "reason": "message text only: the default check name shown in reports",
    "diff": "e68185333f9201ac"
   },
-  "netdryrun.config.x__describe__mutmut_140": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_141": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_142": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_143": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_144": "message text only: the default check name shown in reports",
+  "netdryrun.config.x__describe__mutmut_140": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "88884597233e7ec9"
+  },
+  "netdryrun.config.x__describe__mutmut_141": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "80d7c9d64ee6eb85"
+  },
+  "netdryrun.config.x__describe__mutmut_142": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "232d0cab2391ee09"
+  },
+  "netdryrun.config.x__describe__mutmut_143": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "15f88017d60f1018"
+  },
+  "netdryrun.config.x__describe__mutmut_144": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "014c5f0c9d7b7240"
+  },
   "netdryrun.config.x__describe__mutmut_15": {
    "reason": "message text only: the default check name shown in reports",
    "diff": "41dfeb9a744fddbe"
   },
-  "netdryrun.config.x__describe__mutmut_153": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_155": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_156": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_157": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_158": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_159": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_160": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_161": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_162": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_163": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_164": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_165": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_166": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_167": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_168": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_169": "message text only: the default check name shown in reports",
+  "netdryrun.config.x__describe__mutmut_153": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "fffbb7ac3a45c0e0"
+  },
+  "netdryrun.config.x__describe__mutmut_155": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "22648212e7148f74"
+  },
+  "netdryrun.config.x__describe__mutmut_156": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "92aee728800bdc76"
+  },
+  "netdryrun.config.x__describe__mutmut_157": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "ff99ff6f859b1603"
+  },
+  "netdryrun.config.x__describe__mutmut_158": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "7e2126cd62b98444"
+  },
+  "netdryrun.config.x__describe__mutmut_159": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "fc0cf270b64504b3"
+  },
+  "netdryrun.config.x__describe__mutmut_160": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "4a7aa19c26a8d3ef"
+  },
+  "netdryrun.config.x__describe__mutmut_161": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "1246a1934c701631"
+  },
+  "netdryrun.config.x__describe__mutmut_162": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "c59252a488c5525c"
+  },
+  "netdryrun.config.x__describe__mutmut_163": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "33d8161c5e455eee"
+  },
+  "netdryrun.config.x__describe__mutmut_164": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "bcd38edd8b3c3cab"
+  },
+  "netdryrun.config.x__describe__mutmut_165": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "b9b18df88aa81c13"
+  },
+  "netdryrun.config.x__describe__mutmut_166": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "86175ceb2cd9dd7d"
+  },
+  "netdryrun.config.x__describe__mutmut_167": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "a97bf2c99fc07dcd"
+  },
+  "netdryrun.config.x__describe__mutmut_168": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "1b58a31b4c56b5ba"
+  },
+  "netdryrun.config.x__describe__mutmut_169": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "7d3f338a853998fb"
+  },
   "netdryrun.config.x__describe__mutmut_17": {
    "reason": "message text only: the default check name shown in reports",
    "diff": "011ececea33ab6f4"
   },
-  "netdryrun.config.x__describe__mutmut_170": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_171": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_175": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_176": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_177": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_178": "message text only: the default check name shown in reports",
+  "netdryrun.config.x__describe__mutmut_170": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "ec19a9d31b6f3987"
+  },
+  "netdryrun.config.x__describe__mutmut_171": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "26748e0573d9fc3d"
+  },
+  "netdryrun.config.x__describe__mutmut_175": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "f78e7f8a6ad65335"
+  },
+  "netdryrun.config.x__describe__mutmut_176": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "2b8c9eb8e990c2bf"
+  },
+  "netdryrun.config.x__describe__mutmut_177": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "3529a0a5c1bdd494"
+  },
+  "netdryrun.config.x__describe__mutmut_178": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "4c8933d252c1a61b"
+  },
   "netdryrun.config.x__describe__mutmut_18": {
    "reason": "message text only: the default check name shown in reports",
    "diff": "c62cd25b12ab556d"
@@ -412,60 +544,186 @@
    "reason": "message text only: the default check name shown in reports",
    "diff": "19563ae2c42d8b5d"
   },
-  "netdryrun.config.x__describe__mutmut_20": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_21": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_26": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_27": "message text only: the default check name shown in reports",
+  "netdryrun.config.x__describe__mutmut_20": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "bb8a1b5f88e1cc22"
+  },
+  "netdryrun.config.x__describe__mutmut_21": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "69044af46d015465"
+  },
+  "netdryrun.config.x__describe__mutmut_26": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "923f0ee2c1138be3"
+  },
+  "netdryrun.config.x__describe__mutmut_27": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "c22cbe79f0d0e71e"
+  },
   "netdryrun.config.x__describe__mutmut_3": {
    "reason": "message text only: the default check name shown in reports",
    "diff": "15d69c1de9d9d8ca"
   },
-  "netdryrun.config.x__describe__mutmut_32": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_33": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_42": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_44": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_45": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_46": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_47": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_51": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_52": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_53": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_54": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_55": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_56": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_57": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_58": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_59": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_60": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_61": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_62": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_63": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_64": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_65": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_66": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_67": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_68": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_72": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_73": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_74": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_75": "message text only: the default check name shown in reports",
+  "netdryrun.config.x__describe__mutmut_32": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "ac71470945ecb139"
+  },
+  "netdryrun.config.x__describe__mutmut_33": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "e480de9ce78d2329"
+  },
+  "netdryrun.config.x__describe__mutmut_42": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "a567a67e1f332cb4"
+  },
+  "netdryrun.config.x__describe__mutmut_44": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "290fccd6eaf67190"
+  },
+  "netdryrun.config.x__describe__mutmut_45": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "b8efd68372132ea8"
+  },
+  "netdryrun.config.x__describe__mutmut_46": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "e011a852fca48323"
+  },
+  "netdryrun.config.x__describe__mutmut_47": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "1d552928e18db97f"
+  },
+  "netdryrun.config.x__describe__mutmut_51": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "9b359a9d7a8d67b5"
+  },
+  "netdryrun.config.x__describe__mutmut_52": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "4c8bd2f11a703b5e"
+  },
+  "netdryrun.config.x__describe__mutmut_53": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "05b5984085885247"
+  },
+  "netdryrun.config.x__describe__mutmut_54": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "be77d6b89f987716"
+  },
+  "netdryrun.config.x__describe__mutmut_55": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "fd72a028b9c1bcf5"
+  },
+  "netdryrun.config.x__describe__mutmut_56": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "5f06e8f3cca07716"
+  },
+  "netdryrun.config.x__describe__mutmut_57": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "1a0503ef804ae5b3"
+  },
+  "netdryrun.config.x__describe__mutmut_58": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "980576cbdcd6bd88"
+  },
+  "netdryrun.config.x__describe__mutmut_59": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "d7888f41171a1028"
+  },
+  "netdryrun.config.x__describe__mutmut_60": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "949075863cbf475e"
+  },
+  "netdryrun.config.x__describe__mutmut_61": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "a81da37cea9f311e"
+  },
+  "netdryrun.config.x__describe__mutmut_62": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "7a0bb32f2b45faab"
+  },
+  "netdryrun.config.x__describe__mutmut_63": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "640b4419a93b6287"
+  },
+  "netdryrun.config.x__describe__mutmut_64": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "4b7c873667162186"
+  },
+  "netdryrun.config.x__describe__mutmut_65": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "03d7c8cc1a1309c8"
+  },
+  "netdryrun.config.x__describe__mutmut_66": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "d6ffda7fc1a6d45d"
+  },
+  "netdryrun.config.x__describe__mutmut_67": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "517aa5cdffcd0bce"
+  },
+  "netdryrun.config.x__describe__mutmut_68": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "82a367f01c2cbae1"
+  },
+  "netdryrun.config.x__describe__mutmut_72": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "314d76916233fadd"
+  },
+  "netdryrun.config.x__describe__mutmut_73": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "6e8b8b743a71cf27"
+  },
+  "netdryrun.config.x__describe__mutmut_74": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "eff1e5ef648b1bf1"
+  },
+  "netdryrun.config.x__describe__mutmut_75": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "f4fb0b845b32737d"
+  },
   "netdryrun.config.x__describe__mutmut_8": {
    "reason": "message text only: the default check name shown in reports",
    "diff": "9b901300fcef415f"
   },
-  "netdryrun.config.x__describe__mutmut_84": "message text only: the default check name shown in reports",
-  "netdryrun.config.x__describe__mutmut_86": "message text only: the default check name shown in reports",
+  "netdryrun.config.x__describe__mutmut_84": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "c7964f0c3e690917"
+  },
+  "netdryrun.config.x__describe__mutmut_86": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "6af6381b01d7f6b5"
+  },
   "netdryrun.config.x__describe__mutmut_9": {
    "reason": "message text only: the default check name shown in reports",
    "diff": "98a4e10973239a81"
   },
-  "netdryrun.config.x__reject_unknown__mutmut_10": "message text only: the text of a detail or error message",
-  "netdryrun.config.x__reject_unknown__mutmut_15": "message text only: the did-you-mean hints in the error",
-  "netdryrun.config.x__reject_unknown__mutmut_19": "message text only: the text of a detail or error message",
-  "netdryrun.config.x__reject_unknown__mutmut_20": "message text only: the text of a detail or error message",
-  "netdryrun.config.x__reject_unknown__mutmut_22": "message text only: the did-you-mean hints in the error",
-  "netdryrun.config.x__reject_unknown__mutmut_31": "message text only: part of an error or detail message string",
-  "netdryrun.config.x__reject_unknown__mutmut_7": "message text only: the did-you-mean hints in the error",
+  "netdryrun.config.x__reject_unknown__mutmut_10": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "87962a85cbe150a2"
+  },
+  "netdryrun.config.x__reject_unknown__mutmut_15": {
+   "reason": "message text only: the did-you-mean hints in the error",
+   "diff": "7a913e8380d865f9"
+  },
+  "netdryrun.config.x__reject_unknown__mutmut_19": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "119ee31514ce8fd3"
+  },
+  "netdryrun.config.x__reject_unknown__mutmut_20": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "66b256e7f45e235c"
+  },
+  "netdryrun.config.x__reject_unknown__mutmut_22": {
+   "reason": "message text only: the did-you-mean hints in the error",
+   "diff": "8fde1c1559e1a5d9"
+  },
+  "netdryrun.config.x__reject_unknown__mutmut_31": {
+   "reason": "message text only: part of an error or detail message string",
+   "diff": "003575753bf70fd6"
+  },
+  "netdryrun.config.x__reject_unknown__mutmut_7": {
+   "reason": "message text only: the did-you-mean hints in the error",
+   "diff": "d609f2b47b6baa1f"
+  },
   "netdryrun.config.x__suggest__mutmut_14": {
    "reason": "message text only: the did-you-mean hint in an error",
    "diff": "fb2f446c2f905724"
