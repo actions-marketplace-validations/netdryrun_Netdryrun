@@ -62,3 +62,5 @@ A reasonable pipeline uses more than one:
 4. **pyATS / Genie** (or similar) for pre- and post-change checks on the production devices during the change window.
 
 None of these steps proves the change is safe on its own. Each one removes a different class of mistakes.
+
+[Batfish, then Netdryrun](batfish.md) shows steps 1 and 3 together on a small FRR network, with measured times. In that test, Batfish caught two of three bad changes in seconds, before any lab booted; the third depended on an FRR default that only the running routers showed.

@@ -1,0 +1,54 @@
+# Stage 2 of the pipeline: boot the candidate configs and check what the routers really do.
+# Run: netdryrun run examples/batfish-pipeline   (or pipeline.sh, which runs Batfish first)
+lab: topology.clab.yml
+timeout: 90   # seconds each positive check may wait for convergence
+
+checks:
+  - type: bgp_session
+    node: r1
+    neighbor: 10.0.12.2
+  - type: bgp_session
+    node: r1
+    neighbor: 10.0.13.2
+  - type: bgp_prefixes   # r2 really sends r1 its routes
+    node: r1
+    neighbor: 10.0.12.2
+    min: 1
+    max: 10
+  - type: route
+    node: r1
+    prefix: 192.168.2.0/24
+    protocol: bgp
+  - type: bgp_route      # and r1 selects r2's direct path, not the detour via r3
+    node: r1
+    prefix: 192.168.2.0/24
+    as_path: "65002"
+    next_hop: 10.0.12.2
+  - type: ping
+    node: r1
+    source: 192.168.1.1
+    target: 192.168.2.1
+  - type: route          # nothing should send r1 a default route
+    node: r1
+    prefix: 0.0.0.0/0
+    protocol: bgp
+    present: false
+  - type: route          # nor r3 (Batfish checks every router)
+    node: r3
+    prefix: 0.0.0.0/0
+    protocol: bgp
+    present: false
+
+scenarios:
+  - name: r1-r2 link fails
+    link_down: {node: r1, interface: eth1}
+    checks:
+      - type: bgp_route  # r2's LAN fails over to the path through r3
+        node: r1
+        prefix: 192.168.2.0/24
+        as_path: "65003 65002"
+        next_hop: 10.0.13.2
+      - type: ping
+        node: r1
+        source: 192.168.1.1
+        target: 192.168.2.1

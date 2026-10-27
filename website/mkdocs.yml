@@ -95,6 +95,7 @@ nav:
       - netdryrun.yml: reference/config.md
       - CLI and reports: reference/cli.md
   - GitHub Action: github-action.md
+  - Batfish, then Netdryrun: batfish.md
   - AI agents (MCP): ai-agents.md
   - Troubleshooting: troubleshooting.md
   - FAQ: faq.md

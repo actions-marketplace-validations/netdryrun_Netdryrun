@@ -1,0 +1,21 @@
+# Same FRR triangle as ../frr-bgp. pipeline.sh swaps a candidate r2.conf into a scratch copy.
+name: ndr-bf-pipeline
+
+topology:
+  defaults:
+    kind: linux
+    image: quay.io/frrouting/frr:10.4.1
+    binds:
+      - configs/daemons:/etc/frr/daemons
+      - configs/vtysh.conf:/etc/frr/vtysh.conf
+  nodes:
+    r1:
+      binds: [configs/r1.conf:/etc/frr/frr.conf]
+    r2:
+      binds: [configs/r2.conf:/etc/frr/frr.conf]
+    r3:
+      binds: [configs/r3.conf:/etc/frr/frr.conf]
+  links:
+    - endpoints: ["r1:eth1", "r2:eth1"]
+    - endpoints: ["r2:eth2", "r3:eth1"]
+    - endpoints: ["r3:eth2", "r1:eth2"]
