@@ -221,6 +221,23 @@ def test_check_supported(monkeypatch):
         drv.check_supported(lab, c)                  # detected as frr
 
 
+def test_check_supported_prefix_counts(monkeypatch):
+    """bgp_prefixes without an afi reads ipv4-unicast (as the check does), so a driver without IPv4 unicast
+    counts refuses it; a driver name check_supported doesn't know is left to for_node to refuse."""
+    from netdryrun.config import Check
+    lab = Lab([], nodes={"r1": N("r1", "linux", "frr")})
+    no_afi = Check("bgp_prefixes", {"node": "r1", "neighbor": "10.0.0.2", "max": 0}, "c", 30)
+    v6 = Check("bgp_prefixes", {"node": "r1", "neighbor": "10.0.0.2", "max": 0, "afi": "ipv6-unicast"}, "c", 30)
+    drv.check_supported(lab, no_afi)
+    monkeypatch.setattr(FrrDriver, "unsupported_afis", frozenset({"ipv4-unicast"}))
+    with pytest.raises(DriverError):
+        drv.check_supported(lab, no_afi)
+    drv.check_supported(lab, v6)
+    # an unknown driver name: no attributes to refuse, no crash (for_node reports the unknown driver)
+    drv.check_supported(lab, no_afi, "nosuch")
+    drv.check_supported(lab, Check("bgp_route", {"node": "r1", "prefix": "10.0.0.0/8", "med": 5}, "c", 30), "nosuch")
+
+
 # ----------------------------------------------------------------------------------------------- FRR
 
 FRR_NBR = J({"10.0.0.2": {"bgpState": "Established",

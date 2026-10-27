@@ -418,6 +418,32 @@ def test_inject_routes_needs_an_frr_node(monkeypatch):
     assert e.run([route("a")], [sc], drivers_cfg={"r1": "eos"}).status == "error"
 
 
+def _cfg(checks, scenarios=(), drivers=None):
+    return Config(path=Path("netdryrun.yml"), lab=Path("t.clab.yml"), timeout=120, checks=list(checks),
+                  drivers=drivers or {}, scenarios=list(scenarios), setup={})
+
+
+def test_preflight_only_detects_drivers_when_full():
+    """run() finds a node without a driver after deploying; only validate (full=True) refuses it before."""
+    lab = FakeLab(Clock(), kinds={"r3": ("linux", "alpine:3")})
+    cfg = _cfg([route("a", node="r3")])
+    runner.preflight(cfg, lab)
+    with pytest.raises(DriverError):
+        runner.preflight(cfg, lab, full=True)
+    runner.preflight(_cfg([route("a", node="r3")], drivers={"r3": "frr"}), lab, full=True)
+    assert not any(ev[0] == "require" for ev in lab.events)
+
+
+def test_preflight_full_checks_link_faults_only():
+    lab = FakeLab(Clock())
+    sc = Scenario("s", [Fault("inject_routes", "r1", prefixes=["10.66.0.0/16"]), Fault("link_down", "r2", "eth1"),
+                        Fault("node_isolated", "r3")], [route("x")])
+    runner.preflight(_cfg([route("a")], [sc]), lab)
+    assert lab.events == []
+    runner.preflight(_cfg([route("a")], [sc]), lab, full=True)
+    assert lab.events == [("require", "r2"), ("require", "r3")]
+
+
 def test_deploy_setup_and_destroy(monkeypatch):
     e = make(monkeypatch)
     seen = {}
