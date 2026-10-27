@@ -1,0 +1,9 @@
+{
+  "ticket": "T09-review-redistribute",
+  "run": "run2",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_s": 73.1,
+  "folder": "C:\\Users\\manag\\AppData\\Local\\Temp\\ndr-eval\\run2\\T09-review-redistribute",
+  "model_requested": null
+}
