@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import ipaddress
 
-from .base import (BgpNeighbor, BgpPath, Driver, DriverError, Observation, Route, as_int, canon_communities,
+from .base import (BgpNeighbor, BgpPath, Driver, DriverError, NoSuchInstance, Observation, Route, as_int, canon_communities,
                    check_vrf_name, load_json, network, parser, unexpected)
 from .frr import _canon_addr, parse_ping
 
@@ -43,7 +43,7 @@ def _vrf(command: str, data: dict, vrf: str) -> dict:
     if not isinstance(vrfs, dict):
         raise unexpected(command, data)
     if vrf not in vrfs:
-        raise DriverError(f"VRF {vrf!r} is not in the output of `{command}` (VRFs listed: "
+        raise NoSuchInstance(f"VRF {vrf!r} is not in the output of `{command}` (VRFs listed: "
                           f"{', '.join(sorted(map(str, vrfs))) or 'none'}): it does not exist, or this "
                           "command has nothing configured in it")
     entry = vrfs[vrf]

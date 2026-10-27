@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import ipaddress
 
-from .base import (BgpNeighbor, BgpPath, Driver, DriverError, Observation, Route, as_int, canon_communities,
+from .base import (BgpNeighbor, BgpPath, Driver, DriverError, NoSuchInstance, Observation, Route, as_int, canon_communities,
                    check_vrf_name, load_json, network, parser, render_as_path, unexpected)
 from .frr import _canon_addr, parse_ping
 
@@ -181,7 +181,7 @@ class SrlDriver(Driver):
         if vrf == "default":
             return
         if parse_instance_state(self._cli(f"info from state /network-instance {vrf} oper-state", evidence)) is None:
-            raise DriverError(f"network-instance {vrf!r} does not exist on {self.node} (no oper-state)")
+            raise NoSuchInstance(f"network-instance {vrf!r} does not exist on {self.node} (no oper-state)")
 
     def bgp_neighbors(self, vrf: str = "default") -> Observation:
         vrf = check_vrf_name(vrf)

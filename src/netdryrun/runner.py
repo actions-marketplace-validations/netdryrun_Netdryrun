@@ -23,6 +23,7 @@ from .checks import (Result, Unready, _sample, hold_together, inconclusive_reaso
                      run_round_robin)
 from .config import Check, Config, ConfigError, Scenario, load
 from .drivers import DriverError, check_supported, detect, for_node
+from .drivers.base import NoSuchInstance
 from .faults import RouteInjection
 from .lab import Lab, LabError
 
@@ -548,7 +549,9 @@ def _bgp_convergence_gate(negatives: list[Check], all_checks: list[Check], drive
 #   4. Positive checks must then pass on 2 consecutive samples AND keep passing for the hold window
 #      (--hold, or the check's hold): a redundancy claim is about the whole failure, not one instant.
 #      Post-convergence checks run after that, as everywhere else.
-# When no BGP session runs over the downed links (static routing, a link without BGP, iBGP between
+# If the BGP state (or interface addresses) needed for step 1 can't be read, the run stops with an error
+# (exit 2) before any fault: "couldn't read it" is never "there are none". When the state was read and no
+# BGP session runs over the downed links (static routing, a link without BGP, iBGP between
 # loopbacks over an IGP), step 2 has nothing to observe; steps 3 and 4 still apply, so give such scenarios
 # a settle that covers the failure detection time.
 # ---------------------------------------------------------------------------------------------------------
@@ -562,16 +565,32 @@ def _ip(text: str):
 
 def _sessions_over_links(lab: Lab, links: list[tuple[str, str]], vrfs: list[str], driver_for,
                          log=lambda _: None) -> list[tuple[str, str, str]]:
-    """The established BGP sessions (node, vrf, neighbor) that run over the given (node, interface) links."""
+    """The established BGP sessions (node, vrf, neighbor) that run over the given (node, interface) links.
+
+    "Couldn't read it" is never "there are none": BGP state (or interface addresses) that can't be read
+    raises LabError naming the node, since the scenario could otherwise be judged without the wait for the
+    fault to take effect. Only a node no driver can read (a Linux host), or a VRF or BGP instance the node
+    says it doesn't have, has nothing to observe."""
     watch: set[tuple[str, str, str]] = set()
     states: dict[tuple[str, str], dict] = {}
 
     def neighbors(node: str, vrf: str) -> dict:
         if (node, vrf) not in states:
             try:
-                states[(node, vrf)] = driver_for(node).bgp_neighbors(vrf).value
-            except Exception:
-                states[(node, vrf)] = {}   # no driver, no BGP, or no such VRF here: nothing to observe
+                driver = driver_for(node)
+            except DriverError as e:
+                log(f"  {node}: no driver ({e}); no BGP session to observe there")
+                states[(node, vrf)] = {}
+                return states[(node, vrf)]
+            try:
+                states[(node, vrf)] = driver.bgp_neighbors(vrf).value
+            except NoSuchInstance:
+                states[(node, vrf)] = {}   # the node has no such VRF or BGP instance: nothing to observe
+            except Exception as e:
+                where = "" if vrf == "default" else f" (vrf {vrf})"
+                raise LabError(f"could not read BGP state on {node}{where} to find the BGP sessions over the links "
+                               f"the scenario takes down: {e}. Netdryrun won't judge the scenario without knowing "
+                               "when the fault took effect") from None
         return states[(node, vrf)]
 
     for node, iface in links:

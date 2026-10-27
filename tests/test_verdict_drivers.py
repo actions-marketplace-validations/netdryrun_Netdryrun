@@ -14,7 +14,7 @@ import pytest
 
 from netdryrun import drivers as drv
 from netdryrun.drivers import base, eos, frr, srlinux
-from netdryrun.drivers.base import BgpNeighbor, BgpPath, Driver, DriverError, Route
+from netdryrun.drivers.base import BgpNeighbor, BgpPath, Driver, DriverError, NoSuchInstance, Route
 from netdryrun.drivers.eos import EosDriver
 from netdryrun.drivers.frr import FrrDriver
 from netdryrun.drivers.sonic import SonicDriver
@@ -290,10 +290,21 @@ def test_frr_bgp_neighbors_in_a_vrf():
     lab = Lab([("neighbors json", "{}")])
     assert FrrDriver(lab, "r1").bgp_neighbors().value == {} and len(lab.calls) == 1   # default VRF always exists
     for vrf in ("green", "blue"):
-        with pytest.raises(DriverError):
+        with pytest.raises(NoSuchInstance):     # the device says there is no such (active) VRF: "none here"
             FrrDriver(Lab([("neighbors json", "{}"), ("show vrf", SHOW_VRF)]), "r1").bgp_neighbors(vrf)
     with pytest.raises(DriverError):
         FrrDriver(Lab([]), "r1").bgp_neighbors("all")
+
+
+def test_frr_no_such_instance_is_told_apart_from_unreadable_output():
+    for text in (J({"warning": "View/Vrf is unknown"}), J({"bgpNoSuchInstance": True}),
+                 J({"warning": "BGP instance not found"})):
+        with pytest.raises(NoSuchInstance):
+            frr._bgp_json("c", text)
+    for text in (J({"warning": "something else"}), J({"warning": 3}), J([]), ""):
+        with pytest.raises(DriverError) as exc:
+            frr._bgp_json("c", text)
+        assert not isinstance(exc.value, NoSuchInstance)
 
 
 @pytest.mark.parametrize("text", [
@@ -585,7 +596,7 @@ def test_srl_bgp_neighbors():
     assert lab.lines()[-1] == "sr_cli --output-format json info from state /network-instance red oper-state"
     lab = Lab([("neighbor", "{}")])
     assert SrlDriver(lab, "r1").bgp_neighbors().value == {} and len(lab.calls) == 1
-    with pytest.raises(DriverError):
+    with pytest.raises(NoSuchInstance):
         SrlDriver(Lab([("neighbor", "{}"), ("oper-state", "{}")]), "r1").bgp_neighbors("nope")
 
 
@@ -1056,8 +1067,10 @@ def test_eos_json_and_vrf_helpers():
             eos._json("c", bad)
     assert eos._vrf("c", {"vrfs": {"red": {"a": 1}}}, "red") == {"a": 1}
     for data in ({"vrfs": {"red": 1}}, {"vrfs": {}}, {"vrfs": None}, {}):
-        with pytest.raises(DriverError):
+        with pytest.raises(DriverError) as exc:
             eos._vrf("c", data, "red")
+        # only "the VRF is not in a well-formed answer" means there is nothing there
+        assert isinstance(exc.value, NoSuchInstance) is (data == {"vrfs": {}})
     assert eos._table("c", {"k": {}}, "k") == {}
     for entry in ({}, {"k": []}, {"k": None}):
         with pytest.raises(DriverError):

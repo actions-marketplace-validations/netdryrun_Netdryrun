@@ -14,6 +14,13 @@ class DriverError(RuntimeError):
     pass
 
 
+class NoSuchInstance(DriverError):
+    """The device answered, and the VRF (or its BGP instance) asked for does not exist on it: there is
+    nothing there, unlike a command that failed or output that couldn't be read. Still an error for a
+    check (a check that names a VRF the node doesn't have is wrong); code that only needs to know which
+    BGP sessions exist (a scenario's snapshot) can read it as "none"."""
+
+
 # Same syntax as config.VRF_NAME. Checked again here: the name goes into device CLI strings, and a
 # driver must never be handed a name it would read as something else.
 _VRF_NAME = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.:-]{0,63}")

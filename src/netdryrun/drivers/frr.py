@@ -9,7 +9,7 @@ from __future__ import annotations
 import ipaddress
 import re
 
-from .base import (BgpNeighbor, BgpPath, Driver, DriverError, Observation, Route, as_int, canon_communities,
+from .base import (BgpNeighbor, BgpPath, Driver, DriverError, NoSuchInstance, Observation, Route, as_int, canon_communities,
                    check_vrf_name, load_json, network, parser, render_as_path, unexpected)
 
 AFI_NAMES = {"ipv4Unicast": "ipv4-unicast", "ipv6Unicast": "ipv6-unicast", "l2VpnEvpn": "evpn"}
@@ -38,9 +38,11 @@ def _bgp_json(command: str, text: str) -> dict:
     if not isinstance(data, dict):
         raise unexpected(command, text)
     if "warning" in data:  # e.g. {"warning": "View/Vrf is unknown"}
+        if isinstance(data["warning"], str) and _NO_INSTANCE.search(data["warning"]):
+            raise NoSuchInstance(f"vtysh: {data['warning']}")
         raise DriverError(f"vtysh: {data['warning']}")
     if data.get("bgpNoSuchInstance"):
-        raise DriverError("vtysh: no BGP instance in this VRF")
+        raise NoSuchInstance("vtysh: no BGP instance in this VRF")
     return data
 
 
@@ -212,10 +214,10 @@ class FrrDriver(Driver):
             return
         vrfs = parse_vrfs(self._vtysh(VRF_CMD, evidence))
         if vrf not in vrfs:
-            raise DriverError(f"VRF {vrf!r} does not exist on {self.node} "
+            raise NoSuchInstance(f"VRF {vrf!r} does not exist on {self.node} "
                               f"(`show vrf` lists: {', '.join(sorted(vrfs)) or 'none'})")
         if not vrfs[vrf]:
-            raise DriverError(f"VRF {vrf!r} is configured on {self.node} but inactive (no kernel VRF device)")
+            raise NoSuchInstance(f"VRF {vrf!r} is configured on {self.node} but inactive (no kernel VRF device)")
 
     def bgp_neighbors(self, vrf: str = "default") -> Observation:
         vrf = check_vrf_name(vrf)

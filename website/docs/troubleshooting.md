@@ -144,7 +144,7 @@ Fix: if the session should be up, it's a finding: look at it as in [the lab neve
 
 ## A node without BGP waits a whole timeout
 
-```
+```text
 warning: h1 reported no BGP neighbors for 30s; the check was evaluated without BGP convergence
 ```
 
@@ -159,6 +159,14 @@ ERROR: scenario 'r1-r2 link fails': the fault did not take effect within 30s: BG
 Exit code `2`. From 0.3.1, after taking links down a scenario waits until every BGP session that ran over them is down on both ends, so its checks are never judged on the state from before the failure. The wait is capped at the largest `timeout` of the scenario's checks. Here the far end, r2, still had the session up when the time ran out: without BFD, a router notices a dead link only when its BGP hold timer expires (180 s on FRR by default).
 
 Fix: give the scenario's checks a `timeout` above the hold time (for example `timeout: 200` on them, or at the top of the file), lower the hold timers in the lab configs (`timers bgp 3 9` on FRR), or enable BFD. The links are restored and the lab destroyed as usual. See [scenario timing](reference/config.md#scenario-timing).
+
+## Could not read BGP state to find the sessions over the links
+
+```text
+ERROR: could not read BGP state on r2 to find the BGP sessions over the links the scenario takes down: unexpected output from `show bgp neighbors json`: no output. Netdryrun won't judge the scenario without knowing when the fault took effect
+```
+
+Exit code `2`. From 0.3.1, before a scenario takes links down, Netdryrun reads the BGP state of the nodes on both ends of each link (and the addresses of the downed interfaces) to know which sessions the fault must bring down. If that state can't be read, it can't tell when the fault took effect, so it stops before changing anything instead of judging the scenario on the settle delay alone (0.3.0 read it as "no sessions"). Usually the node's routing daemon is still starting or has crashed: check the node (`docker exec <container> vtysh -c "show bgp summary"`), raise the main checks' `timeout` so the lab is fully up before the scenarios start, and rerun. A node no driver can read (a Linux host) and a VRF the node doesn't have count as "no sessions", as before.
 
 ## SR Linux fails on a Windows drive (/mnt/c)
 

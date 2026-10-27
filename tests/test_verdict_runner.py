@@ -18,7 +18,7 @@ import pytest
 from netdryrun import runner
 from netdryrun.checks import Result
 from netdryrun.config import Check, Config, Fault, Scenario
-from netdryrun.drivers.base import BgpNeighbor, BgpPath, DriverError, Observation, Route
+from netdryrun.drivers.base import BgpNeighbor, BgpPath, DriverError, NoSuchInstance, Observation, Route
 from netdryrun.lab import ExecResult, Lab, LabError, Node
 
 
@@ -130,7 +130,8 @@ def _at(v, t):
 class Drv:
     """neighbors: {vrf: value or fn(t)} where value is {addr: state or (state, {afi: n})};
     routes: {vrf: fn(t, prefix) -> bool (present and active)};
-    paths: {vrf: fn(t, prefix) -> list[BgpPath]}. A VRF not listed is an error."""
+    paths: {vrf: fn(t, prefix) -> list[BgpPath]}. A VRF not listed is an error (for neighbors, the
+    device saying it has no such VRF)."""
 
     def __init__(self, clock, neighbors=None, routes=None, ping=None, neighbors_error=None, on_call=None, paths=None):
         self.clock, self.neighbors, self.routes_ = clock, neighbors or {}, routes or {}
@@ -146,7 +147,7 @@ class Drv:
         if err:
             raise err
         if vrf not in self.neighbors:
-            raise DriverError(f"no VRF {vrf}")
+            raise NoSuchInstance(f"no VRF {vrf}")
         out = {}
         for a, s in _at(self.neighbors[vrf], self.clock.now).items():
             state, pfx = (s, {"ipv4-unicast": 3}) if isinstance(s, str) else s
@@ -951,11 +952,67 @@ def test_sessions_over_links_on_the_far_end(monkeypatch):
 
 def test_sessions_over_links_per_vrf_and_unreadable(monkeypatch):
     e = make(monkeypatch)
-    e.drivers["r1"].neighbors = {"blue": {"10.0.12.2": "established"}}   # no default VRF answer: nothing there
-    e.drivers["r2"].neighbors_error = DriverError("no bgpd")
+    e.drivers["r1"].neighbors = {"blue": {"10.0.12.2": "established"}}   # no default VRF on r1: nothing there
+    e.drivers["r2"].neighbors = {"default": {}}
     assert sessions(e, [("r1", "eth1")], ("default", "blue")) == [("r1", "blue", "10.0.12.2")]
     calls = [c for c in e.drivers["r1"].calls if c[0] == "bgp_neighbors"]
     assert [c[1] for c in calls] == ["default", "blue"]                  # each (node, vrf) read once
+    # BGP state that can't be read is not "no sessions": no way to tell which sessions the fault takes down
+    e.drivers["r2"].neighbors_error = DriverError("no bgpd")
+    with pytest.raises(LabError):
+        sessions(e, [("r1", "eth1")], ("default", "blue"))
+    e = make(monkeypatch)
+    e.drivers["r1"].neighbors_error = DriverError("cli timeout")
+    with pytest.raises(LabError):
+        sessions(e, [("r1", "eth1")])
+
+
+def test_sessions_over_links_node_without_a_driver_has_nothing_to_watch(monkeypatch):
+    """A host at the far end that no driver can read (a Linux client) runs no BGP Netdryrun can observe."""
+    e = make(monkeypatch)
+    e.drivers["r1"].neighbors = {"default": {"10.0.12.2": "established"}}
+
+    def driver_for(n):
+        if n == "r2":
+            raise DriverError("cannot detect driver for node r2")
+        return e.drivers[n]
+
+    assert runner._sessions_over_links(e.lab, [("r1", "eth1")], ["default"], driver_for) == [("r1", "default", "10.0.12.2")]
+
+
+def test_unreadable_snapshot_stops_the_scenario_before_any_fault(monkeypatch):
+    """The far end's BGP state can't be read when the scenario starts: no verdict (exit 2), and no link is
+    taken down, instead of a scenario judged without the "fault took effect" wait."""
+    e = make(monkeypatch)
+    # r2's session over the link would go down with it; its state is unreadable just when the scenario starts
+    e.drivers["r2"].neighbors_error = lambda t: DriverError("vtysh timed out") if 3 <= t < 6 else None
+    e.drivers["r2"].neighbors = {"default": lambda t: {"10.0.12.1": "established" if t < 6 else "idle"}}
+    sc = Scenario("s", [Fault("link_down", "r2", "eth1")], [route("[s] x", node="r3")])
+    rep = e.run([route("a")], [sc], settle=0, hold=0)
+    assert rep.status == "error" and rep.exit_code == 2
+    assert e.lab.link_events() == []
+    # the faulted node's interface addresses can't be read: the same
+    e = make(monkeypatch)
+
+    def no_addresses(node, iface):
+        raise LabError(f"could not read the addresses of {node} {iface}")
+
+    e.lab.interface_addresses = no_addresses
+    rep = e.run([route("a")], [Scenario("s", [Fault("link_down", "r1", "eth1")], [route("[s] x", node="r3")])])
+    assert rep.status == "error" and e.lab.link_events() == []
+
+
+def test_interface_addresses_that_cannot_be_read_are_an_error(monkeypatch):
+    lab = Lab.__new__(Lab)
+    lab.nodes = {"r1": Node("r1", "clab-t-r1", "linux", "frr")}
+    answers = {"rc": 1}
+    monkeypatch.setattr(lab, "exec", lambda node, cmd, timeout=60, input=None: ExecResult(
+        cmd, answers["rc"], "4: eth1    inet 10.0.12.1/30 brd 10.0.12.3 scope global eth1" if answers["rc"] == 0 else "",
+        "Device \"eth1\" does not exist." if answers["rc"] else ""))
+    with pytest.raises(LabError):
+        lab.interface_addresses("r1", "eth1")
+    answers["rc"] = 0
+    assert [str(a) for a in lab.interface_addresses("r1", "eth1")] == ["10.0.12.1/30"]
 
 
 def test_sessions_over_links_ipv6_and_scoped_keys(monkeypatch):

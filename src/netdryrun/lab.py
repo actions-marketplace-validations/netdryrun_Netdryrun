@@ -191,11 +191,13 @@ class Lab:
                 self._lock_file = None
 
     def interface_addresses(self, node: str, interface: str) -> list:
-        """IP interfaces (address/prefix) configured on a node's interface, or [] if they can't be read.
-        Used to find the BGP sessions a link fault should bring down."""
+        """IP interfaces (address/prefix) configured on a node's interface ([] for an interface without
+        addresses, e.g. unnumbered BGP). Used to find the BGP sessions a link fault should bring down, so
+        addresses that can't be read are an error, never "no addresses"."""
         r = self.exec(node, ["ip", "-o", "addr", "show", "dev", interface], timeout=15)
         if r.rc != 0:
-            return []
+            raise LabError(f"could not read the addresses of {interface} on {node}: "
+                           f"{' '.join((r.stderr or r.stdout).split())[:200] or f'exit code {r.rc}'}")
         out = []
         for m in re.finditer(r"\binet6?\s+([0-9A-Fa-f:.]+/\d+)", r.stdout):
             try:

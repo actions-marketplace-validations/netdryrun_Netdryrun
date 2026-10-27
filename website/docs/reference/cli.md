@@ -103,7 +103,7 @@ When a lab is kept, Netdryrun prints the command to destroy it. See [convergence
 - a bad topology, an unknown node, or a check a driver can't read;
 - a bad option, for example a negative `--settle`;
 - a lab problem: containerlab or Docker missing, deploy failed, containers not running, unknown driver, a lab with the same name already running;
-- a scenario whose fault did not take effect within the checks' timeout (see [scenario timing](config.md#scenario-timing));
+- a scenario whose fault did not take effect within the checks' timeout, or whose BGP state or interface addresses could not be read before the fault, so Netdryrun can't tell when it took effect (see [scenario timing](config.md#scenario-timing));
 - a link or injected route that could not be restored after a scenario;
 - an internal error (a Netdryrun bug). It is reported on one line, never as a bare traceback, and never as exit code `1`, which would read as "the change broke something". Rerun with `--debug` or `NETDRYRUN_DEBUG=1` for the traceback, and please report it.
 
