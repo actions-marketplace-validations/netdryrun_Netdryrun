@@ -667,7 +667,7 @@ Source: https://netdryrun.com/examples/
 
 # Examples
 
-The repository's [`examples/`](https://github.com/netdryrun/netdryrun/tree/main/examples) folder has one lab per supported network OS, a deliberately broken change, and the AI agent demo. Each folder holds a containerlab topology, the router configs and a `netdryrun.yml`.
+The repository's [`examples/`](https://github.com/netdryrun/netdryrun/tree/main/examples) folder has one lab per supported network OS, a deliberately broken change, a teaching lab about leaks that ping can't see, and the AI agent demo. Each folder holds a containerlab topology, the router configs and a `netdryrun.yml`.
 
 ```bash
 git clone https://github.com/netdryrun/netdryrun && cd netdryrun
@@ -676,13 +676,14 @@ netdryrun run examples/frr-bgp
 
 ## At a glance
 
-Times are wall-clock for `netdryrun run` on WSL2 (20 cores, 16 GB) with images already pulled, measured on 2026-10-27 with containerlab 0.81.1 and Netdryrun™ 0.3.0 (`frr-bgp-broken` and `agent-demo`: 0.2.0; their checks did not change in 0.3.0). They include deploying and destroying the lab. The first run of each example also pulls its images.
+Times are wall-clock for `netdryrun run` on WSL2 (20 cores, 16 GB) with images already pulled, measured on 2026-10-27 with containerlab 0.81.1 and Netdryrun™ 0.3.0 (`frr-bgp-broken` and `agent-demo`: 0.2.0, their checks did not change in 0.3.0; `srl-hidden-leak`: 0.3.0 plus the unreleased SR Linux fix). They include deploying and destroying the lab. The first run of each example also pulls its images.
 
 | Example | Network OS | Shows | Expected | Exit | Time |
 |---|---|---|---|---|---|
 | [frr-bgp](#frr-bgp) | FRR | Basic checks, best-path attributes, a leak guard, a link-failure scenario | `PASSED: 11 passed, 0 failed` | `0` | 84 s |
 | [frr-bgp-broken](#frr-bgp-broken) | FRR | A leaked default route caught | `FAILED: 5 passed, 1 failed` | `1` | 45 s |
 | [srl-frr](#srl-frr) | Nokia SR Linux + FRR | Mixed vendors | `PASSED: 7 passed, 0 failed` | `0` | 60 s |
+| [srl-hidden-leak](#srl-hidden-leak) | Nokia SR Linux + FRR | A leaked default that ping, sessions and the routing table miss, on both NOSes | `PASSED: 9 passed, 0 failed`; each leak `FAILED: 8 passed, 1 failed` | `0`; `1` | 52 to 84 s |
 | [sonic-frr](#sonic-frr) | SONiC VS + FRR | Configuring a NOS after boot, a port-down scenario | `PASSED: 8 passed, 0 failed` | `0` | 90 s |
 | [arista-frr](#arista-frr) | Arista cEOS + FRR (your image) | A bring-your-own vendor image | `PASSED: 10 passed, 0 failed` | `0` | 92 s |
 | [agent-demo](#agent-demo) `demo.sh` | FRR | An agent's leaky change rejected, the fix accepted | `Demo OK` | `0` | 65 s |
@@ -696,6 +697,8 @@ Times are wall-clock for `netdryrun run` on WSL2 (20 cores, 16 GB) with images a
 **Expected:** `PASSED: 11 passed, 0 failed (11 checks)`, exit code `0`.
 
 This is the lab the [tutorial](tutorial.md) uses as "your lab".
+
+To run it on every pull request, see [Test an FRR change in CI](guides/frr-ci.md).
 
 ## frr-bgp-broken
 
@@ -719,6 +722,20 @@ CI runs this example on every push and expects it to fail.
 
 **Expected:** `PASSED: 7 passed, 0 failed (7 checks)`, exit code `0`. The SR Linux image is about 3.2 GB.
 
+## srl-hidden-leak
+
+[`examples/srl-hidden-leak`](https://github.com/netdryrun/netdryrun/tree/main/examples/srl-hidden-leak): "The route leak ping can't see". SR Linux (`srl1`) and FRR (`frr1`) peer eBGP, and each has its own static default route. [`leaks/`](https://github.com/netdryrun/netdryrun/tree/main/examples/srl-hidden-leak/leaks) holds two one-line changes that each leak a default route to the peer: `default-originate` on FRR, and an export statement matching `protocol static` on SR Linux.
+
+**Shows:** a leak that is received but never selected, because it loses to the static. Sessions, ping and the routing table look unchanged. The [README](https://github.com/netdryrun/netdryrun/blob/main/examples/srl-hidden-leak/README.md) teaches how to see it by hand in each CLI (the BGP RIB on SR Linux, a `B` route without `>*` on FRR) and what happens when the static goes away. One `bgp_route` check with `present: false` per router catches each leak. Run `netdryrun run examples/srl-hidden-leak` as is, then copy a file from `leaks/` over `configs/` and run it again.
+
+**Expected:** good configs `PASSED: 9 passed, 0 failed (9 checks)`, exit code `0`. Each leak `FAILED: 8 passed, 1 failed (9 checks)`, exit code `1`, failing only the guard on the receiving router:
+
+```text
+  [FAIL] srl1: no BGP path for 0.0.0.0/0 -- unexpectedly in the BGP table (1 path(s); as-path '65020', next hop 10.0.100.2, local-pref 100, MED 0, communities none) (2.4s)
+```
+
+Needs the SR Linux fix in the changelog's Unreleased section: 0.3.0 counts `srl1`'s own static default as a BGP path, so the good configs fail. Its times in the table were measured with that fix (0.3.0 plus the fix), over nine runs on 2026-10-27; the README lists each one.
+
 ## sonic-frr
 
 [`examples/sonic-frr`](https://github.com/netdryrun/netdryrun/tree/main/examples/sonic-frr): SONiC VS (`sonic1`, the `docker-sonic-vs` image) peering eBGP with FRR (`frr1`).
@@ -726,6 +743,8 @@ CI runs this example on every push and expects it to fail.
 **Shows:** a NOS that is configured after boot. SONiC VS has no startup config here; `setup` commands in `netdryrun.yml` wait for its services, set the interface addresses and configure BGP. Checks: the session, a route on each side, a ping, a prefix count, best-path attributes on `sonic1`, and a scenario that takes the SONiC port `Ethernet0` down and checks that the session drops and the route is withdrawn.
 
 **Expected:** `PASSED: 8 passed, 0 failed (8 checks)`, exit code `0`. `setup` waits for SONiC's services before any check runs.
+
+The image comes from the SONiC build server, not a registry. To get it and run the lab on every pull request, see [Test a SONiC change in CI](guides/sonic-ci.md).
 
 ## arista-frr
 
@@ -756,6 +775,431 @@ CI runs this example on every push and expects it to fail.
 ## Use an example as a template
 
 Copy a folder, change `name:` in `topology.clab.yml` (lab names must be unique on the machine), replace the configs with yours, and edit the checks. Or start from your own topology with `netdryrun record`, as in the [tutorial](tutorial.md).
+
+
+---
+Source: https://netdryrun.com/guides/frr-ci/
+
+# Test an FRR change in CI
+
+You keep FRR configs in git, one `frr.conf` per router. This guide makes every pull request that touches them boot the routers in containerlab with the changed configs, check how they route, and fail the job if something broke. It uses [`examples/frr-bgp`](https://github.com/netdryrun/netdryrun/tree/main/examples/frr-bgp) and its broken twin [`examples/frr-bgp-broken`](https://github.com/netdryrun/netdryrun/tree/main/examples/frr-bgp-broken); every output below is from a real run.
+
+## 1. The lab: one folder next to your configs
+
+`examples/frr-bgp` is three FRR routers in a triangle, each in its own AS, each announcing one LAN over eBGP. The folder holds:
+
+```text
+frr-bgp/
+  topology.clab.yml      containerlab topology
+  configs/r1.conf        one frr.conf per router (r2.conf, r3.conf)
+  configs/daemons        which FRR daemons start
+  configs/vtysh.conf     one line: service integrated-vtysh-config
+  netdryrun.yml          the checks
+```
+
+Each router is a plain `linux` node running the FRR image, with the three files bind-mounted where FRR expects them:
+
+```yaml title="topology.clab.yml"
+name: ndr-frr-bgp
+
+topology:
+  defaults:
+    kind: linux
+    image: quay.io/frrouting/frr:10.4.1
+  nodes:
+    r1:
+      binds:
+        - configs/daemons:/etc/frr/daemons
+        - configs/vtysh.conf:/etc/frr/vtysh.conf
+        - configs/r1.conf:/etc/frr/frr.conf
+    # r2 and r3 the same, with their own frr.conf
+  links:
+    - endpoints: ["r1:eth1", "r2:eth1"]
+    - endpoints: ["r2:eth2", "r3:eth1"]
+    - endpoints: ["r3:eth2", "r1:eth2"]
+```
+
+FRR details that matter here:
+
+- **`daemons` decides what runs.** `bgpd=yes` (and `staticd=yes` for static routes) or BGP never starts. Netdryrun then reports the run as `inconclusive` (exit code `3`), not as a failed change, because no node ever returned BGP state.
+- **`vtysh.conf` with `service integrated-vtysh-config`** makes `vtysh` read the single `frr.conf`, which is the file your pull request changes.
+- **`eth0` is containerlab's management interface.** Your links start at `eth1`, and `frr.conf` should name those.
+- **Pin the image** to the FRR version you run, not `latest`. Behavior and defaults change between releases.
+
+## 2. The checks that matter for FRR
+
+```yaml title="netdryrun.yml"
+lab: topology.clab.yml
+timeout: 90   # seconds each positive check may wait for convergence
+
+checks:
+  - type: bgp_session
+    node: r1
+    neighbor: 10.0.12.2
+  - type: bgp_session
+    node: r1
+    neighbor: 10.0.13.2
+  - type: bgp_prefixes
+    node: r1
+    neighbor: 10.0.12.2
+    min: 1
+    max: 10          # guards against a route leak flooding r1
+  - type: route
+    node: r1
+    prefix: 192.168.3.0/24
+    protocol: bgp
+  - type: ping
+    node: r1
+    source: 192.168.1.1
+    target: 192.168.3.1
+  - type: bgp_route    # r1 prefers r2's direct path to r2's LAN over the longer path via r3
+    node: r1
+    prefix: 192.168.2.0/24
+    as_path: "65002"
+    next_hop: 10.0.12.2
+  - type: route        # nothing should send r1 a default route
+    node: r1
+    prefix: 0.0.0.0/0
+    protocol: bgp
+    present: false
+
+scenarios:
+  - name: r1-r2 link fails
+    link_down: {node: r1, interface: eth1}
+    checks:
+      - type: route        # r2's LAN is still reachable, now via r3
+        node: r1
+        prefix: 192.168.2.0/24
+        protocol: bgp
+      - type: bgp_route    # the best path now goes the long way, through r3
+        node: r1
+        prefix: 192.168.2.0/24
+        as_path: "65003 65002"
+        next_hop: 10.0.13.2
+      - type: ping
+        node: r1
+        source: 192.168.1.1
+        target: 192.168.2.1
+      - type: bgp_session  # and the session over the failed link is really down
+        node: r1
+        neighbor: 10.0.12.2
+        state: down        # any state except established
+```
+
+On FRR, each check type reads a different part of the router, and the differences are where changes go wrong:
+
+| Check | Reads | Why it matters on FRR |
+|---|---|---|
+| `bgp_session` | `show bgp neighbors json` | An `Established` session can still carry nothing. Never use it alone |
+| `bgp_prefixes` | `acceptedPrefixCounter` in `show bgp neighbors json` | Counts prefixes after your inbound policy. A filter that drops everything shows here first. `max` is a cheap leak guard |
+| `route` | `show ip route <prefix> json` (zebra) | Selected and installed. zebra keeps the losing entries too, so `present: false` also fails on a route that was received but lost |
+| `bgp_route` | `show bgp ipv4 unicast <prefix> json` (bgpd) | The best path's AS path, next hop, local preference, MED, communities. Catches a change that still delivers the route, but the long way |
+| `ping` | `ping -I <source>` in the container | The data plane, from the source address you give |
+
+BGP's best path and zebra's selected route are not the same thing. A default route leaked by a peer is `*>` (best) in `show bgp ipv4 unicast`, because the static it loses to isn't a BGP path, and it is not selected in `show ip route`. Read the table that answers your question: `bgp_route` for "which path does BGP prefer", `route` for "what does the router forward with". The [hidden leak lab](https://github.com/netdryrun/netdryrun/tree/main/examples/srl-hidden-leak) shows both side by side.
+
+## 3. Run it locally
+
+```bash
+pip install netdryrun
+netdryrun run examples/frr-bgp
+```
+
+```text
+Netdryrun 0.3.0: 7 checks from examples/frr-bgp/netdryrun.yml
+Deploying lab ndr-frr-bgp (3 nodes); this usually takes 30-90 s, longer the first time images are pulled...
+  [PASS] r1: BGP session to 10.0.12.2 is established -- state is established (13.4s)
+  [PASS] r1: BGP session to 10.0.13.2 is established -- state is established (13.4s)
+  [PASS] r1: route 192.168.3.0/24 via bgp is present -- active via bgp (13.4s)
+  [PASS] r1: ping 192.168.3.1 from 192.168.1.1 expects success -- 3/3 replies (need 2) (13.4s)
+  [PASS] r1: BGP best path for 192.168.2.0/24 has as-path '65002', next hop 10.0.12.2 -- best path: as-path '65002', next hop 10.0.12.2, local-pref 100, MED 0, communities none (13.4s)
+Convergence checks done; settling 10s before post-convergence checks...
+  [PASS] r1: prefixes from 10.0.12.2 >= 1 and <= 10 -- 2 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.1s)
+  [PASS] r1: route 0.0.0.0/0 via bgp is absent -- absent (held 10s, 5 samples) (10.1s)
+Scenario: r1-r2 link fails
+  [PASS] [r1-r2 link fails] r1: route 192.168.2.0/24 via bgp is present -- active via bgp (8.2s)
+  [PASS] [r1-r2 link fails] r1: ping 192.168.2.1 from 192.168.1.1 expects success -- 3/3 replies (need 2) (8.2s)
+  [PASS] [r1-r2 link fails] r1: BGP best path for 192.168.2.0/24 has as-path '65003 65002', next hop 10.0.13.2 -- best path: as-path '65003 65002', next hop 10.0.13.2, local-pref 100, MED 0, communities none (11.3s)
+  [PASS] [r1-r2 link fails] r1: BGP session to 10.0.12.2 is down -- state is active (held 10s, 5 samples) (10.1s)
+Restored 1 link(s) and 0 route injection(s); settling 10s
+Destroying lab...
+PASSED: 11 passed, 0 failed (11 checks)
+```
+
+Now the broken change. `frr-bgp-broken` is the same triangle, but r2's config adds one line, `neighbor 10.0.12.1 default-originate`, toward r1:
+
+```bash
+netdryrun run examples/frr-bgp-broken
+```
+
+```text
+Netdryrun 0.3.0: 6 checks from examples/frr-bgp-broken/netdryrun.yml
+Deploying lab ndr-frr-broken (3 nodes); this usually takes 30-90 s, longer the first time images are pulled...
+  [PASS] r1: BGP session to 10.0.12.2 is established -- state is established (13.5s)
+  [PASS] r1: BGP session to 10.0.13.2 is established -- state is established (13.5s)
+  [PASS] r1: route 192.168.3.0/24 via bgp is present -- active via bgp (13.5s)
+  [PASS] r1: ping 192.168.3.1 from 192.168.1.1 expects success -- 3/3 replies (need 2) (13.5s)
+Convergence checks done; settling 10s before post-convergence checks...
+  [PASS] r1: prefixes from 10.0.12.2 >= 1 and <= 10 -- 3 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.1s)
+  [FAIL] r1: route 0.0.0.0/0 via bgp is absent -- unexpectedly present via bgp (not selected) (0.1s)
+Destroying lab...
+FAILED: 5 passed, 1 failed (6 checks)
+```
+
+Sessions are up, the prefix count is within its limit, and the ping works: the LANs have more specific routes, so a default route changes nothing for them. r1 doesn't even select the leaked default, because in this lab it loses to containerlab's management default route (see [Gotchas](#gotchas)). The `present: false` check fails anyway, because zebra still holds the losing BGP entry, and the run exits with `1`.
+
+## 4. Run it on every pull request
+
+```yaml title=".github/workflows/network-dryrun.yml"
+name: Network dry run
+on:
+  pull_request:
+    paths:
+      - "network/**"
+permissions:
+  contents: read
+  pull-requests: write   # for pr-comment
+jobs:
+  dryrun:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: netdryrun/netdryrun@v0.3.0
+        with:
+          path: network/        # the folder with netdryrun.yml
+          pr-comment: true
+```
+
+The job installs containerlab and Netdryrun, pulls the FRR image, runs the checks, uploads the JSON and JUnit reports, and fails if a check fails. With `pr-comment: true` it also posts the verdict and the evidence for each failed check on the pull request. See [GitHub Action](../github-action.md) for every input, and the security notes before running labs from forks.
+
+**Other CI systems:** any Linux runner that can start privileged Docker containers works. The steps are the same three commands. `env "PATH=$PATH"` keeps the `netdryrun` that `pip` installed on the path under `sudo`:
+
+```bash
+bash -c "$(curl -sL https://get.containerlab.dev)" -- -v 0.81.1
+pip install netdryrun
+sudo env "PATH=$PATH" netdryrun run network/ --junit netdryrun-junit.xml --json netdryrun-report.json
+```
+
+Exit codes: `0` passed, `1` a check failed, `2` a setup problem (bad YAML, the lab didn't start), `3` inconclusive (the lab never reached a testable state; rerun it).
+
+## Times
+
+Wall-clock for `netdryrun run`, including deploying and destroying the lab, with images already pulled. Measured on 2026-10-27 on WSL2 (20 cores, 16 GB), containerlab 0.81.1, Netdryrun 0.3.0, from copies of the example folders with their own lab names:
+
+| Run | Result | Exit | Time |
+|---|---|---|---|
+| `examples/frr-bgp` (7 checks and a link-failure scenario) | `PASSED: 11 passed, 0 failed` | `0` | 88 s |
+| `examples/frr-bgp-broken` | `FAILED: 5 passed, 1 failed` | `1` | 38 s |
+
+The failing run is shorter because it has no failure scenario. The [examples page](../examples.md) shows 84 s and 45 s for the same two labs from earlier runs on the same machine and date; runs differ by several seconds. On GitHub-hosted `ubuntu-latest` runners, the whole job (installing containerlab and Netdryrun, pulling FRR, running) took 100 to 107 s for `frr-bgp` and 54 to 66 s for `frr-bgp-broken`, over three CI runs on `main` on 2026-10-27, before the 0.3.0 release added a `bgp_route` check to `frr-bgp`; see [the FAQ](../faq.md#how-long-does-a-run-take-and-what-does-ci-cost). On a private repository, jobs are billed by the minute, rounded up: the `frr-bgp` job uses 2.
+
+## Gotchas
+
+- **eBGP without a policy may exchange nothing.** Under FRR's default `traditional` profile, `bgp ebgp-requires-policy` is on (RFC 8212): an eBGP neighbor with no route-map in or out reaches `Established` and accepts and sends nothing. Under `frr defaults datacenter`, which the examples use, it's off. On FRR 10.4.1 with no route-maps, the `traditional` side shows:
+
+    ```text
+    Neighbor        V         AS   MsgRcvd   MsgSent   TblVer  InQ OutQ  Up/Down State/PfxRcd   PfxSnt Desc
+    10.9.0.2        4      65002        12        11        1    0    0 00:00:24     (Policy) (Policy) FRRouting/10.4.1_git
+    ```
+
+    A `bgp_session` check passes either way; `bgp_prefixes` and `route` checks catch it. Keep the same `frr defaults` line in the lab as in production.
+- **containerlab gives `linux` nodes a default route** via the management network. FRR sees it as a kernel route with distance 0, which beats a static or BGP default. If your change or your checks involve the default route, delete it with `exec: ["ip route del default"]` on the node, as the [hidden leak lab](https://github.com/netdryrun/netdryrun/tree/main/examples/srl-hidden-leak) does.
+- **Lab names are global on a machine.** Two jobs on one self-hosted runner, or two copies of a folder, must use different `name:` values in `topology.clab.yml`.
+- **`frr.conf` is read at boot.** Netdryrun deploys a fresh lab on every run, so the pull request's file is always the one tested. If you poke at a lab kept with `--keep`, changes you make in `vtysh` are not in the file.
+
+
+---
+Source: https://netdryrun.com/guides/sonic-ci/
+
+# Test a SONiC change in CI
+
+SONiC is different from most network OSes in a lab: the virtual switch image boots with no configuration, and its services come up one by one after the container starts. This guide shows how to get the image, configure the switch once it's ready, and check its routing on every pull request. It uses [`examples/sonic-frr`](https://github.com/netdryrun/netdryrun/tree/main/examples/sonic-frr): a SONiC VS switch peering eBGP with an FRR router. Every output below is from a real run.
+
+## 1. Get the image
+
+`docker-sonic-vs` is the virtual switch the SONiC project builds for its own tests. It is not on a container registry: the SONiC build server publishes it as a compressed file. Download it and load it into Docker:
+
+```bash
+curl -L -o docker-sonic-vs.gz \
+  "https://sonic-build.azurewebsites.net/api/sonic/artifacts?branchName=master&platform=vs&target=target/docker-sonic-vs.gz"
+docker load -i docker-sonic-vs.gz      # creates docker-sonic-vs:latest
+```
+
+The file is about 230 MB (232,075,139 bytes for the build used on this page, downloaded on 2026-10-27). Loaded, the image is 1.92 GB.
+
+`branchName=master` is the latest build, so it changes over time. For repeatable CI, keep the file you tested with (as a release asset or in a cache) instead of downloading `master` on every run.
+
+## 2. The lab
+
+```yaml title="topology.clab.yml"
+name: ndr-sonic-frr
+
+topology:
+  nodes:
+    sonic1:
+      kind: sonic-vs
+      image: docker-sonic-vs:latest
+    frr1:
+      kind: linux
+      image: quay.io/frrouting/frr:10.4.1
+      binds:
+        - configs/daemons:/etc/frr/daemons
+        - configs/vtysh.conf:/etc/frr/vtysh.conf
+        - configs/frr1.conf:/etc/frr/frr.conf
+  links:
+    - endpoints: ["sonic1:eth1", "frr1:eth1"]
+```
+
+In `kind: sonic-vs`, the container's `eth1` is the SONiC port `Ethernet0`. The topology names `eth1`; SONiC commands and checks use `Ethernet0`.
+
+## 3. Configure SONiC after boot: `setup`
+
+There's no startup config. Instead, `netdryrun.yml` lists `setup` commands that Netdryrun runs inside the node after deploying the lab and before any check:
+
+```yaml title="netdryrun.yml"
+lab: topology.clab.yml
+timeout: 180
+
+nodes:
+  sonic1:
+    setup:
+      - supervisorctl status orchagent | grep -q RUNNING && supervisorctl status bgpd | grep -q RUNNING
+      - config interface ip add Ethernet0 10.0.40.1/30 && config interface startup Ethernet0
+      - config loopback add Loopback0; config interface ip add Loopback0 192.168.40.1/32
+      - >-
+        vtysh -c "conf t" -c "router bgp 65040" -c "bgp router-id 40.40.40.40" -c "no bgp ebgp-requires-policy"
+        -c "neighbor 10.0.40.2 remote-as 65020" -c "address-family ipv4 unicast" -c "network 192.168.40.1/32"
+```
+
+Line by line:
+
+1. **Wait for the services.** The container is "running" long before SONiC is. `orchagent` (which programs the switch) and `bgpd` (FRR inside SONiC) have to be `RUNNING` before `config` commands and `vtysh` work. This line fails until they are.
+2. **Address and enable the port** with SONiC's `config` CLI, which writes to CONFIG_DB like on a real switch.
+3. **A loopback** for the announced prefix.
+4. **BGP**, configured in the FRR that runs inside SONiC, through `vtysh`.
+
+Each line is retried every 5 seconds until it succeeds, within a shared budget of 300 seconds. A line runs again from the start if any part of it fails, so put the part that can fail first (as line 1 does), and keep lines that change state safe to run twice.
+
+## 4. The checks that matter for SONiC
+
+```yaml
+checks:
+  - type: bgp_session
+    node: sonic1
+    neighbor: 10.0.40.2
+  - type: route
+    node: sonic1
+    prefix: 192.168.20.0/24
+    protocol: bgp
+  - type: route
+    node: frr1
+    prefix: 192.168.40.1/32
+    protocol: bgp
+  - type: ping
+    node: sonic1
+    source: 192.168.40.1
+    target: 192.168.20.1
+  - type: bgp_prefixes
+    node: frr1
+    neighbor: 10.0.40.1
+    min: 1
+    max: 5
+  - type: bgp_route
+    node: sonic1
+    prefix: 192.168.20.0/24
+    as_path: "65020"
+    local_pref: 100
+    next_hop: 10.0.40.2
+
+scenarios:
+  - name: SONiC port Ethernet0 goes down
+    link_down: {node: sonic1, interface: Ethernet0}
+    checks:
+      - {type: bgp_session, node: frr1, neighbor: 10.0.40.1, state: down}
+      - {type: route, node: frr1, prefix: 192.168.40.1/32, protocol: bgp, present: false}
+```
+
+What to know about these on SONiC:
+
+- **Routing state comes from the FRR inside SONiC.** The `sonic` driver reads sessions, routes and BGP paths through `vtysh`, exactly as on FRR. A route check says what SONiC's routing stack selected. It does not read what `orchagent` programmed (APPL_DB, ASIC_DB).
+- **`ping` covers the data path.** It runs from the switch with the loopback as source, so it only passes if the port, its address and the route all work. Keep at least one ping per change.
+- **Check from the other side too.** `route` and `bgp_prefixes` on `frr1` prove what SONiC actually announces, which is what a policy change on the switch affects.
+- **A port-down scenario uses the SONiC name.** `link_down` on `Ethernet0` takes the port down inside the switch. The scenario then checks that the peer sees the session drop and the route withdrawn, and Netdryrun brings the port back afterwards.
+- **Give it time.** `timeout: 180` covers the slow boot; the `setup` budget is separate.
+
+## 5. Run it locally
+
+```bash
+pip install netdryrun
+netdryrun run examples/sonic-frr
+```
+
+```text
+Netdryrun 0.3.0: 6 checks from examples/sonic-frr/netdryrun.yml
+Deploying lab ndr-sonic-frr (2 nodes); this usually takes 30-90 s, longer the first time images are pulled...
+Running setup on sonic1...
+setup done on sonic1 (4 commands)
+  [PASS] sonic1: BGP session to 10.0.40.2 is established -- state is established (13.5s)
+  [PASS] sonic1: route 192.168.20.0/24 via bgp is present -- active via bgp (13.5s)
+  [PASS] frr1: route 192.168.40.1/32 via bgp is present -- active via bgp (13.5s)
+  [PASS] sonic1: ping 192.168.20.1 from 192.168.40.1 expects success -- 3/3 replies (need 2) (13.5s)
+  [PASS] sonic1: BGP best path for 192.168.20.0/24 has as-path '65020', local-pref 100, next hop 10.0.40.2 -- best path: as-path '65020', next hop 10.0.40.2, local-pref 100, MED 0, communities none (13.5s)
+Convergence checks done; settling 10s before post-convergence checks...
+  [PASS] frr1: prefixes from 10.0.40.1 >= 1 and <= 5 -- 1 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.2s)
+Scenario: SONiC port Ethernet0 goes down
+  [PASS] [SONiC port Ethernet0 goes down] frr1: BGP session to 10.0.40.1 is down -- state is connect (held 10s, 5 samples) (10.1s)
+  [PASS] [SONiC port Ethernet0 goes down] frr1: route 192.168.40.1/32 via bgp is absent -- absent (held 10s, 5 samples) (10.1s)
+Restored 1 link(s) and 0 route injection(s); settling 10s
+Destroying lab...
+PASSED: 8 passed, 0 failed (8 checks)
+```
+
+## 6. Run it on every pull request
+
+The workflow is the usual one with one extra step: load the image before Netdryrun deploys the lab. containerlab only pulls images that are missing, so the loaded `docker-sonic-vs:latest` is used as is.
+
+```yaml title=".github/workflows/sonic-dryrun.yml"
+name: SONiC dry run
+on:
+  pull_request:
+    paths:
+      - "network/sonic/**"
+jobs:
+  dryrun:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Load docker-sonic-vs
+        run: |
+          curl -fsSL -o docker-sonic-vs.gz \
+            "https://sonic-build.azurewebsites.net/api/sonic/artifacts?branchName=master&platform=vs&target=target/docker-sonic-vs.gz"
+          docker load -i docker-sonic-vs.gz
+      - uses: netdryrun/netdryrun@v0.3.0
+        with:
+          path: network/sonic/
+```
+
+On other CI systems: load the image the same way, then install containerlab and Netdryrun and run `sudo env "PATH=$PATH" netdryrun run <folder>`, as in the [FRR guide](frr-ci.md#4-run-it-on-every-pull-request).
+
+This workflow is a recipe, not something Netdryrun's own CI runs yet: SONiC isn't in the project's CI, and the workflow hasn't been run on a hosted runner. The runs on this page are local.
+
+## Times
+
+Wall-clock for `netdryrun run`, including deploying the lab, the `setup` lines, the checks, the port-down scenario and destroying the lab, with both images already loaded. Measured on 2026-10-27 on WSL2 (20 cores, 16 GB), containerlab 0.81.1, Netdryrun 0.3.0, from a copy of the example folder with its own lab name:
+
+| Run | Result | Exit | Time |
+|---|---|---|---|
+| `examples/sonic-frr` (6 checks and a port-down scenario) | `PASSED: 8 passed, 0 failed` | `0` | 97 s |
+
+The checks passed 13.5 s after `setup` finished. The [examples page](../examples.md) shows 90 s from an earlier run on the same machine and date; runs differ by a few seconds. In CI, add the time to download the 230 MB image, which depends on the runner's network; caching the file avoids it.
+
+## Gotchas
+
+- **"Running" isn't ready.** The container is up long before SONiC's services are, and `config` and `vtysh` don't work until they are. Make the first `setup` line a readiness check, so every later line starts on a ready switch.
+- **`no bgp ebgp-requires-policy`.** With it on (RFC 8212, FRR's default profile), an eBGP neighbor with no route-map comes up and exchanges nothing; see the [FRR guide's gotchas](frr-ci.md#gotchas). The example turns it off to stay short. With real policies, attach route-maps instead.
+- **The image is big and not on a registry.** About 230 MB to download and 1.92 GB once loaded. Cache it in CI.
+- **Port names differ between the topology and the switch:** `eth1` in `topology.clab.yml`, `Ethernet0` in SONiC commands, checks and scenarios.
+- **Memory:** about 300 MiB for the SONiC VS node once up ([FAQ](../faq.md#how-much-memory-and-cpu-does-it-need)).
 
 
 ---

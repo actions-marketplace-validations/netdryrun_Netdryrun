@@ -5,7 +5,7 @@ description: Every Netdryrun example lab. What each one shows, its topology and 
 
 # Examples
 
-The repository's [`examples/`](https://github.com/netdryrun/netdryrun/tree/main/examples) folder has one lab per supported network OS, a deliberately broken change, and the AI agent demo. Each folder holds a containerlab topology, the router configs and a `netdryrun.yml`.
+The repository's [`examples/`](https://github.com/netdryrun/netdryrun/tree/main/examples) folder has one lab per supported network OS, a deliberately broken change, a teaching lab about leaks that ping can't see, and the AI agent demo. Each folder holds a containerlab topology, the router configs and a `netdryrun.yml`.
 
 ```bash
 git clone https://github.com/netdryrun/netdryrun && cd netdryrun
@@ -14,13 +14,14 @@ netdryrun run examples/frr-bgp
 
 ## At a glance
 
-Times are wall-clock for `netdryrun run` on WSL2 (20 cores, 16 GB) with images already pulled, measured on 2026-10-27 with containerlab 0.81.1 and Netdryrun™ 0.3.0 (`frr-bgp-broken` and `agent-demo`: 0.2.0; their checks did not change in 0.3.0). They include deploying and destroying the lab. The first run of each example also pulls its images.
+Times are wall-clock for `netdryrun run` on WSL2 (20 cores, 16 GB) with images already pulled, measured on 2026-10-27 with containerlab 0.81.1 and Netdryrun™ 0.3.0 (`frr-bgp-broken` and `agent-demo`: 0.2.0, their checks did not change in 0.3.0; `srl-hidden-leak`: 0.3.0 plus the unreleased SR Linux fix). They include deploying and destroying the lab. The first run of each example also pulls its images.
 
 | Example | Network OS | Shows | Expected | Exit | Time |
 |---|---|---|---|---|---|
 | [frr-bgp](#frr-bgp) | FRR | Basic checks, best-path attributes, a leak guard, a link-failure scenario | `PASSED: 11 passed, 0 failed` | `0` | 84 s |
 | [frr-bgp-broken](#frr-bgp-broken) | FRR | A leaked default route caught | `FAILED: 5 passed, 1 failed` | `1` | 45 s |
 | [srl-frr](#srl-frr) | Nokia SR Linux + FRR | Mixed vendors | `PASSED: 7 passed, 0 failed` | `0` | 60 s |
+| [srl-hidden-leak](#srl-hidden-leak) | Nokia SR Linux + FRR | A leaked default that ping, sessions and the routing table miss, on both NOSes | `PASSED: 9 passed, 0 failed`; each leak `FAILED: 8 passed, 1 failed` | `0`; `1` | 52 to 84 s |
 | [sonic-frr](#sonic-frr) | SONiC VS + FRR | Configuring a NOS after boot, a port-down scenario | `PASSED: 8 passed, 0 failed` | `0` | 90 s |
 | [arista-frr](#arista-frr) | Arista cEOS + FRR (your image) | A bring-your-own vendor image | `PASSED: 10 passed, 0 failed` | `0` | 92 s |
 | [agent-demo](#agent-demo) `demo.sh` | FRR | An agent's leaky change rejected, the fix accepted | `Demo OK` | `0` | 65 s |
@@ -34,6 +35,8 @@ Times are wall-clock for `netdryrun run` on WSL2 (20 cores, 16 GB) with images a
 **Expected:** `PASSED: 11 passed, 0 failed (11 checks)`, exit code `0`.
 
 This is the lab the [tutorial](tutorial.md) uses as "your lab".
+
+To run it on every pull request, see [Test an FRR change in CI](guides/frr-ci.md).
 
 ## frr-bgp-broken
 
@@ -57,6 +60,20 @@ CI runs this example on every push and expects it to fail.
 
 **Expected:** `PASSED: 7 passed, 0 failed (7 checks)`, exit code `0`. The SR Linux image is about 3.2 GB.
 
+## srl-hidden-leak
+
+[`examples/srl-hidden-leak`](https://github.com/netdryrun/netdryrun/tree/main/examples/srl-hidden-leak): "The route leak ping can't see". SR Linux (`srl1`) and FRR (`frr1`) peer eBGP, and each has its own static default route. [`leaks/`](https://github.com/netdryrun/netdryrun/tree/main/examples/srl-hidden-leak/leaks) holds two one-line changes that each leak a default route to the peer: `default-originate` on FRR, and an export statement matching `protocol static` on SR Linux.
+
+**Shows:** a leak that is received but never selected, because it loses to the static. Sessions, ping and the routing table look unchanged. The [README](https://github.com/netdryrun/netdryrun/blob/main/examples/srl-hidden-leak/README.md) teaches how to see it by hand in each CLI (the BGP RIB on SR Linux, a `B` route without `>*` on FRR) and what happens when the static goes away. One `bgp_route` check with `present: false` per router catches each leak. Run `netdryrun run examples/srl-hidden-leak` as is, then copy a file from `leaks/` over `configs/` and run it again.
+
+**Expected:** good configs `PASSED: 9 passed, 0 failed (9 checks)`, exit code `0`. Each leak `FAILED: 8 passed, 1 failed (9 checks)`, exit code `1`, failing only the guard on the receiving router:
+
+```text
+  [FAIL] srl1: no BGP path for 0.0.0.0/0 -- unexpectedly in the BGP table (1 path(s); as-path '65020', next hop 10.0.100.2, local-pref 100, MED 0, communities none) (2.4s)
+```
+
+Needs the SR Linux fix in the changelog's Unreleased section: 0.3.0 counts `srl1`'s own static default as a BGP path, so the good configs fail. Its times in the table were measured with that fix (0.3.0 plus the fix), over nine runs on 2026-10-27; the README lists each one.
+
 ## sonic-frr
 
 [`examples/sonic-frr`](https://github.com/netdryrun/netdryrun/tree/main/examples/sonic-frr): SONiC VS (`sonic1`, the `docker-sonic-vs` image) peering eBGP with FRR (`frr1`).
@@ -64,6 +81,8 @@ CI runs this example on every push and expects it to fail.
 **Shows:** a NOS that is configured after boot. SONiC VS has no startup config here; `setup` commands in `netdryrun.yml` wait for its services, set the interface addresses and configure BGP. Checks: the session, a route on each side, a ping, a prefix count, best-path attributes on `sonic1`, and a scenario that takes the SONiC port `Ethernet0` down and checks that the session drops and the route is withdrawn.
 
 **Expected:** `PASSED: 8 passed, 0 failed (8 checks)`, exit code `0`. `setup` waits for SONiC's services before any check runs.
+
+The image comes from the SONiC build server, not a registry. To get it and run the lab on every pull request, see [Test a SONiC change in CI](guides/sonic-ci.md).
 
 ## arista-frr
 

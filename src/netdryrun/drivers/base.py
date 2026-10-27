@@ -35,6 +35,9 @@ class BgpPath:
     communities: list[str] = field(default_factory=list)        # canonical (config.parse_community), standard
     large_communities: list[str] = field(default_factory=list)  # canonical a:b:c
     neighbor: str | None = None
+    # The router's own non-BGP route listed in its BGP table, possibly not advertised at all (SR Linux lists
+    # its static and interface routes this way). Counts for best-path checks, not for `present: false`.
+    local_candidate: bool = False
 
     def all_communities(self) -> list[str]:
         return self.communities + self.large_communities

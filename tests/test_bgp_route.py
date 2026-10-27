@@ -120,6 +120,13 @@ def test_present_false_means_no_path_at_all():
     assert ev([], present=False)[0]
     ok, detail, _ = ev([path(best=False)], present=False)  # not best, still in the table: still a leak
     assert not ok and "unexpectedly in the BGP table" in detail
+    # the router's own static listed in the BGP table (SR Linux) is not a BGP path for present: false...
+    local = path(as_path="", next_hop="0.0.0.0", local_candidate=True)
+    assert ev([local], present=False)[0]
+    ok, _, _ = ev([local, path(best=False)], present=False)
+    assert not ok
+    # ...but a best-path check on the router's own route still reads it
+    assert ev([local], as_path="", next_hop="0.0.0.0")[0]
 
 
 def test_post_convergence_rules():

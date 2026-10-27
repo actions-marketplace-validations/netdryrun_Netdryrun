@@ -34,12 +34,20 @@ def parse_bgp_neighbors(text: str) -> dict[str, BgpNeighbor]:
     return out
 
 
+def _bgp_learned(row: dict) -> bool:
+    """SR Linux lists the router's own static and interface routes in its BGP local-RIB as locally
+    originated paths (neighbor 0.0.0.0, origin-protocol static, ...), whether or not an export policy
+    advertises them. Only paths with origin-protocol bgp were learned over BGP."""
+    return str(row.get("origin-protocol", "bgp")).lower() == "bgp"
+
+
 def parse_routes(text: str, prefix: str, bgp_rib_text: str = "") -> list[Route]:
     """Route-table entries for `prefix`, plus BGP-RIB paths that aren't installed.
 
     SR Linux's route table only holds installed routes. A BGP path that lost to a static or local
     route (a leak that's received but not selected) only shows in the BGP RIB, and must still count
-    as present for `present: false`.
+    as present for `present: false`. The static itself also shows there, as a locally originated
+    path: that one is not a BGP route.
     """
     want = ipaddress.ip_network(prefix)
     key = "ipv6-prefix" if want.version == 6 else "ipv4-prefix"
@@ -58,7 +66,7 @@ def parse_routes(text: str, prefix: str, bgp_rib_text: str = "") -> list[Route]:
                 same = ipaddress.ip_network(str(r.get("prefix"))) == want
             except ValueError:
                 continue
-            if same and r.get("valid-route", True):
+            if same and r.get("valid-route", True) and _bgp_learned(r):
                 out.append(Route(prefix, "bgp", False))
                 break
     return out
@@ -95,6 +103,7 @@ def parse_attr_set(text: str, row: dict, default_local_pref: int | None = None) 
         communities=canon_communities(comms.get("community")),
         large_communities=canon_communities(comms.get("large-community")),
         neighbor=row.get("neighbor"),
+        local_candidate=not _bgp_learned(row),
     )
 
 
@@ -108,7 +117,7 @@ def _ip_or_none(addr) -> str | None:
 def unread_path(row: dict) -> BgpPath:
     """A path whose attributes were not read (only the first path's are: the best one if any)."""
     return BgpPath(best=bool(row.get("best-route")), as_path=None, next_hop=None, local_pref=None, med=None,
-                   neighbor=row.get("neighbor"))
+                   neighbor=row.get("neighbor"), local_candidate=not _bgp_learned(row))
 
 
 class SrlDriver(Driver):
@@ -145,14 +154,21 @@ class SrlDriver(Driver):
             "neighbor * origin-protocol * path-id *", ev), prefix)
         if not rows:
             return Observation([], ev)
-        first = rows[0]  # best path first: one attr-set read per sample, not one per path
+        # Best path first: one attr-set read per sample, not one per path. When the best is the router's own
+        # route (a local candidate), also read the first path learned over BGP: that's the one a
+        # `present: false` failure describes.
+        learned = next((r for r in rows if _bgp_learned(r)), None)
+        read = {0} | ({rows.index(learned)} if learned is not None and not _bgp_learned(rows[0]) else set())
+        return Observation([self._read_path(r, vrf, ev) if n in read else unread_path(r) for n, r in enumerate(rows)], ev)
+
+    def _read_path(self, row: dict, vrf: str, ev: list[dict]) -> BgpPath:
         # attr-id and neighbor come from device output and go back into a CLI string: only a number and an IP
-        attr_id = str(first.get("attr-id"))
+        attr_id = str(row.get("attr-id"))
         if not attr_id.isdigit():
-            raise DriverError(f"unexpected attr-id {attr_id[:40]!r} for {prefix}")
+            raise DriverError(f"unexpected attr-id {attr_id[:40]!r} for {row.get('prefix')}")
         attrs = self._cli(f"info from state /network-instance {vrf} bgp-rib attr-sets attr-set {attr_id}", ev)
         default_lp = None
-        neighbor = _ip_or_none(first.get("neighbor"))
+        neighbor = _ip_or_none(row.get("neighbor"))
         if "local-pref" not in _json(attrs) and neighbor:
             try:
                 lp = _json(self._cli(f"info from state /network-instance {vrf} protocols bgp neighbor "
@@ -160,7 +176,7 @@ class SrlDriver(Driver):
                 default_lp = int(lp) if lp is not None else None
             except DriverError:
                 pass  # not a configured neighbor (a local route): local-pref stays unknown
-        return Observation([parse_attr_set(attrs, first, default_lp)] + [unread_path(r) for r in rows[1:]], ev)
+        return parse_attr_set(attrs, row, default_lp)
 
     def all_routes(self, vrf: str = "default", family: int = 4) -> Observation:
         ev: list[dict] = []

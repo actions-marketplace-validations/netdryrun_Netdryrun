@@ -88,6 +88,9 @@ nav:
   - Getting started: getting-started.md
   - "Tutorial: test a change on your own lab": tutorial.md
   - Examples: examples.md
+  - Guides:
+      - Test an FRR change in CI: guides/frr-ci.md
+      - Test a SONiC change in CI: guides/sonic-ci.md
   - Reference:
       - netdryrun.yml: reference/config.md
       - CLI and reports: reference/cli.md
