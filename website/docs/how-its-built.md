@@ -13,8 +13,8 @@ Because of that, claims about Netdryrun should be checked against something othe
 
 ## Every result can be rerun
 
-- **The corpus is public and reruns with one command.** The [Verdict Corpus](corpus.md) is 30 BGP changes, the runner ([`corpus/run.py`](https://github.com/netdryrun/netdryrun/blob/main/corpus/run.py)) and the raw output ([`results.json`](https://github.com/netdryrun/netdryrun/blob/main/corpus/results/results.json)).
-- **It also reruns on GitHub's machines.** The [Reproduce corpus](https://github.com/netdryrun/netdryrun/blob/main/.github/workflows/reproduce-corpus.yml) workflow runs all 30 cases on a GitHub-hosted runner from your own fork and lists every verdict that differs from the committed results.
+- **The corpus is public and reruns with one command.** The [Verdict Corpus](corpus.md) is a set of BGP changes, each with [its own page](corpus.md#every-case), plus the runner ([`corpus/run.py`](https://github.com/netdryrun/netdryrun/blob/main/corpus/run.py)) and the raw output ([`results.json`](https://github.com/netdryrun/netdryrun/blob/main/corpus/results/results.json)).
+- **It also reruns on GitHub's machines.** The [Reproduce corpus](https://github.com/netdryrun/netdryrun/blob/main/.github/workflows/reproduce-corpus.yml) workflow runs every case on a GitHub-hosted runner from your own fork and lists every verdict that differs from the committed results.
 
 ## The corpus verdicts were written before the runs
 
@@ -23,9 +23,13 @@ Because of that, claims about Netdryrun should be checked against something othe
 
 ## Losses are published
 
+<!-- facts:built_losses -->
 - **Netdryrun is wrong on 6 of 30 cases**: it approved 5 harmful changes and blocked 1 safe one ([RESULTS.md](https://github.com/netdryrun/netdryrun/blob/main/corpus/RESULTS.md)). They are shown in the same table as the catches.
-- **One of our own labels was wrong.** Case 12 expected a change to be harmful; on FRR it is a no-op. The label stays as committed and the scores were not corrected upward; the finding and a script that reproduces it are in [AMENDMENTS.md](https://github.com/netdryrun/netdryrun/blob/main/corpus/AMENDMENTS.md).
-- **The misses are explained**, not removed: two are gaps in the intent spec and two are risks no steady-state check can see ([AMENDMENTS.md](https://github.com/netdryrun/netdryrun/blob/main/corpus/AMENDMENTS.md)).
+    - Approved although harmful: [`12` send-community removed on the pe1 to pe2 iBGP session](corpus/12-ibgp-send-community-dropped.md), [`18` redistribute connected added on pe1](corpus/18-redistribute-connected.md), [`21` Customer maximum-prefix safety limit removed](corpus/21-customer-max-prefix-removed.md), [`23` pe1 accidentally originates 8.8.8.0/24](corpus/23-fat-finger-third-party-origin.md) and [`30` Peer inbound filter replaced with permit-all](corpus/30-peer-import-filter-removed.md).
+    - Blocked although safe: [`06` Customer announces a second allowed /24](corpus/06-customer-adds-prefix.md).
+<!-- /facts:built_losses -->
+- **One of our own labels was wrong.** [Case 12](corpus/12-ibgp-send-community-dropped.md) expected a change to be harmful; on FRR it is a no-op. The label stays as committed and the scores were not corrected upward; the finding and a script that reproduces it are in [AMENDMENTS.md](https://github.com/netdryrun/netdryrun/blob/main/corpus/AMENDMENTS.md).
+- **The misses are explained**, not removed: two are gaps in the intent spec ([18](corpus/18-redistribute-connected.md), [23](corpus/23-fat-finger-third-party-origin.md)) and two are risks no steady-state check can see ([21](corpus/21-customer-max-prefix-removed.md), [30](corpus/30-peer-import-filter-removed.md); [AMENDMENTS.md](https://github.com/netdryrun/netdryrun/blob/main/corpus/AMENDMENTS.md)).
 
 ## Live labs run in CI
 
@@ -49,7 +53,7 @@ Each of these was found by running Netdryrun against live labs or the corpus. Th
 
 - **False passes on SR Linux and Arista.** A leaked route that was received but not installed was invisible, so a `present: false` check passed when it should have failed. Found by live leak tests; fixed in [`77f43d6`](https://github.com/netdryrun/netdryrun/commit/77f43d6); regression tests use captured output ([`test_drivers.py`](https://github.com/netdryrun/netdryrun/blob/main/tests/test_drivers.py)).
 - **Wrong status after a failure scenario.** A change that broke a baseline check ended a scenario run as `error` instead of `failed`. Found by running a check pack against the corpus ([`scripts/pack_verify.sh`](https://github.com/netdryrun/netdryrun/blob/main/scripts/pack_verify.sh)); fixed in [`f6ea560`](https://github.com/netdryrun/netdryrun/commit/f6ea560). There is no unit test for this fix yet.
-- **A mislabeled corpus case.** Case 12, above ([AMENDMENTS.md](https://github.com/netdryrun/netdryrun/blob/main/corpus/AMENDMENTS.md)).
+- **A mislabeled corpus case.** [Case 12](corpus/12-ibgp-send-community-dropped.md), above ([AMENDMENTS.md](https://github.com/netdryrun/netdryrun/blob/main/corpus/AMENDMENTS.md)).
 
 ## Supply-chain checks
 

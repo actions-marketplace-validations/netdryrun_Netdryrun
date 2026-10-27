@@ -17,7 +17,7 @@ How much does a typical "ping after the change" test miss? This corpus answers t
     2. **All BGP sessions up:** every session established.
     3. **Netdryrun™ intent checks:** one [intent spec](https://github.com/netdryrun/netdryrun/blob/main/corpus/specs/intent.yml), written once and used unchanged for every case, so it can't be tuned to win.
 - **Rerun it:** `python corpus/run.py` on any Linux or WSL2 machine with Docker and containerlab.
-- **Rerun it on GitHub's machines:** fork the repository, then run the [Reproduce corpus](https://github.com/netdryrun/netdryrun/blob/main/.github/workflows/reproduce-corpus.yml) workflow from your fork's Actions tab. It installs containerlab 0.81.1 and Netdryrun on a GitHub-hosted runner, runs all 30 cases, uploads `results.json`, `RESULTS.md` and the run log as artifacts, and lists every verdict that differs from the committed [`results.json`](https://github.com/netdryrun/netdryrun/blob/main/corpus/results/results.json) in the run summary.
+- **Rerun it on GitHub's machines:** fork the repository, then run the [Reproduce corpus](https://github.com/netdryrun/netdryrun/blob/main/.github/workflows/reproduce-corpus.yml) workflow from your fork's Actions tab. It installs containerlab 0.81.1 and Netdryrun on a GitHub-hosted runner, runs every case, uploads `results.json`, `RESULTS.md` and the run log as artifacts, and lists every verdict that differs from the committed [`results.json`](https://github.com/netdryrun/netdryrun/blob/main/corpus/results/results.json) in the run summary.
 
 ## Results
 
