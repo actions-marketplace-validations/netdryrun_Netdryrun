@@ -38,3 +38,7 @@ The same tickets and models run again on the 0.3.2 agent contract (`ndr/agent-co
 ## What this can't show
 
 Three open models on one laptop, one run per ticket, ten tickets on two small FRR labs, tickets written by the tool's author. The agent loop is ours, not a product agent's; a product agent (Codex, Cursor, a vendor copilot) adds its own system prompt and tools.
+
+## Amendment 1 (2026-10-28, before any graded run)
+
+The first attempt was stopped during T01: `qwen3:4b` with a 32,768-token context ran 47% on CPU on this laptop and took about 8 minutes per turn, so ten tickets would have taken more than a day and measured the machine, not the agent. Changed before any ticket was graded: context **16,384** tokens and tool results cut at **8,000** characters (both still note the cut to the model). The stopped attempts are kept as `results/aborted-*`, not counted. `qwen3:30b-a3b` and `gpt-oss:20b` don't fit this GPU at any useful context; they run overnight, one model per night, when nothing else uses the machine.
