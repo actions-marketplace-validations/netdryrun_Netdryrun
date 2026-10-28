@@ -146,7 +146,11 @@ def install(monkeypatch, world, lab, drivers):
         monkeypatch.setattr(runner, name,
                             lambda *a, _o=orig, **k: _o(*a, **{**k, "clock": world, "sleep": world.sleep}))
     monkeypatch.setattr(runner, "Lab", lambda path: lab)
-    monkeypatch.setattr(runner, "for_node", lambda lab_, node, override=None: drivers[node])
+    def for_node(lab_, node, override=None):
+        if node not in drivers:   # like the real for_node on a node it can't drive
+            raise DriverError(f"no driver for {node}")
+        return drivers[node]
+    monkeypatch.setattr(runner, "for_node", for_node)
 
 
 def chk(ctype, name, timeout=120, **params):
