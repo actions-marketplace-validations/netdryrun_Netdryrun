@@ -52,4 +52,4 @@ On Linux or WSL2 with Docker and containerlab, from a checkout of the repository
 python corpus/run.py --case 26
 ```
 
-Case file: [`corpus/cases/26-route-map-order-bug.yml`](https://github.com/netdryrun/netdryrun/blob/main/corpus/cases/26-route-map-order-bug.yml). Published result: netdryrun 0.2.0, containerlab 0.81.1, FRR `quay.io/frrouting/frr:10.4.1`, commit `ec23379`, run on 2026-10-26.
+Case file: [`corpus/cases/26-route-map-order-bug.yml`](https://github.com/netdryrun/netdryrun/blob/main/corpus/cases/26-route-map-order-bug.yml). Published result: netdryrun 0.3.1, containerlab 0.81.1, FRR `quay.io/frrouting/frr:10.4.1`, commit `08059de`, run on 2026-10-27.

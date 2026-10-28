@@ -1,6 +1,6 @@
 # Verdict Corpus v2 results
 
-Generated 2026-10-27T04:02:42+00:00 with netdryrun 0.2.0, containerlab 0.81.1, FRR quay.io/frrouting/frr:10.4.1, commit `unknown`. Rerun everything with `python corpus/run.py --corpus v2`.
+Generated 2026-10-27T19:05:43+00:00 with netdryrun 0.3.1, containerlab 0.81.1, FRR quay.io/frrouting/frr:10.4.1, commit `08059de`. Rerun everything with `python corpus/run.py --corpus v2`.
 
 **Conflict of interest:** the Netdryrun maintainers wrote this corpus and the runner. Expected verdicts were committed before any run (see the git history of `corpus/v2/cases/`). Losses are kept and shown at the same size as the catches.
 
@@ -10,7 +10,7 @@ Generated 2026-10-27T04:02:42+00:00 with netdryrun 0.2.0, containerlab 0.81.1, F
 |---|---|---|---|---|---|
 | Ping only | **9/18** | 2/11 | 9 | 0 | 0 |
 | All BGP sessions up | **7/18** | 0/11 | 11 | 0 | 0 |
-| Netdryrun intent checks | **16/18** | 9/11 | 2 | 0 | 0 |
+| Netdryrun intent checks | **17/18** | 10/11 | 1 | 0 | 0 |
 
 ## Every case
 
@@ -33,12 +33,11 @@ Generated 2026-10-27T04:02:42+00:00 with netdryrun 0.2.0, containerlab 0.81.1, F
 | `15-upstream-default-filtered` [Default route from the upstream filtered on import](cases/15-upstream-default-filtered.yml) | policy-bug | unsafe | ❌ approved a bad change | ❌ approved a bad change | ✅ | I3 customer has default |
 | `16-customer-session-peer-group` [Customer session moved into a CUSTOMERS peer-group](cases/16-customer-session-peer-group.yml) | refactor | safe | ✅ | ✅ | ✅ | nothing |
 | `17-customer-region-community` [Add an informational region community to customer routes](cases/17-customer-region-community.yml) | hygiene | safe | ✅ | ✅ | ✅ | nothing |
-| `18-aggregate-discard-route-removed` [Discard route for our aggregate deleted as unused](cases/18-aggregate-discard-route-removed.yml) | hygiene | unsafe | ❌ approved a bad change | ❌ approved a bad change | ❌ approved a bad change | nothing |
+| `18-aggregate-discard-route-removed` [Discard route for our aggregate deleted as unused](cases/18-aggregate-discard-route-removed.yml) | hygiene | unsafe | ❌ approved a bad change | ❌ approved a bad change | ✅ | I2 upstream has our aggregate; I2 peer has our aggregate; I5 upstream receives 2 to 51 prefixes from us; I5 peer receives 2 to 51 prefixes from us |
 
 ## Netdryrun's losses
 
 - **`04-redundant-aggregate-typo` Aggregate added on pe2 for redundancy, mistyped as 192.0.12.0/24** (false pass). Expected to be missed. I7 only spot-checks a few well-known prefixes, and nothing bounds what the customer receives.
-- **`18-aggregate-discard-route-removed` Discard route for our aggregate deleted as unused** (false pass). The blackhole static for 192.0.2.0/24 looks unused and is cleaned up. Either the aggregate stops being announced (if BGP requires a matching route), or it is still announced with nothing to absorb traffic for unused addresses in it: that traffic follows the upstream's default straight back to the upstream, a routing loop. Both are harmful.
 
 ## Findings after the run
 
@@ -51,3 +50,5 @@ These findings came after the v2 run. The table above is left exactly as pre-reg
 **Case 18 is a real miss.** With the discard route deleted, FRR (traditional defaults, no `bgp network import-check`) kept announcing 192.0.2.0/24, so I2 passed. The harm is the routing loop for unused addresses inside the aggregate, which no check probes. A `ping` with `expect: failure` to an unused address in 192.0.2.0/24 from the upstream would not show the loop either, because ping fails both with and without it. Catching it needs a path or traceroute check (TTL exceeded versus a clean discard).
 
 **Ping only's catch of case 14 is partly a lab artifact.** In the lab, the customer's BGP default is not active, because containerlab's management default route outranks it (the spec checks the default with `active: false` for this reason). Once the customer lost its specific routes, its pings had no path at all. A real customer with a working default would still ping, and the ping baseline would pass the change. The result stays as measured.
+
+**Rerun on the released 0.3.1 (2026-10-27, by the release gate):** every verdict matches the first run except case 18 (`18-aggregate-discard-route-removed`). The development build approved it; 0.3.1 rejects it, which is the pre-registered expected verdict, because the upstream and the peer no longer receive the aggregate (checks I2 and I5 fail). 0.3.1 changed how routes are read (received paths count, errors are never read as "no routes"), and this case was one of v2's two misses. Netdryrun is now 17/18 on v2. The cases and the expected verdicts are unchanged.

@@ -28,7 +28,7 @@ There are two runs. The v1 results below are frozen as first published. [Corpus 
 
 <!-- RESULTS -->
 
-Generated 2026-10-26T21:43:03+00:00 with netdryrun 0.2.0, containerlab 0.81.1, FRR quay.io/frrouting/frr:10.4.1, commit `ec23379`. Rerun everything with `python corpus/run.py`.
+Generated 2026-10-27T18:00:53+00:00 with netdryrun 0.3.1, containerlab 0.81.1, FRR quay.io/frrouting/frr:10.4.1, commit `08059de`. Rerun everything with `python corpus/run.py`.
 
 **Conflict of interest:** the Netdryrun maintainers wrote this corpus and the runner. Expected verdicts were committed before any run (see the git history of [`corpus/cases/`](https://github.com/netdryrun/netdryrun/tree/main/corpus/cases)). Losses are kept and shown at the same size as the catches.
 
@@ -56,8 +56,8 @@ Generated 2026-10-26T21:43:03+00:00 with netdryrun 0.2.0, containerlab 0.81.1, F
 | `10-transit-export-filter-removed` [Upstream export filter replaced with permit-all](corpus/10-transit-export-filter-removed.md) | route-leak | unsafe | ❌ approved a bad change | ❌ approved a bad change | ✅ | I4 no peer route leaked to upstream; I5 upstream receives exactly our 2 prefixes |
 | `11-peer-export-filter-removed` [Peer export filter replaced with permit-all](corpus/11-peer-export-filter-removed.md) | route-leak | unsafe | ❌ approved a bad change | ❌ approved a bad change | ✅ | I4 no upstream route leaked to peer; I4 no default leaked to peer; I5 peer receives exactly our 2 prefixes |
 | `12-ibgp-send-community-dropped` [send-community removed on the pe1 to pe2 iBGP session](corpus/12-ibgp-send-community-dropped.md) | policy-bug | unsafe | ❌ approved a bad change | ❌ approved a bad change | ❌ approved a bad change | nothing |
-| `13-upstream-asn-typo` [Typo in the upstream's ASN (65020 instead of 65200)](corpus/13-upstream-asn-typo.md) | fat-finger | unsafe | ✅ | ✅ | ✅ | I1 pe1-up1 session up; I2 upstream has customer route; I2 upstream has our aggregate; I3 customer has upstream route; I3 customer has default; I3 customer reaches upstream; I5 upstream receives exactly our 2 prefixes |
-| `14-peer-session-shutdown` [Peer session administratively shut down](corpus/14-peer-session-shutdown.md) | fat-finger | unsafe | ✅ | ✅ | ✅ | I1 pe2-peer1 session up; I2 peer has customer route; I2 peer has our aggregate; I3 customer has peer route; I3 customer reaches peer; I5 peer receives exactly our 2 prefixes |
+| `13-upstream-asn-typo` [Typo in the upstream's ASN (65020 instead of 65200)](corpus/13-upstream-asn-typo.md) | fat-finger | unsafe | ✅ | ✅ | ✅ | I1 pe1-up1 session up; I2 upstream has customer route; I2 upstream has our aggregate; I3 customer has upstream route; I3 customer has default; I3 customer reaches upstream; I4 no peer route leaked to upstream; I5 upstream receives exactly our 2 prefixes |
+| `14-peer-session-shutdown` [Peer session administratively shut down](corpus/14-peer-session-shutdown.md) | fat-finger | unsafe | ✅ | ✅ | ✅ | I1 pe2-peer1 session up; I2 peer has customer route; I2 peer has our aggregate; I3 customer has peer route; I3 customer reaches peer; I4 no upstream route leaked to peer; I4 no default leaked to peer; I5 peer receives exactly our 2 prefixes |
 | `15-customer-filter-too-strict` [Customer prefix-list typo rejects the customer's /24](corpus/15-customer-filter-too-strict.md) | policy-bug | unsafe | ✅ | ❌ approved a bad change | ✅ | I2 upstream has customer route; I2 peer has customer route; I3 customer reaches upstream; I3 customer reaches peer; I5 upstream receives exactly our 2 prefixes; I5 peer receives exactly our 2 prefixes |
 | `16-mass-withdrawal` [Upstream export policy denies everything](corpus/16-mass-withdrawal.md) | withdrawal | unsafe | ✅ | ❌ approved a bad change | ✅ | I2 upstream has customer route; I2 upstream has our aggregate; I3 customer reaches upstream; I5 upstream receives exactly our 2 prefixes |
 | `17-default-leaked-to-peer` [default-originate configured toward the peer](corpus/17-default-leaked-to-peer.md) | route-leak | unsafe | ❌ approved a bad change | ❌ approved a bad change | ✅ | I4 no default leaked to peer; I5 peer receives exactly our 2 prefixes |
@@ -70,7 +70,7 @@ Generated 2026-10-26T21:43:03+00:00 with netdryrun 0.2.0, containerlab 0.81.1, F
 | `24-customer-blackholed` [Static discard route for the customer prefix on pe1](corpus/24-customer-blackholed.md) | fat-finger | unsafe | ✅ | ❌ approved a bad change | ✅ | I3 customer reaches upstream; I3 customer reaches peer |
 | `25-aggregate-typo` [Aggregate network statement typo (192.0.3.0/24)](corpus/25-aggregate-typo.md) | fat-finger | unsafe | ❌ approved a bad change | ❌ approved a bad change | ✅ | I2 upstream has our aggregate; I2 peer has our aggregate; I5 upstream receives exactly our 2 prefixes; I5 peer receives exactly our 2 prefixes |
 | `26-route-map-order-bug` [A permit-everything clause inserted before the peer export filter](corpus/26-route-map-order-bug.md) | route-leak | unsafe | ❌ approved a bad change | ❌ approved a bad change | ✅ | I4 no upstream route leaked to peer; I4 no default leaked to peer; I5 peer receives exactly our 2 prefixes |
-| `27-local-asn-typo` [pe2 configured with the wrong local ASN](corpus/27-local-asn-typo.md) | fat-finger | unsafe | ✅ | ✅ | ✅ | I1 pe1-pe2 iBGP up; I1 pe2-peer1 session up; I2 peer has customer route; I2 peer has our aggregate; I3 customer has peer route; I3 customer reaches peer; I5 peer receives exactly our 2 prefixes |
+| `27-local-asn-typo` [pe2 configured with the wrong local ASN](corpus/27-local-asn-typo.md) | fat-finger | unsafe | ✅ | ✅ | ✅ | I1 pe1-pe2 iBGP up; I1 pe2-peer1 session up; I2 peer has customer route; I2 peer has our aggregate; I3 customer has peer route; I3 customer reaches peer; I4 no upstream route leaked to peer; I4 no default leaked to peer; I5 peer receives exactly our 2 prefixes |
 | `28-customer-import-policy-removed` [Customer inbound route-map removed](corpus/28-customer-import-policy-removed.md) | policy-bug | unsafe | ✅ | ❌ approved a bad change | ✅ | I2 upstream has customer route; I2 peer has customer route; I3 customer reaches upstream; I3 customer reaches peer; I5 upstream receives exactly our 2 prefixes; I5 peer receives exactly our 2 prefixes |
 | `29-graceful-restart` [Enable BGP graceful restart on pe1](corpus/29-graceful-restart.md) | hygiene | safe | ✅ | ✅ | ✅ | nothing |
 | `30-peer-import-filter-removed` [Peer inbound filter replaced with permit-all](corpus/30-peer-import-filter-removed.md) | latent-risk | unsafe | ❌ approved a bad change | ❌ approved a bad change | ❌ approved a bad change | nothing |
@@ -107,7 +107,7 @@ v2 changes two lines in the base lab so the customer's max-prefix limit can actu
 
 **Pre-registration:** all 18 cases and their expected verdicts were committed and pushed in [`322cc4e`](https://github.com/netdryrun/netdryrun/commit/322cc4ede21492c3914a0a53b67268bea7abf7d6) (2026-10-27 04:02 UTC), before any v2 case was deployed. Rerun it with `python corpus/run.py --corpus v2`.
 
-Generated 2026-10-27T04:02:42+00:00 with netdryrun 0.2.0, containerlab 0.81.1, FRR quay.io/frrouting/frr:10.4.1, commit `unknown`. Rerun everything with `python corpus/run.py --corpus v2`.
+Generated 2026-10-27T19:05:43+00:00 with netdryrun 0.3.1, containerlab 0.81.1, FRR quay.io/frrouting/frr:10.4.1, commit `08059de`. Rerun everything with `python corpus/run.py --corpus v2`.
 
 **Conflict of interest:** the Netdryrun maintainers wrote this corpus and the runner. Expected verdicts were committed before any run (see the git history of [`corpus/v2/cases/`](https://github.com/netdryrun/netdryrun/tree/main/corpus/v2/cases)). Losses are kept and shown at the same size as the catches.
 
@@ -117,7 +117,7 @@ Generated 2026-10-27T04:02:42+00:00 with netdryrun 0.2.0, containerlab 0.81.1, F
 |---|---|---|---|---|---|
 | Ping only | **9/18** | 2/11 | 9 | 0 | 0 |
 | All BGP sessions up | **7/18** | 0/11 | 11 | 0 | 0 |
-| Netdryrun intent checks | **16/18** | 9/11 | 2 | 0 | 0 |
+| Netdryrun intent checks | **17/18** | 10/11 | 1 | 0 | 0 |
 
 ### Every case
 
@@ -140,12 +140,11 @@ Generated 2026-10-27T04:02:42+00:00 with netdryrun 0.2.0, containerlab 0.81.1, F
 | `15-upstream-default-filtered` [Default route from the upstream filtered on import](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/15-upstream-default-filtered.yml) | policy-bug | unsafe | ❌ approved a bad change | ❌ approved a bad change | ✅ | I3 customer has default |
 | `16-customer-session-peer-group` [Customer session moved into a CUSTOMERS peer-group](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/16-customer-session-peer-group.yml) | refactor | safe | ✅ | ✅ | ✅ | nothing |
 | `17-customer-region-community` [Add an informational region community to customer routes](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/17-customer-region-community.yml) | hygiene | safe | ✅ | ✅ | ✅ | nothing |
-| `18-aggregate-discard-route-removed` [Discard route for our aggregate deleted as unused](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/18-aggregate-discard-route-removed.yml) | hygiene | unsafe | ❌ approved a bad change | ❌ approved a bad change | ❌ approved a bad change | nothing |
+| `18-aggregate-discard-route-removed` [Discard route for our aggregate deleted as unused](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/18-aggregate-discard-route-removed.yml) | hygiene | unsafe | ❌ approved a bad change | ❌ approved a bad change | ✅ | I2 upstream has our aggregate; I2 peer has our aggregate; I5 upstream receives 2 to 51 prefixes from us; I5 peer receives 2 to 51 prefixes from us |
 
 ### Netdryrun's losses
 
 - **`04-redundant-aggregate-typo` Aggregate added on pe2 for redundancy, mistyped as 192.0.12.0/24** (false pass). Expected to be missed. I7 only spot-checks a few well-known prefixes, and nothing bounds what the customer receives.
-- **`18-aggregate-discard-route-removed` Discard route for our aggregate deleted as unused** (false pass). The blackhole static for 192.0.2.0/24 looks unused and is cleaned up. Either the aggregate stops being announced (if BGP requires a matching route), or it is still announced with nothing to absorb traffic for unused addresses in it: that traffic follows the upstream's default straight back to the upstream, a routing loop. Both are harmful.
 
 ### Findings after the run
 
@@ -158,3 +157,5 @@ These findings came after the v2 run. The table above is left exactly as pre-reg
 **Case 18 is a real miss.** With the discard route deleted, FRR (traditional defaults, no `bgp network import-check`) kept announcing 192.0.2.0/24, so I2 passed. The harm is the routing loop for unused addresses inside the aggregate, which no check probes. A `ping` with `expect: failure` to an unused address in 192.0.2.0/24 from the upstream would not show the loop either, because ping fails both with and without it. Catching it needs a path or traceroute check (TTL exceeded versus a clean discard).
 
 **Ping only's catch of case 14 is partly a lab artifact.** In the lab, the customer's BGP default is not active, because containerlab's management default route outranks it (the spec checks the default with `active: false` for this reason). Once the customer lost its specific routes, its pings had no path at all. A real customer with a working default would still ping, and the ping baseline would pass the change. The result stays as measured.
+
+**Rerun on the released 0.3.1 (2026-10-27, by the release gate):** every verdict matches the first run except case 18 (`18-aggregate-discard-route-removed`). The development build approved it; 0.3.1 rejects it, which is the pre-registered expected verdict, because the upstream and the peer no longer receive the aggregate (checks I2 and I5 fail). 0.3.1 changed how routes are read (received paths count, errors are never read as "no routes"), and this case was one of v2's two misses. Netdryrun is now 17/18 on v2. The cases and the expected verdicts are unchanged.

@@ -2,7 +2,7 @@
 
 **Affected:** netdryrun 0.3.0 and the `netdryrun/netdryrun@v0.3.0` Action. **Fixed in:** 0.3.1. **Found by:** our own pre-launch audit, before any outside user reported it. 0.3.0 is yanked on PyPI: exact pins still install, unpinned installs get 0.3.1.
 
-A verdict that can pass without looking is the one bug a change-testing tool can't have. These are the paths the audit found, each with a test you can rerun. Full detail is in the [0.3.1 changelog](../../CHANGELOG.md).
+A change tester has to make it hard for a check to pass without testing what it says. These are the paths our audit found and 0.3.1 fixes, each with a test you can rerun. An audit can't prove it found every such path; if you find another, see the end of this page. Full detail is in the [0.3.1 changelog](../../CHANGELOG.md).
 
 ## Config paths: reproduce in seconds, no lab needed
 
@@ -36,8 +36,13 @@ These need a running lab to show, so the proof is in the test suite, which runs 
 | A driver reading an error as "nothing" (an unknown VRF, a failed command, unrecognized output) | Read "no routes" or "0 prefixes", which passes `present: false` and `max` | `tests/test_driver_false_pass.py`, `tests/test_driver_fuzz.py` (`test_empty_output_raises`) |
 | Received paths not counted on some drivers | Miss a leaked route that arrived but wasn't selected | `tests/test_verdict_drivers.py`, `examples/srl-hidden-leak` |
 
+## Limits that remain in 0.3.1
+- **A node that never reports BGP neighbors.** Its negative and attribute checks wait up to their timeout, then still run, and can pass. The check result says BGP convergence was not seen. Treat such a pass as unconfirmed.
+- **A slow peer.** A neighbor with a long advertisement interval can deliver a route after the gate released a negative check. Raise `--settle` and `--hold` above your slowest advertisement interval.
+- **`afi: evpn`** is refused on Arista EOS and Nokia SR Linux (their drivers can't read an EVPN count). On FRR and SONiC the count is read from the router's BGP summary; a family the neighbor doesn't carry counts as 0 received prefixes.
+
 ## What we changed in how we release
-Every release now goes through a seven-layer gate: static checks; unit tests on every supported Python; verdict invariants (property-based tests, fuzzing, and a must-fail matrix that every check type and driver must appear in); mutation testing of the verdict logic, where no surviving mutant may change a verdict; a live lab matrix with chaos tests; review; and a post-publish proof. The record for this release is [`releases/0.3.1/GATE.md`](../../releases/0.3.1/GATE.md).
+0.3.1 is the first release cleared by a seven-layer gate, and every release after it goes through the same gate: static checks; unit tests on every supported Python; verdict invariants (property-based tests, fuzzing, and a must-fail matrix that every check type and driver must appear in); mutation testing of the verdict logic, where no surviving mutant may change a verdict; a live lab matrix with chaos tests; review; and a post-publish proof. The record for this release is [`releases/0.3.1/GATE.md`](../../releases/0.3.1/GATE.md).
 
 ## Found another way it can pass without looking?
 That's the most valuable report we can get. [Open a corpus case](https://github.com/netdryrun/netdryrun/issues/new?template=corpus-case.yml): it becomes a permanent must-fail test, credited to you.

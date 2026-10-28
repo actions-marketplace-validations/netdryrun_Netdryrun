@@ -25,6 +25,22 @@
 }
 .md-header__title { margin-left: 0.6rem; }
 
+/* Keep the wordmark in the header at every width. The theme moves the logo into the drawer below 1220 px,
+   which left an empty header on laptops, tablets and phones (the site title is hidden on purpose below). */
+@media screen and (max-width: 76.234375em) {
+  .md-header__button.md-logo { display: inline-block; margin: 0.2rem 0.1rem; padding: 0.4rem 0.2rem; }
+  .md-header__button.md-logo img { height: 1rem; }
+  .md-header__button[for="__drawer"] { order: -1; }   /* menu first, then the wordmark */
+  /* Small screens only. The open drawer starts with a compact bar the height of the header, holding a small
+     wordmark: it reads as the header continuing, not as a second brand banner. The repeated "Netdryrun" text
+     under the logo goes. Wide screens keep the sidebar exactly as it was. */
+  .md-nav--primary > .md-nav__title {
+    font-size: 0; height: 2.4rem; padding: 0 0.8rem; display: flex; align-items: center;
+  }
+  .md-nav--primary > .md-nav__title .md-nav__button.md-logo { position: static; margin: 0; padding: 0; }
+  .md-nav--primary > .md-nav__title .md-nav__button.md-logo img { height: 1rem; width: auto; display: block; }
+}
+
 /* The wordmark already says the name: hide the duplicate site title (page titles still show on scroll) */
 .md-header__title .md-header__topic:first-child { visibility: hidden; }
 

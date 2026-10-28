@@ -129,25 +129,29 @@ netdryrun run examples/frr-bgp
 ```
 
 ```text
-Netdryrun 0.3.0: 7 checks from examples/frr-bgp/netdryrun.yml
+Netdryrun 0.3.1: 7 checks from examples/frr-bgp/netdryrun.yml
 Deploying lab ndr-frr-bgp (3 nodes); this usually takes 30-90 s, longer the first time images are pulled...
-  [PASS] r1: BGP session to 10.0.12.2 is established -- state is established (13.4s)
-  [PASS] r1: BGP session to 10.0.13.2 is established -- state is established (13.4s)
-  [PASS] r1: route 192.168.3.0/24 via bgp is present -- active via bgp (13.4s)
-  [PASS] r1: ping 192.168.3.1 from 192.168.1.1 expects success -- 3/3 replies (need 2) (13.4s)
-  [PASS] r1: BGP best path for 192.168.2.0/24 has as-path '65002', next hop 10.0.12.2 -- best path: as-path '65002', next hop 10.0.12.2, local-pref 100, MED 0, communities none (13.4s)
+  [PASS] r1: BGP session to 10.0.12.2 is established -- state is established (13.5s)
+  [PASS] r1: BGP session to 10.0.13.2 is established -- state is established (13.5s)
+  [PASS] r1: route 192.168.3.0/24 via bgp is present -- active via bgp (13.5s)
+  [PASS] r1: ping 192.168.3.1 from 192.168.1.1 expects success -- 3/3 replies (need 2) (13.5s)
 Convergence checks done; settling 10s before post-convergence checks...
-  [PASS] r1: prefixes from 10.0.12.2 >= 1 and <= 10 -- 2 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.1s)
-  [PASS] r1: route 0.0.0.0/0 via bgp is absent -- absent (held 10s, 5 samples) (10.1s)
+  [PASS] r1: prefixes from 10.0.12.2 >= 1 and <= 10 -- 2 ipv4-unicast prefixes accepted (held 10s, 4 samples) (10.3s)
+  [PASS] r1: BGP best path for 192.168.2.0/24 has as-path '65002', next hop 10.0.12.2 -- best path: as-path '65002', next hop 10.0.12.2, local-pref 100, MED 0, communities none (held 10s, 4 samples) (10.3s)
+  [PASS] r1: route 0.0.0.0/0 via bgp is absent -- absent (held 10s, 4 samples) (10.3s)
 Scenario: r1-r2 link fails
-  [PASS] [r1-r2 link fails] r1: route 192.168.2.0/24 via bgp is present -- active via bgp (8.2s)
-  [PASS] [r1-r2 link fails] r1: ping 192.168.2.1 from 192.168.1.1 expects success -- 3/3 replies (need 2) (8.2s)
-  [PASS] [r1-r2 link fails] r1: BGP best path for 192.168.2.0/24 has as-path '65003 65002', next hop 10.0.13.2 -- best path: as-path '65003 65002', next hop 10.0.13.2, local-pref 100, MED 0, communities none (11.3s)
-  [PASS] [r1-r2 link fails] r1: BGP session to 10.0.12.2 is down -- state is active (held 10s, 5 samples) (10.1s)
+  the fault took effect after 0s (2 BGP session(s) over the downed links are down)
+  settling 10s before the scenario's checks
+  [PASS] [r1-r2 link fails] r1: route 192.168.2.0/24 via bgp is present -- active via bgp (held 12s, 3 samples) (19.4s)
+  [PASS] [r1-r2 link fails] r1: ping 192.168.2.1 from 192.168.1.1 expects success -- 3/3 replies (need 2) (held 12s, 3 samples) (19.4s)
+  [PASS] [r1-r2 link fails] r1: BGP best path for 192.168.2.0/24 has as-path '65003 65002', next hop 10.0.13.2 -- best path: as-path '65003 65002', next hop 10.0.13.2, local-pref 100, MED 0, communities none (held 10s, 4 samples) (10.0s)
+  [PASS] [r1-r2 link fails] r1: BGP session to 10.0.12.2 is down -- state is active (held 10s, 4 samples) (10.0s)
 Restored 1 link(s) and 0 route injection(s); settling 10s
 Destroying lab...
 PASSED: 11 passed, 0 failed (11 checks)
 ```
+
+The `bgp_route` checks run with the post-convergence checks and must hold for 10 seconds, because the best path can change when a slower session comes up. In the scenario, Netdryrun first waits until both ends of the BGP session over the downed link see it down (here at once, because the interface itself went down), settles 10 seconds, and then the positive checks must keep passing for the hold window, not just once. See [scenario timing](../reference/config.md#scenario-timing).
 
 Now the broken change. `frr-bgp-broken` is the same triangle, but r2's config adds one line, `neighbor 10.0.12.1 default-originate`, toward r1:
 
@@ -156,7 +160,7 @@ netdryrun run examples/frr-bgp-broken
 ```
 
 ```text
-Netdryrun 0.3.0: 6 checks from examples/frr-bgp-broken/netdryrun.yml
+Netdryrun 0.3.1: 6 checks from examples/frr-bgp-broken/netdryrun.yml
 Deploying lab ndr-frr-broken (3 nodes); this usually takes 30-90 s, longer the first time images are pulled...
   [PASS] r1: BGP session to 10.0.12.2 is established -- state is established (13.5s)
   [PASS] r1: BGP session to 10.0.13.2 is established -- state is established (13.5s)
@@ -164,7 +168,7 @@ Deploying lab ndr-frr-broken (3 nodes); this usually takes 30-90 s, longer the f
   [PASS] r1: ping 192.168.3.1 from 192.168.1.1 expects success -- 3/3 replies (need 2) (13.5s)
 Convergence checks done; settling 10s before post-convergence checks...
   [PASS] r1: prefixes from 10.0.12.2 >= 1 and <= 10 -- 3 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.1s)
-  [FAIL] r1: route 0.0.0.0/0 via bgp is absent -- unexpectedly present via bgp (not selected) (0.1s)
+  [FAIL] r1: route 0.0.0.0/0 via bgp is absent -- unexpectedly present via bgp (not selected) (0.2s)
 Destroying lab...
 FAILED: 5 passed, 1 failed (6 checks)
 ```
@@ -207,14 +211,14 @@ Exit codes: `0` passed, `1` a check failed, `2` a setup problem (bad YAML, the l
 
 ## Times
 
-Wall-clock for `netdryrun run`, including deploying and destroying the lab, with images already pulled. Measured on 2026-10-27 on WSL2 (20 cores, 16 GB), containerlab 0.81.1, Netdryrun 0.3.0, from copies of the example folders with their own lab names:
+Wall-clock for `netdryrun run`, including deploying and destroying the lab, with images already pulled. Measured on 2026-10-28 on WSL2 (20 cores, 16 GB), containerlab 0.81.1, Netdryrun 0.3.1 installed from PyPI, running the two example folders of a fresh clone:
 
 | Run | Result | Exit | Time |
 |---|---|---|---|
-| `examples/frr-bgp` (7 checks and a link-failure scenario) | `PASSED: 11 passed, 0 failed` | `0` | 88 s |
-| `examples/frr-bgp-broken` | `FAILED: 5 passed, 1 failed` | `1` | 38 s |
+| `examples/frr-bgp` (7 checks and a link-failure scenario) | `PASSED: 11 passed, 0 failed` | `0` | 105 s |
+| `examples/frr-bgp-broken` | `FAILED: 5 passed, 1 failed` | `1` | 41 s |
 
-The failing run is shorter because it has no failure scenario. The [examples page](../examples.md) shows 84 s and 45 s for the same two labs from earlier runs on the same machine and date; runs differ by several seconds. On GitHub-hosted `ubuntu-latest` runners, the whole job (installing containerlab and Netdryrun, pulling FRR, running) took 100 to 107 s for `frr-bgp` and 54 to 66 s for `frr-bgp-broken`, over three CI runs on `main` on 2026-10-27, before the 0.3.0 release added a `bgp_route` check to `frr-bgp`; see [the FAQ](../faq.md#how-long-does-a-run-take-and-what-does-ci-cost). On a private repository, jobs are billed by the minute, rounded up: the `frr-bgp` job uses 2.
+The failing run is shorter because it has no failure scenario. `frr-bgp` takes longer than on 0.3.0 (88 s) because 0.3.1 settles 10 s after the fault and holds the scenario's checks for a full window, instead of judging them as soon as they pass. The [examples page](../examples.md) shows 99 s and 39 s for the same two labs from the 0.3.1 release check on the same machine the day before; runs differ by several seconds. On GitHub-hosted `ubuntu-latest` runners, the whole job (installing containerlab and Netdryrun, pulling FRR, running) took 100 to 107 s for `frr-bgp` and 54 to 66 s for `frr-bgp-broken`, over three CI runs on `main` on 2026-10-27, before the 0.3.0 release added a `bgp_route` check to `frr-bgp`; see [the FAQ](../faq.md#how-long-does-a-run-take-and-what-does-ci-cost). On a private repository, jobs are billed by the minute, rounded up: the `frr-bgp` job uses 2.
 
 ## Gotchas
 
