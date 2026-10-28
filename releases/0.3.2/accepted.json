@@ -2597,6 +2597,10 @@
    "reason": "equivalent: Result.samples_passed defaults to 0, the value passed explicitly",
    "diff": "3137e23bf03eb8e5"
   },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_310": {
+   "reason": "equivalent: Result.samples_passed defaults to 0, the value passed explicitly",
+   "diff": "1c94946ffcb7bf45"
+  },
   "netdryrun.runner.x__bgp_convergence_gate__mutmut_317": {
    "reason": "report precision only: the duration of a not-evaluated result rounded to 2 decimals instead of 1; same verdict",
    "diff": "9838a9f0caab3a8b"
