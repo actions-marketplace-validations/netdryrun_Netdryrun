@@ -31,7 +31,7 @@ pyATS is a mature Python test framework from Cisco, and Genie adds a large libra
 
 Use it when you need deep, programmable testing, broad parser coverage (especially for Cisco platforms), or pre- and post-change checks on production devices.
 
-Netdryrun is much smaller: a YAML file and a GitHub Action, with no test code to write, and it only runs against labs. If you already have pyATS tests, keep them.
+Netdryrun is narrower: a YAML file and a GitHub Action, with no test code to write, and it only runs against labs. If you already have pyATS tests, keep them.
 
 ## containerlab
 
@@ -62,7 +62,7 @@ Netdryrun adds a test layer on top of a containerlab lab:
 - every run produces one pass/fail result, a CI-friendly exit code, and a JSON evidence file
 
 <!-- facts:when_status -->
-It is early (version 0.3.1). Drivers exist for FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image), and checks cover BGP sessions, prefix counts, routes, BGP best-path attributes and ping, with link-down, node-isolation and route-injection (FRR only) failure scenarios.
+Version 0.3.1 has drivers for FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image), and its checks cover BGP sessions, prefix counts, routes, BGP best-path attributes and ping, with link-down, node-isolation and route-injection (FRR only) failure scenarios.
 <!-- /facts:when_status -->
 It does not do static analysis, build labs for you, or test production devices.
 

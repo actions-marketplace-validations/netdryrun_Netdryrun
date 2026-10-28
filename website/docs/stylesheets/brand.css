@@ -31,14 +31,14 @@
   .md-header__button.md-logo { display: inline-block; margin: 0.2rem 0.1rem; padding: 0.4rem 0.2rem; }
   .md-header__button.md-logo img { height: 1rem; }
   .md-header__button[for="__drawer"] { order: -1; }   /* menu first, then the wordmark */
-  /* Small screens only. The open drawer starts with a compact bar the height of the header, holding a small
-     wordmark: it reads as the header continuing, not as a second brand banner. The repeated "Netdryrun" text
-     under the logo goes. Wide screens keep the sidebar exactly as it was. */
+  /* Small screens only. The open drawer starts with a compact bar the height of the header, holding the
+     site name as plain text (no second wordmark image): it reads as the header continuing, not as a second
+     brand banner. Wide screens keep the sidebar exactly as it was. */
   .md-nav--primary > .md-nav__title {
-    font-size: 0; height: 2.4rem; padding: 0 0.8rem; display: flex; align-items: center;
+    font-size: 0.9rem; font-weight: 700; color: #fff; height: 2.4rem; line-height: 2.4rem;
+    padding: 0 0.8rem; display: flex; align-items: center;
   }
-  .md-nav--primary > .md-nav__title .md-nav__button.md-logo { position: static; margin: 0; padding: 0; }
-  .md-nav--primary > .md-nav__title .md-nav__button.md-logo img { height: 1rem; width: auto; display: block; }
+  .md-nav--primary > .md-nav__title .md-nav__button.md-logo { display: none; }
 }
 
 /* The wordmark already says the name: hide the duplicate site title (page titles still show on scroll) */
