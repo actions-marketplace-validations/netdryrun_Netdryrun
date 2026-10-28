@@ -70,3 +70,77 @@ def test_windows_paths_stay_inside_netdryrun_mcp_root(tmp_path, monkeypatch):
     assert json.loads(mcp_server.validate(r"C:\lab"))["valid"] is True
     out = json.loads(mcp_server.validate(r"C:\lab\..\other"))
     assert out["valid"] is False and "outside NETDRYRUN_MCP_ROOT" in out["error"]
+
+
+def _two_labs(tmp_path):
+    for name in ("lab", "other"):
+        d = tmp_path / name
+        d.mkdir()
+        (d / "topology.clab.yml").write_text("name: t\ntopology:\n  nodes:\n    r1: {kind: linux, image: frr}\n")
+        (d / "netdryrun.yml").write_text("lab: topology.clab.yml\nchecks:\n  - {type: route, node: r1, prefix: 10.0.0.0/24}\n")
+        (d / "netdryrun-report.json").write_text(f'{{"lab": "{name}"}}')
+    elsewhere = tmp_path / "server-cwd"
+    elsewhere.mkdir()
+    return elsewhere
+
+
+class _Ran(Exception):
+    pass
+
+
+def test_relative_paths_resolve_against_a_single_mcp_root(tmp_path, monkeypatch):
+    # an agent passes netdryrun.yml relative to its project; the server's own working directory is elsewhere
+    from netdryrun import mcp_server
+    monkeypatch.chdir(_two_labs(tmp_path))
+    monkeypatch.setenv("NETDRYRUN_MCP_ROOT", str(tmp_path / "lab"))
+    for path in ("netdryrun.yml", ".", "./netdryrun.yml"):
+        out = json.loads(mcp_server.validate(path))
+        assert out["valid"] is True, out
+        assert out["lab"] == str((tmp_path / "lab" / "topology.clab.yml").resolve())
+    assert json.loads(mcp_server.last_report("."))["lab"] == "lab"
+    # the topology is read from the root too (the server's cwd has none)
+    err = json.loads(mcp_server.record_baseline("missing.clab.yml", deploy=False))["error"]
+    assert str(tmp_path / "lab" / "missing.clab.yml") in err
+
+    seen = []
+
+    def fake_run(cfg, **_):
+        seen.append(cfg.path)
+        raise _Ran
+    monkeypatch.setattr(mcp_server, "run", fake_run)
+    for tool in (mcp_server.dry_run, mcp_server.run_checks):
+        with pytest.raises(_Ran):
+            tool("netdryrun.yml")
+    assert seen == [(tmp_path / "lab" / "netdryrun.yml").resolve()] * 2
+
+
+def test_relative_paths_cannot_escape_a_single_mcp_root(tmp_path, monkeypatch):
+    from netdryrun import mcp_server
+    monkeypatch.chdir(_two_labs(tmp_path))
+    monkeypatch.setenv("NETDRYRUN_MCP_ROOT", str(tmp_path / "lab"))
+    out = json.loads(mcp_server.validate("../other"))
+    assert out["valid"] is False and "outside NETDRYRUN_MCP_ROOT" in out["error"]
+    assert "outside NETDRYRUN_MCP_ROOT" in json.loads(mcp_server.record_baseline("../other/topology.clab.yml"))["error"]
+    assert mcp_server.last_report("../other") == "{}"
+    out = json.loads(mcp_server.dry_run("../other/netdryrun.yml"))
+    assert out["status"] == "error" and "outside NETDRYRUN_MCP_ROOT" in out["error"]
+
+
+@pytest.mark.parametrize("roots", ["", "lab+other"])
+def test_relative_paths_without_a_single_root_ask_for_an_absolute_path(tmp_path, monkeypatch, roots):
+    # no root, or several: there is no one folder to resolve against, so say what to pass instead of guessing
+    from netdryrun import mcp_server
+    _two_labs(tmp_path)
+    monkeypatch.chdir(tmp_path / "lab")   # even a cwd that holds the file is not a guess we make
+    monkeypatch.setattr(mcp_server, "run", lambda *a, **k: (_ for _ in ()).throw(_Ran()))   # never a real lab
+    if roots:
+        monkeypatch.setenv("NETDRYRUN_MCP_ROOT", os.pathsep.join(str(tmp_path / r) for r in roots.split("+")))
+    else:
+        monkeypatch.delenv("NETDRYRUN_MCP_ROOT", raising=False)
+    for err in (json.loads(mcp_server.validate("netdryrun.yml"))["error"],
+                json.loads(mcp_server.dry_run("netdryrun.yml"))["error"],
+                json.loads(mcp_server.run_checks("netdryrun.yml"))["error"],
+                json.loads(mcp_server.record_baseline("topology.clab.yml", deploy=False))["error"]):
+        assert "relative path" in err and "absolute path" in err and "such as /" in err
+        assert "outside NETDRYRUN_MCP_ROOT" not in err
+    assert mcp_server.last_report(".") == "{}"

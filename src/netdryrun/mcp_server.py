@@ -221,9 +221,26 @@ def _outside_root(*paths) -> str | None:
     return None
 
 
+def _tool_path(path: str) -> Path:
+    """A path an agent passed, as this server should open it. The server's working directory is not the agent's,
+    so a relative path is resolved against NETDRYRUN_MCP_ROOT when it names exactly one folder, and refused
+    otherwise (with no root or several there is no one folder it can mean). The root check comes after."""
+    host = _host_path(path)
+    p = Path(host).expanduser()
+    if p.is_absolute() or _WINDOWS_PATH.match(host):
+        return p
+    roots = _roots()
+    if len(roots) == 1:
+        return roots[0] / p
+    example = roots[0] / "netdryrun.yml" if roots else "/home/you/lab/netdryrun.yml"
+    why = "is set to several folders" if roots else "is not set"
+    raise ConfigError(f"{path} is a relative path, and the server can't tell what it is relative to "
+                      f"(NETDRYRUN_MCP_ROOT {why}); pass an absolute path, such as {example}")
+
+
 def _load(path: str):
     """load() with the NETDRYRUN_MCP_ROOT check on both netdryrun.yml and the lab it points to."""
-    path = _host_path(path)
+    path = str(_tool_path(path))
     err = _outside_root(path)
     if err:
         raise ConfigError(err)
@@ -252,7 +269,8 @@ def _execute(path: str, deploy: bool, keep: bool) -> str:
 
 @mcp.tool(description=_describe("""
     The primary tool: dry-run a network change. Deploys the containerlab lab of netdryrun.yml at `path`
-    (folder or file; C:\\... or /mnt/c/...) with the changed configs, waits for routing to converge, runs
+    (folder or file; C:\\... or /mnt/c/...; a relative path is read from NETDRYRUN_MCP_ROOT when that is one
+    folder, else pass an absolute one) with the changed configs, waits for routing to converge, runs
     every check, then destroys the lab. `verdict` is exactly one of SAFE TO PROCEED, DO NOT APPLY THIS
     CHANGE, or a string starting INCONCLUSIVE: propose or apply the change only on SAFE TO PROCEED, and paste
     the verdict into your answer. `failures` lists each failed check with a one-line reason, an evidence
@@ -286,7 +304,10 @@ def record_baseline(topology: str, deploy: bool = True, wait_seconds: float = 45
 
     from .record import record, render
 
-    topo = Path(_host_path(topology)).resolve()
+    try:
+        topo = _tool_path(topology).resolve()
+    except ConfigError as e:
+        return json.dumps({"error": str(e)})
     err = _outside_root(topo)
     if err:
         return json.dumps({"error": err})
@@ -336,7 +357,10 @@ def check_types() -> str:
 @mcp.resource("netdryrun://report/{path}")
 def last_report(path: str) -> str:
     """The last full JSON evidence report written next to netdryrun.yml at `path`."""
-    p = Path(_host_path(path))
+    try:
+        p = _tool_path(path)
+    except ConfigError:
+        return "{}"
     p = (p if p.is_dir() else p.parent) / "netdryrun-report.json"
     if _outside_root(p):
         return "{}"
