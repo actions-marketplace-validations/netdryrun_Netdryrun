@@ -39,7 +39,10 @@ def test_case_matters_only_for_the_verdict_text():
 
 
 def test_the_repository_has_no_retired_string_outside_history():
-    p = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, text=True)
+    try:
+        p = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, text=True)
+    except FileNotFoundError:   # no git at all (the gate's plain python:3.12-slim container); static runs the check
+        pytest.skip("git is not installed here")
     if p.returncode != 0:   # Linux git can't read a Windows worktree; CI and the gate's Linux clone can
         pytest.skip(f"git can't list the files here: {p.stderr.strip()[:100]}")
     files = p.stdout.split()
