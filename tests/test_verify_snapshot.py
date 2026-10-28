@@ -604,3 +604,13 @@ def test_every_kind_of_item_in_the_live_capture_fails_an_empty_intent_when_it_ch
         after = Snapshot({"edge1": NodeSnapshot("edge1", "frr", ns.vrfs, items)})
         m = match(Snapshot({"edge1": ns}), after, empty)
         assert m.status == "failed" and [d.key for d in m.undeclared] == [k], (change, k)
+
+
+def test_cold_7_an_empty_advertised_listing_for_a_session_that_sent_routes_is_not_nothing():
+    """Cold review: `{}` from advertised-routes was read as "advertises nothing" even when the neighbor output
+    says routes were sent. It is a failed read (retried, then exit 2), never an empty adj-RIB-out."""
+    with pytest.raises(frr.CommandFailed):
+        collect(overrides={ADJ_OUT_UP1: "{}"})                 # 10.0.2.2: sentPrefixCounter 2
+    quiet = frr.adj_command("default", "ipv4", "10.0.3.2", "out")   # sentPrefixCounter 0: empty is fine
+    ns = collect(overrides={quiet: "{}"})
+    assert not [k for k in ns.items if k.kind == "adj_out" and k.neighbor == "10.0.3.2"]

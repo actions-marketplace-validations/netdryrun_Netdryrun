@@ -253,6 +253,20 @@ def parse_neighbors(text: str) -> dict[str, dict[str, Session]]:
     return out
 
 
+def sent_counters(text: str) -> dict[tuple[str, str, str], int]:
+    """(vrf, neighbor, afi-safi) -> sentPrefixCounter, where the neighbor output gives one (an empty advertised
+    listing is checked against it)."""
+    out = {}
+    for vrf, inst in _json(NEIGHBORS_CMD, text).items():
+        for key, nb in inst.items() if isinstance(inst, dict) else ():
+            fams = nb.get("addressFamilyInfo") if isinstance(nb, dict) else None
+            for af, info in (fams or {}).items():
+                n = info.get("sentPrefixCounter") if isinstance(info, dict) else None
+                if af in AF_KEYS and isinstance(n, int) and not isinstance(n, bool):
+                    out[(vrf, canon_ip(key), AF_KEYS[af])] = n
+    return out
+
+
 def _add_path_rx(nb: dict, af: str) -> bool:
     """The neighbor said it may send this node several paths per prefix (its add-path TX capability)."""
     caps = nb.get("neighborCapabilities", {})
@@ -643,7 +657,9 @@ class FrrCollector:
             _vrf(VRF_CMD, v)
         active = {"default"} | {v for v, up in vrfs_conf.items() if up}
         known = {"default"} | set(vrfs_conf)
-        sessions = parse_neighbors(self._vtysh(NEIGHBORS_CMD, raw))
+        neighbors_text = self._vtysh(NEIGHBORS_CMD, raw)
+        sessions = parse_neighbors(neighbors_text)
+        sent = sent_counters(neighbors_text)
         ribs = {afi: parse_routes(self._vtysh(ROUTE_CMDS[afi], raw), afi) for afi in ("ipv4", "ipv6")}
         tables = {afi: parse_bgp_table(self._vtysh(BGP_CMDS[afi], raw), afi) for afi in ("ipv4", "ipv6")}
 
@@ -683,7 +699,12 @@ class FrrCollector:
                     directions = ["out"] + (["in"] if fam in s.soft_reconfig_in else [])
                     for d in directions:
                         cmd = adj_command(vrf, afi, nbr, d)
-                        for (prefix, pid), attrs in parse_adj(self._vtysh(cmd, raw), cmd, afi, d).items():
+                        listing = parse_adj(self._vtysh(cmd, raw), cmd, afi, d)
+                        if d == "out" and not listing and sent.get((vrf, nbr, fam), 0) > 0:
+                            raise CommandFailed(f"`vtysh -c '{cmd}'` on {node} listed nothing, but the neighbor output "
+                                                f"says {sent[(vrf, nbr, fam)]} prefixes were sent: not read as "
+                                                "'advertises nothing'")
+                        for (prefix, pid), attrs in listing.items():
                             kind = "adj_out" if d == "out" else "adj_in"
                             items[ItemKey(kind, node, vrf, afi, "unicast", prefix, neighbor=nbr, path_id=pid)] = attrs
         vrfs = tuple(sorted(active | bgp_vrfs))
