@@ -8,7 +8,7 @@ import pytest
 from netdryrun.verify.engine import VerifyError, baseline_problems, diff, far_ends, match
 from netdryrun.verify.intent import IntentError
 from netdryrun.verify.snapshot import ItemKey, NodeSnapshot, PathNextHop, Snapshot, canon_set
-from verify_helpers import add_new_customer_block, attrs, base, intent, nh, path, rib, session
+from verify_helpers import Lab, add_new_customer_block, attrs, base, intent, nh, path, rib, session
 
 
 def undeclared(m):
@@ -1255,3 +1255,70 @@ def test_a_received_only_route_with_several_candidates_matches_on_any_of_them():
     line = {"prefix": "10.101.0.0/24", "appears_on": "up1", "state": "received"}
     for pinned, ok in (("65000 65101", True), ("65000 65000 65101", True), ("65101", False)):
         assert (run(base(), after, [{**line, "with": {"as_path": pinned}}]).status == "matched") is ok, pinned
+
+
+# --- cold review of 0.4 (layer 6, 2026-10-28) ------------------------------------------------------------------
+
+class _Lab4(Lab):
+    NODES = ("a", "c", "d", "b")      # b last: an address-only pairing kept the last match
+
+    def snap(self):
+        return Snapshot({n: NodeSnapshot(n, "frr", ("blue", "default"), dict(it)) for n, it in self.items.items()})
+
+
+def test_cold_2_reused_link_addresses_in_another_vrf_never_pair_the_wrong_nodes():
+    """a-b (default) and c-d (VRF blue) both use 10.0.0.1/10.0.0.2: appears_on b must not explain c's new
+    advertisement to d (a leak that d filters inbound, so nothing else shows it)."""
+    p = "10.9.9.0/24"
+    before = _Lab4()
+    before.session("a", "10.0.0.2", session("10.0.0.1"))
+    before.session("b", "10.0.0.1", session("10.0.0.2"))
+    before.session("c", "10.0.0.2", session("10.0.0.1"), vrf="blue")
+    before.session("d", "10.0.0.1", session("10.0.0.2"), vrf="blue")
+    for n, vrf in (("a", "default"), ("c", "blue")):
+        before.path(n, p, "local", path(as_path="", weight=32768, peer_type="local"), vrf=vrf)
+        before.rib(n, p, rib("static", hops=(), distance=1), vrf=vrf)
+    after = before.copy()
+    after.adj_out("a", "10.0.0.2", p, attrs(as_path="", next_hop="10.0.0.1"))
+    after.learn("b", p, "10.0.0.1", "65000")
+    after.adj_out("c", "10.0.0.2", p, attrs(as_path="", next_hop="10.0.0.1"), vrf="blue")
+    m = match(before.snap(), after.snap(), intent([{"prefix": p, "appears_on": ["b"]}]))
+    assert m.status == "failed" and {(d.key.node, d.key.vrf) for d in m.undeclared} == {("c", "blue")}
+    far = far_ends(before.snap())
+    assert far[("a", "default", "10.0.0.2")][0] == "b" and far[("c", "blue", "10.0.0.2")][0] == "d"
+
+
+def test_cold_2_an_ambiguous_pairing_pairs_nothing():
+    lab = base()
+    # a second node also peers 10.0.2.1 <-> 10.0.2.2 in the default VRF: which far end is up1's is unknowable
+    lab.items["dup"] = {}
+    lab.session("dup", "10.0.2.1", session("10.0.2.2"))
+    lab.rib("dup", "10.9.255.0/24", rib("connected", hops=()))
+    assert ("edge1", "default", "10.0.2.2") not in far_ends(lab.snap())
+
+
+def test_cold_3_an_added_advertisement_carries_the_best_paths_next_hop_or_the_sender():
+    line = {"prefix": "203.0.113.0/24", "advertisement": OUT, "goes": "added"}
+
+    def adv(next_hop):
+        return _edit(lambda lab: lab.adj_out("edge1", "198.51.100.9", "203.0.113.0/24",
+                                             attrs(as_path="65002", next_hop=next_hop)))()
+    assert run(base(), adv("10.0.2.2"), [line]).status == "matched"        # the best path's next hop
+    assert run(base(), adv("0.0.0.0"), [line]).status == "matched"         # the sender itself (FRR prints 0.0.0.0)
+    m = run(base(), adv("192.0.2.66"), [line])                              # an outbound next-hop rewrite
+    assert m.status == "failed" and m.not_happened
+    assert run(base(), adv("192.0.2.66"), [{**line, "with": {"next_hop": ["192.0.2.66"]}}]).status == "matched"
+
+
+def test_cold_8_goes_down_explains_only_the_session_going_down():
+    """Other changes to the same session (its remote AS, address families, soft-reconfiguration) ride along
+    unseen if goes: down explains the whole session item."""
+    after = _peer1_down(base())
+    after.session("edge1", "10.0.3.2", session(None, state="active", remote_as=65999))
+    m = run(base(), after, [DOWN, {"prefix": "198.18.0.0/24", "disappears_from": ["cust1"]}])
+    assert ("session", "edge1", "10.0.3.2") in undeclared(m)
+    after = _peer1_down(base())
+    after.session("edge1", "10.0.3.2", replace(session(None, state="active", remote_as=65003),
+                                                soft_reconfig_in=("ipv4-unicast",)))
+    assert ("session", "edge1", "10.0.3.2") in undeclared(run(base(), after, [DOWN, {"prefix": "198.18.0.0/24",
+                                                                                    "disappears_from": ["cust1"]}]))

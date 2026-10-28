@@ -47,11 +47,16 @@ ATTR_FIELDS = {"next_hop": ("next_hops",), "from": ()}
 COUPLED = {"next_hop": ("next_hop_resolution",), "from": ("peer_type", "peer_router_id")}
 # What a new advertisement must carry from the node's best path (outbound policy can rewrite these; the next
 # hop, weight and, on eBGP, local preference follow protocol rules). local_pref only where it is sent.
-ADV_ATTRS = ("as_path", "origin", "med", "local_pref", "communities", "ext_communities", "large_communities")
+ADV_ATTRS = ("as_path", "origin", "med", "local_pref", "communities", "ext_communities", "large_communities",
+             "atomic_aggregate", "aggregator")
+# The next hop of a new advertisement: the best path's, or the node itself (FRR lists 0.0.0.0 or ::, or one of the
+# node's own session addresses); anything else is an outbound rewrite that a `with: {next_hop: ...}` pin declares.
+SELF_NEXT_HOPS = (("0.0.0.0",), ("::",))
 # What a route received before inbound policy shows (adj_in: FRR's plain received listing). A `with:` pin on any
 # other attribute is never matched against it: unread is not "none".
 ADJ_IN_VIEW = ("from", "next_hop", "as_path", "origin", "local_pref", "med", "weight")
 UNSEEN = object()
+SESSION_DOWN_FIELDS = {"established", "local_address"}   # what a session going down changes, and nothing else
 
 
 class VerifyError(RuntimeError):
@@ -176,17 +181,21 @@ class Index:
 
 def far_ends(*snaps: Snapshot) -> dict[tuple[str, str, str], tuple[str, str, str]]:
     """(node, vrf, neighbor) -> (far node, its vrf, the address the far node knows this node by), for
-    sessions between two observed nodes, matched on the addresses of an established session."""
-    est = []
+    sessions between two observed nodes, matched on the addresses of an established session. Link addresses
+    can repeat (another VRF, another pair of nodes): a candidate in the same VRF wins, and a pairing that is
+    still ambiguous pairs nothing (whatever crosses it stays undeclared)."""
+    est = set()
     for s in snaps:
         for k, v in s.sessions().items():
             if v.established and v.local_address:
-                est.append((k.node, k.vrf, k.neighbor, v.local_address))
+                est.add((k.node, k.vrf, k.neighbor, v.local_address))
     out = {}
     for n, vrf, nbr, local in est:
-        for n2, vrf2, nbr2, local2 in est:
-            if n2 != n and local2 == nbr and nbr2 == local:
-                out[(n, vrf, nbr)] = (n2, vrf2, local)
+        cands = {(n2, vrf2, local) for n2, vrf2, nbr2, local2 in est if n2 != n and local2 == nbr and nbr2 == local}
+        same_vrf = {c for c in cands if c[1] == vrf}
+        pick = same_vrf if same_vrf else cands
+        if len(pick) == 1:
+            out[(n, vrf, nbr)] = next(iter(pick))
     return out
 
 
@@ -467,8 +476,12 @@ def _session(ctx: _Ctx, ln: Line) -> LineResult:
             return LineResult(ln, False, f"{node}: the session to {peer} is still established")
     learned: dict[str, list[str]] = {}
     for node, v, peer in ends:
-        if (node, v, peer) in ctx.after.sessions:      # a far end that deleted its neighbor stays undeclared
-            res.explained.add(ItemKey("session", node, v, neighbor=peer))
+        key = ItemKey("session", node, v, neighbor=peer)
+        change = next((d for d in ctx.items if d.key == key), None)
+        # a far end that deleted its neighbor stays undeclared, and so does any other change to the session
+        # (its remote AS, address families, soft-reconfiguration): goes: down explains the state going down only
+        if (node, v, peer) in ctx.after.sessions and change is not None and set(change.fields) <= SESSION_DOWN_FIELDS:
+            res.explained.add(key)
         for d in ctx.items:
             k = d.key
             if k.node != node or k.vrf != v or k.kind == "session" or k.afi not in afis or d.change != "removed":
@@ -501,12 +514,17 @@ def _advertisement(ctx: _Ctx, ln: Line) -> LineResult:
             return LineResult(ln, False, f"{where} appeared, but {ln.node} has no BGP best path for it to compare "
                                          "the advertised attributes with")
         want = {**attrs_view(best[1].attrs), **ln.pins}
+        own = {(s.local_address,) for (n, _v, _nb), s in ctx.after.sessions.items() if n == ln.node and s.local_address}
+        self_hops = set(SELF_NEXT_HOPS) | own
         for adv in a.values():
             got = attrs_view(adv)
             names = [k for k in ADV_ATTRS if k != "local_pref" or adv.local_pref is not None or k in ln.pins]
             names += [k for k in ln.pins if k not in names]
             bad = [f"{k} is {show(got[k])}, {'declared' if k in ln.pins else 'the best path has'} {show(want[k])}"
                    for k in names if got[k] != want[k]]
+            if "next_hop" not in ln.pins and got["next_hop"] != want["next_hop"] and got["next_hop"] not in self_hops:
+                bad.append(f"next_hop is {show(got['next_hop'])}: neither the best path's {show(want['next_hop'])} nor "
+                           f"{ln.node} itself (an outbound rewrite needs with: next_hop)")
             if bad:
                 return LineResult(ln, False, f"{where}: " + "; ".join(bad))
     elif ln.goes == "removed":
