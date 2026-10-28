@@ -1734,3 +1734,32 @@ def test_agent_eval_t10_bgpd_off_everywhere_is_inconclusive_not_an_error(monkeyp
     assert e.lab.link_events() == []
     from netdryrun.mcp_server import INCONCLUSIVE, _summary
     assert _summary(rep, None)["verdict"] == INCONCLUSIVE
+
+
+def test_a_bgp_node_with_no_neighbors_at_the_cap_fails_its_post_convergence_checks(monkeypatch):
+    """0.3.2 multi-vendor audit (Grok; the 0.3.1 'remaining limit'): r1's BGP config never loads, so it answers
+    with no neighbors at all. Its leak guards would pass on the empty table. The file says r1 runs BGP (a
+    `protocol: bgp` route check and a prefix-count check), so at the cap its post-convergence checks are not
+    evaluated: failed, every sample unready, never passed."""
+    e = make(monkeypatch, r1={"neighbors": up(), "routes": {"default": never}})
+    checks = [leak("leak", protocol="bgp", timeout=24),
+              chk("bgp_prefixes", "max", neighbor="10.0.12.2", max=3, timeout=12)]
+    rep = e.run(checks, settle=10, hold=10)
+    assert rep.status != "passed" and rep.exit_code != 0
+    r = by_name(rep)["leak"]
+    assert not r.passed and r.detail.startswith("not evaluated: r1 reported no BGP neighbors")
+    assert r.attempts and r.samples_unready == r.attempts
+    assert rep.status == "inconclusive"   # nothing anywhere gave usable state
+
+
+def test_a_bgp_node_with_no_neighbors_beside_a_working_node_is_a_failure(monkeypatch):
+    e = make(monkeypatch, r1={"neighbors": up(), "routes": {"default": never}},
+             r2={"neighbors": up("10.0.12.1"), "routes": {"default": always}})
+    rep = e.run([leak("leak", protocol="bgp", timeout=24), route("r2 ok", node="r2", timeout=24)], settle=10, hold=10)
+    assert rep.status == "failed" and rep.exit_code == 1   # r2 shows a working network: a finding, not inconclusive
+
+
+def test_a_node_without_bgp_checks_is_still_released_at_the_cap(monkeypatch):
+    # a static-routing node (no BGP check on it anywhere) may answer with no neighbors for good
+    e = make(monkeypatch, r1={"neighbors": up(), "routes": {"default": never}})
+    assert e.run([leak("neg", timeout=24)], settle=10, hold=10).status == "passed"

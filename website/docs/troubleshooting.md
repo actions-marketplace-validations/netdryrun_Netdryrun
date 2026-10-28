@@ -151,7 +151,7 @@ Fix: if the session should be up, it's a finding: look at it as in [the lab neve
 warning: h1 reported no BGP neighbors for 30s; the check was evaluated without BGP convergence
 ```
 
-From 0.3.1, a node that answers with no BGP neighbors at all is treated as not converged yet, because that is also what a router answers before its BGP config is applied. Its post-convergence checks (a ping that must fail, for example) wait up to their `timeout`, then run with this warning in their result; the verdict is unchanged. On a node that really doesn't run BGP, lower the `timeout` of those checks to shorten the wait. If the node should have BGP neighbors, its BGP config was never applied: check its startup config or `setup` commands.
+From 0.3.1, a node that answers with no BGP neighbors at all is treated as not converged yet, because that is also what a router answers before its BGP config is applied. Its post-convergence checks (a ping that must fail, for example) wait up to their `timeout`, then run with this warning in their result; the verdict is unchanged. That applies only to a node with no BGP check anywhere in the file. From 0.3.2, if the file has a BGP check on the node (`bgp_session`, `bgp_prefixes`, `bgp_route`, or a `route` with `protocol: bgp`), its post-convergence checks fail instead as `not evaluated: <node> reported no BGP neighbors by the cap`: the file says the node runs BGP, so its config never loaded. On a node that really doesn't run BGP, lower the `timeout` of those checks to shorten the wait. If the node should have BGP neighbors, its BGP config was never applied: check its startup config or `setup` commands.
 
 ## The fault did not take effect
 
