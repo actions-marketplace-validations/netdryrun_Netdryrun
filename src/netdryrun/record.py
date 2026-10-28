@@ -124,9 +124,17 @@ def _link_subnets(lab, warnings: list[str]) -> list[str]:
         if node is None or node.kind in ("bridge", "ovs-bridge"):   # a host or bridge endpoint: nothing to read
             continue
         try:
-            nets |= {a.network for a in lab.interface_addresses(*end) if not a.ip.is_link_local}
+            found = {a.network for a in lab.interface_addresses(*end) if not a.ip.is_link_local}
         except LabError as e:
-            warnings.append(f"{end[0]}: could not read the addresses of {end[1]} ({e}); its link subnet has no guard")
+            warnings.append(f"INCOMPLETE BASELINE: {end[0]}: could not read the addresses of {end[1]} ({e}); its "
+                            "link subnet has no guard")
+            continue
+        if not found:
+            # Unnumbered, or the NOS keeps the address elsewhere (SONiC on EthernetN, SR Linux on e1-Y.0 in
+            # srbase-default): either way no guard can be written from it, so say so
+            warnings.append(f"INCOMPLETE BASELINE: {end[0]}: no global address on {end[1]} where Netdryrun reads "
+                            "it (unnumbered, or kept on another interface by the NOS); its link subnet has no guard")
+        nets |= found
     return [str(n) for n in sorted(nets, key=lambda n: (n.version, n))]
 
 

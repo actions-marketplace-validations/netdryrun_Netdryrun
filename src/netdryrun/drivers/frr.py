@@ -33,6 +33,14 @@ def _canon_addr(addr: str) -> str:
         return addr
 
 
+def _keep_down(out: dict, key: str, n: BgpNeighbor) -> None:
+    """Add a neighbor under its canonical key. Scoped link-locals (fe80::1%eth1, fe80::1%eth2) differ only by
+    zone and share a key: keep the one that isn't established, so a down session is never hidden by an up one."""
+    old = out.get(key)
+    if old is None or old.state == "established":
+        out[key] = n
+
+
 def _bgp_json(command: str, text: str) -> dict:
     data = load_json(command, text)
     if not isinstance(data, dict):
@@ -65,7 +73,7 @@ def parse_bgp_neighbors(text: str) -> dict[str, BgpNeighbor]:
                 raise unexpected(NEIGHBORS_CMD, f"{addr} {afi}: no acceptedPrefixCounter")
             prefixes[AFI_NAMES.get(afi, afi)] = as_int(NEIGHBORS_CMD, af["acceptedPrefixCounter"])
         # "Idle (Admin)" -> "idle": the first word is the FSM state
-        out[_canon_addr(addr)] = BgpNeighbor(addr, state, prefixes)
+        _keep_down(out, _canon_addr(addr), BgpNeighbor(addr, state, prefixes))
     return out
 
 

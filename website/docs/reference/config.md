@@ -297,6 +297,10 @@ They run in this order:
 3. A settle delay (`--settle`, default 10 seconds; at least 30 seconds if the file has no positive checks, because nothing else has shown that the network converged).
 4. Each one must then hold for the hold window (`--hold` or the check's `hold`, default 10 seconds), sampled every 3 seconds. A violation at any sample fails the check immediately.
 
+Known limit: **Graceful restart** (found by the 0.3.3 cross-platform review): while a peer restarts with graceful restart, its routes stay in the table marked stale, and the BGP checks count them as present and best until the stale timer ends (360 s in our FRR captures). A route check can pass on a route that is about to go. Leave graceful restart off in the lab, or give the checks a `timeout` above the stale timer. Planned for 0.4: read the stale flag and treat a stale path as not yet settled.
+
+Known limit: **SR Linux prefix counts** (found by the 0.3.3 cross-platform review): a `bgp_prefixes` count on SR Linux is received minus rejected-by-policy routes, and it may still include routes dropped by AS-path loop detection, so `min` can pass with fewer usable prefixes. Pair `min` with `route` checks for the prefixes that matter. Planned for 0.4: verify the counter on a live SR Linux and count usable routes only.
+
 Known limit: the gate sees sessions up and prefix counts stable, not routes still in flight. A peer with a long BGP advertisement interval can deliver a route after a post-convergence check was released and held, so a leak guard can pass on a route that hadn't arrived yet. Raise `--settle` and `--hold` above the slowest advertisement interval in your lab. Planned for 0.4: read each peer's configured advertisement interval and extend the settle window automatically.
 
 Prefix counts with an upper bound start like this (step 4), because counters ramp up and the BGP gate has already waited for stable counts:

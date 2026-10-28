@@ -9,6 +9,8 @@ EOS keys every answer by VRF (`{"vrfs": {name: ...}}`). A VRF missing from that 
 """
 from __future__ import annotations
 
+import re
+
 import ipaddress
 
 from .base import (BgpNeighbor, BgpPath, Driver, DriverError, NoSuchInstance, Observation, Route, as_int, canon_communities,
@@ -68,7 +70,11 @@ def _summary(text: str, vrf: str, afi: str, into: dict[str, BgpNeighbor] | None)
         if not isinstance(p, dict) or not isinstance(p.get("peerState"), str) or not p["peerState"].strip():
             raise unexpected(command, f"{addr}: {str(p)[:150]}")
         key = _canon_addr(str(addr))
-        n = out.get(key) or BgpNeighbor(str(addr), p["peerState"].split()[0].lower())
+        # "Idle(Admin)" (EOS prints no space) -> "idle": the first word is the FSM state
+        state = re.split(r"[\s(]", p["peerState"].strip(), maxsplit=1)[0].lower()
+        n = out.get(key) or BgpNeighbor(str(addr), state)
+        if n.state == "established" and state != "established":
+            n.state = state   # scoped link-locals sharing a key: a down session is never hidden by an up one
         if "prefixAccepted" in p:
             n.prefixes[afi] = as_int(command, p["prefixAccepted"])
         elif n.state == "established":  # a missing count would read as 0 prefixes, passing `max`

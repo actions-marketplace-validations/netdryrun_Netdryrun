@@ -220,3 +220,14 @@ def test_every_guard_written_passes_on_the_recording_lab(monkeypatch):
         params = {k: v for k, v in c.items() if k != "type"}
         ok, detail, _ = _evaluate(Check("route", params, "g", 30), drivers[c["node"]])
         assert ok, (c, detail)
+
+
+def test_a_link_with_no_global_address_where_it_is_read_is_loud(monkeypatch):
+    # 0.3.3 cross-platform review (Grok) #1, #2: SONiC keeps the link's address on EthernetN and SR Linux on e1-Y.0
+    # in srbase-default; the topology's ethN answers with no global address. That was read as "unnumbered",
+    # with no guard and no warning.
+    addrs = {("r1", "eth1"): ["fe80::1/64"], ("r2", "eth1"): []}
+    drivers = {"r1": FakeDrv({"10.0.12.2": {"ipv4-unicast": 2}}), "r2": FakeDrv({})}
+    data, warnings = run_record(monkeypatch, drivers, lab=FakeLab(None, addresses=addrs))
+    assert [g for g in guards(data, "r1") if g != "0.0.0.0/0"] == []
+    assert any(w.startswith("INCOMPLETE BASELINE") and "eth1" in w and "address" in w for w in warnings)

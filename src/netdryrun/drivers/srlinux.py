@@ -11,10 +11,11 @@ import ipaddress
 
 from .base import (BgpNeighbor, BgpPath, Driver, DriverError, NoSuchInstance, Observation, Route, as_int, canon_communities,
                    check_vrf_name, load_json, network, parser, render_as_path, unexpected)
-from .frr import _canon_addr, parse_ping
+from .frr import _canon_addr, _keep_down, parse_ping
 
 # SR Linux route-type names -> the shared vocabulary used in netdryrun.yml (FRR's names)
-PROTOCOLS = {"local": "connected", "host": "local", "ospfv2": "ospf", "ospfv3": "ospf6"}
+# bgp-evpn: a route imported through EVPN was learned via BGP, so `protocol: bgp` (and its guards) match it
+PROTOCOLS = {"local": "connected", "host": "local", "ospfv2": "ospf", "ospfv3": "ospf6", "bgp-evpn": "bgp"}
 
 NEIGHBORS_CMD = "info from state /network-instance <vrf> protocols bgp neighbor *"
 ROUTE_CMD = "info from state /network-instance <vrf> route-table <afi> route <prefix>"
@@ -59,7 +60,7 @@ def parse_bgp_neighbors(text: str) -> dict[str, BgpNeighbor]:
                 # accepted = received minus rejected by import policy (matches FRR's acceptedPrefixCounter)
                 prefixes[str(af["afi-safi-name"])] = (as_int(NEIGHBORS_CMD, af["received-routes"])
                                                       - as_int(NEIGHBORS_CMD, af.get("rejected-routes", 0)))
-        out[_canon_addr(addr)] = BgpNeighbor(addr, state.lower(), prefixes)
+        _keep_down(out, _canon_addr(addr), BgpNeighbor(addr, state.lower(), prefixes))
     return out
 
 

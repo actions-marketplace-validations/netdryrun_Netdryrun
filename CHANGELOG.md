@@ -14,6 +14,14 @@ The agent runtime: an agent with no local Docker gets a verdict through a pull r
 - **`netdryrun record` writes prefix-count ranges by default:** today's count as `min`, and `max` with 20% headroom (at least 2), instead of an exact count that broke on normal growth. A neighbor that sends nothing stays `exact: 0`. `--exact-prefixes` keeps the old behaviour; `--min-prefixes` records minimums as before, except that a count of 0 is now `exact: 0` (0.3.2 wrote `min: 0`, which `validate` refuses). The MCP `record_baseline` tool does the same.
 - **A truncated baseline is loud.** When a node has more BGP routes than `record` writes (50 per node and address family), the file starts with an `# INCOMPLETE BASELINE` line naming the node and the count, and the line is printed on stderr.
 
+### Fixes
+
+- **A down BGP session can no longer hide behind an up one with the same link-local address** (FRR, SR Linux, EOS). Neighbors such as `fe80::1%eth1` and `fe80::1%eth2` share one key; the one that isn't established is now kept, so a session check or the convergence gate never reads the up one for both. Found by the 0.3.3 cross-platform review.
+- **SR Linux routes learned through EVPN count as BGP** (`route-type: bgp-evpn`), so a `protocol: bgp` check, and a `present: false` guard, see an EVPN-imported default route.
+- **EOS `Idle(Admin)` reads as `idle`** (EOS prints no space before the reason), so `state: idle` matches an admin-down peer.
+- **`record` says when a link has no address where it is read** (SONiC keeps it on `EthernetN`, SR Linux on `e1-Y.0`), with an `INCOMPLETE BASELINE` line, instead of writing no guard silently.
+- **Known limits stated** in the advisory and the config reference, with 0.4 fixes planned: graceful-restart stale routes count as present until the stale timer ends; SR Linux prefix counts may include routes dropped by AS-path loop detection.
+
 ### Added
 
 - **A GitLab CI/CD component, not listed yet** (`templates/netdryrun.yml`, docs in `templates/README.md`): the GitHub Action's flow for GitLab, with the agent result kept as an artifact and an optional merge request note with the same fixed header. It is unlisted until it has run in a real GitLab pipeline; it has run locally with gitlab-ci-local, and the note only against a stub of the GitLab API.
