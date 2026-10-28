@@ -154,7 +154,10 @@ python scripts/release_gate.py after-publish 0.4.0
 - every MAJOR check passed or was accepted with a reason;
 - the independent review is recorded.
 
-Otherwise it says **NOT CLEARED** (a BLOCKER failed) or **INCOMPLETE** (something is missing).
+Otherwise it says **NOT CLEARED** (a BLOCKER failed), **READY TO PUBLISH** (everything holds except
+the after-publish proof, which can only run once the release is out: this is the state to tag in), or
+**INCOMPLETE** (something else is missing). A MAJOR check that was skipped, not failed, is accepted the
+same way as a failed one.
 A release is never "probably fine".
 
 ## Cutting a release
@@ -167,7 +170,7 @@ A release is never "probably fine".
 4. **Run the gate on the candidate:**
    `python scripts/release_gate.py static --candidate --strict`, then `unit`, `mutation` and,
    on the lab machine, `live`. Fix every BLOCKER, then fix or accept every MAJOR. Record the
-   independent review in `releases/X.Y.Z/review.md`.
+   independent review in `releases/X.Y.Z/review.md`. `report` must say READY TO PUBLISH.
 5. **Commit `releases/X.Y.Z/`** (the layer records, `GATE.md`, `mutants.md`, `accepted.json`
    and `review.md`) together with the release changes.
 6. **Tag and push:** `git tag vX.Y.Z && git push origin vX.Y.Z`. The release workflow publishes

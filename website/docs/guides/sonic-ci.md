@@ -127,20 +127,22 @@ netdryrun run examples/sonic-frr
 ```
 
 ```text
-Netdryrun 0.3.0: 6 checks from examples/sonic-frr/netdryrun.yml
+Netdryrun 0.3.1: 6 checks from examples/sonic-frr/netdryrun.yml
 Deploying lab ndr-sonic-frr (2 nodes); this usually takes 30-90 s, longer the first time images are pulled...
 Running setup on sonic1...
 setup done on sonic1 (4 commands)
-  [PASS] sonic1: BGP session to 10.0.40.2 is established -- state is established (13.5s)
-  [PASS] sonic1: route 192.168.20.0/24 via bgp is present -- active via bgp (13.5s)
-  [PASS] frr1: route 192.168.40.1/32 via bgp is present -- active via bgp (13.5s)
-  [PASS] sonic1: ping 192.168.20.1 from 192.168.40.1 expects success -- 3/3 replies (need 2) (13.5s)
-  [PASS] sonic1: BGP best path for 192.168.20.0/24 has as-path '65020', local-pref 100, next hop 10.0.40.2 -- best path: as-path '65020', next hop 10.0.40.2, local-pref 100, MED 0, communities none (13.5s)
+  [PASS] sonic1: BGP session to 10.0.40.2 is established -- state is established (13.7s)
+  [PASS] sonic1: route 192.168.20.0/24 via bgp is present -- active via bgp (13.7s)
+  [PASS] frr1: route 192.168.40.1/32 via bgp is present -- active via bgp (13.7s)
+  [PASS] sonic1: ping 192.168.20.1 from 192.168.40.1 expects success -- 3/3 replies (need 2) (13.7s)
 Convergence checks done; settling 10s before post-convergence checks...
   [PASS] frr1: prefixes from 10.0.40.1 >= 1 and <= 5 -- 1 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.2s)
+  [PASS] sonic1: BGP best path for 192.168.20.0/24 has as-path '65020', local-pref 100, next hop 10.0.40.2 -- best path: as-path '65020', next hop 10.0.40.2, local-pref 100, MED 0, communities none (held 10s, 5 samples) (10.2s)
 Scenario: SONiC port Ethernet0 goes down
-  [PASS] [SONiC port Ethernet0 goes down] frr1: BGP session to 10.0.40.1 is down -- state is connect (held 10s, 5 samples) (10.1s)
-  [PASS] [SONiC port Ethernet0 goes down] frr1: route 192.168.40.1/32 via bgp is absent -- absent (held 10s, 5 samples) (10.1s)
+  the fault took effect after 0s (1 BGP session(s) over the downed links are down)
+  settling 10s before the scenario's checks
+  [PASS] [SONiC port Ethernet0 goes down] frr1: BGP session to 10.0.40.1 is down -- state is connect (held 10s, 4 samples) (10.1s)
+  [PASS] [SONiC port Ethernet0 goes down] frr1: route 192.168.40.1/32 via bgp is absent -- absent (held 10s, 4 samples) (10.1s)
 Restored 1 link(s) and 0 route injection(s); settling 10s
 Destroying lab...
 PASSED: 8 passed, 0 failed (8 checks)
@@ -177,13 +179,13 @@ This workflow is a recipe, not something Netdryrun's own CI runs yet: SONiC isn'
 
 ## Times
 
-Wall-clock for `netdryrun run`, including deploying the lab, the `setup` lines, the checks, the port-down scenario and destroying the lab, with both images already loaded. Measured on 2026-10-27 on WSL2 (20 cores, 16 GB), containerlab 0.81.1, Netdryrun 0.3.0, from a copy of the example folder with its own lab name:
+Wall-clock for `netdryrun run`, including deploying the lab, the `setup` lines, the checks, the port-down scenario and destroying the lab, with both images already loaded. Measured on 2026-10-28 on WSL2 (20 cores, 16 GB), containerlab 0.81.1, Netdryrun 0.3.1 installed from PyPI, running the example folder of a fresh clone:
 
 | Run | Result | Exit | Time |
 |---|---|---|---|
-| `examples/sonic-frr` (6 checks and a port-down scenario) | `PASSED: 8 passed, 0 failed` | `0` | 97 s |
+| `examples/sonic-frr` (6 checks and a port-down scenario) | `PASSED: 8 passed, 0 failed` | `0` | 99 s |
 
-The checks passed 13.5 s after `setup` finished. The [examples page](../examples.md) shows 90 s from an earlier run on the same machine and date; runs differ by a few seconds. In CI, add the time to download the 230 MB image, which depends on the runner's network; caching the file avoids it.
+The positive checks passed 13.7 s after `setup` finished. The [examples page](../examples.md) shows 92 s from the 0.3.1 release check on the same machine the day before; runs differ by a few seconds. In CI, add the time to download the 230 MB image, which depends on the runner's network; caching the file avoids it.
 
 ## Gotchas
 

@@ -9,7 +9,9 @@
 
 **Test network changes before they touch production.**
 
-Netdryrun™ boots your topology as a real virtual network ([containerlab](https://containerlab.dev)), applies your configs, and checks how the network actually *behaves*: BGP sessions, prefix counts, routes, reachability. It catches mistakes like route leaks before they reach production, and leaves evidence a reviewer can trust.
+Software teams don't ship code without running its tests. Network changes deserve the same step: run the change in a real lab, check how the network behaves, and ship only on a pass. Netdryrun makes that one command, one CI step, or one tool call for an AI agent.
+
+Netdryrun™ boots your topology as a real virtual network ([containerlab](https://containerlab.dev)), applies your configs, and checks how the network actually *behaves*: BGP sessions, prefix counts, routes, reachability. It catches the mistakes your checks describe, such as a route leak, before the change reaches production, and leaves the commands and raw output for a reviewer to inspect.
 
 <p align="center"><img alt="Netdryrun catching a leaked default route that ping and session checks miss" src="https://raw.githubusercontent.com/netdryrun/netdryrun/main/.github/assets/netdryrun-demo.gif" width="820"></p>
 
@@ -23,17 +25,17 @@ Deploying lab ndr-frr-broken (3 nodes)...
 FAILED: 5 passed, 1 failed (6 checks)
 ```
 
-That run caught a leaked default route that was *received but not selected*. A ping test or a session check would have missed it: every session is up and every address answers. (A static analyzer such as Batfish also catches this particular leak; the [Batfish page](https://netdryrun.com/batfish/) shows one that it misses and a lab catches.)
+That run caught a leaked default route that was *received but not selected*. Ping and session checks alone would miss this example: every session is up and every address answers. (A static analyzer such as Batfish also catches this particular leak; the [Batfish page](https://netdryrun.com/batfish/) shows one that it misses and a lab catches.)
 
 <!-- facts:readme_status -->
-> Status: **v0.3.1, early.** Works today with FRR, Nokia SR Linux, SONiC (docker-sonic-vs) and Arista EOS (cEOS, bring your own image) on Linux and WSL2. On the [verdict corpus](https://netdryrun.com/corpus/), Netdryrun judged 24/30 realistic BGP changes correctly (ping-only checks 20/30, all-sessions-up checks 15/30) and 16/18 on v2, written after v1 to target its misses (9/18 and 7/18). On v1, Netdryrun approved 5 of the 19 harmful changes; ping-only checks approved 10. Both are small benchmarks the maintainers wrote on one FRR topology, with expected verdicts committed before any run: they compare methods, they are not a production reliability estimate. Provenance: neither ran on a released version. v1 ran on a pre-release build (commit `ec23379`, which called itself 0.2.0; the tagged 0.2.0 added the SONiC and EOS drivers and a scenario-recovery fix, `f6ea560`); v2 on a development build from main after 0.2.0 (it called itself 0.2.0 and recorded no commit) with the then-unreleased `inject_routes` fault (commit `d9da1ad`). A rerun of both on the released 0.3.1 is pending. Feedback and issues are very welcome.
+> Status: **v0.3.1.** Runs on Linux and WSL2, with drivers for FRR, Nokia SR Linux, SONiC (docker-sonic-vs) and Arista EOS (cEOS, bring your own image). On the [verdict corpus](https://netdryrun.com/corpus/) v1 (30 realistic BGP changes: 19 harmful, 11 safe), Netdryrun judged 24/30 correctly, ping-only checks 20/30 and all-sessions-up checks 15/30. Netdryrun approved 5 of the 19 harmful changes (ping-only checks: 10 of 19) and blocked 1 of the 11 safe ones. On v2 (18 cases written after v1 to target v1's misses): Netdryrun 17/18, ping-only 9/18, all-sessions-up 7/18. Expected verdicts were committed before any run, on one FRR topology; method, every miss and a one-command rerun are on the corpus page. Provenance: both ran on Netdryrun 0.3.1.
 <!-- /facts:readme_status -->
 
 ## Why
 
 - **It tests behavior, not syntax.** A config diff shows what changed, not whether BGP comes up or which routes each router ends up with. A real control plane shows what the routing software actually does.
 - **It's built for CI.** One GitHub Action, a pass/fail exit code, a Markdown summary in the job, JUnit XML, and a JSON evidence file with every command and raw output.
-- **It waits for convergence, with stated rules.** A positive check passes after 2 passing samples taken 3 s apart, within its timeout. Negative checks ("this route must be absent") start only after the positive checks have finished, every configured BGP session on their node is up with stable prefix counts, and a 10 s settle has passed; then they must hold for 10 s (settle and hold are configurable), so they don't pass just because BGP hasn't come up yet. In a failure scenario, checks start only once the fault is visible in BGP, and positive checks must hold too. The rules are sample-based; see [convergence semantics](https://netdryrun.com/reference/config/#convergence-semantics).
+- **It waits for convergence, with stated rules.** A positive check passes after 2 passing samples taken 3 s apart, within its timeout. Negative checks ("this route must be absent") and best-path attribute checks wait until every configured BGP session on their node is up with stable prefix counts (sessions a check expects down don't count), then a 10 s settle, then must hold for 10 s (settle and hold are configurable). If a node still reports no BGP neighbors at the timeout, its checks run anyway and the result says BGP convergence was not seen. In a failure scenario, checks start only once the fault is visible in BGP (or the run ends with exit 2), and positive checks must hold too. Exit 0 passed, 1 checks failed, 2 not tested (config or lab problem), 3 inconclusive. The rules are sample-based; see [convergence semantics](https://netdryrun.com/reference/config/#convergence-semantics).
 
 ## Quick start
 
@@ -66,10 +68,10 @@ netdryrun run examples/frr-bgp-broken   # a bad change, should fail
 ```bash
 netdryrun record my-lab/topology.clab.yml --deploy   # snapshot today's behavior into my-lab/netdryrun.yml
 # ...edit your configs (the change you want to test)...
-netdryrun run my-lab                                   # did anything break?
+netdryrun run my-lab                                   # re-run the checks in my-lab/netdryrun.yml
 ```
 
-`record` writes a baseline of every established BGP session, its exact prefix count and up to 50 BGP routes per node. It trusts the lab as it is today, so review it (remove what is allowed to change, add negative checks), commit it, and every future change is tested against it, locally or in CI.
+`record` writes checks for every established BGP session, its exact prefix count and up to 50 BGP routes per node. It has no leak guards until you add them, and a session that is down today isn't recorded. Review it (remove what is allowed to change, add negative checks such as `present: false`), commit it, and every future change runs against it, locally or in CI. A pass means those checks passed, nothing more.
 
 ## netdryrun.yml
 
@@ -205,13 +207,13 @@ Netdryrun complements these tools; it doesn't replace them.
 
 What Netdryrun adds: positive checks wait for convergence, negative checks run only after convergence and must hold, received-but-not-selected routes count as present, and every run produces one pass/fail plus an evidence file.
 
-## Honest limits
+## Limits
 
 - Lab routers are not your production routers. A pass on FRR, SR Linux, SONiC VS or Arista cEOS is strong evidence for protocol logic and policy intent, but not proof of hardware, scale or version-specific behavior. For Arista, bring your own licensed cEOS image to test real vendor code.
-- Checks cover IPv4/IPv6 unicast BGP (sessions, prefix counts, best-path attributes), routes and ping, with link-down, node-isolation and route-injection (FRR only) failure scenarios. More checks are coming: OSPF/IS-IS adjacencies, path/traceroute.
+- Checks cover IPv4/IPv6 unicast BGP (sessions, prefix counts, best-path attributes), routes and ping, with link-down, node-isolation and route-injection (FRR only) failure scenarios. Route checks work for routes from any protocol today (`protocol: ospf`, `isis`, `static`, `connected`, ...); OSPF/IS-IS *adjacency* checks and path/traceroute are coming.
 - No Cisco or Juniper driver yet: their lab images are licensed. See [Why not Cisco or Juniper?](https://netdryrun.com/faq/#why-not-cisco-or-juniper)
 
-How results are checked, and who writes the code (mostly AI agents): [How it's built](https://netdryrun.com/how-its-built/).
+How results are checked and released, with evidence for each claim: [How it's built](https://netdryrun.com/how-its-built/).
 
 ## Roadmap
 

@@ -1182,6 +1182,11 @@ def cell(text: str) -> str:
     return str(text).replace("|", "\\|").replace("\n", " ")
 
 
+def ready_to_publish(blockers, skipped, majors, missing, notes) -> bool:
+    """Everything is in except the proof that can only run after publishing."""
+    return not (blockers or skipped or majors or notes) and missing == ["after-publish"]
+
+
 def render(args) -> tuple[str, bool]:
     """GATE.md from every recorded layer, and whether the release is cleared."""
     folder = out_dir(args)
@@ -1195,7 +1200,7 @@ def render(args) -> tuple[str, bool]:
     for name, rec in records.items():
         for c in rec["checks"]:
             key = f"{name}/{c['id']}"
-            if c["status"] == FAIL and c["severity"] == MAJOR and key in accepted:
+            if c["status"] in (FAIL, SKIP) and c["severity"] == MAJOR and key in accepted:
                 c["status"], c["summary"] = ACCEPTED, f"{c['summary']} (accepted: {accepted[key]})"
             if c["status"] == FAIL and c["severity"] == BLOCKER:
                 blockers.append(f"{key}: {c['title']}")
@@ -1204,7 +1209,7 @@ def render(args) -> tuple[str, bool]:
             elif c["status"] in (FAIL, SKIP) and c["severity"] == MAJOR:
                 majors.append(f"{key}: {c['title']}")
     missing = [n for n in LAYERS if n not in records]
-    differ = code_differs({rec["git"].get("sha") for rec in records.values()})
+    differ = code_differs({name: rec["git"].get("sha") for name, rec in records.items()})
     if differ:
         notes.append(differ)
     if any(rec["git"].get("dirty") is not False for rec in records.values()):
@@ -1217,6 +1222,9 @@ def render(args) -> tuple[str, bool]:
         verdict = f"**NOT CLEARED**: {len(blockers)} BLOCKER check(s) failed."
     elif cleared:
         verdict = "**CLEARED**: every layer ran on the same clean commit; no BLOCKER failed or was skipped; every MAJOR passed or was accepted."
+    elif ready_to_publish(blockers, skipped, majors, missing, notes):
+        verdict = ("**READY TO PUBLISH**: every layer before publishing ran on the same clean commit; no BLOCKER failed "
+                   "or was skipped; every MAJOR passed or was accepted. Tag it, then run `after-publish` to clear it.")
     else:
         verdict = "**INCOMPLETE**: no BLOCKER failed, but the gate is not complete (see below)."
 
@@ -1272,19 +1280,35 @@ def render(args) -> tuple[str, bool]:
     return "\n".join(lines), cleared
 
 
-def code_differs(shas: set) -> str | None:
-    """Layers may run on different commits only when those differ in releases/ alone (the gate's
-    own records, committed between layers). Anything else means the layers tested different code."""
-    shas = sorted(str(s) for s in shas)
-    if len(shas) <= 1:
+def prose_only(path: str) -> bool:
+    """Files no layer but static reads: Markdown outside the code, tests and scripts, and the generated llms texts."""
+    if path.startswith(("src/", "tests/", "scripts/", ".github/")):
+        return False
+    return path.endswith(".md") or path in ("website/docs/llms.txt", "website/docs/llms-full.txt")
+
+
+def code_differs(shas: dict[str, str | None]) -> str | None:
+    """Layers may run on different commits only when those differ in releases/ (the gate's own records,
+    committed between layers) or in prose (prose_only), and only if the static layer, which checks the
+    prose (facts, versions, links), ran on the newest of them. Anything else means different code."""
+    known = {n: str(s) for n, s in shas.items() if s}
+    if len(set(known.values())) <= 1:
         return None
-    for other in shas[1:]:
-        changed = git("diff", "--name-only", shas[0], other)
+    ref = known.get("static")
+    if ref is None:
+        return "the layers ran on different commits and the static layer, which must run on the newest, has no record"
+    for name, other in known.items():
+        if other == ref:
+            continue
+        if git("merge-base", "--is-ancestor", other, ref) is None:
+            return f"the {name} layer ran on {other[:7]}, which is not an ancestor of the static layer's {ref[:7]}"
+        changed = git("diff", "--name-only", other, ref)
         if changed is None:
-            return "the layers ran on different commits and git cannot compare them: " + ", ".join(s[:7] for s in shas)
-        code = [f for f in changed.splitlines() if not f.startswith("releases/")]
+            return "the layers ran on different commits and git cannot compare them: " + ", ".join(
+                s[:7] for s in set(known.values()))
+        code = [f for f in changed.splitlines() if not f.startswith("releases/") and not prose_only(f)]
         if code:
-            return f"the layers ran on different code: {shas[0][:7]} and {other[:7]} differ in {', '.join(code[:5])}"
+            return f"the layers ran on different code: {other[:7]} ({name}) and {ref[:7]} (static) differ in {', '.join(code[:5])}"
     return None
 
 
@@ -1361,7 +1385,8 @@ def main() -> int:
 
     if args.layer == "report":
         text, cleared = render(args)
-        print(f"wrote {write_out(args, 'GATE.md', text)}: {'CLEARED' if cleared else 'not cleared'}")
+        state = "CLEARED" if cleared else "READY TO PUBLISH" if "**READY TO PUBLISH**" in text else "not cleared"
+        print(f"wrote {write_out(args, 'GATE.md', text)}: {state}")
         return 0 if cleared else 1
 
     names = ["static", "unit", "mutation", "live"] if args.layer == "all" else [args.layer]

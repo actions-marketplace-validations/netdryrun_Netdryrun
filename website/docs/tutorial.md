@@ -14,7 +14,7 @@ This tutorial takes a containerlab lab you already have and turns it into a test
 5. read the evidence when it fails,
 6. run the same test in GitHub Actions.
 
-It takes about 15 minutes. Every command and output below is from a real run (Netdryrun™ 0.3.0, containerlab 0.81.1, FRR 10.4.1, on WSL2).
+It takes about 15 minutes. Every command and output below is from a real run (Netdryrun™ 0.3.1, containerlab 0.81.1, FRR 10.4.1, on WSL2).
 
 ## Before you start
 
@@ -28,14 +28,14 @@ Any containerlab topology works. Here, the bundled `examples/frr-bgp` lab stands
 git clone https://github.com/netdryrun/netdryrun
 mkdir my-lab
 cp -r netdryrun/examples/frr-bgp/configs netdryrun/examples/frr-bgp/topology.clab.yml my-lab/
-sed -i 's/^name: ndr-frr-bgp/name: my-lab/' my-lab/topology.clab.yml
+sed -i 's/^name: ndr-frr-bgp/name: ndr-my-lab/' my-lab/topology.clab.yml
 ```
 
 The folder now holds a topology and router configs, and no `netdryrun.yml`:
 
 ```text
 my-lab/
-  topology.clab.yml     # name: my-lab, nodes r1 r2 r3
+  topology.clab.yml     # name: ndr-my-lab, nodes r1 r2 r3
   configs/
     daemons  r1.conf  r2.conf  r3.conf  vtysh.conf
 ```
@@ -48,17 +48,17 @@ The lab name (`name:` in the topology) must be unique on the machine. See [name 
 
 ```text
 $ netdryrun record my-lab/topology.clab.yml --deploy
-Deploying lab my-lab, then waiting 45s for the network to converge...
+Deploying lab ndr-my-lab, then waiting 45s for the network to converge...
 recording r1 (frr)
 recording r2 (frr)
 recording r3 (frr)
-Recorded 18 checks to /home/user/ndr-docs/my-lab/netdryrun.yml. Review it, then: netdryrun run /home/user/ndr-docs/my-lab
+Recorded 18 checks to /home/ndr/work/docs031/my-lab/netdryrun.yml. Review it, then: netdryrun run /home/ndr/work/docs031/my-lab
 ```
 
-This took 51 seconds. The file has one check for every established BGP session, every prefix count and every BGP route. The start of it:
+This took 50 seconds. The file has one check for every established BGP session, every prefix count and every BGP route. The start of it:
 
 ```yaml title="my-lab/netdryrun.yml (recorded)"
-# Recorded by netdryrun 0.3.0 record on 2026-10-27T04:38:28+00:00.
+# Recorded by netdryrun 0.3.1 record on 2026-10-28T02:26:27+00:00.
 # This is a baseline of the network's behavior when it was recorded. Review it before committing:
 # remove anything that is allowed to change, and add negative checks (route present: false,
 # ping expect: failure) for things that must never happen. Docs: https://netdryrun.com/reference/config/
@@ -87,17 +87,17 @@ Here is what happens if you skip this step. The change in step 5 adds a LAN on r
 
 ```text
 $ netdryrun run my-lab
-Netdryrun 0.3.0: 18 checks from my-lab/netdryrun.yml
-Deploying lab my-lab (3 nodes)...
-  [PASS] r1: BGP session to 10.0.12.2 is established -- state is established (10.3s)
+Netdryrun 0.3.1: 18 checks from my-lab/netdryrun.yml
+Deploying lab ndr-my-lab (3 nodes); this usually takes 30-90 s, longer the first time images are pulled...
+  [PASS] r1: BGP session to 10.0.12.2 is established -- state is established (10.9s)
   ...
 Convergence checks done; settling 10s before post-convergence checks...
-  [FAIL] r1: prefixes from 10.0.12.2 = 2 -- 6 ipv4-unicast prefixes accepted (0.2s)
-  [FAIL] r1: prefixes from 10.0.13.2 = 2 -- 6 ipv4-unicast prefixes accepted (0.2s)
-  [FAIL] r2: prefixes from 10.0.12.1 = 2 -- 6 ipv4-unicast prefixes accepted (0.2s)
-  [FAIL] r2: prefixes from 10.0.23.2 = 2 -- 6 ipv4-unicast prefixes accepted (0.2s)
-  [PASS] r3: prefixes from 10.0.13.1 = 2 -- 2 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.2s)
-  [PASS] r3: prefixes from 10.0.23.1 = 2 -- 2 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.2s)
+  [FAIL] r1: prefixes from 10.0.12.2 = 2 -- 6 ipv4-unicast prefixes accepted (0.1s)
+  [FAIL] r1: prefixes from 10.0.13.2 = 2 -- 6 ipv4-unicast prefixes accepted (0.1s)
+  [FAIL] r2: prefixes from 10.0.12.1 = 2 -- 6 ipv4-unicast prefixes accepted (0.1s)
+  [FAIL] r2: prefixes from 10.0.23.2 = 2 -- 6 ipv4-unicast prefixes accepted (0.1s)
+  [PASS] r3: prefixes from 10.0.13.1 = 2 -- 2 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.1s)
+  [PASS] r3: prefixes from 10.0.23.1 = 2 -- 2 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.1s)
 Destroying lab...
 FAILED: 14 passed, 4 failed (18 checks)
 ```
@@ -184,7 +184,7 @@ Check it without starting a lab:
 
 ```text
 $ netdryrun validate my-lab
-OK: my-lab/netdryrun.yml (13 checks, lab /home/user/ndr-docs/my-lab/topology.clab.yml, 3 nodes)
+OK: my-lab/netdryrun.yml (13 checks, lab /home/ndr/work/docs031/my-lab/topology.clab.yml, 3 nodes)
   - [bgp_session] r1: BGP session to 10.0.12.2 is established
   - [bgp_session] r1: BGP session to 10.0.13.2 is established
   - [bgp_session] r2: BGP session to 10.0.12.1 is established
@@ -224,51 +224,51 @@ Run it, and ask for the JSON and Markdown reports:
 ```text
 $ cd my-lab
 $ netdryrun run . --json report.json --markdown report.md
-Netdryrun 0.3.0: 13 checks from netdryrun.yml
-Deploying lab my-lab (3 nodes)...
-  [PASS] r1: BGP session to 10.0.12.2 is established -- state is established (14.0s)
-  [PASS] r1: BGP session to 10.0.13.2 is established -- state is established (14.0s)
-  [PASS] r2: BGP session to 10.0.12.1 is established -- state is established (14.0s)
-  [PASS] r2: BGP session to 10.0.23.2 is established -- state is established (14.0s)
-  [PASS] r3: BGP session to 10.0.13.1 is established -- state is established (14.0s)
-  [PASS] r3: BGP session to 10.0.23.1 is established -- state is established (14.0s)
-  [PASS] r1: route 192.168.2.0/24 via bgp is present -- active via bgp (14.0s)
-  [PASS] r1: route 192.168.3.0/24 via bgp is present -- active via bgp (14.0s)
-  [PASS] r1: ping 192.168.3.1 from 192.168.1.1 expects success -- 3/3 replies (need 2) (14.0s)
+Netdryrun 0.3.1: 13 checks from netdryrun.yml
+Deploying lab ndr-my-lab (3 nodes); this usually takes 30-90 s, longer the first time images are pulled...
+  [PASS] r1: BGP session to 10.0.12.2 is established -- state is established (13.8s)
+  [PASS] r1: BGP session to 10.0.13.2 is established -- state is established (13.8s)
+  [PASS] r2: BGP session to 10.0.12.1 is established -- state is established (13.8s)
+  [PASS] r2: BGP session to 10.0.23.2 is established -- state is established (13.8s)
+  [PASS] r3: BGP session to 10.0.13.1 is established -- state is established (13.8s)
+  [PASS] r3: BGP session to 10.0.23.1 is established -- state is established (13.8s)
+  [PASS] r1: route 192.168.2.0/24 via bgp is present -- active via bgp (13.8s)
+  [PASS] r1: route 192.168.3.0/24 via bgp is present -- active via bgp (13.8s)
+  [PASS] r1: ping 192.168.3.1 from 192.168.1.1 expects success -- 3/3 replies (need 2) (13.8s)
 Convergence checks done; settling 10s before post-convergence checks...
-  [PASS] r1: prefixes from 10.0.12.2 >= 2 and <= 10 -- 6 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.2s)
-  [PASS] r1: prefixes from 10.0.13.2 >= 2 and <= 10 -- 6 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.2s)
-  [PASS] r1: route 0.0.0.0/0 via bgp is absent -- absent (held 10s, 5 samples) (10.2s)
-  [FAIL] r1: route 10.0.23.0/30 via bgp is absent -- unexpectedly present via bgp (0.2s)
+  [PASS] r1: prefixes from 10.0.12.2 >= 2 and <= 10 -- 6 ipv4-unicast prefixes accepted (held 10s, 4 samples) (10.0s)
+  [PASS] r1: prefixes from 10.0.13.2 >= 2 and <= 10 -- 6 ipv4-unicast prefixes accepted (held 10s, 4 samples) (10.0s)
+  [PASS] r1: route 0.0.0.0/0 via bgp is absent -- absent (held 10s, 4 samples) (10.0s)
+  [FAIL] r1: route 10.0.23.0/30 via bgp is absent -- unexpectedly present via bgp (0.3s)
 Destroying lab...
 FAILED: 12 passed, 1 failed (13 checks)
   wrote json report: report.json
   wrote markdown report: report.md
 ```
 
-The run took 37 seconds and exited with code `1`. Sessions are up, the ping works, and the prefix count is inside its range. Only the negative check caught the problem: `redistribute connected` also announces r3's link subnets.
+The run took 41 seconds and exited with code `1`. Sessions are up, the ping works, and the prefix count is inside its range. Only the negative check caught the problem: `redistribute connected` also announces r3's link subnets.
 
 ## 6. Read the evidence
 
 ### Markdown report
 
-`report.md` is the text the GitHub Action puts on the job page and in the PR comment. Failures come first, and each failure has the raw command output in a collapsed block:
+`report.md` is the text the GitHub Action puts on the job page and in the PR comment. Failures come first, and each failure has the raw output of every command it ran in a collapsed block (here, the routing table and the BGP table):
 
 ````markdown title="report.md"
 ### ❌ Netdryrun failed
 
-**12 passed, 1 failed** on lab `my-lab`
+**12 passed, 1 failed** on lab ` ndr-my-lab `
 
 | | Check | Result | Time |
 |---|---|---|---|
-| ❌ | r1: route 10.0.23.0/30 via bgp is absent | unexpectedly present via bgp | 0.2s |
-| ✅ | r1: BGP session to 10.0.12.2 is established | state is established | 14.0s |
+| ❌ | r1: route 10.0.23.0/30 via bgp is absent | unexpectedly present via bgp | 0.3s |
+| ✅ | r1: BGP session to 10.0.12.2 is established | state is established | 13.8s |
 ...
-| ✅ | r1: route 0.0.0.0/0 via bgp is absent | absent (held 10s, 5 samples) | 10.2s |
+| ✅ | r1: route 0.0.0.0/0 via bgp is absent | absent (held 10s, 4 samples) | 10.0s |
 
 <details><summary>Evidence: r1: route 10.0.23.0/30 via bgp is absent</summary>
 
-`r1$ vtysh -c show ip route 10.0.23.0/30 json`
+` r1$ vtysh -c show ip route 10.0.23.0/30 json `
 
 ```
 {
@@ -277,12 +277,46 @@ The run took 37 seconds and exited with code `1`. Sessions are up, the ping work
       "prefix":"10.0.23.0/30",
       "prefixLen":30,
       "protocol":"bgp",
-      ...
+      "vrfId":0,
+      "vrfName":"default",
+      "selected":true,
+      "destSelected":true,
+      "distance":20,
+      "metric":0,
+      "installed":true,
+      "table":254,
+      "internalStatus":16,
+...
+```
+
+` r1$ vtysh -c show bgp ipv4 unicast 10.0.23.0/30 json `
+
+```
+{
+  "prefix":"10.0.23.0/30",
+  "version":4,
+  "advertisedTo":{
+    "10.0.12.2":{
+      "hostname":"r2"
+    },
+    "10.0.13.2":{
+      "hostname":"r3"
+    }
+  },
+  "pathCount":2,
+  "paths":[
+    {
+      "aspath":{
+...
+      "bestpath":{
+...
+      "bestpath":{
+...
 ```
 
 </details>
 
-<sub>netdryrun 0.3.0 · containerlab 0.81.1 · 2026-10-27T04:39:03+00:00 · full evidence in the JSON report</sub>
+<sub>netdryrun 0.3.1 · containerlab 0.81.1 · 2026-10-28T02:27:25+00:00 · full evidence in the JSON report</sub>
 ````
 
 ### JSON report
@@ -290,7 +324,7 @@ The run took 37 seconds and exited with code `1`. Sessions are up, the ping work
 `report.json` has everything ([schema](reference/cli.md#json)). The top level says what ran and where:
 
 ```json
-{"schema": "netdryrun.report/v1", "status": "failed", "lab": "my-lab", "error": null, "inconclusive_reason": null,
+{"schema": "netdryrun.report/v1", "status": "failed", "lab": "ndr-my-lab", "error": null, "inconclusive_reason": null,
  "summary": {"passed": 12, "failed": 1, "total": 13}}
 ```
 
@@ -298,7 +332,7 @@ The run took 37 seconds and exited with code `1`. Sessions are up, the ping work
 
 ```json
 "environment": {
-  "netdryrun": "0.3.0",
+  "netdryrun": "0.3.1",
   "containerlab": "0.81.1",
   "python": "3.10.12",
   "host": "Linux-6.18.54.1-microsoft-standard-WSL2-x86_64-with-glibc2.35",
@@ -320,8 +354,9 @@ The failed check, with its history of samples:
   "passed": false,
   "detail": "unexpectedly present via bgp",
   "attempts": 1,
-  "duration_s": 0.2,
-  "history": [{"t": 0.2, "passed": false, "detail": "unexpectedly present via bgp"}]
+  "duration_s": 0.3,
+  "started": "2026-10-28T02:27:55+00:00",
+  "history": [{"t": 0.3, "passed": false, "detail": "unexpectedly present via bgp"}]
 }
 ```
 
@@ -345,7 +380,7 @@ Its `evidence` holds the command and the full output. The interesting part: the 
 
 (Shortened; the report keeps every field.)
 
-To look at the routers yourself, rerun with `--keep-on-failure` and run commands with `docker exec clab-my-lab-r1 vtysh -c "..."`, then destroy the lab with the command Netdryrun prints. [Troubleshooting](troubleshooting.md#the-lab-never-converges-timeout) has an example.
+To look at the routers yourself, rerun with `--keep-on-failure` and run commands with `docker exec clab-ndr-my-lab-r1 vtysh -c "..."`, then destroy the lab with the command Netdryrun prints. [Troubleshooting](troubleshooting.md#the-lab-never-converges-timeout) has an example.
 
 ## 7. Fix the change and run again
 
@@ -374,8 +409,8 @@ Add a check that the change did what it should, so the test also proves the new 
 
 ```text
 $ netdryrun run . --json report.json --markdown report.md
-Netdryrun 0.3.0: 14 checks from netdryrun.yml
-Deploying lab my-lab (3 nodes)...
+Netdryrun 0.3.1: 14 checks from netdryrun.yml
+Deploying lab ndr-my-lab (3 nodes); this usually takes 30-90 s, longer the first time images are pulled...
   [PASS] r1: BGP session to 10.0.12.2 is established -- state is established (13.9s)
   [PASS] r1: BGP session to 10.0.13.2 is established -- state is established (13.9s)
   [PASS] r2: BGP session to 10.0.12.1 is established -- state is established (13.9s)
@@ -387,17 +422,17 @@ Deploying lab my-lab (3 nodes)...
   [PASS] r1: ping 192.168.3.1 from 192.168.1.1 expects success -- 3/3 replies (need 2) (13.9s)
   [PASS] r1: route 192.168.33.0/24 via bgp is present -- active via bgp (13.9s)
 Convergence checks done; settling 10s before post-convergence checks...
-  [PASS] r1: prefixes from 10.0.12.2 >= 2 and <= 10 -- 3 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.2s)
-  [PASS] r1: prefixes from 10.0.13.2 >= 2 and <= 10 -- 3 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.2s)
-  [PASS] r1: route 0.0.0.0/0 via bgp is absent -- absent (held 10s, 5 samples) (10.2s)
-  [PASS] r1: route 10.0.23.0/30 via bgp is absent -- absent (held 10s, 5 samples) (10.2s)
+  [PASS] r1: prefixes from 10.0.12.2 >= 2 and <= 10 -- 3 ipv4-unicast prefixes accepted (held 10s, 4 samples) (10.2s)
+  [PASS] r1: prefixes from 10.0.13.2 >= 2 and <= 10 -- 3 ipv4-unicast prefixes accepted (held 10s, 4 samples) (10.2s)
+  [PASS] r1: route 0.0.0.0/0 via bgp is absent -- absent (held 10s, 4 samples) (10.2s)
+  [PASS] r1: route 10.0.23.0/30 via bgp is absent -- absent (held 10s, 4 samples) (10.2s)
 Destroying lab...
 PASSED: 14 passed, 0 failed (14 checks)
   wrote json report: report.json
   wrote markdown report: report.md
 ```
 
-38 seconds, exit code `0`. Commit the change and the updated `netdryrun.yml` together.
+41 seconds, exit code `0`. Commit the change and the updated `netdryrun.yml` together.
 
 ## 8. Run it on every pull request
 
