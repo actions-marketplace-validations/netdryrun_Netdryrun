@@ -2482,7 +2482,7 @@ Source: https://netdryrun.com/batfish/
 
 # Batfish, then Netdryrun
 
-[Batfish](https://batfish.org) and Netdryrun™ answer different questions. Batfish reads configs and models the network: nothing has to boot, and in the runs below its analysis took 2 to 6 seconds once the Batfish service was running. Netdryrun boots the configs in a containerlab lab and checks what the routing software really does. Run Batfish first on every commit, and boot the lab only when it passes.
+[Batfish](https://batfish.org) and Netdryrun™ answer different questions. Batfish reads configs and models the network's routing and forwarding: nothing has to boot, and in the runs below its analysis took 2 to 6 seconds once the Batfish service was running. Netdryrun boots the configs in a containerlab lab and checks what the routing software really does. Run Batfish first on every commit, and boot the lab only when it passes.
 
 This page reports one measured run of that pipeline: four versions of a small FRR network, each tested by both stages. The code is in [`examples/batfish-pipeline`](https://github.com/netdryrun/netdryrun/tree/main/examples/batfish-pipeline).
 
@@ -2559,7 +2559,7 @@ The route-map typo is also caught first: Batfish's `undefinedReferences` questio
 
 According to the [FRR documentation](https://docs.frrouting.org/en/latest/bgp.html#clicmd-bgp-ebgp-requires-policy), `bgp ebgp-requires-policy` is on by default under the `traditional` profile and off under `datacenter`. An eBGP neighbor with no inbound and outbound policy then receives nothing and sends nothing, but the session still comes up. In the lab, r2 shows `(Policy) (Policy)` for both neighbors and 0 prefixes each way, and 6 of the 10 checks fail: r2's LAN is unreachable from r1, even after the link-failure scenario.
 
-Batfish passed this change. It accepted `frr defaults traditional` without modelling what that profile implies, and predicted every route as before. When `bgp ebgp-requires-policy` is written out explicitly, Batfish reports it as an unrecognized line rather than applying it.
+Batfish passed this change. It accepted `frr defaults traditional` without modelling what that profile implies, and predicted every route as before. When `bgp ebgp-requires-policy` is written out explicitly, Batfish reports it as an unrecognized line rather than applying it (Batfish 2026.08.27.3685; the commands are in the example's [README](https://github.com/netdryrun/netdryrun/tree/main/examples/batfish-pipeline#reproduce-the-findings)).
 
 ### Where they agreed
 
@@ -2567,25 +2567,29 @@ For the r1-r2 link failure, Batfish's forked snapshot predicted the same failove
 
 ## What Batfish does that this test does not show
 
-This test uses a small part of Batfish. It also analyses ACLs and firewall rules, searches every packet that could match a rule rather than the few a ping sends, compares two snapshots to report exactly what a change does, scales to networks far larger than a lab can boot, and supports many vendors whose software cannot run in a container. None of that needs a lab, and Netdryrun does none of it.
+This test uses a small part of Batfish. It also tests route maps and other routing policies against every route they could match, analyses ACLs and firewall rules, searches every packet that could match a rule rather than the few a ping sends, finds forwarding loops, compares two snapshots (for example before and after a change, or with links or nodes failed) to report which flows change, and supports many vendors whose software cannot run in a container. Its authors report analysing networks with thousands of nodes within minutes ([SIGCOMM 2023](https://doi.org/10.1145/3603269.3604866)), far more than a lab can boot. See its [list of questions](https://batfish.readthedocs.io/en/latest/questions.html). None of that needs a lab, and Netdryrun does none of it.
 
 ## How well Batfish parses FRR
 
-Batfish reads FRR configs as part of its Cumulus Linux and SONiC support. Its FRR support is partial, and the way you feed it configs matters:
+Batfish reads FRR configs as part of its Cumulus Linux and SONiC support. In this test its FRR support was partial, and the way we fed it configs mattered:" (scopes "partial" to what we measured
 
 - **A bare `frr.conf` is detected as Cisco IOS.** On these configs the status was `PARTIALLY_UNRECOGNIZED`: the `frr defaults` line was not recognized, and interfaces were renamed (`eth1` became `Ethernet1`). The BGP answers happened to be right, but FRR syntax was being read with IOS semantics.
 - **Cumulus Linux layout.** Wrapped in the "Cumulus concatenated" layout (a hostname line, an interfaces section, a `ports.conf` marker, then `frr.conf`), the same three configs parse as `CUMULUS_CONCATENATED` with status `PASSED`, no warnings, and the lab's interface names. `batfish_check.py` does this wrapping.
 - **SONiC layout.** Next to a `config_db.json` with the hostname and interface addresses, the unchanged `frr.conf` files also parse as `SONIC` with status `PASSED` and no warnings. Batfish predicted the same routes as through the Cumulus path, for the baseline and for the `traditional` change.
-- **Not every FRR command or default is supported.** In this test, the defaults profile is accepted but not modelled, and `bgp ebgp-requires-policy` is not recognized at all. Make the gate fail on any file that does not parse cleanly or has a parse warning (`fileParseStatus`, `parseWarning`), as the example script does.
+- **Not every FRR command or default was supported in this test.** In this test, the defaults profile is accepted but not modelled, and `bgp ebgp-requires-policy` is not recognized at all. Make the gate fail on any file that does not parse cleanly or has a parse warning (`fileParseStatus`, `parseWarning`), as the example script does.
 
 The commands that reproduce these findings, and the `(Policy)` output from FRR, are in the example's [README](https://github.com/netdryrun/netdryrun/tree/main/examples/batfish-pipeline#reproduce-the-findings).
 
 These findings cover only BGP with route-maps on three FRR routers. Batfish's support for other vendors (Cisco, Juniper, Arista, Palo Alto and more) is much broader and is not tested here.
 
+## Related research
+
+A HotNets 2025 paper from Google and UC Berkeley, [Towards Accessible Model-Free Verification](https://doi.org/10.1145/3772356.3772380) (Krentsel et al.), joins the two ideas in one system: it boots real router images in the Kubernetes Network Emulator, extracts the converged data plane, and runs Batfish's existing questions on it. The authors report that this caught changes Batfish could not parse and found bugs in Batfish's model. This page keeps the two as separate stages, with the configs as the only shared input.
+
 ## Takeaways
 
 - Put Batfish first. It needs no lab, it failed the two changes it caught in 2 to 3 seconds of analysis, and it pointed at the cause: the file and line of the route-map typo, the routers that learn the leaked default.
-- Keep the lab stage. The change that passed Batfish broke every route through r2, because of a vendor default that the model does not know about.
+- Keep the lab stage. The change that passed Batfish broke every route through r2, because of a vendor default that the model, in the version we tested, did not apply.
 - Watch for disagreements, not only for failures. On the route-map typo, both stages failed, but Batfish's prediction of the outcome was wrong.
 
 See also [When to use what](when-to-use-what.md) for how Batfish, pyATS/Genie, containerlab and Netdryrun compare.
@@ -3272,9 +3276,9 @@ The rules are conservative. A configured session that is down, a missing route o
 
 ## Is Netdryrun an alternative to Batfish or pyATS?
 
-It complements them more than it replaces them. Netdryrun boots the real routing software in a lab and checks its behavior; Batfish analyzes configs without booting anything; pyATS is a general test framework for labs and production devices. Many teams run Batfish first and boot the lab only when it passes ([Batfish, then Netdryrun](batfish.md) measures that pipeline).
+It complements them more than it replaces them. Netdryrun boots the real routing software in a lab and checks its behavior; Batfish models the network from its configs without booting anything; pyATS is a general test framework for labs and production devices. Many teams run Batfish first and boot the lab only when it passes ([Batfish, then Netdryrun](batfish.md) measures that pipeline).
 
-- **Batfish** models configs without booting anything. It is fast, covers many vendors and large networks, and answers broad questions. Netdryrun runs the real routing software, so it sees what the implementation actually does, on fewer nodes.
+- **Batfish** models routing and forwarding from the configs, without booting anything. It covers many vendors and large networks, and answers questions about every flow or route, including what changes between two snapshots or under failures. Netdryrun runs the real routing software, so it sees what the implementation actually does, on fewer nodes.
 - **pyATS / Genie** is a full Python test framework with many parsers, for labs and production devices. Netdryrun is a YAML file of checks and a CLI, aimed at one job: a pass/fail gate in CI.
 
 They work together. See [When to use what](when-to-use-what.md) for a longer, neutral comparison.
@@ -3803,7 +3807,7 @@ Several good open-source tools help you test network changes. They answer differ
 
 | Tool | Best at | Runs routers? |
 |---|---|---|
-| [Batfish](https://batfish.org) | Analyzing configs of many vendors without booting anything: reachability, ACLs and firewall rules, routing, differences between two snapshots | No, it models them |
+| [Batfish](https://batfish.org) | Modelling a network from the configs of many vendors, without booting anything: reachability and traceroute, ACLs and firewall rules, routes and routing policy, failure impact, differences between two snapshots | No, it models them |
 | [pyATS / Genie](https://developer.cisco.com/pyats/) | A full Python test framework with a large library of device parsers, for testing labs and real (including production) devices, with state snapshots and diffs | Works against any reachable device |
 | [containerlab](https://containerlab.dev) | Running container-based network labs from a YAML topology, for many network operating systems | Yes, it is the lab |
 | Your own scripts | Exactly the checks your team needs, around a lab you already run, with no new dependency | Yes, through containerlab |
@@ -3811,11 +3815,11 @@ Several good open-source tools help you test network changes. They answer differ
 
 ## Batfish
 
-Batfish parses device configs and builds a model of the network's control and data plane. Because nothing has to boot, it is fast, covers large networks, and supports configs from many vendors. It can answer broad questions ("can any host in this subnet reach that server?", "what changed between these two snapshots?") that are hard to test by sending packets.
+Batfish parses device configs and uses a model of the control plane (routing protocols such as BGP) to compute the data plane that the configs would produce, then answers questions about it ([Batfish team, SIGCOMM 2023](https://doi.org/10.1145/3603269.3604866)). It needs only the configs, not access to devices ([README](https://github.com/batfish/batfish)). Its authors report analysing networks with thousands of nodes within minutes, and it reads configs from many router, firewall and cloud vendors. Its [questions](https://batfish.readthedocs.io/en/latest/questions.html) cover traceroute and reachability over every matching flow, routing tables and BGP sessions, route-map and ACL behavior, and differences between two snapshots, including a copy of the network with chosen links or nodes failed ([failure analysis](https://batfish.readthedocs.io/en/latest/notebooks/linked/analyzing-the-impact-of-failures-and-letting-loose-a-chaos-monkey.html)). A question such as "can any host in this subnet reach that server?" covers every packet, which a ping cannot.
 
-Use it when you want broad, fast analysis on every commit, especially for ACLs, firewall policy and multi-vendor configs that you cannot run in containers.
+Use it on every commit, before a lab boots, especially for ACLs, firewall policy, failure impact and configs from vendors that cannot run in containers.
 
-A model is not the running software, so behavior that depends on the real implementation (timers, convergence order, bugs) is outside what it sees. That is where a lab helps.
+A model is not the running software. Batfish computes the converged result, not the path the routers take to it, and where the model and the implementation differ (an unmodelled default, a vendor bug), its answer follows the model. A [HotNets 2025 paper from Google and UC Berkeley](https://doi.org/10.1145/3772356.3772380) makes the same point and prototypes "model-free verification": boot real router images in an emulator, extract the converged data plane, and run Batfish's queries on it. That is where a lab helps; our [Batfish page](batfish.md) shows one FRR default the model missed.
 
 ## pyATS / Genie
 
@@ -3862,7 +3866,7 @@ It does not do static analysis, build labs for you, or test production devices.
 
 A reasonable pipeline uses more than one:
 
-1. **Batfish** on every commit for fast, broad config analysis.
+1. **Batfish** on every commit, to analyse the configs before anything boots.
 2. A **containerlab** topology that mirrors the change.
 3. **Netdryrun** in CI to boot that lab, wait for convergence, and gate the merge on runtime behavior.
 4. **pyATS / Genie** (or similar) for pre- and post-change checks on the production devices during the change window.
