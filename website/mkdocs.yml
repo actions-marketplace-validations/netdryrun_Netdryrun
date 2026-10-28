@@ -56,6 +56,8 @@ exclude_docs: |
   !.well-known/
   # Draft until the owner has a postal address to publish. Never publish placeholders.
   legal-notice.md
+  # Beta driver: published with the first release whose full gate it passes (public claims follow releases).
+  reference/junos.md
 
 # One page per Verdict Corpus case, written by corpus/render.py. Linked from the corpus table and in the
 # sitemap, but kept out of the sidebar so 30 pages don't crowd it.
