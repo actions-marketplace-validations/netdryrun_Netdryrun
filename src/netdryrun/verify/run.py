@@ -238,6 +238,16 @@ def _hint(topology: Path, config_hint: str | None) -> Path | None:
     return Path(os.path.normpath(topology.parent / rel))
 
 
+def _is_ref(spec: str, topology: Path) -> bool:
+    """Whether `spec` names a commit in the repository that holds the topology (False outside a repository)."""
+    try:
+        repo = Path(str(_git(["rev-parse", "--show-toplevel"], topology.parent)).strip())
+        str(_git(["rev-parse", "--verify", "--quiet", f"{spec}^{{commit}}"], repo))
+    except VerifyInputError:
+        return False
+    return True
+
+
 def materialize(spec: str, label: str, topology: Path, work: Path, config_hint: str | None = None) -> Side:
     """Build one side's lab tree in work/<label>, isolated from the other side and from the working tree.
 
@@ -249,6 +259,10 @@ def materialize(spec: str, label: str, topology: Path, work: Path, config_hint: 
     out = work / label
     side_dir = Path(spec)
     if side_dir.is_dir():
+        if _is_ref(spec, topology):
+            raise VerifyInputError(f"--{label} {spec!r} is both a directory and a git ref; verify won't guess which is "
+                                   "meant (a change could add a folder named like the base commit). Rename the "
+                                   "directory, or pass the ref in another form (a full commit hash or a branch name)")
         given = side_dir.resolve()
         mount = _hint(topology, config_hint) or bind_anchor(topology)
         anchor = Path(os.path.commonpath([str(mount), str(topology.parent)]))
@@ -509,20 +523,26 @@ def load_guards(path: str | None, before_spec: str, before: Side):
 # ---------------------------------------------------------------------------------------------------------
 
 APPROVING = ("matched", "no_change")
-NOT_DETERMINISTIC = ("a second boot of the after side, with the same configs, gave a different snapshot: the lab "
-                     "is not deterministic, so this run approves nothing")
+NOT_DETERMINISTIC = ("a second boot of one side, with the same configs, gave a different snapshot: the lab is not "
+                     "deterministic, so this run approves nothing")
 
 
-def confirm_by_rerun(res: VerifyResult, side, after_topo: Path, snap_a: Snapshot) -> None:
-    """No approval from a single boot: boot the after side again and require the same snapshot. A difference
-    (or a rerun that never settles) is INCONCLUSIVE, naming every item that differed."""
-    snap_r, tr, _ = side("rerun", after_topo)
-    res.timings["rerun_s"] = tr
-    if isinstance(snap_r, Inconclusive):
-        res.status, res.inconclusive, res.inconclusive_side = "inconclusive", snap_r, "rerun"
-        return
-    differing = [f"{d.key.where()} {d.change}" for d in diff(snap_a, snap_r)]
-    res.determinism = {"rerun": "after", "identical": not differing, "differing": differing}
+def confirm_by_rerun(res: VerifyResult, side, before_topo: Path, snap_b: Snapshot, after_topo: Path,
+                     snap_a: Snapshot) -> None:
+    """No approval from a single boot: boot each side again and require the same snapshot (a before boot that
+    stably missed an item would hide a change that removes it; an after boot, one that adds it). The first
+    difference (or a rerun that never settles) is INCONCLUSIVE, naming every item that differed."""
+    differing: list[str] = []
+    for label, topo, first in (("rerun-before", before_topo, snap_b), ("rerun-after", after_topo, snap_a)):
+        snap_r, tr, _ = side(label, topo)
+        res.timings[f"{label.replace('-', '_')}_s"] = tr
+        if isinstance(snap_r, Inconclusive):
+            res.status, res.inconclusive, res.inconclusive_side = "inconclusive", snap_r, "rerun"
+            return
+        differing = [f"{label.split('-')[1]}: {d.key.where()} {d.change}" for d in diff(first, snap_r)]
+        if differing:
+            break
+    res.determinism = {"reruns": ["before", "after"], "identical": not differing, "differing": differing}
     if differing:
         res.status, res.inconclusive, res.inconclusive_side = "inconclusive", Inconclusive(NOT_DETERMINISTIC, differing), "rerun"
 
@@ -604,7 +624,7 @@ def verify(topology: str, before: str, after: str, intent_path: str, *, guards: 
                 res.status = "inconclusive" if gres["status"] == "inconclusive" else "error"
                 res.error = f"the standing guards ended with {gres['status']}: {gres.get('error') or 'no verdict'}"
         if res.status in APPROVING:
-            confirm_by_rerun(res, side, after_topo, snap_a)
+            confirm_by_rerun(res, side, before_topo, snap_b, after_topo, snap_a)
         return res
     except SnapshotError as e:
         res.status, res.error = "error", f"unreadable snapshot: {e}"

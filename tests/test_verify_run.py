@@ -83,7 +83,7 @@ def fake_side(before, after, guards=None, raise_on=None):
                               for f in folder.rglob("*") if f.is_file()}))
         if raise_on == label:
             raise SnapshotError("unexpected output from `show bgp vrf all neighbors json`: unknown field(s) ['x']")
-        snap = before if label == "before" else after
+        snap = before if label in ("before", "rerun-before") else after
         return snap, 1.0, (guards if label == "after" else None)
     side.calls = calls
     return side
@@ -110,7 +110,7 @@ def test_matched(tmp_path):
     data = validate(res)
     assert data["verdict"] == "INTENT MATCHED" and data["intent"]["lines"] and not data["undeclared"]
     assert data["evidence"]["before"]["schema"] == "netdryrun.snapshot/v1"
-    assert [c[0] for c in side.calls] == ["before", "after", "rerun"]
+    assert [c[0] for c in side.calls] == ["before", "after", "rerun-before", "rerun-after"]
     # each side's lab folder holds the topology byte for byte, its own configs and the shared binds
     bfiles, afiles = side.calls[0][1], side.calls[1][1]
     assert afiles["configs/edge1.conf"] == b"! edge1 after\n"
@@ -220,7 +220,7 @@ def rerun_side(before, after, rerun):
 
     def wrapped(label, topology, on_up=None):
         snap, t, extra = inner(label, topology, on_up)
-        return (rerun if label == "rerun" else snap), t, extra
+        return (rerun if label == "rerun-after" else snap), t, extra
     wrapped.calls = side.calls
     return wrapped
 
@@ -229,11 +229,11 @@ def test_an_approval_is_confirmed_by_a_rerun_of_the_after_side(tmp_path):
     after = add_new_customer_block(base()).snap()
     res, side = run_verify(tmp_path, base().snap(), after)
     assert (res.status, res.exit_code) == ("matched", 0)
-    assert [c[0] for c in side.calls] == ["before", "after", "rerun"]
-    assert side.calls[1][1] == side.calls[2][1]                       # the rerun boots the after side's own files
+    assert [c[0] for c in side.calls] == ["before", "after", "rerun-before", "rerun-after"]
+    assert side.calls[0][1] == side.calls[2][1] and side.calls[1][1] == side.calls[3][1]   # each side's own files
     data = validate(res)
-    assert data["determinism"] == {"rerun": "after", "identical": True, "differing": []}
-    assert "rerun_s" in data["timings"]
+    assert data["determinism"] == {"reruns": ["before", "after"], "identical": True, "differing": []}
+    assert {"rerun_before_s", "rerun_after_s"} <= set(data["timings"])
 
 
 def test_a_rerun_that_differs_is_inconclusive_naming_what_differed(tmp_path):
@@ -253,7 +253,7 @@ def test_a_rerun_that_differs_is_inconclusive_naming_what_differed(tmp_path):
 
 def test_no_behavior_change_is_also_confirmed_by_a_rerun(tmp_path):
     res, side = run_verify(tmp_path, base().snap(), base().snap(), intent_text="intent: []\n")
-    assert res.status == "no_change" and [c[0] for c in side.calls] == ["before", "after", "rerun"]
+    assert res.status == "no_change" and [c[0] for c in side.calls] == ["before", "after", "rerun-before", "rerun-after"]
 
 
 def test_a_failed_verdict_needs_no_rerun(tmp_path):
@@ -612,7 +612,7 @@ def guards_on(after_snap):
 
 def guard_side(before_snap, after_snap):
     def side(label, topology, on_up=None):
-        snap = before_snap if label == "before" else after_snap
+        snap = before_snap if label in ("before", "rerun-before") else after_snap
         return snap, 1.0, (on_up(None, topology) if on_up and label == "after" else None)
     return side
 
@@ -725,3 +725,49 @@ def test_host_kinds_are_refused_unless_unobserved(tmp_path):
     with pytest.raises(vrun.VerifyInputError, match="x1"):
         vrun.classify_nodes(lab, {}, [])
     assert vrun.classify_nodes(lab, {}, ["x1"]) == {"r1": "frr", "x1": "", "br": ""}
+
+
+# --- cold review of 0.4 (layer 6, 2026-10-28) ------------------------------------------------------------------
+
+def test_cold_1_a_directory_named_like_a_ref_is_ambiguous_and_refused(tmp_path, monkeypatch):
+    """A PR adds a folder named exactly like the base commit's hash, holding its own configs: in the Action
+    (which passes hashes, in the PR's checkout) that folder became the before side, the base's guards were
+    dropped and the change compared against itself: NO BEHAVIOR CHANGE. A side that is both a directory and a
+    git ref is exit 2."""
+    lab = repo_lab(tmp_path)
+    base_sha = git(lab, "rev-parse", "HEAD").strip()
+    (lab / "configs" / "edge1.conf").write_text("! edge1 after: the leak\n")
+    for sub in ("configs", "shared"):
+        shutil.copytree(lab / sub, lab / base_sha / sub)
+    git(lab, "add", ".")
+    git(lab, "commit", "-q", "-m", "pr")
+    head_sha = git(lab, "rev-parse", "HEAD").strip()
+    monkeypatch.chdir(lab)
+    side = fake_side(base().snap(), base().snap())
+    res = vrun.verify(str(lab / "topology.clab.yml"), base_sha, head_sha, str(intent_file(tmp_path, "intent: []\n")),
+                      side_fn=side, intent_source="action")
+    assert (res.status, res.exit_code) == ("error", 2) and not side.calls
+    assert "both a directory and a git ref" in res.error
+
+
+def test_cold_5_an_approval_reruns_the_before_side_too(tmp_path):
+    """A before boot that is stably missing an item (a race in the lab) hides a change that removes it:
+    an approval needs each side twice, identical."""
+    lab = make_lab(tmp_path)
+    b, a = side_dir(tmp_path, lab, "before"), side_dir(tmp_path, lab, "after", edit="! edge1 after\n")
+    flaky_before = base()
+    flaky_before.drop("cust1", "path", "198.18.0.0/24")
+    flaky_before.drop("cust1", "rib", "198.18.0.0/24")
+    snaps = {"before": flaky_before.snap(), "after": flaky_before.snap(), "rerun-before": base().snap(),
+             "rerun-after": flaky_before.snap()}
+    calls = []
+
+    def side(label, topology, on_up=None):
+        calls.append(label)
+        return snaps[label], 1.0, None
+    res = vrun.verify(str(lab / "topology.clab.yml"), str(b), str(a), str(intent_file(tmp_path, "intent: []\n")),
+                      side_fn=side)
+    assert calls == ["before", "after", "rerun-before"]          # the before rerun differed: no need for more
+    assert (res.status, res.exit_code) == ("inconclusive", 3)
+    data = validate(res)
+    assert data["determinism"]["identical"] is False and any("cust1" in x for x in data["determinism"]["differing"])

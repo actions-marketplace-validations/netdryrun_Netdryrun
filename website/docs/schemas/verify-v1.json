@@ -48,11 +48,11 @@
       ]
     },
     "determinism": {
-      "description": "An approving verdict boots the after side a second time: identical is false (and the status inconclusive) when that rerun gave a different snapshot, listing every item that differed. null when nothing was approved, or the rerun never settled.",
+      "description": "An approving verdict boots each side a second time: identical is false (and the status inconclusive) when a rerun gave a different snapshot, listing every item that differed (prefixed with its side). null when nothing was approved, or a rerun never settled.",
       "oneOf": [
         {"type": "null"},
-        {"type": "object", "required": ["rerun", "identical", "differing"], "additionalProperties": false,
-         "properties": {"rerun": {"enum": ["after"]}, "identical": {"type": "boolean"},
+        {"type": "object", "required": ["reruns", "identical", "differing"], "additionalProperties": false,
+         "properties": {"reruns": {"type": "array", "items": {"enum": ["before", "after"]}}, "identical": {"type": "boolean"},
                         "differing": {"type": "array", "items": {"type": "string"}}}}
       ]
     },
@@ -95,7 +95,7 @@
     "guards_source": {"enum": ["before-ref", "explicit", "none"]},
     "timings": {"type": "object", "additionalProperties": false,
                 "properties": {"before_s": {"type": "number"}, "after_s": {"type": "number"},
-                               "rerun_s": {"type": "number"}}},
+                               "rerun_before_s": {"type": "number"}, "rerun_after_s": {"type": "number"}}},
     "evidence": {"type": "object", "required": ["before", "after"], "additionalProperties": false,
                  "properties": {"before": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/snapshot"}]},
                                 "after": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/snapshot"}]}}}
