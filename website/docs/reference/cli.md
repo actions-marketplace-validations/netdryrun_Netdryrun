@@ -35,7 +35,7 @@ Runs the checks against a lab that is already up, for example one left running w
 
 Loads and validates `netdryrun.yml` and prints the parsed checks. It does not need Docker or containerlab.
 
-From 0.3.1 it also reads the topology (strictly: malformed YAML and duplicate keys are errors) and checks what `run` checks before deploying: every node a check, fault or `setup` names exists; the driver can read every key the checks use (for example no `afi: evpn` on SR Linux or Arista EOS); and `inject_routes` names an FRR node. It also checks two things `run` finds out only after deploying: every node a check reads has a driver (detected from its kind and image, or set with `nodes.<node>.driver`), and no `link_down` or `node_isolated` fault targets an SR Linux node. Any of these is an error with exit code `2`. What it can't check without containerlab: whether containerlab accepts the topology itself (a misspelled `kind:`, a missing image).
+From 0.3.1 it also reads the topology (strictly: malformed YAML and duplicate keys are errors) and checks what `run` checks before deploying: every node a check, fault or `setup` names exists; the driver can read every key the checks use (for example no `afi: evpn` on SR Linux, Arista EOS or Juniper); and `inject_routes` names an FRR node. It also checks two things `run` finds out only after deploying: every node a check reads has a driver (detected from its kind and image, or set with `nodes.<node>.driver`), and no `link_down` or `node_isolated` fault targets an SR Linux or cJunosEvolved node. Any of these is an error with exit code `2`. What it can't check without containerlab: whether containerlab accepts the topology itself (a misspelled `kind:`, a missing image).
 
 ```text
 $ netdryrun validate examples/frr-bgp

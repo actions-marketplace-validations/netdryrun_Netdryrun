@@ -1736,7 +1736,7 @@ Validation is strict, and every problem is an error (exit code `2`) before anyth
 | `timeout` | no | `120` | Seconds a check may wait (see [convergence semantics](#convergence-semantics)). A positive number, at most `86400`. Each check can override it. |
 | `checks` | yes | | List of checks. At least one is required. |
 | `nodes` | no | | A mapping of node name to settings. Each node accepts only `driver` and `setup`. |
-| `nodes.<node>.driver` | no | detected | Force the driver for a node: `frr`, `srlinux`, `eos` or `sonic`. See [drivers](#drivers). |
+| `nodes.<node>.driver` | no | detected | Force the driver for a node: `frr`, `srlinux`, `eos`, `sonic` or `junos` (Juniper cJunosEvolved, beta). See [drivers](#drivers). |
 | `nodes.<node>.setup` | no | | Shell commands run inside the node after deploy, before any check. Each is retried every 5 s until it succeeds (the NOS may still be booting), within a shared 300 s budget. For NOSes that are configured after boot, such as SONiC. |
 | `scenarios` | no | | A non-empty list of [failure scenarios](#failure-scenarios). |
 
@@ -1786,7 +1786,7 @@ The number of prefixes accepted from a neighbor is within a range. Accepted mean
 | `min` | one of `min`, `max`, `exact` | | Lower bound, inclusive |
 | `max` | one of `min`, `max`, `exact` | | Upper bound, inclusive |
 | `exact` | one of `min`, `max`, `exact` | | Exact count |
-| `afi` | no | `ipv4-unicast` | Address family: exactly one of `ipv4-unicast`, `ipv6-unicast` or `evpn` (case-insensitive). `evpn` is supported on FRR and SONiC only, not on SR Linux or Arista EOS |
+| `afi` | no | `ipv4-unicast` | Address family: exactly one of `ipv4-unicast`, `ipv6-unicast` or `evpn` (case-insensitive). `evpn` is supported on FRR and SONiC only, not on SR Linux, Arista EOS or Juniper (beta) |
 
 Rules:
 
@@ -2008,26 +2008,29 @@ A driver turns device state into a common shape. Netdryrun detects it from the t
 
 - `kind: nokia_srlinux` or `kind: srl` uses `srlinux`
 - `kind: arista_ceos` or `kind: ceos` uses `eos`
+- `kind: juniper_cjunosevolved` or `kind: cjunosevolved` uses `junos` (beta)
 - `kind: sonic-vs`, or an image whose name contains `sonic`, uses `sonic`
 - an image whose name contains `frr` uses `frr`
 - anything else is an error unless you set `nodes.<node>.driver`
 
-| Check | FRR | SR Linux | Arista EOS | SONiC |
-|---|---|---|---|---|
-| `bgp_session` | yes | yes | yes | yes |
-| `bgp_prefixes` (accepted = received minus rejected by policy) | yes | yes | yes | yes |
-| `route` present / absent | yes | yes | yes | yes |
-| `bgp_route`: communities (standard, large, well-known), AS path, local preference, MED, next hop, absent | yes | yes | yes | yes |
-| `ping` success / failure | yes | yes | yes | yes |
-| Failure scenarios on the node's own links | yes | not yet (fail the FRR/Linux side instead) | yes | yes |
-| `inject_routes` on the node | yes | not yet (inject from an FRR neighbor) | not yet | not yet |
-| Tested on a live lab in CI | yes, on every push | yes, on every push | no: parsers tested against output captured from live labs | no: parsers tested against output captured from live labs |
+| Check | FRR | SR Linux | Arista EOS | SONiC | Juniper cJunosEvolved (beta) |
+|---|---|---|---|---|---|
+| `bgp_session` | yes | yes | yes | yes | yes |
+| `bgp_prefixes` (accepted = received minus rejected by policy) | yes | yes | yes | yes | yes |
+| `route` present / absent | yes | yes | yes | yes | yes |
+| `bgp_route`: communities (standard, large, well-known), AS path, local preference, MED, next hop, absent | yes | yes | yes | yes | yes |
+| `ping` success / failure | yes | yes | yes | yes | yes |
+| Failure scenarios on the node's own links | yes | not yet (fail the FRR/Linux side instead) | yes | yes | not yet (fail the FRR/Linux side instead) |
+| `inject_routes` on the node | yes | not yet (inject from an FRR neighbor) | not yet | not yet | not yet |
+| Tested on a live lab in CI | yes, on every push | yes, on every push | no: parsers tested against output captured from live labs | no: parsers tested against output captured from live labs | no: parsers tested against output captured from a live lab; needs KVM |
 
 **Received paths count as present on every driver:** a BGP route that lost to a static or local route, or that has an unresolvable next hop, may live only in the BGP table, not the routing table. Every driver reads the BGP table too, so a path received from a neighbor counts as present for `present: false`, valid or not, selected or not. The router's own paths (network statements, redistribution, and on SR Linux its static and interface routes listed in the BGP RIB) don't count as received.
 
 **Errors are never "nothing":** from 0.3.1, a failed command or output a driver doesn't recognize is an error on that sample (the check fails with `error: ...`), never read as "no routes" or "no sessions", which would pass `present: false` or `max`. A VRF that doesn't exist on the node is an error too, on every driver: FRR and SONiC confirm the VRF with `show vrf`, SR Linux reads the network-instance's oper-state, and Arista EOS requires the VRF in the `vrfs` map of its answer. `vrf: all` and other names that mean "every VRF" are refused.
 
 **SONiC:** `docker-sonic-vs` routes with FRR inside the container, so the `sonic` driver reads state through `vtysh` like the FRR driver. The image boots unconfigured; put interface IPs (`config interface ip add ...`) and BGP (`vtysh -c ...`) in `nodes.<node>.setup`. See `examples/sonic-frr`.
+
+**Juniper cJunosEvolved (beta):** free from Juniper for non-production labs, and can't be redistributed: download it yourself and `docker load` it. It boots a VM, so the host needs KVM and about 8 GB of memory per node. Hidden routes count as received, except routes rejected by import policy. See the [Juniper driver page](junos.md) and `examples/junos-frr`.
 
 **Arista EOS:** cEOS-lab is free from arista.com (account required) and can't be redistributed. Download it yourself, then `docker import cEOS-lab-<version>.tar ceos:<version>`, and use `kind: arista_ceos` with that image.
 
@@ -2037,8 +2040,9 @@ A driver turns device state into a common shape. Netdryrun detects it from the t
 | SR Linux | `sr_cli --output-format json "info from state ..."`; accepted = `received-routes` minus `rejected-routes`; `bgp_route` from the `bgp-rib` local RIB and its `attr-sets` |
 | Arista EOS | `Cli -c "show ... \| json"`; `bgp_route` from `show ip bgp <prefix> vrf <vrf>` (the best path is the `active` one) |
 | SONiC | the FRR commands, through `vtysh` inside the container |
+| Juniper cJunosEvolved (beta) | `cli -c "show ... \| display json"` over the container's SSH hop to the Junos VM; accepted prefixes from `accepted-prefix-count`; `route` and `bgp_route` from `show route <prefix> exact table <table> all extensive` (hidden routes included) |
 
-If a driver can't read what a check asks for, the run stops before deploying (exit code `2`) instead of guessing: "`<key>` is not supported on `<driver>`" for a `bgp_route` attribute (today every driver reads every attribute), and "afi evpn is not supported on eos" (or `srlinux`) for an EVPN prefix count on Arista EOS or SR Linux.
+If a driver can't read what a check asks for, the run stops before deploying (exit code `2`) instead of guessing: "`<key>` is not supported on `<driver>`" for a `bgp_route` attribute (today every driver reads every attribute), and "afi evpn is not supported on eos" (or `srlinux`, `junos`) for an EVPN prefix count on Arista EOS, SR Linux or Juniper.
 
 Every command and its raw output is kept in the [JSON report](cli.md#json).
 
@@ -2094,7 +2098,7 @@ Runs the checks against a lab that is already up, for example one left running w
 
 Loads and validates `netdryrun.yml` and prints the parsed checks. It does not need Docker or containerlab.
 
-From 0.3.1 it also reads the topology (strictly: malformed YAML and duplicate keys are errors) and checks what `run` checks before deploying: every node a check, fault or `setup` names exists; the driver can read every key the checks use (for example no `afi: evpn` on SR Linux or Arista EOS); and `inject_routes` names an FRR node. It also checks two things `run` finds out only after deploying: every node a check reads has a driver (detected from its kind and image, or set with `nodes.<node>.driver`), and no `link_down` or `node_isolated` fault targets an SR Linux node. Any of these is an error with exit code `2`. What it can't check without containerlab: whether containerlab accepts the topology itself (a misspelled `kind:`, a missing image).
+From 0.3.1 it also reads the topology (strictly: malformed YAML and duplicate keys are errors) and checks what `run` checks before deploying: every node a check, fault or `setup` names exists; the driver can read every key the checks use (for example no `afi: evpn` on SR Linux, Arista EOS or Juniper); and `inject_routes` names an FRR node. It also checks two things `run` finds out only after deploying: every node a check reads has a driver (detected from its kind and image, or set with `nodes.<node>.driver`), and no `link_down` or `node_isolated` fault targets an SR Linux or cJunosEvolved node. Any of these is an error with exit code `2`. What it can't check without containerlab: whether containerlab accepts the topology itself (a misspelled `kind:`, a missing image).
 
 ```text
 $ netdryrun validate examples/frr-bgp
@@ -2257,6 +2261,87 @@ Long outputs are truncated (the last 20,000 characters of command output are kep
 - a failed check has a `<failure>` whose `message` is the detail and whose body is the evidence as JSON
 - in an `inconclusive` run, failed checks have an `<error>` instead of a `<failure>` (they could not run meaningfully), and they count as `errors`, not `failures`
 - a lab error adds a testcase named `lab` with an `<error>` element
+
+
+---
+Source: https://netdryrun.com/reference/junos/
+
+# Juniper cJunosEvolved driver (beta)
+
+!!! note "Beta"
+    The `junos` driver is beta. It is built and tested against output captured from a live `cjunosevolved:26.2R1.7-EVO` lab, and `examples/junos-frr` runs on it live, but it hasn't been run on a hosted CI runner. Other cJunosEvolved releases, vJunos and physical Junos devices are untested.
+
+## Getting the image
+
+cJunosEvolved is free for non-production labs, with no time limit, from Juniper's cJunosEvolved download page (accept the licence agreement, then `docker load -i` the tarball). Juniper's licence doesn't allow redistributing it, so Netdryrun never ships, mirrors or caches it: download it yourself.
+
+Use containerlab's `juniper_cjunosevolved` kind (or `cjunosevolved`). Netdryrun detects the driver from the kind; `nodes.<node>.driver: junos` forces it.
+
+```yaml
+j1:
+  kind: juniper_cjunosevolved
+  image: cjunosevolved:26.2R1.7-EVO
+  startup-config: configs/j1.cfg
+  env:
+    CPTX_NUM_IF: "1"   # the number of data links you connect (eth4 and up)
+```
+
+## Host and timing
+
+- **KVM is required.** The container runs Junos in a QEMU VM, so the host needs `/dev/kvm` (on WSL2, nested virtualization). GitHub's standard hosted runners are not a tested target.
+- **Memory:** about 8 GB for one node (measured: 8.2 GiB). 4 vCPUs minimum.
+- **Boot time:** every deploy installs Junos inside the VM and reboots it. Set `CPTX_NUM_IF` to the number of data links you connect: without it the container waits 5 minutes for 36 interfaces before it starts the VM. Measured on WSL2 (20 threads, 16 GB) with `CPTX_NUM_IF` set and nothing else running: Junos answered about 4 minutes after deploy, BGP was up after about 6, and the whole `netdryrun run` of `examples/junos-frr` took 398 s. Without `CPTX_NUM_IF`, and on a busy host, it took about 22 minutes to BGP.
+- **One VM at a time on a 16 GB host.** With a second vendor VM booting next to it, the Junos VM logged CPU soft lockups and the host stopped answering for minutes.
+- Set `timeout` high enough for the boot (the example uses `1800`). While the VM boots, every read is an error on that sample (the check keeps waiting); it is never read as "no sessions".
+- **A startup config Junos rejects fails quietly:** the hostname stays `re0`, the VM's console logs "Failed to start MGD initialization of schema and database", and the routing daemon never starts. We hit this with a config that had a `/* */` comment, no `## SECRET-DATA` marker and a mixed IPv4/IPv6 route filter (which of the three Junos rejected wasn't isolated). The example's `configs/j1.cfg` follows containerlab's sample format and loads.
+
+## How state is read
+
+The container's own `cli -c` ignores its argument and opens an interactive CLI. Netdryrun uses the container's internal SSH hop to the VM instead, as the container's `cli` wrapper does, and asks for JSON:
+
+```text
+docker exec <node> ssh -i /root/.ssh/sshkey root@176.1.1.1 "cli -c '<command> | display json | no-more'"
+```
+
+Netdryrun's `default` VRF is the Junos `master` instance (tables `inet.0`, `inet6.0`); `vrf: X` is routing-instance `X` (tables `X.inet.0`, `X.inet6.0`). `vrf: master` is refused: use `default`.
+
+| Check | Command | Reads |
+|---|---|---|
+| `bgp_session` | `show bgp neighbor instance <master\|X>` | `peer-state` per peer; a peer of another instance in the answer is an error |
+| `bgp_prefixes` | the same | `accepted-prefix-count` of the peer's `inet.0` (IPv4) or `inet6.0` (IPv6) RIB: received minus routes rejected by import policy and routes Junos can't use |
+| `route` | `show route <prefix> exact table <table> all extensive` | every route for the prefix, hidden ones included |
+| `bgp_route` | the same | the BGP routes for the prefix and their attributes |
+| `ping` | `ping <target> count <n> rapid wait 1 [source <ip>] [routing-instance X]` | `probe-results-summary` (probes sent, responses received) |
+| `netdryrun record` | `show route table <table>` | every route in the table |
+
+## Received, hidden and filtered routes
+
+- **Present means received.** A BGP route that loses to a static or local route (a leaked default behind your own static) is listed by Junos as inactive. It counts as present, not selected, so `present: false` fails, as on every driver.
+- **Hidden for an unusable next hop counts as received.** Junos hides a route whose next hop it can't use (`hidden-reason`: for example "Protocol nexthop is not on the interface"). It was received, so it counts as present but not selected, like an invalid path on FRR, SR Linux and Arista EOS.
+- **Rejected by import policy is filtered.** Junos keeps a route its import policy rejected as hidden, `hidden-reason` "Rejected by import policy". It can never be used, and FRR and EOS don't keep such a route at all, so it doesn't count: an import filter that drops a leak makes `present: false` pass. A hidden route with any other reason, or none, counts as present.
+- **BGP's best path:** the active BGP route. When a route of another protocol is active (a static default beats the leaked BGP one), the best BGP path is the first BGP route whose only reason to lose is route preference, as FRR reports it.
+- **The router's own routes:** Junos doesn't list its own static, direct or aggregate routes as BGP routes, even when an export policy advertises them. `bgp_route` on Junos reads routes received over BGP only; check what a router advertises on the neighbor that receives it.
+- **Attributes:** AS path from `as-path` (sets `{a,b}`, confederation sequences `(a b)`; a bracketed local AS or any unknown token is an error), MED from `metric` (0 when absent), local preference from `local-preference` ("not set" when absent), communities from `communities` (`large:a:b:c` entries are large communities), next hop from the protocol next hop when shown (iBGP) or the selected forwarding next hop.
+
+## Errors are never "nothing"
+
+Junos exits 0 for everything, errors included. The driver reads every answer as the JSON document it expects:
+
+- `error: ...` text (a syntax error, a command Junos refuses) is an error on that sample.
+- An unknown routing table is an explicit `route-table-error`. The driver then reads `show route instance <X>`: an instance that exists without the table (no IPv6 in that VRF) has no routes there; one that doesn't exist is an error.
+- An unknown BGP instance answers exactly like one without peers, so an empty neighbor list in a VRF is trusted only after `show route instance <X>` confirms the instance.
+- An unknown element where Junos lists routes or peers (a renamed list) is an error, never an empty table.
+- `ping-failure` is ignored (Junos sets it even when every probe is answered); only `probe-results-summary` counts. No summary means ping didn't run (a bad source address, an unknown instance) or the destination is unreachable ("No route to host").
+
+## Refused before deploying
+
+- `afi: evpn` on `bgp_prefixes` (the driver reads IPv4 and IPv6 unicast counts only; an EVPN count would read 0).
+- `link_down` and `node_isolated` faults on a cJunosEvolved node: fail the FRR or Linux side of the link instead.
+- `inject_routes` from a cJunosEvolved node: inject from an FRR neighbor.
+
+## Example
+
+[`examples/junos-frr`](https://github.com/netdryrun/netdryrun/tree/main/examples/junos-frr): cJunosEvolved and FRR peering eBGP, the good configs passing and a one-line leak failing exactly the leak guard. Its README has the real output of both runs.
 
 
 ---
