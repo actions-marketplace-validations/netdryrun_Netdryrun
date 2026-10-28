@@ -5,7 +5,7 @@ description: Free help testing one of your real network changes with Netdryrun, 
 
 # Design partners
 
-Netdryrun is young. We'd rather learn from a few real changes than guess. If you have a routing change coming up, we'll help you test it in a lab, for free, in exchange for honest feedback.
+We want Netdryrun shaped by real changes, not guesses. If you have a routing change coming up, we'll help you test it in a lab, for free, in exchange for honest feedback.
 
 ## What you get
 
@@ -24,7 +24,7 @@ Netdryrun is young. We'd rather learn from a few real changes than guess. If you
 
 - A lab is not production. A pass covers the checks in the lab, on the network OSes we support ([FRR, Nokia SR Linux, SONiC, Arista EOS](reference/config.md#drivers)). See [what a lab cannot prove](trust.md#what-a-lab-cannot-prove).
 - We never touch your production network and never need access to it.
-- This is a small independent project, so we take a few partners at a time.
+- We take a few partners at a time, so each change gets proper attention.
 
 ## How your configs are handled
 

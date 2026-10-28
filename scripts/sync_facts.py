@@ -149,17 +149,16 @@ def blocks(f: dict) -> dict[str, str]:
     tools = _join([f"`{t}`" for t in f["mcp_tools"]])
     scen = _join(["link-down", "node-isolation", *(["route-injection (FRR only)"] if f["route_injection"] else [])])
     return {
-        "readme_status": (f"> Status: **v{v}, early.** Runs on Linux and WSL2, with drivers for {long_}. "
-                          + corpus_sentence.format(link="[verdict corpus](https://netdryrun.com/corpus/)")
-                          + " Feedback and issues are very welcome."),
-        "site_status": (f"Version {v}, early. Works with {mid} on Linux and WSL2. Check types: {checks} "
+        "readme_status": (f"> Status: **v{v}.** Runs on Linux and WSL2, with drivers for {long_}. "
+                          + corpus_sentence.format(link="[verdict corpus](https://netdryrun.com/corpus/)")),
+        "site_status": (f"Version {v}. Works with {mid} on Linux and WSL2. Check types: {checks} "
                         f"(IPv4/IPv6 unicast {covers}), plus {scen} failure scenarios. "
                         + corpus_sentence.format(link="[verdict corpus](corpus.md)")
                         + " Issues and feedback: [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun/issues)."),
-        "when_status": (f"It is early (version {v}). Drivers exist for {mid}, and checks cover {covers}, "
+        "when_status": (f"Version {v} has drivers for {mid}, and its checks cover {covers}, "
                         f"with {scen} failure scenarios."),
         "llms_summary": (f"> Netdryrun is an open-source tool (Python, Apache-2.0) that tests network changes in a real containerlab "
-                         "virtual lab before they reach production. It waits for convergence, checks BGP sessions, prefixes, routes and "
+                         "virtual lab before they reach production, so a change ships only after it has passed in a lab, the way code ships only after its tests pass. It waits for convergence, checks BGP sessions, prefixes, routes and "
                          f"reachability, and returns a pass/fail verdict with evidence. Supported network OSes: {long_}. "
                          "It runs locally, in GitHub Actions, or as an MCP server for AI agents.\n\n"
                          f"Install: `pipx install netdryrun` (or `uv tool install netdryrun`; current version {v}). Source: https://github.com/netdryrun/netdryrun\n\n"
@@ -203,6 +202,8 @@ def stale_patterns(f: dict) -> list[tuple[str, str]]:
         (r"(?i)only (?:for )?FRR and (?:Nokia )?SR ?Linux|FRR and (?:Nokia )?SR Linux on Linux", "platform list is out of date"),
         (r"(?i)\bv0\.1 covers", "old version scope"),
         (r"(?i)licensed vendor images is on the roadmap", "Arista cEOS (bring your own image) is supported"),
+        (r"(?i)\bv?\d+\.\d+\.\d+, early\b|\bit is early \(version|\b(?:project|netdryrun) is (?:very )?young\b",
+         "maturity hedge that states no real limitation (give the version and scope instead)"),
     ]
 
 

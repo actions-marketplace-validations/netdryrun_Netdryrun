@@ -18,7 +18,7 @@ To test a network change in CI, keep the changed configs and a containerlab topo
 The browser trial runs in GitHub Codespaces: it needs a free GitHub account, takes a few minutes to start, and then `bash examples/agent-demo/demo.sh` shows a bad change rejected and the fix accepted. Nothing to install.
 
 !!! abstract "What Netdryrun is"
-    Netdryrun is an open-source tool that tests network changes in a real virtual lab before they reach production. It boots the topology with containerlab, waits for convergence, checks BGP sessions, prefixes, routes and reachability, and returns a pass/fail verdict with evidence. It runs locally, in GitHub Actions, or as an MCP server for AI agents.
+    Software teams don't ship code without running its tests. Network changes deserve the same step: run the change in a real lab, check how the network behaves, and ship only on a pass. Netdryrun is the open-source tool that makes that one command, one CI step, or one tool call for an AI agent. It tests network changes in a real virtual lab before they reach production. It boots the topology with containerlab, waits for convergence, checks BGP sessions, prefixes, routes and reachability, and returns a pass/fail verdict with evidence. It runs locally, in GitHub Actions, or as an MCP server for AI agents.
 
 ## Watch the demo
 
@@ -102,7 +102,7 @@ Requirements: Linux or WSL2, Docker, containerlab, Python 3.10+. Walkthrough: [G
 ## Status
 
 
-Version 0.3.1, early. Works with FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image) on Linux and WSL2. Check types: `bgp_session`, `bgp_prefixes`, `route`, `bgp_route` and `ping` (IPv4/IPv6 unicast BGP sessions, prefix counts, routes, BGP best-path attributes and ping), plus link-down, node-isolation and route-injection (FRR only) failure scenarios. On the [verdict corpus](corpus.md) v1 (30 realistic BGP changes: 19 harmful, 11 safe), Netdryrun judged 24/30 correctly, ping-only checks 20/30 and all-sessions-up checks 15/30. Netdryrun approved 5 of the 19 harmful changes (ping-only checks: 10 of 19) and blocked 1 of the 11 safe ones. On v2 (18 cases written after v1 to target v1's misses): Netdryrun 17/18, ping-only 9/18, all-sessions-up 7/18. Both are small benchmarks the maintainers wrote on one FRR topology, with expected verdicts committed before any run: they compare methods, they are not a production reliability estimate. Provenance: both ran on Netdryrun 0.3.1. Issues and feedback: [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun/issues).
+Version 0.3.1. Works with FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image) on Linux and WSL2. Check types: `bgp_session`, `bgp_prefixes`, `route`, `bgp_route` and `ping` (IPv4/IPv6 unicast BGP sessions, prefix counts, routes, BGP best-path attributes and ping), plus link-down, node-isolation and route-injection (FRR only) failure scenarios. On the [verdict corpus](corpus.md) v1 (30 realistic BGP changes: 19 harmful, 11 safe), Netdryrun judged 24/30 correctly, ping-only checks 20/30 and all-sessions-up checks 15/30. Netdryrun approved 5 of the 19 harmful changes (ping-only checks: 10 of 19) and blocked 1 of the 11 safe ones. On v2 (18 cases written after v1 to target v1's misses): Netdryrun 17/18, ping-only 9/18, all-sessions-up 7/18. Both are small benchmarks the maintainers wrote on one FRR topology, with expected verdicts committed before any run: they compare methods, they are not a production reliability estimate. Provenance: both ran on Netdryrun 0.3.1. Issues and feedback: [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun/issues).
 
 
 ---
@@ -2999,11 +2999,7 @@ A tool that approves network changes has to earn trust with evidence, not claims
 
 ## Engineering process
 
-Netdryrun is developed by its maintainer, Victor Khen, with AI coding agents doing most of the implementation: code, tests, documentation and this website. The maintainer sets the direction, reviews the results, decides what ships and publishes every release. The [commit history](https://github.com/netdryrun/netdryrun/commits/main) records every change.
-
-We state this plainly because it should shape how you judge the tool: not by who or what wrote it, but by whether it holds up under checks you can run yourself. That is why the claims below come with evidence.
-
-The project is very young. It started in October 2026: the first commit is dated 27 October 2026, and versions 0.1.0, 0.2.0 and 0.3.0 were all released that same day. It has no outside contributors yet.
+Netdryrun is developed by its maintainer, Victor Khen, with AI-assisted tooling. The maintainer sets the direction, reviews the results, decides what ships and publishes every release. Every change, whoever or whatever wrote it, goes through the same CI tests and lab runs, and every release through the release gate described below. The [commit history](https://github.com/netdryrun/netdryrun/commits/main) records every change.
 
 ## Pre-registered accuracy testing
 
@@ -3061,21 +3057,21 @@ On a 20-node leaf-spine fabric (4 spines, 16 leaves, FRR, 64 links), `netdryrun 
 
 Before releases 0.1.0 and 0.2.0, the code was also reviewed by AI models from other vendors (OpenAI GPT and xAI Grok); 0.3.0 was not. Separate agent sessions that start without the author's context also review changes. These review outputs are not published. Fixes from these reviews: [`ec23379`](https://github.com/netdryrun/netdryrun/commit/ec23379) (v0.2.0), [`6495759`](https://github.com/netdryrun/netdryrun/commit/6495759) (agent demo) and [`90fe0ae`](https://github.com/netdryrun/netdryrun/commit/90fe0ae): a security review of the MCP server, the GitHub Action and every path where lab output reaches a shell, a device CLI or a PR comment, with 7 findings, each fixed with a regression test.
 
-These reviewers are AI models, not human auditors. No independent human security audit has been done yet. If you are qualified and willing to do one, we would welcome it: see the [security policy](https://github.com/netdryrun/netdryrun/security/policy).
+These reviewers are AI models, not human auditors. No independent human security audit has been done yet. Report vulnerabilities through the [security policy](https://github.com/netdryrun/netdryrun/security/policy).
 
 ## Defects found by our own testing
 
 Each was found by running Netdryrun against live labs or the corpus, and is recorded in the [changelog](https://github.com/netdryrun/netdryrun/blob/main/CHANGELOG.md).
 
-- **False passes on SR Linux and Arista:** a leaked route that was received but not installed was invisible, so a `present: false` check passed when it should have failed. Fixed in [`77f43d6`](https://github.com/netdryrun/netdryrun/commit/77f43d6), with regression tests on captured output ([`test_drivers.py`](https://github.com/netdryrun/netdryrun/blob/main/tests/test_drivers.py)).
-- **Wrong status after a failure scenario:** a change that broke a baseline check ended as `error` instead of `failed`. Found with [`scripts/pack_verify.sh`](https://github.com/netdryrun/netdryrun/blob/main/scripts/pack_verify.sh); fixed in [`f6ea560`](https://github.com/netdryrun/netdryrun/commit/f6ea560).
-- **PR comments over GitHub's size limit on large labs:** found by the 20-node scale test. From 0.3.1, the comment is cut to fit GitHub's limit, failures first, and says how many checks it left out; the JSON and JUnit reports keep every check.
+- **False passes on SR Linux and Arista (fixed):** a leaked route that was received but not installed was invisible, so a `present: false` check passed when it should have failed. Fixed in [`77f43d6`](https://github.com/netdryrun/netdryrun/commit/77f43d6), with regression tests on captured output ([`test_drivers.py`](https://github.com/netdryrun/netdryrun/blob/main/tests/test_drivers.py)).
+- **Wrong status after a failure scenario (fixed):** a change that broke a baseline check ended as `error` instead of `failed`. Found with [`scripts/pack_verify.sh`](https://github.com/netdryrun/netdryrun/blob/main/scripts/pack_verify.sh); fixed in [`f6ea560`](https://github.com/netdryrun/netdryrun/commit/f6ea560).
+- **PR comments over GitHub's size limit on large labs (fixed):** found by the 20-node scale test. From 0.3.1, the comment is cut to fit GitHub's limit, failures first, and says how many checks it left out; the JSON and JUnit reports keep every check.
 - **A mislabeled corpus case:** [case 12](corpus/12-ibgp-send-community-dropped.md), above.
 
 ## Supply-chain security
 
 - **Releases** are published to PyPI with Trusted Publishing, so no tokens are stored ([`release.yml`](https://github.com/netdryrun/netdryrun/blob/main/.github/workflows/release.yml)). A release fails if the tag and the package version differ.
-- **OpenSSF Scorecard** rates the repository's practices weekly and on every push ([current score](https://scorecard.dev/viewer/?uri=github.com/netdryrun/netdryrun)), including the areas where a young, single-maintainer project scores low.
+- **OpenSSF Scorecard** rates the repository's practices weekly and on every push ([current score](https://scorecard.dev/viewer/?uri=github.com/netdryrun/netdryrun)), including the checks where it scores low today; the viewer lists each one.
 - **CodeQL** scans the Python code and the workflows ([`codeql.yml`](https://github.com/netdryrun/netdryrun/blob/main/.github/workflows/codeql.yml)).
 - **Every third-party GitHub Action is pinned to a commit**, in the workflows and in [`action.yml`](https://github.com/netdryrun/netdryrun/blob/main/action.yml). Dependabot keeps the pins current.
 
@@ -3084,7 +3080,6 @@ Each was found by running Netdryrun against live labs or the corpus, and is reco
 - **Not production safety.** A pass means the change behaved correctly in a lab running open-source or lab images of network operating systems. It does not prove the change is safe on your network ([what a lab cannot prove](trust.md#what-a-lab-cannot-prove)).
 - **Not Internet scale.** The largest measured lab has 20 nodes and small routing tables. Nothing here is tested with full Internet tables or hundreds of peers.
 - **Not vendor parity.** FRR, SR Linux, SONiC and cEOS behave differently from each other and from hardware routers. The corpus runs only on FRR, with one topology and one intent spec per version, all written by the Netdryrun maintainers.
-- **Not adoption.** Nothing on this site claims who uses Netdryrun.
 
 
 ---
@@ -3118,7 +3113,7 @@ pyATS is a mature Python test framework from Cisco, and Genie adds a large libra
 
 Use it when you need deep, programmable testing, broad parser coverage (especially for Cisco platforms), or pre- and post-change checks on production devices.
 
-Netdryrun is much smaller: a YAML file and a GitHub Action, with no test code to write, and it only runs against labs. If you already have pyATS tests, keep them.
+Netdryrun is narrower: a YAML file and a GitHub Action, with no test code to write, and it only runs against labs. If you already have pyATS tests, keep them.
 
 ## containerlab
 
@@ -3149,7 +3144,7 @@ Netdryrun adds a test layer on top of a containerlab lab:
 - every run produces one pass/fail result, a CI-friendly exit code, and a JSON evidence file
 
 
-It is early (version 0.3.1). Drivers exist for FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image), and checks cover BGP sessions, prefix counts, routes, BGP best-path attributes and ping, with link-down, node-isolation and route-injection (FRR only) failure scenarios.
+Version 0.3.1 has drivers for FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image), and its checks cover BGP sessions, prefix counts, routes, BGP best-path attributes and ping, with link-down, node-isolation and route-injection (FRR only) failure scenarios.
 
 It does not do static analysis, build labs for you, or test production devices.
 
@@ -3267,7 +3262,7 @@ Source: https://netdryrun.com/design-partners/
 
 # Design partners
 
-Netdryrun is young. We'd rather learn from a few real changes than guess. If you have a routing change coming up, we'll help you test it in a lab, for free, in exchange for honest feedback.
+We want Netdryrun shaped by real changes, not guesses. If you have a routing change coming up, we'll help you test it in a lab, for free, in exchange for honest feedback.
 
 ## What you get
 
@@ -3286,7 +3281,7 @@ Netdryrun is young. We'd rather learn from a few real changes than guess. If you
 
 - A lab is not production. A pass covers the checks in the lab, on the network OSes we support ([FRR, Nokia SR Linux, SONiC, Arista EOS](reference/config.md#drivers)). See [what a lab cannot prove](trust.md#what-a-lab-cannot-prove).
 - We never touch your production network and never need access to it.
-- This is a small independent project, so we take a few partners at a time.
+- We take a few partners at a time, so each change gets proper attention.
 
 ## How your configs are handled
 
