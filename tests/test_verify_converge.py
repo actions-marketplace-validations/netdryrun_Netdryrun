@@ -104,6 +104,20 @@ def test_a_timed_out_command_is_a_cut_not_a_failure():
     assert "show vrf" in str(e.value) and "edge1" in str(e.value)
 
 
+def test_a_stale_path_means_the_lab_has_not_converged():
+    """Live (corpus case 06, the after boot): a session restarted while the lab came up, graceful restart kept
+    the old path marked stale, and two samples settle apart still matched. A stale path is waiting for its
+    session's End-of-RIB: not ready, and INCONCLUSIVE if it never clears."""
+    lab = base()
+    old = lab.get("edge1", "path", "203.0.113.0/24", neighbor="10.0.2.2")
+    lab.path("edge1", "203.0.113.0/24", "10.0.2.2", replace(old, flags=("stale",)))
+    stale, good = lab.snap(), base().snap()
+    got, _ = run(seq(stale), timeout=60)
+    assert isinstance(got, Inconclusive) and any("stale" in x for x in got.moving)
+    got, _ = run(seq(stale, stale, good, good))
+    assert got == good
+
+
 def test_schema_errors_stop_at_once():
     calls = []
 

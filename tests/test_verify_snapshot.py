@@ -357,6 +357,19 @@ def test_a_next_hops_import_check_mode_is_not_compared():
     assert parse({"importCheckEnabled": True}, accessible=False) != parse({})
 
 
+def test_a_redistributed_paths_fib_installed_flag_is_compared():
+    """Live FRR 10.4.1 (corpus case 18, `redistribute connected` on pe1) printed `"fibInstalled": true` on the
+    redistributed paths; the parser refused it."""
+    def parse(extra):
+        p = {"aspath": {"string": "Local", "segments": [], "length": 0}, "origin": "incomplete", "metric": 0,
+             "weight": 32768, "valid": True, "sourced": True, "bestpath": {"overall": True},
+             "nexthops": [{"ip": "0.0.0.0", "afi": "ipv4", "metric": 0, "accessible": True, "used": True}],
+             "peer": {"peerId": "0.0.0.0", "routerId": "10.255.0.1"}, **extra}
+        text = json.dumps({"default": {"routes": {"10.0.1.0/30": [p]}}})
+        return frr.parse_bgp_table(text, "ipv4")["default"][("10.0.1.0/30", "local", 0)]
+    assert parse({"fibInstalled": True}).flags == ("fibInstalled",) and parse({}).flags == ()
+
+
 def test_a_path_from_a_route_reflector_client_keeps_its_flag():
     """Live FRR 10.4.1 marks a route reflector's paths from its clients `"rxedFromRrClient": true` (rr1 in the
     capture lab; the parser refused it, so verify could not run on a lab with a route reflector)."""

@@ -58,6 +58,8 @@ def _not_ready(snap: Snapshot, bgp_nodes: set[str] | None = None) -> list[str]:
             out.append(f"{n}: no routes in its RIB yet")
         elif (bgp_nodes is None or n in bgp_nodes) and not any(k.kind in ("session", "path") for k in ns.items):
             out.append(f"{n}: no BGP state yet (no session, no BGP path)")
+        stale = sorted({k.where() for k, v in ns.items.items() if k.kind == "path" and "stale" in v.flags})
+        out += [f"{x}: path kept stale by graceful restart (waiting for its session's End-of-RIB)" for x in stale]
     return out
 
 
