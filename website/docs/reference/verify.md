@@ -14,7 +14,7 @@ Checks test what someone thought of. `verify` inverts that: **you declare what t
 netdryrun verify topology.clab.yml --before <dir|git-ref> --after <dir|git-ref> --intent intent.yml [--json report.json]
 ```
 
-It deploys the lab with the *before* configs, waits for a stable snapshot, destroys the lab, then does the same with the *after* configs (and runs the standing guards on that lab). Then it compares the two snapshots and matches every difference against the intent. Two cold boots: about 2 × 60 to 120 seconds.
+It deploys the lab with the *before* configs, waits for a stable snapshot, destroys the lab, then does the same with the *after* configs (and runs the standing guards on that lab). Then it compares the two snapshots and matches every difference against the intent. Two cold boots: about 2 × 60 to 120 seconds. When the verdict would approve (INTENT MATCHED or NO BEHAVIOR CHANGE), a third boot of the *after* side must give the same snapshot; if it doesn't, nothing is approved: INCONCLUSIVE, listing every item that differed (`determinism` in the report).
 
 The same engine runs in three places: this command, the MCP tool [`verify_change`](#over-mcp-verify_change) for AI agents, and the GitHub Action's [`mode: verify`](#in-ci-the-actions-mode-verify) on pull requests.
 

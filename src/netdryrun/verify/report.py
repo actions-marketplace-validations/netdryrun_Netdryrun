@@ -47,7 +47,8 @@ class VerifyResult:
     after: Snapshot | None = None
     error: str = ""
     inconclusive: Inconclusive | None = None
-    inconclusive_side: str = ""
+    inconclusive_side: str = ""               # before, after, or rerun (the after side booted again)
+    determinism: dict | None = None           # the rerun of an approving verdict: {rerun, identical, differing}
     baseline_problems: list[str] = field(default_factory=list)
     baseline_overridden: bool = False
     guards: dict | None = None
@@ -174,6 +175,7 @@ def to_dict(r: VerifyResult) -> dict:
         "warnings": r.warnings,
         "error": r.error or None,
         "inconclusive": inc,
+        "determinism": r.determinism,
         "baseline": {"healthy": not r.baseline_problems, "problems": r.baseline_problems,
                      "overridden": r.baseline_overridden},
         "diff_items": items_total,

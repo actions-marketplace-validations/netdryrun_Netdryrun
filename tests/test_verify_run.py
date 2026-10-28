@@ -12,7 +12,7 @@ from netdryrun.verify import report as vreport
 from netdryrun.verify import run as vrun
 from netdryrun.verify.converge import Inconclusive
 from netdryrun.verify.snapshot import SnapshotError
-from verify_helpers import add_new_customer_block, attrs, base
+from verify_helpers import add_new_customer_block, attrs, base, rib
 
 jsonschema = pytest.importorskip("jsonschema")
 ROOT = Path(__file__).parents[1]
@@ -110,7 +110,7 @@ def test_matched(tmp_path):
     data = validate(res)
     assert data["verdict"] == "INTENT MATCHED" and data["intent"]["lines"] and not data["undeclared"]
     assert data["evidence"]["before"]["schema"] == "netdryrun.snapshot/v1"
-    assert [c[0] for c in side.calls] == ["before", "after"]
+    assert [c[0] for c in side.calls] == ["before", "after", "rerun"]
     # each side's lab folder holds the topology byte for byte, its own configs and the shared binds
     bfiles, afiles = side.calls[0][1], side.calls[1][1]
     assert afiles["configs/edge1.conf"] == b"! edge1 after\n"
@@ -207,6 +207,68 @@ def test_unknown_node_in_the_intent_is_exit_2(tmp_path):
     res, side = run_verify(tmp_path, base().snap(), base().snap(),
                            intent_text="intent:\n  - {prefix: 10.1.0.0/24, appears_on: [r9]}\n")
     assert res.exit_code == 2 and not side.calls
+
+
+# --- the determinism rule: no approval from a single boot (0.4 roadmap review) ---------------------------------
+# An approving verdict (INTENT MATCHED, NO BEHAVIOR CHANGE) boots the after side a second time; if that rerun
+# gives a different snapshot, the lab isn't deterministic and nothing is approved: INCONCLUSIVE, naming the
+# items that differed. A failing verdict approves nothing and needs no rerun.
+
+def rerun_side(before, after, rerun):
+    side = fake_side(before, after)
+    inner = side
+
+    def wrapped(label, topology, on_up=None):
+        snap, t, extra = inner(label, topology, on_up)
+        return (rerun if label == "rerun" else snap), t, extra
+    wrapped.calls = side.calls
+    return wrapped
+
+
+def test_an_approval_is_confirmed_by_a_rerun_of_the_after_side(tmp_path):
+    after = add_new_customer_block(base()).snap()
+    res, side = run_verify(tmp_path, base().snap(), after)
+    assert (res.status, res.exit_code) == ("matched", 0)
+    assert [c[0] for c in side.calls] == ["before", "after", "rerun"]
+    assert side.calls[1][1] == side.calls[2][1]                       # the rerun boots the after side's own files
+    data = validate(res)
+    assert data["determinism"] == {"rerun": "after", "identical": True, "differing": []}
+    assert "rerun_s" in data["timings"]
+
+
+def test_a_rerun_that_differs_is_inconclusive_naming_what_differed(tmp_path):
+    lab, b, a = make_lab(tmp_path), None, None
+    after = add_new_customer_block(base())
+    flaky = after.copy()
+    flaky.rib("edge1", "10.99.0.0/24", rib("kernel", hops=(), distance=0))
+    b, a = side_dir(tmp_path, lab, "before"), side_dir(tmp_path, lab, "after", edit="! edge1 after\n")
+    side = rerun_side(base().snap(), after.snap(), flaky.snap())
+    res = vrun.verify(str(lab / "topology.clab.yml"), str(b), str(a), str(intent_file(tmp_path, NEW_BLOCK)), side_fn=side)
+    assert (res.status, res.exit_code) == ("inconclusive", 3)
+    data = validate(res)
+    assert data["inconclusive"]["side"] == "rerun" and any("10.99.0.0/24" in x for x in data["inconclusive"]["moving"])
+    assert data["determinism"]["identical"] is False and data["determinism"]["differing"]
+    assert "INCONCLUSIVE" in data["verdict"]
+
+
+def test_no_behavior_change_is_also_confirmed_by_a_rerun(tmp_path):
+    res, side = run_verify(tmp_path, base().snap(), base().snap(), intent_text="intent: []\n")
+    assert res.status == "no_change" and [c[0] for c in side.calls] == ["before", "after", "rerun"]
+
+
+def test_a_failed_verdict_needs_no_rerun(tmp_path):
+    res, side = run_verify(tmp_path, base().snap(), add_new_customer_block(base()).snap(), intent_text="intent: []\n")
+    assert res.status == "failed" and [c[0] for c in side.calls] == ["before", "after"]
+    assert validate(res)["determinism"] is None
+
+
+def test_a_rerun_that_never_settles_is_inconclusive(tmp_path):
+    lab = make_lab(tmp_path)
+    b, a = side_dir(tmp_path, lab, "before"), side_dir(tmp_path, lab, "after", edit="! edge1 after\n")
+    side = rerun_side(base().snap(), add_new_customer_block(base()).snap(),
+                      Inconclusive("the snapshot kept changing", ["edge1: rib 10.9.9.0/24"]))
+    res = vrun.verify(str(lab / "topology.clab.yml"), str(b), str(a), str(intent_file(tmp_path, NEW_BLOCK)), side_fn=side)
+    assert (res.status, res.exit_code) == ("inconclusive", 3) and validate(res)["inconclusive"]["side"] == "rerun"
 
 
 # --- sides and the topology rule ---------------------------------------------------------------------------

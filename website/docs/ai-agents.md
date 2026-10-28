@@ -192,7 +192,7 @@ The server has these tools: <!-- facts:mcp_tools -->`dry_run`, `verify_change`, 
 | `record_baseline` | `topology`, `deploy` (default `true`), `wait_seconds` (default `45`) | Deploy the lab, snapshot its BGP sessions, prefix counts and routes as `netdryrun.yml` text, destroy the lab. Returns the YAML; nothing is written to disk. Like [`netdryrun record`](reference/cli.md#record) |
 | `validate` | `path` | Validate `netdryrun.yml` and its topology without starting a lab: node names, drivers and supported keys, as `dry_run` checks them before deploying (0.3.1 and later) |
 | `check_types` | | List supported check types and their keys, to help write `netdryrun.yml` |
-| `verify_change` | `topology`, `before`, `after`, `intent`, `guards` (optional) | 0.4, FRR only. Boot the topology with the *before* and the *after* configs, diff routing behavior, and fail on every difference the intent doesn't declare. No checks needed. Two lab boots: about 2–4 minutes. See [below](#verify-a-change-against-the-tickets-intent) |
+| `verify_change` | `topology`, `before`, `after`, `intent`, `guards` (optional) | 0.4, FRR only. Boot the topology with the *before* and the *after* configs, diff routing behavior, and fail on every difference the intent doesn't declare. No checks needed. Two lab boots, and a third when the verdict approves (the after side again: no approval from a single boot): about 2–6 minutes. See [below](#verify-a-change-against-the-tickets-intent) |
 
 The server also exposes the last full JSON report as a resource, `netdryrun://report/{path}`.
 

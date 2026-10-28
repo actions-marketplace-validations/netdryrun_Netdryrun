@@ -31,7 +31,7 @@ from ..config import ConfigError, load_yaml
 from ..drivers import DRIVERS, DriverError, detect
 from ..lab import Lab, LabError
 from .converge import Inconclusive, stable_snapshot
-from .engine import VerifyError, baseline_problems, match
+from .engine import VerifyError, baseline_problems, diff, match
 from .frr import FrrCollector
 from .intent import IntentError, check_nodes, load_intent, parse_intent_text
 from .report import ALLOW_WARNING, INTENT_EDITED_WARNING, NO_GUARDS_WARNING, VerifyResult
@@ -504,6 +504,29 @@ def load_guards(path: str | None, before_spec: str, before: Side):
 
 
 # ---------------------------------------------------------------------------------------------------------
+# The determinism rule
+# ---------------------------------------------------------------------------------------------------------
+
+APPROVING = ("matched", "no_change")
+NOT_DETERMINISTIC = ("a second boot of the after side, with the same configs, gave a different snapshot: the lab "
+                     "is not deterministic, so this run approves nothing")
+
+
+def confirm_by_rerun(res: VerifyResult, side, after_topo: Path, snap_a: Snapshot) -> None:
+    """No approval from a single boot: boot the after side again and require the same snapshot. A difference
+    (or a rerun that never settles) is INCONCLUSIVE, naming every item that differed."""
+    snap_r, tr, _ = side("rerun", after_topo)
+    res.timings["rerun_s"] = tr
+    if isinstance(snap_r, Inconclusive):
+        res.status, res.inconclusive, res.inconclusive_side = "inconclusive", snap_r, "rerun"
+        return
+    differing = [f"{d.key.where()} {d.change}" for d in diff(snap_a, snap_r)]
+    res.determinism = {"rerun": "after", "identical": not differing, "differing": differing}
+    if differing:
+        res.status, res.inconclusive, res.inconclusive_side = "inconclusive", Inconclusive(NOT_DETERMINISTIC, differing), "rerun"
+
+
+# ---------------------------------------------------------------------------------------------------------
 # verify
 # ---------------------------------------------------------------------------------------------------------
 
@@ -579,6 +602,8 @@ def verify(topology: str, before: str, after: str, intent_path: str, *, guards: 
             elif gres["status"] != "passed" and res.status != "failed":
                 res.status = "inconclusive" if gres["status"] == "inconclusive" else "error"
                 res.error = f"the standing guards ended with {gres['status']}: {gres.get('error') or 'no verdict'}"
+        if res.status in APPROVING:
+            confirm_by_rerun(res, side, after_topo, snap_a)
         return res
     except SnapshotError as e:
         res.status, res.error = "error", f"unreadable snapshot: {e}"
