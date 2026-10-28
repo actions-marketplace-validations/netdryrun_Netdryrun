@@ -2186,7 +2186,7 @@ A run is `inconclusive` instead of `failed` only when **all** of these hold. The
 1. At least one check failed, and there was no lab or config error (that is `error`).
 2. No positive check passed on **any** sample, anywhere in the run, scenarios included. One passing sample anywhere shows a working network, so the failures are findings.
 3. No post-convergence check failed with readable state. A leaked route, or a session that is up but must be down, proves a working control plane.
-4. Every failed check is on a node that never gave usable state. That means every sample of every `bgp_session` and `bgp_prefixes` check on the node was *unready*: the state command failed or its output could not be read (a CLI that isn't up yet), or BGP had no neighbors at all on the node. A node with no session or prefix checks qualifies only if every sample of every check on it was unready.
+4. Every failed check is on a node that never gave usable state. That means every sample of every `bgp_session` and `bgp_prefixes` check on the node was *unready*: the state command failed or its output could not be read (a CLI that isn't up yet), or BGP had no neighbors at all on the node. A node with no session or prefix checks qualifies if every sample of every `route` and `bgp_route` check on it was unready (its routing table never answered; from 0.3.2, a ping on it that got no replies doesn't stop this, since a ping can't show that the node gave routing state). A node with only `ping` checks qualifies only if every sample of every check on it was unready.
 
 A configured BGP session that is down (`idle`, `active`, `connect`, ...) is never unready. An ASN typo, a wrong neighbor address or a shutdown look exactly like a slow lab from the outside, so they stay `failed`. A routing table without the route, and a ping with no replies, are findings for the same reason. So a `timeout` that is merely too short for configured sessions to establish gives `failed`, not `inconclusive`; `inconclusive` is for a node whose CLI or BGP never came up at all.
 
@@ -2340,6 +2340,18 @@ Consumers SHOULD decide on `status`, not on the verdict text. Netdryrun 0.3.1 re
 | `evidence` | array | The raw commands of the final sample: `{node, cmd, rc, output, stderr}` |
 
 Every result carries the commands and their raw output, so a pass can be audited: a reviewer can see what the network said, not only what the tool concluded.
+
+## Tying a verdict to the files it tested
+
+A verdict is about the exact files the run used, not about a folder name. A producer MAY add a `tested` object to the document (an added field, allowed within v1); Netdryrun's MCP results carry it from 0.3.2:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `tested.files` | object | Path (relative to the folder of the check definition, `/`-separated) to the lowercase hex sha256 of that file, read before the run: the check definition, the topology and every config file the topology uses |
+| `tested.lab_deployed_by_this_run` | boolean | `true` when the run deployed the environment from these files; `false` when it tested one that was already running, which may not run these files |
+| `tested.complete` | boolean | `false` when some file could not be read (for example, outside the folders the producer may read) or the list was cut short |
+
+A consumer that presents a verdict SHOULD present it together with these hashes, and SHOULD treat any change to a listed file as needing a new run.
 
 ## Versioning
 
@@ -2849,7 +2861,7 @@ The server has these tools: `dry_run`, `run_checks`, `record_baseline`, `validat
 
 The server also exposes the last full JSON report as a resource, `netdryrun://report/{path}`.
 
-From 0.3.2, every tool description carries the same rules, so an agent that reads only one tool still gets them: use it before proposing or applying a routing or policy change; ping is not a test; a dry run takes about 60–120 s; it needs Linux or WSL2, Docker and containerlab with root-equivalent rights and won't run on macOS or in sandboxes without Docker-in-Docker; inconclusive means stop, don't retry more than once; never invent or weaken checks, and call `record_baseline` if no checks exist.
+From 0.3.2, every tool description carries the same rules, so an agent that reads only one tool still gets them: use it before proposing or applying a routing or policy change; ping is not a test; a dry run takes about 60–120 s; it needs Linux or WSL2, Docker and containerlab with root-equivalent rights and won't run on macOS or in sandboxes without Docker-in-Docker; inconclusive means stop, don't retry more than once; status error or inconclusive is a setup problem that says nothing about the change; never invent or weaken checks, and call `record_baseline` if no checks exist.
 
 ## Result and verdict
 
@@ -2876,11 +2888,16 @@ From 0.3.2, every tool description carries the same rules, so an agent that read
      "next_diagnostic": "docker exec clab-ndr-frr-broken-r1 vtysh -c 'show ip route 0.0.0.0/0'"}
   ],
   "evidence_file": "/path/to/lab/netdryrun-report.json",
-  "verdict": "DO NOT APPLY THIS CHANGE"
+  "verdict": "DO NOT APPLY THIS CHANGE",
+  "tested": {"lab_deployed_by_this_run": true, "complete": true, "files": {
+    "../frr-bgp/configs/r1.conf": "b57a37804e914b41b540ee8a9e4eb0ddcdafbc17657d4ddca8cfcd924d8b0d26",
+    "netdryrun.yml": "0e32d31342f663bb19a9fd5dc53992bea8cb82433eab5a5cd04a3e1316523130",
+    "r2-bad.conf": "57fad3080bcb61f973546e051a7211e87a221284682788e3a1753cc7a8a6a47e",
+    "topology.clab.yml": "d662ff05aa1be6576ace7fe45af71cd7e0f4b0ad614ca86b8501174fdb182547"}}
 }
 ```
 
-(`checks` is shortened here; the real result lists every check.)
+(`checks` and `tested.files` are shortened here; the real result lists every check and every file.) From 0.3.2, `tested` names what the run used: a sha256 of `netdryrun.yml`, the topology and every config file the topology binds or loads, read before the run. A verdict applies to those exact files, so paste it with them, and run again after any edit. `lab_deployed_by_this_run` is `false` for `run_checks`, which tests a lab that was already running.
 
 From 0.3.2, `failures` lists each failed check with:
 

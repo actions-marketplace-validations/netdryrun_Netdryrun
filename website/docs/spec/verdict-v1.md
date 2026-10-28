@@ -82,6 +82,18 @@ Consumers SHOULD decide on `status`, not on the verdict text. Netdryrun 0.3.1 re
 
 Every result carries the commands and their raw output, so a pass can be audited: a reviewer can see what the network said, not only what the tool concluded.
 
+## Tying a verdict to the files it tested
+
+A verdict is about the exact files the run used, not about a folder name. A producer MAY add a `tested` object to the document (an added field, allowed within v1); Netdryrun's MCP results carry it from 0.3.2:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `tested.files` | object | Path (relative to the folder of the check definition, `/`-separated) to the lowercase hex sha256 of that file, read before the run: the check definition, the topology and every config file the topology uses |
+| `tested.lab_deployed_by_this_run` | boolean | `true` when the run deployed the environment from these files; `false` when it tested one that was already running, which may not run these files |
+| `tested.complete` | boolean | `false` when some file could not be read (for example, outside the folders the producer may read) or the list was cut short |
+
+A consumer that presents a verdict SHOULD present it together with these hashes, and SHOULD treat any change to a listed file as needing a new run.
+
 ## Versioning
 
 - Within v1, fields are only added, never removed, renamed or retyped. Objects therefore allow extra properties, and consumers MUST ignore fields they don't know.

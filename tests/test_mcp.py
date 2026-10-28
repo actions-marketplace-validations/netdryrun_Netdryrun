@@ -166,3 +166,51 @@ def test_relative_path_that_names_two_files_is_refused(tmp_path, monkeypatch):
     import shutil
     shutil.rmtree(tmp_path / "a")
     assert json.loads(mcp_server.validate("a"))["lab"] == str((tmp_path / "wt" / "a" / "topology.clab.yml").resolve())
+
+
+def _hash(p):
+    import hashlib
+    return hashlib.sha256(p.read_bytes()).hexdigest()
+
+
+def test_the_result_names_the_files_it_tested(tmp_path, monkeypatch):
+    # agent eval T06: a run on the unedited folder looked like a run of the change. The result now carries a
+    # sha256 of netdryrun.yml, the topology and every config file the topology binds or loads, so a pasted
+    # verdict can be tied to the exact files it ran.
+    from netdryrun import mcp_server
+    from netdryrun.runner import RunReport
+    lab = tmp_path / "lab"
+    (lab / "configs").mkdir(parents=True)
+    (lab / "configs" / "r1.conf").write_text("router bgp 65001\n")
+    (lab / "configs" / "daemons").write_text("bgpd=yes\n")
+    (lab / "startup").mkdir()
+    (lab / "startup" / "r2.cfg").write_text("set / system name r2\n")
+    outside = tmp_path / "elsewhere.conf"
+    outside.write_text("secret\n")
+    (lab / "topology.clab.yml").write_text(
+        "name: t\ntopology:\n  defaults:\n    binds: [configs/daemons:/etc/frr/daemons]\n  nodes:\n"
+        "    r1: {kind: linux, image: frr, binds: ['configs/r1.conf:/etc/frr/frr.conf:ro', '" + str(outside) + ":/x']}\n"
+        "    r2: {kind: nokia_srlinux, image: srl, startup-config: startup/r2.cfg}\n")
+    (lab / "netdryrun.yml").write_text("lab: topology.clab.yml\nchecks:\n  - {type: route, node: r1, prefix: 10.0.0.0/24}\n")
+    seen = {}
+
+    def fake_run(cfg, deploy, keep, **_):
+        seen["deploy"] = deploy
+        return RunReport(config=cfg, results=[])
+    monkeypatch.setattr(mcp_server, "run", fake_run)
+    out = json.loads(mcp_server.dry_run(str(lab)))
+    assert out["tested"] == {"lab_deployed_by_this_run": True, "files": {
+        "netdryrun.yml": _hash(lab / "netdryrun.yml"), "topology.clab.yml": _hash(lab / "topology.clab.yml"),
+        "configs/daemons": _hash(lab / "configs" / "daemons"), "configs/r1.conf": _hash(lab / "configs" / "r1.conf"),
+        "startup/r2.cfg": _hash(lab / "startup" / "r2.cfg"),
+        "../elsewhere.conf": _hash(outside)}, "complete": True}   # a file outside the folder is used too (a shared config)
+    # NETDRYRUN_MCP_ROOT still confines what is read: a file outside it is not hashed, and the list says it is partial
+    monkeypatch.setenv("NETDRYRUN_MCP_ROOT", str(lab))
+    confined = json.loads(mcp_server.dry_run(str(lab)))["tested"]
+    assert "../elsewhere.conf" not in confined["files"] and confined["complete"] is False
+    monkeypatch.delenv("NETDRYRUN_MCP_ROOT")
+    # run_checks tests a lab that is already running: the files on disk may not be what it runs
+    assert json.loads(mcp_server.run_checks(str(lab)))["tested"]["lab_deployed_by_this_run"] is False
+    # an edit changes the hash
+    (lab / "configs" / "r1.conf").write_text("router bgp 65009\n")
+    assert json.loads(mcp_server.dry_run(str(lab)))["tested"]["files"]["configs/r1.conf"] != out["tested"]["files"]["configs/r1.conf"]

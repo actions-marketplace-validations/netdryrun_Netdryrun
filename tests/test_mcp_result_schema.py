@@ -209,3 +209,31 @@ def test_tools_over_stdio_return_the_contract(tmp_path):
                        "call record_baseline"):
             assert phrase in text, (name, phrase)
     assert "primary tool" in tools["dry_run"]
+
+
+def test_dry_run_description_carries_the_agent_eval_interface_fixes():
+    # examples/agent-eval RESULTS.md, interface fixes 3 to 6: what a small model needed in the one text it reads
+    tools = {t.name: t.description for t in asyncio.run(mcp_server.mcp.list_tools())}
+    text = " ".join(tools["dry_run"].split()).lower()
+    for phrase in ("write the change into the configs first",               # 3: T06
+                   "tests today's config, not your change",
+                   "expected to fail the new checks",                        # 4: T01, T02
+                   "fix the config and run again",
+                   "record_baseline of the unchanged configs",               # 5: T09
+                   "says nothing about your change"):                       # 6: T10
+        assert phrase in text, phrase
+    for name in ("dry_run", "run_checks"):
+        assert "status error or inconclusive is a setup problem" in " ".join(tools[name].split()).lower(), name
+    assert "tested" in tools["dry_run"]
+
+
+def test_tested_is_in_the_result_schema():
+    s = {"schema": mcp_server.RESULT_SCHEMA, "status": "passed", "verdict": FROZEN[0], "passed": 1, "failed": 0,
+         "failures": [], "checks": [], "inconclusive_reason": None, "error": None, "evidence_file": None,
+         "lab": "t", "tested": {"lab_deployed_by_this_run": True, "files": {"netdryrun.yml": "a" * 64},
+                                "complete": True}}
+    _validate(s, "run_result")
+    with pytest.raises(jsonschema.ValidationError):
+        _validate({k: v for k, v in s.items() if k != "tested"}, "run_result")
+    with pytest.raises(jsonschema.ValidationError):
+        _validate({**s, "tested": {"lab_deployed_by_this_run": True, "files": {"netdryrun.yml": "not-a-hash"}}})

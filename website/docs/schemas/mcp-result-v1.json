@@ -25,7 +25,7 @@
       "type": "object",
       "description": "A finished run of dry_run or run_checks. The full evidence is in evidence_file (netdryrun.report/v1, https://netdryrun.com/schemas/report-v1.json).",
       "required": ["schema", "status", "passed", "failed", "error", "inconclusive_reason", "lab", "checks", "failures",
-                   "evidence_file", "verdict"],
+                   "evidence_file", "verdict", "tested"],
       "properties": {
         "schema": {"$ref": "#/$defs/schema_id"},
         "status": {
@@ -45,6 +45,16 @@
           "description": "One entry per failed check, in the order of checks; empty when nothing failed"
         },
         "evidence_file": {"type": ["string", "null"], "description": "Path of the full JSON report, or null if it could not be written"},
+        "tested": {
+          "type": "object",
+          "description": "What this run tested, read before it started, so a verdict can be tied to a version of the files: a sha256 of netdryrun.yml, the topology and every file the topology binds or loads as a startup config. Keys are paths relative to the folder of netdryrun.yml (a shared config elsewhere starts with ../); with NETDRYRUN_MCP_ROOT set, files outside it are not read. A verdict applies to these exact files: after an edit, run again.",
+          "required": ["lab_deployed_by_this_run", "files", "complete"],
+          "properties": {
+            "lab_deployed_by_this_run": {"type": "boolean", "description": "true for dry_run. false for run_checks: the lab was already running, so the files on disk may not be what it runs"},
+            "files": {"type": "object", "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{64}$"}},
+            "complete": {"type": "boolean", "description": "false when a file could not be read, was outside NETDRYRUN_MCP_ROOT, or there were more than 200"}
+          }
+        },
         "verdict": {"$ref": "#/$defs/verdict"}
       },
       "allOf": [

@@ -41,7 +41,8 @@ CONTRACT = (
     "A dry run takes about 60–120 s. Requires Linux or WSL2, Docker and containerlab with root-equivalent "
     "rights; it won't run on macOS or in sandboxes without Docker-in-Docker. "
     "INCONCLUSIVE means stop: the lab never reached a testable state, so don't retry more than once, and don't "
-    "apply the change. Never invent or weaken checks to make a change pass: if no checks exist, call "
+    "apply the change. Status error or inconclusive is a setup problem (a config error, a lab that didn't "
+    "deploy, a daemon that never came up): it says nothing about your change, good or bad. Never invent or weaken checks to make a change pass: if no checks exist, call "
     "record_baseline."
 )
 
@@ -174,7 +175,8 @@ def _failures(rep) -> list[dict]:
              "next_diagnostic": _next_diagnostic(rep, r.check, containers)} for r in failed]
 
 
-def _summary(rep, evidence_path: str | None) -> dict:
+def _summary(rep, evidence_path: str | None, tested: dict | None = None) -> dict:
+    """The tool result. `tested` is read before the run (_execute passes it); without it, the files are read now."""
     return {
         "schema": RESULT_SCHEMA,
         "status": rep.status,
@@ -187,6 +189,7 @@ def _summary(rep, evidence_path: str | None) -> dict:
         "failures": _failures(rep),
         "evidence_file": evidence_path,
         "verdict": VERDICTS.get(rep.status, DO_NOT_APPLY),
+        "tested": tested if tested is not None else _tested(rep.config, deployed=False),
     }
 
 
@@ -266,11 +269,65 @@ def _load(path: str):
     return cfg
 
 
+TESTED_FILES_MAX = 200   # a bind of a large folder must not turn a dry run into a hashing job
+
+
+def _tested(cfg, deployed: bool) -> dict:
+    """What a run tested, so a verdict can be tied to a version of the files (agent eval T06: a run on the
+    unedited folder looked like a run of the change): a sha256 of netdryrun.yml, the topology and every file the
+    topology binds or loads as a startup config (a bound folder: the files in it), read before the run. Keys
+    are paths relative to the folder of netdryrun.yml. With NETDRYRUN_MCP_ROOT set, a file outside it is not
+    read; `complete` is then false, as it is when a file can't be read or there are more than
+    TESTED_FILES_MAX."""
+    import hashlib
+    import itertools
+
+    import yaml
+
+    base, lab_dir = cfg.path.parent.resolve(), cfg.lab.parent.resolve()
+    sources = [cfg.path, cfg.lab]
+    try:
+        t = (yaml.safe_load(cfg.lab.read_text(encoding="utf-8")) or {}).get("topology") or {}
+    except (OSError, yaml.YAMLError, AttributeError):
+        t = {}
+    sections = [t.get("defaults"), *((t.get("kinds") or {}).values()), *((t.get("nodes") or {}).values())]
+    for sec in (s for s in sections if isinstance(s, dict)):
+        sources += [lab_dir / str(b).split(":", 1)[0] for b in sec.get("binds") or [] if isinstance(b, str)]
+        sc = sec.get("startup-config")
+        if isinstance(sc, str) and "\n" not in sc:   # containerlab also takes the config text inline
+            sources.append(lab_dir / sc)
+    files: dict[str, str] = {}
+    complete = True
+    for src in sources:
+        src = Path(src).expanduser()
+        if src.is_dir():   # stop walking at the cap: a bound system folder can hold many thousands of files
+            found = list(itertools.islice((p for p in src.rglob("*") if p.is_file()), TESTED_FILES_MAX + 1))
+        else:
+            found = [src]
+        for f in sorted(found):
+            f = f.resolve()
+            try:
+                key = Path(os.path.relpath(f, base)).as_posix()
+            except ValueError:   # another drive on Windows
+                key = f.as_posix()
+            if key in files:
+                continue
+            if len(files) >= TESTED_FILES_MAX or _outside_root(f):
+                complete = False
+                continue
+            try:
+                files[key] = hashlib.sha256(f.read_bytes()).hexdigest()
+            except OSError:
+                complete = False
+    return {"lab_deployed_by_this_run": deployed, "files": dict(sorted(files.items())), "complete": complete}
+
+
 def _execute(path: str, deploy: bool, keep: bool) -> str:
     try:
         cfg = _load(path)
     except ConfigError as e:
         return json.dumps({"schema": RESULT_SCHEMA, "status": "error", "error": str(e), "verdict": DO_NOT_APPLY})
+    tested = _tested(cfg, deployed=deploy)   # read before the run: the files the lab is deployed from
     rep = run(cfg, deploy=deploy, keep=keep)
     evidence = cfg.path.parent / "netdryrun-report.json"
     try:
@@ -279,14 +336,20 @@ def _execute(path: str, deploy: bool, keep: bool) -> str:
         evidence.write_text(report.to_json(rep), encoding="utf-8")
     except OSError:
         evidence = None   # a read-only folder must not turn a finished run into a tool error with no verdict
-    return json.dumps(_summary(rep, str(evidence) if evidence else None), indent=2)
+    return json.dumps(_summary(rep, str(evidence) if evidence else None, tested), indent=2)
 
 
 @mcp.tool(description=_describe("""
     The primary tool: dry-run a network change. Deploys the containerlab lab of netdryrun.yml at `path`
     (folder or file; C:\\... or /mnt/c/...; an absolute path is safest: a relative one is read from
-    NETDRYRUN_MCP_ROOT only when that is one folder) with the changed configs, waits for routing to converge, runs
-    every check, then destroys the lab. `verdict` is exactly one of CHECKS PASSED (only what the checks
+    NETDRYRUN_MCP_ROOT only when that is one folder) with the configs as they are on disk, waits for routing to
+    converge, runs every check, then destroys the lab. Write the change into the configs first: a run on the
+    unedited folder tests today's config, not your change. `tested` lists a sha256 of each file the run used;
+    the verdict applies to those exact files, so after any edit, run again. On a ticket that adds behaviour,
+    the first run on the unedited folder is expected to fail the new checks: edit and rerun. A failed run
+    means fix the config and run again, not stop. For a change claimed to alter nothing (a refactor, a
+    cleanup), a pass is not proof: read your diff, and compare with a record_baseline of the unchanged configs
+    first. `verdict` is exactly one of CHECKS PASSED (only what the checks
     cover), DO NOT APPLY THIS CHANGE, or a string starting INCONCLUSIVE; decide on `status`, not the text:
     propose or apply the change only when it is passed, say that the pass covers only what the checks look at,
     and paste the verdict into your answer. `failures` lists each failed check with a one-line reason, an evidence

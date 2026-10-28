@@ -199,7 +199,7 @@ The server has these tools: <!-- facts:mcp_tools -->`dry_run`, `run_checks`, `re
 
 The server also exposes the last full JSON report as a resource, `netdryrun://report/{path}`.
 
-From 0.3.2, every tool description carries the same rules, so an agent that reads only one tool still gets them: use it before proposing or applying a routing or policy change; ping is not a test; a dry run takes about 60–120 s; it needs Linux or WSL2, Docker and containerlab with root-equivalent rights and won't run on macOS or in sandboxes without Docker-in-Docker; inconclusive means stop, don't retry more than once; never invent or weaken checks, and call `record_baseline` if no checks exist.
+From 0.3.2, every tool description carries the same rules, so an agent that reads only one tool still gets them: use it before proposing or applying a routing or policy change; ping is not a test; a dry run takes about 60–120 s; it needs Linux or WSL2, Docker and containerlab with root-equivalent rights and won't run on macOS or in sandboxes without Docker-in-Docker; inconclusive means stop, don't retry more than once; status error or inconclusive is a setup problem that says nothing about the change; never invent or weaken checks, and call `record_baseline` if no checks exist.
 
 ## Result and verdict
 
@@ -226,11 +226,16 @@ From 0.3.2, every tool description carries the same rules, so an agent that read
      "next_diagnostic": "docker exec clab-ndr-frr-broken-r1 vtysh -c 'show ip route 0.0.0.0/0'"}
   ],
   "evidence_file": "/path/to/lab/netdryrun-report.json",
-  "verdict": "DO NOT APPLY THIS CHANGE"
+  "verdict": "DO NOT APPLY THIS CHANGE",
+  "tested": {"lab_deployed_by_this_run": true, "complete": true, "files": {
+    "../frr-bgp/configs/r1.conf": "b57a37804e914b41b540ee8a9e4eb0ddcdafbc17657d4ddca8cfcd924d8b0d26",
+    "netdryrun.yml": "0e32d31342f663bb19a9fd5dc53992bea8cb82433eab5a5cd04a3e1316523130",
+    "r2-bad.conf": "57fad3080bcb61f973546e051a7211e87a221284682788e3a1753cc7a8a6a47e",
+    "topology.clab.yml": "d662ff05aa1be6576ace7fe45af71cd7e0f4b0ad614ca86b8501174fdb182547"}}
 }
 ```
 
-(`checks` is shortened here; the real result lists every check.)
+(`checks` and `tested.files` are shortened here; the real result lists every check and every file.) From 0.3.2, `tested` names what the run used: a sha256 of `netdryrun.yml`, the topology and every config file the topology binds or loads, read before the run. A verdict applies to those exact files, so paste it with them, and run again after any edit. `lab_deployed_by_this_run` is `false` for `run_checks`, which tests a lab that was already running.
 
 From 0.3.2, `failures` lists each failed check with:
 
