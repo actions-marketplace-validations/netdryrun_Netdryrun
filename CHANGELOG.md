@@ -20,7 +20,8 @@ The agent runtime: an agent with no local Docker gets a verdict through a pull r
 - **SR Linux routes learned through EVPN count as BGP** (`route-type: bgp-evpn`), so a `protocol: bgp` check, and a `present: false` guard, see an EVPN-imported default route.
 - **EOS `Idle(Admin)` reads as `idle`** (EOS prints no space before the reason), so `state: idle` matches an admin-down peer.
 - **`record` says when a link has no address where it is read** (SONiC keeps it on `EthernetN`, SR Linux on `e1-Y.0`), with an `INCOMPLETE BASELINE` line, instead of writing no guard silently.
-- **Known limits stated** in the advisory and the config reference, with 0.4 fixes planned: graceful-restart stale routes count as present until the stale timer ends; SR Linux prefix counts may include routes dropped by AS-path loop detection.
+- **A route check on FRR never passes on a graceful-restart stale path.** While a peer restarts, bgpd keeps its paths marked stale until it re-sends them or the stale timer ends; a `route` or `bgp_route` check that sees one now reads it as not settled (not evaluated, never a pass), whether it expects the route present or absent. Found by the 0.3.3 cross-platform review.
+- **Known limits stated**, with the mitigation and a fix scheduled for 0.4, in the advisory, the config and `record` references and the compatibility matrix: on SR Linux, EOS and SONiC a graceful-restart stale path still counts as present; SR Linux prefix counts include routes dropped by loop detection; `record` snapshots the default VRF only.
 
 ### Added
 

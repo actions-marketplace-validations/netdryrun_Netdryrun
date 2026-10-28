@@ -63,3 +63,55 @@ def test_srl_bgp_evpn_route_type_is_bgp():
     row["route"][0]["route-type"] = "bgp-evpn"
     routes = srlinux.parse_routes(json.dumps(row), "0.0.0.0/0")
     assert routes and routes[0].protocol == "bgp" and routes[0].active
+
+
+# --- #5: FRR marks a graceful-restart stale path ("stale": true); a check never passes on one -------------------------
+
+def _frr_stale(index: int = 0) -> str:
+    data = json.loads(read("frr_bgp_paths.txt"))
+    data["paths"][index]["stale"] = True
+    return json.dumps(data)
+
+
+def _frr_table(prefix: str) -> str:
+    route = json.loads(read("frr_route.txt"))["192.168.3.0/24"][0]
+    return json.dumps({prefix: [dict(route, prefix=prefix)]})
+
+
+def test_frr_route_with_a_stale_bgp_path_is_not_settled():
+    import pytest
+    from netdryrun.drivers.base import DriverError
+    prefix = "192.168.20.0/24"
+    for i in (0, 1):   # the best path or another one
+        with pytest.raises(DriverError, match="stale"):
+            frr.parse_routes(_frr_table(prefix), prefix, _frr_stale(i))
+    assert frr.parse_routes(_frr_table(prefix), prefix, read("frr_bgp_paths.txt"))   # no stale path: as before
+
+
+def test_frr_bgp_paths_with_a_stale_path_are_not_settled():
+    import pytest
+    from netdryrun.drivers.base import DriverError
+    with pytest.raises(DriverError, match="stale"):
+        frr.parse_bgp_paths(_frr_stale(0), "192.168.20.0/24")
+
+
+def test_a_route_check_never_passes_on_a_stale_frr_path_present_or_absent():
+    from netdryrun.checks import Unready, _evaluate
+    from netdryrun.config import Check
+    from netdryrun.drivers.base import Observation
+    prefix = "192.168.20.0/24"
+
+    class Drv:
+        name = "frr"
+
+        def routes(self, p, vrf="default"):
+            return Observation(frr.parse_routes(_frr_table(prefix), p, _frr_stale(0)), [])
+
+        def bgp_paths(self, p, vrf="default"):
+            return Observation(frr.parse_bgp_paths(_frr_stale(0), p), [])
+
+    for params in ({"prefix": prefix}, {"prefix": prefix, "protocol": "bgp", "present": False}):
+        ok, detail, _ = _evaluate(Check("route", {"node": "r1", **params}, "c", 30), Drv())
+        assert not ok and isinstance(detail, Unready) and "stale" in detail, params
+    ok, detail, _ = _evaluate(Check("bgp_route", {"node": "r1", "prefix": prefix, "local_pref": 200}, "c", 30), Drv())
+    assert not ok and "stale" in detail

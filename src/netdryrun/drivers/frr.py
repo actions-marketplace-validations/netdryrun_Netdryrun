@@ -111,6 +111,11 @@ def _bgp_paths_raw(command: str, text: str, prefix: str) -> list[dict]:
     for p in data["paths"]:
         if not isinstance(p, dict):
             raise unexpected(command, f"path: {str(p)[:150]}")
+        if p.get("stale"):
+            # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
+            # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
+            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
+                              "(graceful restart in progress): not settled")
     return data["paths"]
 
 
@@ -133,8 +138,9 @@ def parse_routes(text: str, prefix: str, bgp_text: str | None = None) -> list[Ro
     want = ipaddress.ip_network(prefix)
     out = [_route(prefix, e) for net, entries in _route_table(ROUTE_CMD, text).items() if net == want
            for e in entries]
-    if bgp_text is not None and not any(r.protocol == "bgp" for r in out):
-        if any(_learned(p) for p in _bgp_paths_for_route_check(bgp_text, prefix)):
+    if bgp_text is not None:
+        paths = _bgp_paths_for_route_check(bgp_text, prefix)   # read even when zebra has it: a stale path is an error
+        if not any(r.protocol == "bgp" for r in out) and any(_learned(p) for p in paths):
             out.append(Route(prefix, "bgp", False))
     return out
 
