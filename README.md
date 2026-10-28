@@ -215,7 +215,7 @@ What Netdryrun adds: positive checks wait for convergence, negative checks run o
 
 - Lab routers are not your production routers. A pass on FRR, SR Linux, SONiC VS or Arista cEOS is strong evidence for protocol logic and policy intent, but not proof of hardware, scale or version-specific behavior. For Arista, bring your own licensed cEOS image to test real vendor code.
 - Checks cover IPv4/IPv6 unicast BGP (sessions, prefix counts, best-path attributes), routes and ping, with link-down, node-isolation and route-injection (FRR only) failure scenarios. Route checks work for routes from any protocol today (`protocol: ospf`, `isis`, `static`, `connected`, ...); OSPF/IS-IS *adjacency* checks and path/traceroute are coming.
-- No Cisco or Juniper driver yet: their lab images are licensed. See [Why not Cisco or Juniper?](https://netdryrun.com/faq/#why-not-cisco-or-juniper)
+- No Cisco or Juniper driver in a release yet. Their lab images need a vendor account and can't be redistributed, so their drivers will be bring-your-own-image, like cEOS; Juniper and Cisco NX-OS are next on the [roadmap](https://netdryrun.com/faq/#why-not-cisco-or-juniper).
 
 How results are checked and released, with evidence for each claim: [How it's built](https://netdryrun.com/how-its-built/).
 
