@@ -1126,6 +1126,8 @@ def _outside(best, adv):
     (("65002", "65000 65002"), ("65002 65002", "65000 65009"), False),
     # neither carries its best path
     (("65002", "65009"), ("65002 65002", "65008"), False),
+    # an outbound rewrite that happens to keep the first ASN: not the new best path propagated
+    (("65002", "65000 65002"), ("65003", "65000 65009"), False),
 ])
 def test_best_path_on_the_sender_propagates_its_as_path_with_the_same_outbound_prepend(before, after, ok):
     line = {**UP, "to": {"as_path": after[0]}}
@@ -1217,3 +1219,39 @@ def test_the_report_shows_each_undeclared_routes_state_before_and_after():
     static = items[("rib", "192.0.2.0/24")]
     assert static["fields"] == ["entries"] and (static["route_before"], static["route_after"]) == \
         ("selected and in the FIB", "selected and in the FIB")
+
+
+def test_pins_on_the_reflection_attributes():
+    """cluster_list and originator_id are pinnable (`with:`) and must be read from the new path."""
+    after = add_new_customer_block(base())
+    old = after.get("up1", "path", "10.101.0.0/24")
+    after.path("up1", "10.101.0.0/24", "10.0.2.1",
+               replace(old, attrs=replace(old.attrs, cluster_list=("10.255.0.2",), originator_id="10.255.0.9")))
+    lines = [{**NEW, "appears_on": ["edge1", "peer1"]}]
+    for pins, ok in (({"originator_id": "10.255.0.9", "cluster_list": ["10.255.0.2"]}, True),
+                     ({"originator_id": "10.255.0.8"}, False), ({"cluster_list": []}, False)):
+        m = run(base(), after, [*lines, {**NEW, "appears_on": ["up1"], "with": pins}])
+        assert (m.status == "matched") is ok, pins
+
+
+def test_far_ends_pair_established_sessions_only():
+    lab = base()
+    lab.session("up1", "10.0.2.1", replace(session("10.0.2.2"), state="active"))   # a local address, not established
+    assert ("edge1", "default", "10.0.2.2") not in far_ends(lab.snap())
+
+
+def test_a_vrf_item_is_present_or_absent():
+    before, after = base().snap(), base().snap()
+    after = Snapshot({n: replace(ns, vrfs=("cust", "default")) for n, ns in after.nodes.items()})
+    items = [d for d in diff(before, after) if d.key.kind == "vrf"]
+    assert items and all(d.before is None and d.after is True for d in items)
+
+
+def test_a_received_only_route_with_several_candidates_matches_on_any_of_them():
+    after = base()
+    after.path("up1", "10.101.0.0/24", "10.0.2.1", path(best=False, as_path="65000 65101", next_hop="10.0.2.1"))
+    after.adj_in("up1", "10.0.2.1", "10.101.0.0/24", attrs(as_path="65000 65000 65101", next_hop="10.0.2.1"))
+    after.adj_out("edge1", "10.0.2.2", "10.101.0.0/24", attrs(as_path="65101", next_hop="10.0.1.2"))
+    line = {"prefix": "10.101.0.0/24", "appears_on": "up1", "state": "received"}
+    for pinned, ok in (("65000 65101", True), ("65000 65000 65101", True), ("65101", False)):
+        assert (run(base(), after, [{**line, "with": {"as_path": pinned}}]).status == "matched") is ok, pinned
