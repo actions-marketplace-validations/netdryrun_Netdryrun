@@ -33,7 +33,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # (run with -k "is_refused or does_not_pass").
 CORPUS = Path(os.environ.get("NDR_REDTEAM_DIR") or Path(__file__).parent / "redteam")
 FIXTURES = Path(__file__).parent / "fixtures"
-FLOOR = 17   # cases in the corpus when this test was written; it only goes up
+FLOOR = 19   # cases in the corpus when this test was written; it only goes up
 KINDS = ("config", "check", "driver", "pinned")
 
 
