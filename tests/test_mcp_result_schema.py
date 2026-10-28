@@ -201,7 +201,7 @@ def test_tools_over_stdio_return_the_contract(tmp_path):
     _validate(json.loads(types), "check_types_result")
     _validate(json.loads(baseline), "tool_error")
     # every tool carries the rules, so an agent that reads one tool still gets them
-    assert set(tools) == {"dry_run", "run_checks", "record_baseline", "validate", "check_types"}
+    assert set(tools) == {"dry_run", "start_run", "get_result", "run_checks", "record_baseline", "validate", "check_types"}
     for name, text in tools.items():
         for phrase in ("before proposing or applying any routing or policy change", "Ping is not a test",
                        "60–120 s", "Linux or WSL2", "root-equivalent", "macOS", "Docker-in-Docker",

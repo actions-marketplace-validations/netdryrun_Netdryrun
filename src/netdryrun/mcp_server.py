@@ -11,6 +11,9 @@ import json
 import os
 import re
 import shlex
+import threading
+import time
+import uuid
 from pathlib import Path
 
 from mcp.server import MCPServer
@@ -335,24 +338,61 @@ def _tested(cfg, deployed: bool) -> dict:
             "files": dict(sorted(files.items())), "complete": complete}
 
 
-def _execute(path: str, deploy: bool, keep: bool) -> str:
+def _setup_error(text: str) -> dict:
+    return {"schema": RESULT_SCHEMA, "status": "error", "error": text, "verdict": DO_NOT_APPLY}
+
+
+def _prepare(path: str, deploy: bool):
+    """(cfg, tested, None), or (None, None, the error result): what a run needs before the lab starts. Quick, so a
+    config error or a path outside NETDRYRUN_MCP_ROOT is answered at once."""
     try:
         cfg = _load(path)
     except ConfigError as e:
-        return json.dumps({"schema": RESULT_SCHEMA, "status": "error", "error": str(e), "verdict": DO_NOT_APPLY})
-    tested = _tested(cfg, deployed=deploy)   # read before the run: the files the lab is deployed from
-    rep = run(cfg, deploy=deploy, keep=keep)
+        return None, None, _setup_error(str(e))
+    return cfg, _tested(cfg, deployed=deploy), None   # read before the run: the files the lab is deployed from
+
+
+def _finish(cfg, rep, tested: dict) -> dict:
+    """The result of a finished run, with the full report written next to netdryrun.yml."""
     evidence = cfg.path.parent / "netdryrun-report.json"
     try:
         # a new file renamed over the old name: a planted symlink or hardlink there is replaced, never written through
-        tmp = evidence.with_name(f".{evidence.name}.{os.getpid()}.tmp")
+        tmp = evidence.with_name(f".{evidence.name}.{os.getpid()}.{threading.get_ident()}.tmp")
         tmp.unlink(missing_ok=True)
         with open(tmp, "x", encoding="utf-8") as f:
             f.write(report.to_json(rep))
         os.replace(tmp, evidence)
     except OSError:
         evidence = None   # a read-only folder must not turn a finished run into a tool error with no verdict
-    return json.dumps(_summary(rep, str(evidence) if evidence else None, tested), indent=2)
+    return _summary(rep, str(evidence) if evidence else None, tested)
+
+
+def _execute(path: str, deploy: bool, keep: bool) -> str:
+    cfg, tested, err = _prepare(path, deploy)
+    if err:
+        return json.dumps(err)
+    return json.dumps(_finish(cfg, run(cfg, deploy=deploy, keep=keep), tested), indent=2)
+
+
+# The asynchronous shape (0.3.3): start_run answers at once with a run ID, get_result polls. A dry run takes
+# 60-120 s, longer than some clients wait for one tool call. Runs live in this server process: a finished
+# result stays readable until RUNS_KEPT newer runs have finished; a running one is never dropped.
+RUNS_KEPT = 20
+POLL_AFTER_S = 15
+_RUNS: dict[str, dict] = {}
+_RUNS_LOCK = threading.Lock()
+
+
+def _pending(run_id: str, entry: dict) -> dict:
+    """A run that hasn't finished: no verdict, so it can't be read as one."""
+    return {"schema": RESULT_SCHEMA, "run_id": run_id, "status": "running",
+            "elapsed_s": round(time.monotonic() - entry["started"], 1), "poll_after_s": POLL_AFTER_S}
+
+
+def _forget_old_runs() -> None:
+    finished = [k for k, v in _RUNS.items() if v["result"] is not None]
+    for k in finished[:max(0, len(finished) - RUNS_KEPT)]:
+        del _RUNS[k]
 
 
 @mcp.tool(description=_describe("""
@@ -376,6 +416,53 @@ def _execute(path: str, deploy: bool, keep: bool) -> str:
     """))
 def dry_run(path: str, keep_lab: bool = False) -> str:
     return _execute(path, deploy=True, keep=keep_lab)
+
+
+@mcp.tool(description=_describe("""
+    The asynchronous dry_run, for clients that give up on a long tool call: returns at once with a `run_id`
+    and status running (no verdict yet), then deploys, checks and destroys the lab like dry_run. Call
+    get_result with the run_id every poll_after_s seconds until status is no longer running. Same `path` and
+    keep_lab as dry_run. A config error, or a path outside NETDRYRUN_MCP_ROOT, is answered at once with
+    status error and no run_id. The run lives in this server: if the server restarts, start again.
+    """))
+def start_run(path: str, keep_lab: bool = False) -> str:
+    cfg, tested, err = _prepare(path, deploy=True)
+    if err:
+        return json.dumps(err)
+    run_id = uuid.uuid4().hex[:12]
+    entry = {"started": time.monotonic(), "result": None}
+    with _RUNS_LOCK:
+        _forget_old_runs()
+        _RUNS[run_id] = entry
+
+    def work() -> None:
+        try:
+            result = _finish(cfg, run(cfg, deploy=True, keep=keep_lab), tested)
+        except Exception as e:   # never a run that stays "running" forever
+            result = _setup_error(f"internal error: {type(e).__name__}: {e}. This is a Netdryrun bug, not a "
+                                  "verdict on the change")
+        entry["result"] = {**result, "run_id": run_id}
+
+    threading.Thread(target=work, name=f"netdryrun-run-{run_id}", daemon=True).start()
+    return json.dumps(_pending(run_id, entry))
+
+
+@mcp.tool(description=_describe("""
+    The result of a run started with start_run. While status is running there is no verdict: wait
+    poll_after_s seconds and call again (a dry run takes about 60-120 s). Once it has finished, the result is
+    exactly dry_run's, with its run_id: act on `status` and the verdict as for dry_run. An unknown run_id is
+    status error.
+    """))
+def get_result(run_id: str) -> str:
+    with _RUNS_LOCK:
+        entry = _RUNS.get(run_id)
+    if entry is None:
+        return json.dumps(_setup_error(f"unknown run_id {run_id!r}: it was never started in this server, or it "
+                                       f"finished more than {RUNS_KEPT} runs ago, or the server restarted; "
+                                       "start the run again"))
+    if entry["result"] is None:
+        return json.dumps(_pending(run_id, entry))
+    return json.dumps(entry["result"], indent=2)
 
 
 @mcp.tool(description=_describe("""

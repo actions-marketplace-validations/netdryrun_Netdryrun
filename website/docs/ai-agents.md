@@ -186,12 +186,14 @@ The PR comment lists failures first with their evidence, so the reviewer sees wh
 
 ## Tools
 
-The server has these tools: <!-- facts:mcp_tools -->`dry_run`, `run_checks`, `record_baseline`, `validate` and `check_types`<!-- /facts:mcp_tools -->.
+The server has these tools: <!-- facts:mcp_tools -->`dry_run`, `start_run`, `get_result`, `run_checks`, `record_baseline`, `validate` and `check_types`<!-- /facts:mcp_tools -->.
 
 
 | Tool | Arguments | What it does |
 |---|---|---|
 | `dry_run` | `path`, `keep_lab` (default `false`) | The primary tool. Deploy the lab, run every check, destroy the lab, return the verdict. Takes about 60–120 s for a small lab; longer with big labs or long timeouts. |
+| `start_run` | `path`, `keep_lab` (default `false`) | The same dry run, for clients that give up on a long tool call (from 0.3.3): returns at once with a `run_id` and `status: running`, and no verdict. A config error or a path outside `NETDRYRUN_MCP_ROOT` is answered at once with `status: error` |
+| `get_result` | `run_id` | Poll a run started with `start_run`: `status: running` (no verdict; call again after `poll_after_s` seconds), then exactly `dry_run`'s result with its `run_id`. Runs live in the server process: after a restart, start again |
 | `run_checks` | `path` | Run the checks against a lab that is already running (no deploy or destroy) |
 | `record_baseline` | `topology`, `deploy` (default `true`), `wait_seconds` (default `45`) | Deploy the lab, snapshot its BGP sessions, prefix counts and routes as `netdryrun.yml` text, destroy the lab. Returns the YAML; nothing is written to disk. Like [`netdryrun record`](reference/cli.md#record) |
 | `validate` | `path` | Validate `netdryrun.yml` and its topology without starting a lab: node names, drivers and supported keys, as `dry_run` checks them before deploying (0.3.1 and later) |

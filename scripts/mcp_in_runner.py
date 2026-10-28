@@ -2,7 +2,8 @@
 
 This is what a coding agent that runs on a CI runner would do, minus the language model: start `netdryrun mcp`
 over stdio, list the tools, call `dry_run` on a lab that must pass and one that must fail, and read the result
-contract. It shows that the server, containerlab and Docker work inside the runner; it says nothing about
+contract; then the same through start_run and get_result, each call answering within seconds. It shows that
+the server, containerlab and Docker work inside the runner; it says nothing about
 whether a given hosted agent lets you add the server (see the spike write-up).
 
 Usage (on a runner with Docker and containerlab, as the Action does): python scripts/mcp_in_runner.py --out FILE
@@ -73,7 +74,33 @@ async def drive(timeout: float) -> dict:
                                         "verdict": result.get("verdict"), "seconds": round(time.monotonic() - t0, 1),
                                         "problems": wrong})
                 report["ok"] = report["ok"] and not wrong
+            # the asynchronous shape: every call answers within seconds, the polled result is dry_run's
+            if "start_run" in report["tools"]:
+                report["async"] = await _async_run(s, schema, timeout)
+                report["ok"] = report["ok"] and not report["async"]["problems"]
     return report
+
+
+async def _async_run(s, schema: dict, timeout: float) -> dict:
+    path, want = EXPECT[0]
+    t0 = time.monotonic()
+    started = json.loads((await asyncio.wait_for(s.call_tool("start_run", {"path": str(ROOT / path)}), 10)).content[0].text)
+    out = {"path": path, "start_s": round(time.monotonic() - t0, 1), "polls": 0, "slowest_poll_s": 0.0, "problems": []}
+    if started.get("status") != "running" or "verdict" in started:
+        out["problems"].append(f"start_run answered {started}")
+        return out
+    result = started
+    while result.get("status") == "running" and time.monotonic() - t0 < timeout:
+        await asyncio.sleep(min(float(started.get("poll_after_s", 15)), 15))
+        p0 = time.monotonic()
+        result = json.loads((await asyncio.wait_for(s.call_tool("get_result", {"run_id": started["run_id"]}), 10)).content[0].text)
+        out["polls"] += 1
+        out["slowest_poll_s"] = max(out["slowest_poll_s"], round(time.monotonic() - p0, 1))
+    out["seconds"], out["status"] = round(time.monotonic() - t0, 1), result.get("status")
+    out["problems"] += problems_with(result, want, schema)
+    if result.get("run_id") != started["run_id"]:
+        out["problems"].append("the finished result has another run_id")
+    return out
 
 
 def main() -> int:

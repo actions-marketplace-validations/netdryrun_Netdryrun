@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **An asynchronous MCP shape.** `start_run` returns at once with a `run_id` and `status: running` (no verdict), and `get_result` polls it until the run finishes; the finished result is exactly `dry_run`'s, with its `run_id`. A dry run takes about 60–120 s, longer than some clients wait for one tool call (Codex CLI's default per-tool timeout is 60 s). A config error or a path outside `NETDRYRUN_MCP_ROOT` is answered at once; a run that stops on an internal error ends as `status: error`, never stuck at `running`. Runs live in the server process. The pending shape, `run_pending`, is in the result schema. `dry_run` is unchanged.
+
 ## 0.3.2 (2026-10-28)
 
 The agent contract: what an AI agent needs to choose Netdryrun, read its result and act on it safely. Tool names and parameters are unchanged.
