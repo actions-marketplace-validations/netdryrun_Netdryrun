@@ -79,15 +79,15 @@ On a 20-node leaf-spine fabric (4 spines, 16 leaves, FRR, 64 links), `netdryrun 
 
 Before releases 0.1.0 and 0.2.0, the code was also reviewed by AI models from other vendors (OpenAI GPT and xAI Grok); 0.3.0 was not. Separate agent sessions that start without the author's context also review changes. These review outputs are not published. Fixes from these reviews: [`ec23379`](https://github.com/netdryrun/netdryrun/commit/ec23379) (v0.2.0), [`6495759`](https://github.com/netdryrun/netdryrun/commit/6495759) (agent demo) and [`90fe0ae`](https://github.com/netdryrun/netdryrun/commit/90fe0ae): a security review of the MCP server, the GitHub Action and every path where lab output reaches a shell, a device CLI or a PR comment, with 7 findings, each fixed with a regression test.
 
-These reviewers are AI models, not human auditors. No independent human security audit has been done yet. If you are qualified and willing to do one, we would welcome it: see the [security policy](https://github.com/netdryrun/netdryrun/security/policy).
+These reviewers are AI models, not human auditors. No independent human security audit has been done yet. Report vulnerabilities through the [security policy](https://github.com/netdryrun/netdryrun/security/policy).
 
 ## Defects found by our own testing
 
 Each was found by running Netdryrun against live labs or the corpus, and is recorded in the [changelog](https://github.com/netdryrun/netdryrun/blob/main/CHANGELOG.md).
 
-- **False passes on SR Linux and Arista:** a leaked route that was received but not installed was invisible, so a `present: false` check passed when it should have failed. Fixed in [`77f43d6`](https://github.com/netdryrun/netdryrun/commit/77f43d6), with regression tests on captured output ([`test_drivers.py`](https://github.com/netdryrun/netdryrun/blob/main/tests/test_drivers.py)).
-- **Wrong status after a failure scenario:** a change that broke a baseline check ended as `error` instead of `failed`. Found with [`scripts/pack_verify.sh`](https://github.com/netdryrun/netdryrun/blob/main/scripts/pack_verify.sh); fixed in [`f6ea560`](https://github.com/netdryrun/netdryrun/commit/f6ea560).
-- **PR comments over GitHub's size limit on large labs:** found by the 20-node scale test. From 0.3.1, the comment is cut to fit GitHub's limit, failures first, and says how many checks it left out; the JSON and JUnit reports keep every check.
+- **False passes on SR Linux and Arista (fixed):** a leaked route that was received but not installed was invisible, so a `present: false` check passed when it should have failed. Fixed in [`77f43d6`](https://github.com/netdryrun/netdryrun/commit/77f43d6), with regression tests on captured output ([`test_drivers.py`](https://github.com/netdryrun/netdryrun/blob/main/tests/test_drivers.py)).
+- **Wrong status after a failure scenario (fixed):** a change that broke a baseline check ended as `error` instead of `failed`. Found with [`scripts/pack_verify.sh`](https://github.com/netdryrun/netdryrun/blob/main/scripts/pack_verify.sh); fixed in [`f6ea560`](https://github.com/netdryrun/netdryrun/commit/f6ea560).
+- **PR comments over GitHub's size limit on large labs (fixed):** found by the 20-node scale test. From 0.3.1, the comment is cut to fit GitHub's limit, failures first, and says how many checks it left out; the JSON and JUnit reports keep every check.
 - **A mislabeled corpus case:** [case 12](corpus/12-ibgp-send-community-dropped.md), above.
 
 ## Supply-chain security
@@ -102,4 +102,3 @@ Each was found by running Netdryrun against live labs or the corpus, and is reco
 - **Not production safety.** A pass means the change behaved correctly in a lab running open-source or lab images of network operating systems. It does not prove the change is safe on your network ([what a lab cannot prove](trust.md#what-a-lab-cannot-prove)).
 - **Not Internet scale.** The largest measured lab has 20 nodes and small routing tables. Nothing here is tested with full Internet tables or hundreds of peers.
 - **Not vendor parity.** FRR, SR Linux, SONiC and cEOS behave differently from each other and from hardware routers. The corpus runs only on FRR, with one topology and one intent spec per version, all written by the Netdryrun maintainers.
-- **Not adoption.** Nothing on this site claims who uses Netdryrun.

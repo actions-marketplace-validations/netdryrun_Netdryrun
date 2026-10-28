@@ -150,8 +150,7 @@ def blocks(f: dict) -> dict[str, str]:
     scen = _join(["link-down", "node-isolation", *(["route-injection (FRR only)"] if f["route_injection"] else [])])
     return {
         "readme_status": (f"> Status: **v{v}.** Runs on Linux and WSL2, with drivers for {long_}. "
-                          + corpus_sentence.format(link="[verdict corpus](https://netdryrun.com/corpus/)")
-                          + " Feedback and issues are very welcome."),
+                          + corpus_sentence.format(link="[verdict corpus](https://netdryrun.com/corpus/)")),
         "site_status": (f"Version {v}. Works with {mid} on Linux and WSL2. Check types: {checks} "
                         f"(IPv4/IPv6 unicast {covers}), plus {scen} failure scenarios. "
                         + corpus_sentence.format(link="[verdict corpus](corpus.md)")
@@ -159,7 +158,7 @@ def blocks(f: dict) -> dict[str, str]:
         "when_status": (f"Version {v} has drivers for {mid}, and its checks cover {covers}, "
                         f"with {scen} failure scenarios."),
         "llms_summary": (f"> Netdryrun is an open-source tool (Python, Apache-2.0) that tests network changes in a real containerlab "
-                         "virtual lab before they reach production. It waits for convergence, checks BGP sessions, prefixes, routes and "
+                         "virtual lab before they reach production, so a change ships only after it has passed in a lab, the way code ships only after its tests pass. It waits for convergence, checks BGP sessions, prefixes, routes and "
                          f"reachability, and returns a pass/fail verdict with evidence. Supported network OSes: {long_}. "
                          "It runs locally, in GitHub Actions, or as an MCP server for AI agents.\n\n"
                          f"Install: `pipx install netdryrun` (or `uv tool install netdryrun`; current version {v}). Source: https://github.com/netdryrun/netdryrun\n\n"

@@ -31,7 +31,7 @@ pyATS is a mature Python test framework from Cisco, and Genie adds a large libra
 
 Use it when you need deep, programmable testing, broad parser coverage (especially for Cisco platforms), or pre- and post-change checks on production devices.
 
-Netdryrun is much smaller: a YAML file and a GitHub Action, with no test code to write, and it only runs against labs. If you already have pyATS tests, keep them.
+Netdryrun is narrower: a YAML file and a GitHub Action, with no test code to write, and it only runs against labs. If you already have pyATS tests, keep them.
 
 ## containerlab
 
