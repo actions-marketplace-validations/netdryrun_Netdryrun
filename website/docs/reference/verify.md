@@ -14,7 +14,7 @@ Checks test what someone thought of. `verify` inverts that: **you declare what t
 netdryrun verify topology.clab.yml --before <dir|git-ref> --after <dir|git-ref> --intent intent.yml [--json report.json]
 ```
 
-It deploys the lab with the *before* configs, waits for a stable snapshot, destroys the lab, then does the same with the *after* configs (and runs the standing guards on that lab). Then it compares the two snapshots and matches every difference against the intent. Two cold boots: about 2 × 60 to 120 seconds. When the verdict would approve (INTENT MATCHED or NO BEHAVIOR CHANGE), a third boot of the *after* side must give the same snapshot; if it doesn't, nothing is approved: INCONCLUSIVE, listing every item that differed (`determinism` in the report).
+It deploys the lab with the *before* configs, waits for a stable snapshot, destroys the lab, then does the same with the *after* configs (and runs the standing guards on that lab). Then it compares the two snapshots and matches every difference against the intent. Two cold boots: about 2 × 60 to 120 seconds. When the verdict would approve (INTENT MATCHED or NO BEHAVIOR CHANGE), each side boots a second time and must give the same snapshot; if one doesn't, nothing is approved: INCONCLUSIVE, listing every item that differed (`determinism` in the report). A side given as a directory that is also the name of a git ref is refused (exit 2): verify won't guess which is meant.
 
 The same engine runs in three places: this command, the MCP tool [`verify_change`](#over-mcp-verify_change) for AI agents, and the GitHub Action's [`mode: verify`](#in-ci-the-actions-mode-verify) on pull requests.
 
@@ -234,7 +234,7 @@ The intent should come from the ticket or the operator. An agent must never writ
 
 ## In CI: the Action's mode: verify
 
-On a pull request, [the Action](../github-action.md#verify-a-change-against-its-intent-mode-verify) with `mode: verify` runs `verify` with the PR's base commit as *before* and its head as *after*, the intent file from the PR (`intent-file`, default `netdryrun-intent.yml`), and the base commit's `netdryrun.yml` as standing guards. **A PR that adds or edits the intent file fails** ("intent edited in this PR: requires a code-owner approval") unless the workflow sets `allow-intent-edit: true`, which it should do only where branch protection requires a code-owner review of that file. The PR comment shows the verdict, the echoed intent, the undeclared items and their next diagnostics.
+On a pull request, [the Action](../github-action.md#verify-a-change-against-its-intent-mode-verify) with `mode: verify` runs `verify` with the base branch as *before* and the PR merged into it (GitHub's merge commit, `github.sha`) as *after*, the intent file from the PR (`intent-file`, default `netdryrun-intent.yml`), and the base commit's `netdryrun.yml` as standing guards. **A PR that adds or edits the intent file fails** ("intent edited in this PR: requires a code-owner approval") unless the workflow sets `allow-intent-edit: true`, which it should do only where branch protection requires a code-owner review of that file. The PR comment shows the verdict, the echoed intent, the undeclared items and their next diagnostics.
 
 ## Not in 0.4
 

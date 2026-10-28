@@ -26,7 +26,7 @@ It needs a Linux runner with Docker. GitHub-hosted `ubuntu-latest` runners work.
 
 | Input | Default | Meaning |
 |---|---|---|
-| `mode` | `run` | `run`: deploy the lab of `netdryrun.yml` and run its checks. `verify` (0.4, FRR only): on a pull request, compare the lab with the base commit's configs and with the head's against an intent file. See [mode: verify](#verify-a-change-against-its-intent-mode-verify) |
+| `mode` | `run` | `run`: deploy the lab of `netdryrun.yml` and run its checks. `verify` (0.4, FRR only): on a pull request, compare the lab with the base branch's configs and with the PR merged into it against an intent file. See [mode: verify](#verify-a-change-against-its-intent-mode-verify) |
 | `path` | `.` | `netdryrun.yml` or the folder containing it (`mode: run`) |
 | `topology` | | The containerlab topology file (`mode: verify`); it must be the same in the base and the head |
 | `intent-file` | `netdryrun-intent.yml` | The intent file (`mode: verify`): what the change is meant to do |
@@ -130,7 +130,7 @@ jobs:
 
 ### Verify a change against its intent (mode: verify)
 
-New in 0.4, FRR only. Instead of running checks, the Action boots the topology twice, with the PR's base commit (`github.event.pull_request.base.sha`) and with its head, and fails on every difference in routing behavior that the intent file doesn't declare. It runs [`netdryrun verify`](reference/verify.md): the verdict is `INTENT MATCHED`, `NO BEHAVIOR CHANGE`, `UNDECLARED CHANGES: DO NOT APPLY` or `INCONCLUSIVE`, never `SAFE TO PROCEED`. The standing guards are the `netdryrun.yml` next to the topology **in the base commit**, never the PR's copy, so a PR can't weaken them.
+New in 0.4, FRR only. Instead of running checks, the Action boots the topology twice, with the base branch (the first parent of the PR's merge commit) and with the PR merged into it (the merge commit, `github.sha`: what lands, not the PR head alone), and fails on every difference in routing behavior that the intent file doesn't declare. It runs [`netdryrun verify`](reference/verify.md): the verdict is `INTENT MATCHED`, `NO BEHAVIOR CHANGE`, `UNDECLARED CHANGES: DO NOT APPLY` or `INCONCLUSIVE`, never `SAFE TO PROCEED`. The standing guards are the `netdryrun.yml` next to the topology **in the base commit**, never the PR's copy, so a PR can't weaken them.
 
 ```yaml title=".github/workflows/network-verify.yml"
 name: Network verify

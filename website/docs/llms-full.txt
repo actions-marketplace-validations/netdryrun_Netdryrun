@@ -2276,7 +2276,7 @@ Checks test what someone thought of. `verify` inverts that: **you declare what t
 netdryrun verify topology.clab.yml --before <dir|git-ref> --after <dir|git-ref> --intent intent.yml [--json report.json]
 ```
 
-It deploys the lab with the *before* configs, waits for a stable snapshot, destroys the lab, then does the same with the *after* configs (and runs the standing guards on that lab). Then it compares the two snapshots and matches every difference against the intent. Two cold boots: about 2 × 60 to 120 seconds. When the verdict would approve (INTENT MATCHED or NO BEHAVIOR CHANGE), a third boot of the *after* side must give the same snapshot; if it doesn't, nothing is approved: INCONCLUSIVE, listing every item that differed (`determinism` in the report).
+It deploys the lab with the *before* configs, waits for a stable snapshot, destroys the lab, then does the same with the *after* configs (and runs the standing guards on that lab). Then it compares the two snapshots and matches every difference against the intent. Two cold boots: about 2 × 60 to 120 seconds. When the verdict would approve (INTENT MATCHED or NO BEHAVIOR CHANGE), each side boots a second time and must give the same snapshot; if one doesn't, nothing is approved: INCONCLUSIVE, listing every item that differed (`determinism` in the report). A side given as a directory that is also the name of a git ref is refused (exit 2): verify won't guess which is meant.
 
 The same engine runs in three places: this command, the MCP tool [`verify_change`](#over-mcp-verify_change) for AI agents, and the GitHub Action's [`mode: verify`](#in-ci-the-actions-mode-verify) on pull requests.
 
@@ -2496,7 +2496,7 @@ The intent should come from the ticket or the operator. An agent must never writ
 
 ## In CI: the Action's mode: verify
 
-On a pull request, [the Action](../github-action.md#verify-a-change-against-its-intent-mode-verify) with `mode: verify` runs `verify` with the PR's base commit as *before* and its head as *after*, the intent file from the PR (`intent-file`, default `netdryrun-intent.yml`), and the base commit's `netdryrun.yml` as standing guards. **A PR that adds or edits the intent file fails** ("intent edited in this PR: requires a code-owner approval") unless the workflow sets `allow-intent-edit: true`, which it should do only where branch protection requires a code-owner review of that file. The PR comment shows the verdict, the echoed intent, the undeclared items and their next diagnostics.
+On a pull request, [the Action](../github-action.md#verify-a-change-against-its-intent-mode-verify) with `mode: verify` runs `verify` with the base branch as *before* and the PR merged into it (GitHub's merge commit, `github.sha`) as *after*, the intent file from the PR (`intent-file`, default `netdryrun-intent.yml`), and the base commit's `netdryrun.yml` as standing guards. **A PR that adds or edits the intent file fails** ("intent edited in this PR: requires a code-owner approval") unless the workflow sets `allow-intent-edit: true`, which it should do only where branch protection requires a code-owner review of that file. The PR comment shows the verdict, the echoed intent, the undeclared items and their next diagnostics.
 
 ## Not in 0.4
 
@@ -2672,7 +2672,7 @@ It needs a Linux runner with Docker. GitHub-hosted `ubuntu-latest` runners work.
 
 | Input | Default | Meaning |
 |---|---|---|
-| `mode` | `run` | `run`: deploy the lab of `netdryrun.yml` and run its checks. `verify` (0.4, FRR only): on a pull request, compare the lab with the base commit's configs and with the head's against an intent file. See [mode: verify](#verify-a-change-against-its-intent-mode-verify) |
+| `mode` | `run` | `run`: deploy the lab of `netdryrun.yml` and run its checks. `verify` (0.4, FRR only): on a pull request, compare the lab with the base branch's configs and with the PR merged into it against an intent file. See [mode: verify](#verify-a-change-against-its-intent-mode-verify) |
 | `path` | `.` | `netdryrun.yml` or the folder containing it (`mode: run`) |
 | `topology` | | The containerlab topology file (`mode: verify`); it must be the same in the base and the head |
 | `intent-file` | `netdryrun-intent.yml` | The intent file (`mode: verify`): what the change is meant to do |
@@ -2776,7 +2776,7 @@ jobs:
 
 ### Verify a change against its intent (mode: verify)
 
-New in 0.4, FRR only. Instead of running checks, the Action boots the topology twice, with the PR's base commit (`github.event.pull_request.base.sha`) and with its head, and fails on every difference in routing behavior that the intent file doesn't declare. It runs [`netdryrun verify`](reference/verify.md): the verdict is `INTENT MATCHED`, `NO BEHAVIOR CHANGE`, `UNDECLARED CHANGES: DO NOT APPLY` or `INCONCLUSIVE`, never `SAFE TO PROCEED`. The standing guards are the `netdryrun.yml` next to the topology **in the base commit**, never the PR's copy, so a PR can't weaken them.
+New in 0.4, FRR only. Instead of running checks, the Action boots the topology twice, with the base branch (the first parent of the PR's merge commit) and with the PR merged into it (the merge commit, `github.sha`: what lands, not the PR head alone), and fails on every difference in routing behavior that the intent file doesn't declare. It runs [`netdryrun verify`](reference/verify.md): the verdict is `INTENT MATCHED`, `NO BEHAVIOR CHANGE`, `UNDECLARED CHANGES: DO NOT APPLY` or `INCONCLUSIVE`, never `SAFE TO PROCEED`. The standing guards are the `netdryrun.yml` next to the topology **in the base commit**, never the PR's copy, so a PR can't weaken them.
 
 ```yaml title=".github/workflows/network-verify.yml"
 name: Network verify
@@ -3128,7 +3128,7 @@ The server has these tools: `dry_run`, `verify_change`, `run_checks`, `record_ba
 | `record_baseline` | `topology`, `deploy` (default `true`), `wait_seconds` (default `45`) | Deploy the lab, snapshot its BGP sessions, prefix counts and routes as `netdryrun.yml` text, destroy the lab. Returns the YAML; nothing is written to disk. Like [`netdryrun record`](reference/cli.md#record) |
 | `validate` | `path` | Validate `netdryrun.yml` and its topology without starting a lab: node names, drivers and supported keys, as `dry_run` checks them before deploying (0.3.1 and later) |
 | `check_types` | | List supported check types and their keys, to help write `netdryrun.yml` |
-| `verify_change` | `topology`, `before`, `after`, `intent`, `guards` (optional) | 0.4, FRR only. Boot the topology with the *before* and the *after* configs, diff routing behavior, and fail on every difference the intent doesn't declare. No checks needed. Two lab boots, and a third when the verdict approves (the after side again: no approval from a single boot): about 2–6 minutes. See [below](#verify-a-change-against-the-tickets-intent) |
+| `verify_change` | `topology`, `before`, `after`, `intent`, `guards` (optional) | 0.4, FRR only. Boot the topology with the *before* and the *after* configs, diff routing behavior, and fail on every difference the intent doesn't declare. No checks needed. Two lab boots, and four when the verdict approves (each side again: no approval from a single boot): about 2–8 minutes. See [below](#verify-a-change-against-the-tickets-intent) |
 
 The server also exposes the last full JSON report as a resource, `netdryrun://report/{path}`.
 
