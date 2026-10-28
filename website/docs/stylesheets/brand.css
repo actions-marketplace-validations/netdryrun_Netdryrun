@@ -33,6 +33,13 @@
   .md-header__button[for="__drawer"] { order: -1; }   /* menu first, then the wordmark */
 }
 
+/* One wordmark only: the header shows it, so the nav's "Netdryrun" title text goes (sidebar and drawer).
+   The drawer keeps its own wordmark at the top, because the open drawer covers the header's. */
+.md-nav--primary > .md-nav__title { font-size: 0; }
+@media screen and (min-width: 76.25em) {
+  .md-nav--primary > .md-nav__title { display: none; }
+}
+
 /* The wordmark already says the name: hide the duplicate site title (page titles still show on scroll) */
 .md-header__title .md-header__topic:first-child { visibility: hidden; }
 
