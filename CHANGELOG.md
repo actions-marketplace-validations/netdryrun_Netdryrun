@@ -18,6 +18,11 @@ The agent contract: what an AI agent needs to choose Netdryrun, read its result 
 - **MCP tool descriptions** now all state when to use the tool (before proposing or applying a routing or policy change), that ping is not a test, the runtime (about 60–120 s per dry run), the requirements (Linux or WSL2, Docker and containerlab with root-equivalent rights; not macOS, not sandboxes without Docker-in-Docker), that inconclusive means stop with at most one retry, and never to invent or weaken checks but to call `record_baseline` when none exist. `dry_run` is named the primary tool.
 - **The MCP Registry description** (`server.json`) is now the opening of the one-sentence definition; the registry caps it at 100 characters.
 
+### Fixes
+
+- **A relative path given to an MCP tool is no longer resolved against the server's own working directory.** An agent that passed `netdryrun.yml` was told the file was "outside NETDRYRUN_MCP_ROOT" although it was inside it. With `NETDRYRUN_MCP_ROOT` set to one folder, a relative path is now read from that folder; with no root or several, the tool refuses it and asks for an absolute path, with an example. The root check still applies after resolving, so `../` can't step outside. This holds for `dry_run`, `run_checks`, `validate`, `record_baseline` and the report resource.
+- **A lab that never reached a testable state is inconclusive (exit 3) with failure scenarios in the file too.** With `bgpd` off on every node, 0.3.1 ran the main checks, then stopped at the first scenario with exit 2 ("could not read BGP state on r1"); the same file without scenarios exited 3. Now, when the main checks already show the lab never gave usable state, the scenarios are skipped (no fault is applied) and the run ends inconclusive. It is never a pass, and a scenario whose BGP state can't be read after main checks that did read state still stops the run with exit 2 naming the node, as in 0.3.1.
+
 ## 0.3.1 (2026-10-28)
 
 **Upgrading from 0.3.0, read this first:**

@@ -2866,7 +2866,7 @@ INCONCLUSIVE: the lab did not reach a testable state: r1 never returned usable B
   wrote json report: report.json
 ```
 
-The run took 111 seconds. With the failure scenario left in, 0.3.1 doesn't get to this verdict: after the main checks it stops at the scenario with exit code `2` and [could not read BGP state on r1](#could-not-read-bgp-state-to-find-the-sessions-over-the-links), because it can't see which sessions the fault would take down. Either way the run is never `passed`.
+The run took 111 seconds. From 0.3.2 the failure scenario can stay in: once the main checks show the lab never reached a testable state, the run logs `The lab never reached a testable state; 1 scenario(s) skipped`, applies no fault, and ends with this verdict (exit code `3`). 0.3.1 instead stopped at the scenario with exit code `2` and [could not read BGP state on r1](#could-not-read-bgp-state-to-find-the-sessions-over-the-links). A lab whose main checks did read state (the session to a node without `bgpd` is down) still stops there with exit code `2`. Either way the run is never `passed`.
 
 The JSON report has the same text in `inconclusive_reason`, and every unready sample in `history` is marked:
 
