@@ -267,6 +267,18 @@ def sent_counters(text: str) -> dict[tuple[str, str, str], int]:
     return out
 
 
+def adv_intervals(text: str) -> dict[tuple[str, str], float]:
+    """(vrf, neighbor) -> the advertisement interval bgpd applies to it (minBtwnAdvertisementRunsTimerMsecs), in
+    seconds. A timer for the stability loop, never part of the snapshot's items."""
+    out = {}
+    for vrf, inst in _json(NEIGHBORS_CMD, text).items():
+        for key, nb in inst.items() if isinstance(inst, dict) else ():
+            ms = nb.get("minBtwnAdvertisementRunsTimerMsecs") if isinstance(nb, dict) else None
+            if isinstance(ms, int) and not isinstance(ms, bool):
+                out[(vrf, key)] = ms / 1000
+    return out
+
+
 def _add_path_rx(nb: dict, af: str) -> bool:
     """The neighbor said it may send this node several paths per prefix (its add-path TX capability)."""
     caps = nb.get("neighborCapabilities", {})
@@ -660,6 +672,7 @@ class FrrCollector:
         neighbors_text = self._vtysh(NEIGHBORS_CMD, raw)
         sessions = parse_neighbors(neighbors_text)
         sent = sent_counters(neighbors_text)
+        adv_interval = max(adv_intervals(neighbors_text).values(), default=0.0)
         ribs = {afi: parse_routes(self._vtysh(ROUTE_CMDS[afi], raw), afi) for afi in ("ipv4", "ipv6")}
         tables = {afi: parse_bgp_table(self._vtysh(BGP_CMDS[afi], raw), afi) for afi in ("ipv4", "ipv6")}
 
@@ -708,7 +721,7 @@ class FrrCollector:
                             kind = "adj_out" if d == "out" else "adj_in"
                             items[ItemKey(kind, node, vrf, afi, "unicast", prefix, neighbor=nbr, path_id=pid)] = attrs
         vrfs = tuple(sorted(active | bgp_vrfs))
-        return NodeSnapshot(node, self.driver, vrfs, items, raw)
+        return NodeSnapshot(node, self.driver, vrfs, items, raw, adv_interval=adv_interval)
 
 
 def show_command(key: ItemKey) -> str:

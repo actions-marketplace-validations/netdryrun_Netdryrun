@@ -150,8 +150,8 @@ class Drv:
             raise NoSuchInstance(f"no VRF {vrf}")
         out = {}
         for a, s in _at(self.neighbors[vrf], self.clock.now).items():
-            state, pfx = (s, {"ipv4-unicast": 3}) if isinstance(s, str) else s
-            out[a] = BgpNeighbor(a, state, dict(pfx))
+            state, pfx, interval = (s, {"ipv4-unicast": 3}, 0.0) if isinstance(s, str) else (*s, 0.0)[:3]
+            out[a] = BgpNeighbor(a, state, dict(pfx), adv_interval=interval)
         return Observation(out, [{"cmd": "nbr"}])
 
     def routes(self, prefix, vrf="default"):
@@ -1654,3 +1654,24 @@ def test_run_scenario_gate_warning_is_added_to_each_check(monkeypatch):
     assert r.passed and ref.passed
     assert r.detail != ref.detail and r.detail.startswith(ref.detail)
     assert e.results[0].detail == r.detail
+
+
+
+# ----------------------------------------------------------------- advertisement intervals stretch the windows
+
+def test_a_leak_slowed_by_a_peers_advertisement_interval_is_still_seen(monkeypatch):
+    """0.3.2 multi-vendor audit: r2 sends to r1 at most every 60 s (its advertisement interval), so a leak can
+    reach r1 at t=45 s, after the default settle and hold (10 s each): the negative check sampled a prefix
+    count stable at 0 and passed. The windows stretch to the longest interval any session reports."""
+    slow = {"default": {"10.0.12.1": ("established", {"ipv4-unicast": 3}, 60.0)}}
+    e = make(monkeypatch, r1={"neighbors": up("10.0.12.2"), "routes": {"default": lambda t, p: t >= 45}},
+             r2={"neighbors": slow, "routes": {"default": always}})
+    rep = e.run([leak("neg")], settle=10, hold=10)
+    assert rep.status == "failed" and not by_name(rep)["neg"].passed
+    assert any("advertisement interval" in line and "60" in line for line in e.logs)
+
+
+def test_short_advertisement_intervals_leave_the_windows_alone(monkeypatch):
+    e = make(monkeypatch, r1={"neighbors": up("10.0.12.2"), "routes": {"default": never}})
+    rep = e.run([leak("neg")], settle=10, hold=10)
+    assert rep.status == "passed" and not any("advertisement interval" in line for line in e.logs)

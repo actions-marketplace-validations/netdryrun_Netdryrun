@@ -64,8 +64,11 @@ def parse_bgp_neighbors(text: str) -> dict[str, BgpNeighbor]:
             if not isinstance(af, dict) or "acceptedPrefixCounter" not in af:
                 raise unexpected(NEIGHBORS_CMD, f"{addr} {afi}: no acceptedPrefixCounter")
             prefixes[AFI_NAMES.get(afi, afi)] = as_int(NEIGHBORS_CMD, af["acceptedPrefixCounter"])
+        # the advertisement interval bgpd applies to this neighbor (configured, or FRR's default)
+        mrai = info.get("minBtwnAdvertisementRunsTimerMsecs")
+        adv = as_int(NEIGHBORS_CMD, mrai) / 1000 if mrai is not None else None
         # "Idle (Admin)" -> "idle": the first word is the FSM state
-        out[_canon_addr(addr)] = BgpNeighbor(addr, state, prefixes)
+        out[_canon_addr(addr)] = BgpNeighbor(addr, state, prefixes, adv_interval=adv)
     return out
 
 

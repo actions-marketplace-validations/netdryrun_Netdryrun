@@ -322,6 +322,8 @@ def run(config: Config, *, deploy: bool = True, keep: bool = False, keep_on_fail
         positives = [c for c in config.checks if not is_post_convergence(c)]
         negatives = [c for c in config.checks if is_post_convergence(c)]
         report.results += run_round_robin(positives, drivers, on_result=on_result, clock=_clock, sleep=_sleep)
+        if negatives or config.scenarios:
+            settle, hold = _stretch_for_advertisement_intervals(lab, driver_for, config, settle, hold, log)
         if negatives:
             gate_warnings: dict[int, str] = {}
             not_converged = _bgp_convergence_gate(negatives, config.checks, drivers, log=log,
@@ -433,6 +435,39 @@ def _with_warnings(warnings: dict[int, str], on_result=None):
         if on_result:
             on_result(r)
     return add
+
+
+ADV_MARGIN = 2.0   # seconds beyond the longest advertisement interval
+
+
+def _stretch_for_advertisement_intervals(lab, driver_for, config: Config, settle: float, hold: float, log):
+    """(settle, hold), each at least the longest advertisement interval (MRAI) any BGP session in the lab reports,
+    plus a margin (0.3.2 multi-vendor audit). A peer sends at most once per interval, so a leak can arrive that
+    long after the sessions look settled; with shorter windows a negative check samples a prefix count still
+    stable at 0 and passes. A route that crosses several such peers can take one interval per hop: raise
+    --settle for that."""
+    vrfs = {"default"} | {c.params["vrf"] for c in config.checks if c.params.get("vrf")}
+    vrfs |= {c.params["vrf"] for sc in config.scenarios for c in sc.checks if c.params.get("vrf")}
+    longest, where = 0.0, ""
+    for node in sorted(lab.nodes):
+        try:
+            drv = driver_for(node)
+        except DriverError:
+            continue   # a node without a routing driver (a host) sends no BGP updates
+        for vrf in sorted(vrfs):
+            try:
+                neighbors = drv.bgp_neighbors(vrf).value
+            except DriverError:
+                continue   # no BGP there (yet): its sessions are judged by the gate and the checks
+            for n in neighbors.values():
+                if n.adv_interval is not None and n.adv_interval > longest:
+                    longest, where = n.adv_interval, f"{node} (to {n.address}{'' if vrf == 'default' else f', vrf {vrf}'})"
+    need = longest + ADV_MARGIN if longest > 0 else 0.0
+    if need > min(settle, hold):
+        log(f"{where} has an advertisement interval of {longest:g}s, so a route can arrive that late: settle and "
+            f"hold extended to at least {need:g}s")
+        settle, hold = max(settle, need), max(hold, need)
+    return settle, hold
 
 
 def _bgp_convergence_gate(negatives: list[Check], all_checks: list[Check], drivers: dict,

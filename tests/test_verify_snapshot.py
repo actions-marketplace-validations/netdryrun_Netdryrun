@@ -614,3 +614,12 @@ def test_cold_7_an_empty_advertised_listing_for_a_session_that_sent_routes_is_no
     quiet = frr.adj_command("default", "ipv4", "10.0.3.2", "out")   # sentPrefixCounter 0: empty is fine
     ns = collect(overrides={quiet: "{}"})
     assert not [k for k in ns.items if k.kind == "adj_out" and k.neighbor == "10.0.3.2"]
+
+
+def test_the_collector_reports_the_longest_advertisement_interval():
+    assert collect().adv_interval == 0.0                     # FRR 10.4.1's default, as the live capture reports it
+    slow = edited(frr.NEIGHBORS_CMD, lambda d: d["default"]["10.0.2.2"].update(minBtwnAdvertisementRunsTimerMsecs=45000))
+    ns = collect(overrides=slow)
+    assert ns.adv_interval == 45.0
+    assert ns == collect()                                  # a timer, never compared
+    assert "adv_interval" not in json.dumps(Snapshot({"edge1": ns}).to_json(raw=False))

@@ -25,6 +25,7 @@ from .frr import CommandFailed, CommandTimedOut
 from .snapshot import Snapshot, SnapshotError
 
 POLL = 3.0
+ADV_MARGIN = 2.0   # seconds beyond the longest advertisement interval
 
 
 @dataclass
@@ -85,6 +86,12 @@ def stable_snapshot(collect: Callable[[], Snapshot], *, settle: float, timeout: 
             sleep(POLL)
             continue
         last_failure = ""
+        # a peer sends at most once per advertisement interval: two samples closer than that can miss a route
+        # still on its way (0.3.2 multi-vendor audit), so settle covers the longest interval a node reports
+        interval, where = max(((ns.adv_interval, n) for n, ns in cur.nodes.items()), default=(0.0, ""))
+        if interval > 0 and interval + ADV_MARGIN > settle:
+            settle = interval + ADV_MARGIN
+            log(f"  {where} has an advertisement interval of {interval:g}s: settle extended to {settle:g}s")
         waiting = _not_ready(cur, bgp_nodes)
         if waiting:
             prev, moving = None, waiting

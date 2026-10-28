@@ -82,8 +82,8 @@ Opens a short feedback form on GitHub in your browser, prefilled with your Netdr
 | `--json FILE` | | Write the full evidence report as JSON |
 | `--markdown FILE` | | Write a Markdown summary (for PR comments) |
 | `--junit FILE` | | Write JUnit XML (for CI test reporting) |
-| `--settle SECONDS` | `10` | Wait before post-convergence checks, and in a scenario after the fault took effect |
-| `--hold SECONDS` | `10` | How long a post-convergence check must hold (a check's own `hold` key overrides it). In a scenario, positive checks must hold this long too |
+| `--settle SECONDS` | `10` | Wait before post-convergence checks, and in a scenario after the fault took effect. Stretched automatically to the longest BGP advertisement interval any session in the lab reports, plus 2 s (the run log says so) |
+| `--hold SECONDS` | `10` | How long a post-convergence check must hold (a check's own `hold` key overrides it). In a scenario, positive checks must hold this long too. Stretched like `--settle` |
 | `--debug` | | Print the traceback of an internal error |
 | `--no-step-summary` | | Do not append the Markdown summary to `$GITHUB_STEP_SUMMARY` |
 
@@ -94,7 +94,7 @@ Opens a short feedback form on GitHub in your browser, prefilled with your Netdr
 | `--keep` | Leave the lab running afterwards, for debugging |
 | `--keep-on-failure` | Leave the lab running only if the run did not pass |
 
-When a lab is kept, Netdryrun prints the command to destroy it. See [convergence semantics](config.md#convergence-semantics) for what `--settle` and `--hold` control.
+When a lab is kept, Netdryrun prints the command to destroy it. See [convergence semantics](config.md#convergence-semantics) for what `--settle` and `--hold` control. **Advertisement intervals:** a BGP peer sends updates at most once per advertisement interval (MRAI), so a route, a leak included, can arrive that long after the sessions look settled. Netdryrun reads each session's interval (FRR and SONiC: what bgpd reports for the neighbor; SR Linux: `minimum-advertisement-interval`, 5 s by default; EOS: its default of 0, since a configured `out-delay` isn't read) and stretches `--settle` and `--hold` to the longest one plus 2 s. A route that crosses several such peers can take one interval per hop: raise `--settle` for that.
 
 ## Exit codes
 

@@ -462,6 +462,9 @@ class NodeSnapshot:
     vrfs: tuple[str, ...]
     items: dict[ItemKey, object]
     raw: list[dict] = field(default_factory=list, compare=False)   # the commands and their output (evidence)
+    # the longest advertisement interval (MRAI, seconds) the node's sessions report: when a route can still arrive
+    # after the lab looks settled. A timer, not behavior: never compared, never stored (the raw output has it).
+    adv_interval: float = field(default=0.0, compare=False)
 
     def __post_init__(self):
         for k, v in self.items.items():

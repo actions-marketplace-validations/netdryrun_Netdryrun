@@ -68,7 +68,9 @@ def _summary(text: str, vrf: str, afi: str, into: dict[str, BgpNeighbor] | None)
         if not isinstance(p, dict) or not isinstance(p.get("peerState"), str) or not p["peerState"].strip():
             raise unexpected(command, f"{addr}: {str(p)[:150]}")
         key = _canon_addr(str(addr))
-        n = out.get(key) or BgpNeighbor(str(addr), p["peerState"].split()[0].lower())
+        # EOS sends updates without delay unless `neighbor ... out-delay` is set, which the summary doesn't show:
+        # its platform default (0) is used
+        n = out.get(key) or BgpNeighbor(str(addr), p["peerState"].split()[0].lower(), adv_interval=0.0)
         if "prefixAccepted" in p:
             n.prefixes[afi] = as_int(command, p["prefixAccepted"])
         elif n.state == "established":  # a missing count would read as 0 prefixes, passing `max`

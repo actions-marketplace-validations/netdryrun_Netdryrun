@@ -43,6 +43,9 @@ def _list(command: str, data: dict, key: str) -> list[dict]:
     return rows
 
 
+SRL_DEFAULT_ADV_INTERVAL = 5   # seconds (SR Linux's default minimum-advertisement-interval)
+
+
 @parser(NEIGHBORS_CMD)
 def parse_bgp_neighbors(text: str) -> dict[str, BgpNeighbor]:
     out = {}
@@ -59,7 +62,10 @@ def parse_bgp_neighbors(text: str) -> dict[str, BgpNeighbor]:
                 # accepted = received minus rejected by import policy (matches FRR's acceptedPrefixCounter)
                 prefixes[str(af["afi-safi-name"])] = (as_int(NEIGHBORS_CMD, af["received-routes"])
                                                       - as_int(NEIGHBORS_CMD, af.get("rejected-routes", 0)))
-        out[_canon_addr(addr)] = BgpNeighbor(addr, state.lower(), prefixes)
+        # SR Linux's minimum-advertisement-interval, 5 s by default where the state doesn't list it
+        timers = n.get("timers") if isinstance(n.get("timers"), dict) else {}
+        adv = float(as_int(NEIGHBORS_CMD, timers.get("minimum-advertisement-interval", SRL_DEFAULT_ADV_INTERVAL)))
+        out[_canon_addr(addr)] = BgpNeighbor(addr, state.lower(), prefixes, adv_interval=adv)
     return out
 
 

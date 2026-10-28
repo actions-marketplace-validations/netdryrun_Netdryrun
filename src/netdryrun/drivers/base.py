@@ -92,6 +92,10 @@ class BgpNeighbor:
     address: str
     state: str                                          # lower-case, e.g. "established"
     prefixes: dict[str, int] = field(default_factory=dict)  # afi -> accepted/received prefixes
+    # seconds between advertisements to this neighbor (MRAI) as the device reports it, or the platform's default
+    # where it reports none; None: not known. A route can arrive this late after the session looks settled.
+    # A timer, not the session's identity: not part of equality.
+    adv_interval: float | None = field(default=None, compare=False)
 
 
 @dataclass

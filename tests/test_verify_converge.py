@@ -5,7 +5,7 @@ import pytest
 
 from netdryrun.verify.converge import Inconclusive, SnapshotUnreadable, stable_snapshot
 from netdryrun.verify.frr import CommandFailed, CommandTimedOut
-from netdryrun.verify.snapshot import SnapshotError
+from netdryrun.verify.snapshot import Snapshot, SnapshotError
 from verify_helpers import base, path, session
 
 
@@ -196,3 +196,21 @@ def test_expects_bgp_reads_the_nodes_config():
         text = files.get((node, argv[1]))
         return (0, text, "") if text is not None else (1, "", "No such file")
     assert expects_bgp(exec_fn, "r1") and not expects_bgp(exec_fn, "r2") and expects_bgp(exec_fn, "r3")
+
+
+def test_settle_stretches_to_the_longest_advertisement_interval_a_node_reports():
+    """0.3.2 multi-vendor audit, in verify: a node reporting a 60 s advertisement interval can send a route up to
+    60 s after the lab looks settled; settle stretches to that interval plus a margin, so the late route is in
+    the snapshot (with settle 10 it was missed)."""
+    from dataclasses import replace as dc_replace
+
+    def slow(snap):
+        return Snapshot({n: dc_replace(ns, adv_interval=60.0 if n == "edge1" else 0.0) for n, ns in snap.nodes.items()},
+                        snap.unobserved)
+    early, late = slow(base().snap()), slow(moved(7))
+    clock = Clock()
+    logs = []
+    got = stable_snapshot(lambda: early if clock.t < 50 else late, settle=10, timeout=300, clock=clock,
+                          sleep=clock.sleep, log=logs.append)
+    assert got.items() == late.items()
+    assert any("advertisement interval" in x and "edge1" in x for x in logs)
