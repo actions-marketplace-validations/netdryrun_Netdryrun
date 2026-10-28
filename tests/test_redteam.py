@@ -13,6 +13,7 @@ old release to show which cases it fails (each one a false pass that release had
 from __future__ import annotations
 
 import ast
+import os
 import re
 from pathlib import Path
 
@@ -27,7 +28,10 @@ from netdryrun.drivers.base import BgpNeighbor, BgpPath, Observation, Route
 from netdryrun.lab import ExecResult
 
 ROOT = Path(__file__).resolve().parents[1]
-CORPUS = Path(__file__).parent / "redteam"
+# NDR_REDTEAM_DIR points the case tests at another folder: the weekly adversarial run uses it to try its
+# candidates without seeing this corpus. A candidate whose test FAILS is a false pass
+# (run with -k "is_refused or does_not_pass").
+CORPUS = Path(os.environ.get("NDR_REDTEAM_DIR") or Path(__file__).parent / "redteam")
 FIXTURES = Path(__file__).parent / "fixtures"
 FLOOR = 17   # cases in the corpus when this test was written; it only goes up
 KINDS = ("config", "check", "driver", "pinned")
