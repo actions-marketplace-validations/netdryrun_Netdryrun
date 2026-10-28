@@ -1730,15 +1730,21 @@ The job fails on anything but a pass, so branch protection can require it. A pul
 
 ## 2. What the agent reads
 
-**The comment.** The Action posts one comment and updates it on every push. Its first lines have a fixed format:
+**The comment.** The Action posts one comment per lab (per `path:`) and updates it on every push. Its first lines have a fixed format:
 
 ```text
 
 
-**Netdryrun: DO NOT APPLY THIS CHANGE** · status `failed` · 5 passed, 1 failed
+**Netdryrun: DO NOT APPLY THIS CHANGE** · status `failed` · 5 passed, 1 failed · commit `4f2a9c1e0b7d`
 ```
 
-Read the JSON on the second line and decide on `status`. The rest of the comment is the human summary: failed checks first, with their evidence.
+Read the JSON on the second line and decide on `status`, with three rules:
+
+- **Only comments by `github-actions[bot]`** (or the account you set as `comment-author`). Anyone can post a comment that looks like this one.
+- **Only a header whose `commit` is the pull request's head commit.** A header with an older commit is from an earlier push: wait for the new run. A run that wrote no report still rewrites the header, as `error`.
+- **Every Netdryrun comment on the pull request must say `passed`**, one per lab.
+
+The rest of the comment is the human summary: failed checks first, with their evidence.
 
 **The artifact.** For the full detail, the job uploads `netdryrun-verdict.json` with the reports (artifact `netdryrun-report`). It is the same object the MCP tools return: `status`, the frozen `verdict`, `failures` with a reason, an evidence excerpt and a read-only `next_diagnostic` command for each failed check, and `tested`, a sha256 of `netdryrun.yml`, the topology and every config file the run used. Schema: [mcp-result-v1.json](https://netdryrun.com/schemas/mcp-result-v1.json).
 
@@ -1754,8 +1760,8 @@ The verdict applies to the commit the job ran on. After any push, wait for the n
 
 ```markdown
 Network changes in this repository are dry-run by Netdryrun on every pull request. After you push, wait for
-the "Netdryrun" check, then read the second line of the Netdryrun comment (a JSON object) and act on its
-`status`: propose the change only on `passed`; on `failed`, fix the config and push again; on `inconclusive`
+the "Netdryrun" check, then read the second line of each Netdryrun comment by github-actions[bot] (a JSON
+object) whose `commit` is the head commit, and act on its `status`: propose the change only on `passed`; on `failed`, fix the config and push again; on `inconclusive`
 or `error`, stop and tell the human. Never edit `netdryrun.yml` to make a change pass.
 ```
 
@@ -2591,6 +2597,7 @@ It needs a Linux runner with Docker. GitHub-hosted `ubuntu-latest` runners work.
 | `settle` | `10` | Seconds to wait before post-convergence checks |
 | `hold` | `10` | Seconds a post-convergence check must hold |
 | `pr-comment` | `false` | On pull requests, post one comment with the verdict, failures first, and the evidence for each failed check. Updated in place on every push. Needs `permissions: pull-requests: write` |
+| `comment-author` | `github-actions[bot]` | The account that writes the PR comment: only its comment is updated. Set it when `github-token` is another account's token (from 0.3.3) |
 | `github-token` | `${{ github.token }}` | Token used for the PR comment |
 | `cloud` | `false` | Reserved for Netdryrun Cloud, which is **not available yet**. With `true`, the action tries to POST the JSON report to `cloud-url` with a GitHub OIDC token; that address doesn't resolve today, so nothing is uploaded and you only get a warning ("evidence upload failed", or "needs 'permissions: id-token: write'" without that permission). Leave it off |
 | `cloud-url` | `https://cloud.netdryrun.com` | Reserved for Netdryrun Cloud (this address does not exist yet) |
@@ -2683,14 +2690,14 @@ jobs:
 
 - **A lab is code that runs as root on the runner.** containerlab starts privileged containers with access to the host. Netdryrun passes the lab process a minimal environment (no job tokens, not the runner user's home directory), but that only narrows exposure; it is not a security boundary.
 - **Run labs from untrusted pull requests (forks) only in jobs with no secrets**, a read-only `GITHUB_TOKEN`, and without `id-token: write`. Never run them under `pull_request_target`.
-- **The comment starts with a fixed header** (from 0.3.3), so a coding agent reads the verdict without parsing the rest. After the update marker `` come two lines:
+- **The comment starts with a fixed header** (from 0.3.3), so a coding agent reads the verdict without parsing the rest. After the update marker, which names the lab (``, so each lab has its own comment), come two lines:
 
     ```text
     
-    **Netdryrun: DO NOT APPLY THIS CHANGE** · status `failed` · 5 passed, 1 failed
+    **Netdryrun: DO NOT APPLY THIS CHANGE** · status `failed` · 5 passed, 1 failed · commit `4f2a9c1e0b7d`
     ```
 
-    The JSON holds only the status, the frozen verdict string and the counts, and it is held to the run's checked exit code: a missing or contradicting result reads `error` and `DO NOT APPLY THIS CHANGE`. See [agents without Docker](guides/agent-pr.md).
+    The JSON holds only the status, the frozen verdict string, the counts and the pull request's head commit, and it is held to the run's checked exit code: a missing or contradicting result, or a run that wrote no report, reads `error` and `DO NOT APPLY THIS CHANGE`. Only a comment by `comment-author` (default `github-actions[bot]`) is updated; a comment someone else posts with the same marker is ignored, so read only the bot's comments. See [agents without Docker](guides/agent-pr.md).
 - `pr-comment` needs `pull-requests: write`. Grant it only when you use it. Don't grant `id-token: write` for the `cloud` input: Netdryrun Cloud is not available yet.
 - Uploaded report artifacts contain raw command output from the lab and are kept for 14 days. Don't put real secrets in lab configs.
 - **The PR comment cannot be steered by lab text** (0.3.1 and later; 0.3.0 did not escape it). Check names, details, errors and device output are escaped before they are posted: no HTML, links, images, `@mentions` or `#123` references, and device output stays inside its code block. Report files already in the workspace (committed in the PR, or left by an earlier run on a self-hosted runner) are deleted before the run, and the `status` output is `error` unless the report matches the run's own exit code.

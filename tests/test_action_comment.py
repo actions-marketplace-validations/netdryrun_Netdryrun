@@ -1,60 +1,80 @@
-"""0.3.3 (a): the Action's PR comment starts with the fixed verdict header, built from the agent result and
-held to the run's checked status. Runs the comment step's own script, taken from action.yml."""
+"""0.3.3 (a) and cold review 1-3: the Action's PR comment step is a thin call to netdryrun.comment, wired to the
+lab path, the PR head commit and the expected author. Runs the step's own script, taken from action.yml."""
+import http.server
 import json
 import re
 import subprocess
 import sys
+import threading
 from pathlib import Path
 
-import pytest
 import yaml
 
-from netdryrun import agent_result
-
 ROOT = Path(__file__).resolve().parents[1]
-STEPS = {s.get("id") or s.get("name"): s for s in yaml.safe_load((ROOT / "action.yml").read_text(encoding="utf-8"))["runs"]["steps"]}
+ACTION = yaml.safe_load((ROOT / "action.yml").read_text(encoding="utf-8"))
+STEP = next(s for s in ACTION["runs"]["steps"] if s.get("name") == "Comment on the pull request")
 
 
-def comment_script() -> str:
-    run = STEPS["Comment on the pull request"]["run"]
-    m = re.search(r"<<'EOF'\n(.*?)\n\s*EOF\n", run, re.S)
-    assert m, "the comment step no longer builds the body in an inline Python heredoc: update this test"
+def step_script() -> str:
+    m = re.search(r"<<'EOF'\n(.*?)\n\s*EOF\n", STEP["run"], re.S)
+    assert m, "the comment step no longer runs an inline Python heredoc: update this test"
     lines = m.group(1).splitlines()
     indent = min(len(x) - len(x.lstrip()) for x in lines if x.strip())
     return "\n".join(x[indent:] for x in lines)
 
 
-def body(tmp_path, verdict: dict | None, status: str) -> str:
-    (tmp_path / "netdryrun-summary.md").write_text("## Netdryrun\n\nthe summary\n", encoding="utf-8")
-    vpath = tmp_path / "netdryrun-verdict.json"
-    if verdict is not None:
-        vpath.write_text(json.dumps(verdict), encoding="utf-8")
-    env = {"NDR_VERDICT": str(vpath), "NDR_STATUS": status, "PATH": "", "PYTHONPATH": str(ROOT / "src")}  # installed, in the Action
-    subprocess.run([sys.executable, "-c", comment_script()], cwd=tmp_path, env=env, check=True)
-    return json.loads((tmp_path / "netdryrun-comment.json").read_text(encoding="utf-8"))["body"]
+def test_the_step_is_wired_to_the_lab_the_head_commit_and_the_author():
+    env = STEP["env"]
+    assert env["NDR_LABEL"] == "${{ inputs.path }}"
+    assert env["NDR_COMMIT"] == "${{ github.event.pull_request.head.sha }}"
+    assert env["NDR_AUTHOR"] == "${{ inputs.comment-author }}"
+    assert env["NDR_STATUS"] == "${{ steps.result.outputs.status }}"
+    assert ACTION["inputs"]["comment-author"]["default"] == "github-actions[bot]"
+    assert "exit 0" not in STEP["run"].split("<<'EOF'")[0]   # no early exit: a run with no report still posts
 
 
-def result(status, passed=3, failed=0):
-    return {"schema": agent_result.RESULT_SCHEMA, "status": status, "passed": passed, "failed": failed,
-            "verdict": agent_result.VERDICTS.get(status, agent_result.DO_NOT_APPLY)}
+class Fake(http.server.BaseHTTPRequestHandler):
+    calls: list = []
+
+    def _reply(self, code, data):
+        raw = json.dumps(data).encode()
+        self.send_response(code)
+        self.send_header("Content-Length", str(len(raw)))
+        self.end_headers()
+        self.wfile.write(raw)
+
+    def do_GET(self):  # noqa: N802
+        self._reply(200, [])
+
+    def do_POST(self):  # noqa: N802
+        Fake.calls.append((self.path, json.loads(self.rfile.read(int(self.headers["Content-Length"])))["body"]))
+        self._reply(201, {"id": 1})
+
+    def log_message(self, *a):
+        pass
 
 
-@pytest.mark.parametrize("status,failed", [("passed", 0), ("failed", 1), ("inconclusive", 2), ("error", 0)])
-def test_the_comment_starts_with_the_update_marker_then_the_fixed_header(tmp_path, status, failed):
-    b = body(tmp_path, result(status, failed=failed), status)
-    lines = b.split("\n")
-    assert lines[0] == "<!-- netdryrun-comment -->"
-    assert lines[1] == agent_result.pr_comment_header(result(status, failed=failed)).split("\n")[0]
-    assert lines[2].startswith(f"**Netdryrun: {result(status)['verdict']}**")
-    assert b.endswith("the summary\n")
+def test_a_run_with_no_report_posts_an_error_header_for_the_head_commit(tmp_path):
+    Fake.calls = []
+    srv = http.server.HTTPServer(("127.0.0.1", 0), Fake)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    sha = "ab" * 20
+    env = {"PATH": "", "PYTHONPATH": str(ROOT / "src"), "GH_TOKEN": "t", "NDR_COMMENT_API": f"http://127.0.0.1:{srv.server_port}",
+           "NDR_REPO": "o/r", "NDR_PR": "3", "NDR_COMMIT": sha, "NDR_LABEL": "examples/frr-bgp",
+           "NDR_AUTHOR": "github-actions[bot]", "NDR_VERDICT": "nope.json", "NDR_SUMMARY": "nope.md", "NDR_STATUS": ""}
+    p = subprocess.run([sys.executable, "-c", step_script()], cwd=tmp_path, env=env, capture_output=True, text=True)
+    srv.shutdown()
+    assert p.returncode == 0, p.stderr
+    (path, text), = Fake.calls
+    assert path == "/repos/o/r/issues/3/comments"
+    lines = text.split("\n")
+    assert lines[0] == "<!-- netdryrun-comment examples/frr-bgp -->"
+    head = json.loads(re.search(r"\{.*\}", lines[1]).group(0))
+    assert head["status"] == "error" and head["commit"] == sha
 
 
-def test_a_verdict_file_that_disagrees_with_the_run_reads_as_error(tmp_path):
-    # the run exited 1 (status failed), but the file says passed: never a passing header
-    b = body(tmp_path, result("passed"), "failed")
-    assert '"status": "error"' in b.split("\n")[1] and agent_result.DO_NOT_APPLY in b.split("\n")[2]
-
-
-def test_no_verdict_file_reads_as_error(tmp_path):
-    b = body(tmp_path, None, "passed")
-    assert '"status": "error"' in b.split("\n")[1]
+def test_without_netdryrun_installed_the_step_only_warns(tmp_path):
+    # -S: no site-packages, so the package can't be imported (an install step that failed)
+    p = subprocess.run([sys.executable, "-S", "-c", step_script()], cwd=tmp_path, env={"PATH": ""},
+                       capture_output=True, text=True)
+    assert p.returncode == 0 and "::warning" in p.stdout

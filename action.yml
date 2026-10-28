@@ -36,6 +36,9 @@ inputs:
   pr-comment:
     description: "On pull requests, post (and keep updating) one comment with the verdict and evidence. Needs permissions pull-requests: write"
     default: "false"
+  comment-author:
+    description: "The account that writes the PR comment: only its comment is updated, so a comment someone else posted with the same marker is ignored. The default is the account behind the default github-token; set it when you pass another token"
+    default: github-actions[bot]
   github-token:
     description: Token for the PR comment
     default: ${{ github.token }}
@@ -160,38 +163,28 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}
-        REPO: ${{ github.repository }}
-        PR: ${{ github.event.pull_request.number }}
+        NDR_COMMENT_API: ${{ github.api_url }}
+        NDR_REPO: ${{ github.repository }}
+        NDR_PR: ${{ github.event.pull_request.number }}
+        NDR_COMMIT: ${{ github.event.pull_request.head.sha }}
+        NDR_LABEL: ${{ inputs.path }}
+        NDR_AUTHOR: ${{ inputs.comment-author }}
         NDR_VERDICT: ${{ inputs.verdict-report }}
+        NDR_SUMMARY: netdryrun-summary.md
         NDR_STATUS: ${{ steps.result.outputs.status }}
       run: |
-        # A comment problem must never turn a test result red: every failure here is a warning.
-        set +e
-        [ -f netdryrun-summary.md ] || { echo "no summary to post"; exit 0; }
-        # A fixed header first (a machine-readable line, then the verdict in words), so an agent reads the
-        # verdict without parsing the summary. Built from the agent result, held to the run's checked status:
-        # a verdict file that disagrees with it, or none, reads as error.
+        # One comment per lab, updated in place: a fixed header (status, verdict, counts and the PR head commit,
+        # held to the run's checked status), then the summary. A run that wrote no report still rewrites the
+        # header, as error. A comment problem is only a warning: it never turns a test result red.
         python - <<'EOF'
-        import json, os
-        from netdryrun.agent_result import pr_comment_header
+        import os, sys
         try:
-            result = json.load(open(os.environ["NDR_VERDICT"], encoding="utf-8"))
-        except Exception:
-            result = {}
-        if result.get("status") != os.environ.get("NDR_STATUS"):
-            result = {}
-        body = open("netdryrun-summary.md", encoding="utf-8").read()
-        json.dump({"body": "<!-- netdryrun-comment -->\n" + pr_comment_header(result) + "\n" + body},
-                  open("netdryrun-comment.json", "w"))
+            from netdryrun.comment import main_github
+        except ImportError as e:
+            print(f"::warning title=Netdryrun::could not comment on the PR (Netdryrun is not installed: {e})")
+            sys.exit(0)
+        sys.exit(main_github(os.environ))
         EOF
-        ID=$(gh api "repos/$REPO/issues/$PR/comments" --paginate --jq '.[] | select(.body | startswith("<!-- netdryrun-comment -->")) | .id' 2>/dev/null | awk 'NR==1')
-        if [ -n "$ID" ]; then
-          gh api -X PATCH "repos/$REPO/issues/comments/$ID" --input netdryrun-comment.json --silent
-        else
-          gh api -X POST "repos/$REPO/issues/$PR/comments" --input netdryrun-comment.json --silent
-        fi
-        [ $? -eq 0 ] || echo "::warning title=Netdryrun::could not comment on the PR (needs permissions pull-requests: write; fork PRs can't be commented on)"
-        exit 0
 
     - name: Upload evidence to Netdryrun Cloud
       id: cloud

@@ -87,12 +87,12 @@ The GitHub Action's `pr-comment` and `cloud` inputs have no GitLab counterpart y
 With `mr-comment: true`, on a merge request pipeline the job posts one note on the merge request and updates it on every run. It starts the same way as the GitHub Action's PR comment, so a coding agent reads it the same way:
 
 ```text
-<!-- netdryrun-comment -->
-<!-- netdryrun-verdict: {"schema": "netdryrun.mcp-result/v1", "status": "failed", "verdict": "DO NOT APPLY THIS CHANGE", "passed": 5, "failed": 1} -->
-**Netdryrun: DO NOT APPLY THIS CHANGE** · status `failed` · 5 passed, 1 failed
+<!-- netdryrun-comment network/ -->
+<!-- netdryrun-verdict: {"schema": "netdryrun.mcp-result/v1", "status": "failed", "verdict": "DO NOT APPLY THIS CHANGE", "passed": 5, "failed": 1, "commit": "4f2a9c1e0b7d3a5f6e8c9b1a2d3e4f5a6b7c8d9e"} -->
+**Netdryrun: DO NOT APPLY THIS CHANGE** · status `failed` · 5 passed, 1 failed · commit `4f2a9c1e0b7d`
 ```
 
-The JSON is held to the run's checked exit code: a missing or contradicting result reads `error`. Then comes the Markdown summary.
+There is one note per lab (the marker names the `path`). The JSON names the merge request's head commit and is held to the run's checked exit code: a missing or contradicting result reads `error`, and so does a job that stopped before Netdryrun wrote a report (the note is written however the script ends). Only notes by the token's own user are updated; read only those. Then comes the Markdown summary.
 
 GitLab's job token can't write merge request notes, so the note needs a token:
 

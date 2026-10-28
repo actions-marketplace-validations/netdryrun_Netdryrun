@@ -115,102 +115,81 @@ def test_component_writes_and_keeps_the_agent_result():
 
 
 def _note_script() -> str:
-    return _script().split("<<'NOTE'\n", 1)[1].rsplit("\nNOTE", 1)[0]
+    return _script().split("<<'NOTE'\n", 1)[1].split("\nNOTE", 1)[0]
+
+
+def test_the_note_is_written_however_the_script_ends():
+    script = _script()
+    trap = script.index("trap ndr_note EXIT")
+    assert trap < script.index("exit 2") and trap < script.index("netdryrun run")   # before any early exit
+    assert "from netdryrun.comment import main_gitlab" in _note_script()
 
 
 class FakeGitLab(http.server.BaseHTTPRequestHandler):
-    """The two GitLab notes endpoints the component uses, recording each request."""
-    notes: list = []
     calls: list = []
 
     def _reply(self, code, data):
-        body = json.dumps(data).encode()
+        raw = json.dumps(data).encode()
         self.send_response(code)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Content-Length", str(len(raw)))
         self.end_headers()
-        self.wfile.write(body)
+        self.wfile.write(raw)
 
     def do_GET(self):  # noqa: N802
-        FakeGitLab.calls.append(("GET", self.path, self.headers.get("PRIVATE-TOKEN"), None))
-        self._reply(200, FakeGitLab.notes)
-
-    def _write(self, method):
-        data = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
-        FakeGitLab.calls.append((method, self.path, self.headers.get("PRIVATE-TOKEN"), data["body"]))
-        self._reply(200 if method == "PUT" else 201, {"id": 7})
+        self._reply(200, {"id": 99} if self.path.endswith("/user") else [])
 
     def do_POST(self):  # noqa: N802
-        self._write("POST")
-
-    def do_PUT(self):  # noqa: N802
-        self._write("PUT")
+        FakeGitLab.calls.append((self.path, json.loads(self.rfile.read(int(self.headers["Content-Length"])))["body"]))
+        self._reply(201, {"id": 1})
 
     def log_message(self, *a):
         pass
 
 
-def _comment(tmp_path, status, verdict, notes=(), token="glpat-x", iid="12", enabled="true"):
-    FakeGitLab.notes, FakeGitLab.calls = list(notes), []
+def _run_note(tmp_path, extra_env, python_args=()):
+    FakeGitLab.calls = []
     srv = http.server.HTTPServer(("127.0.0.1", 0), FakeGitLab)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
-    (tmp_path / "summary.md").write_text("## Netdryrun\n\nsummary\n", encoding="utf-8")
-    (tmp_path / "verdict.json").write_text(json.dumps(verdict), encoding="utf-8")
-    (tmp_path / "netdryrun.env").write_text(f"NETDRYRUN_STATUS={status}\n", encoding="utf-8")
-    env = {"PATH": os.environ.get("PATH", ""), "PYTHONPATH": str(ROOT / "src"),
-           "NDR_VERDICT": str(tmp_path / "verdict.json"), "NDR_MARKDOWN": str(tmp_path / "summary.md"),
-           "NDR_MR_COMMENT": enabled, "NDR_TOKEN_VAR": "NETDRYRUN_GITLAB_TOKEN",
+    env = {"PATH": os.environ.get("PATH", ""), "PYTHONPATH": str(ROOT / "src"), "NDR_MR_COMMENT": "true",
+           "NDR_TOKEN_VAR": "NETDRYRUN_GITLAB_TOKEN", "NETDRYRUN_GITLAB_TOKEN": "glpat", "NDR_PATH": "examples/frr-bgp",
+           "NDR_VERDICT": "netdryrun-verdict.json", "NDR_MARKDOWN": "netdryrun-summary.md",
            "CI_API_V4_URL": f"http://127.0.0.1:{srv.server_port}/api/v4", "CI_PROJECT_ID": "42",
-           "CI_MERGE_REQUEST_IID": iid, "NETDRYRUN_GITLAB_TOKEN": token}
-    p = subprocess.run([sys.executable, "-c", _note_script()], env=env, cwd=tmp_path, capture_output=True, text=True)
+           "CI_MERGE_REQUEST_IID": "12", "CI_COMMIT_SHA": "cd" * 20, **extra_env}
+    p = subprocess.run([sys.executable, *python_args, "-c", _note_script()], env=env, cwd=tmp_path,
+                       capture_output=True, text=True)
     srv.shutdown()
     return p, FakeGitLab.calls
 
 
-def _result(status, failed=0):
-    return {"schema": agent_result.RESULT_SCHEMA, "status": status, "passed": 4, "failed": failed,
-            "verdict": agent_result.VERDICTS.get(status, agent_result.DO_NOT_APPLY)}
-
-
-def test_the_mr_comment_is_posted_with_the_fixed_header(tmp_path):
-    p, calls = _comment(tmp_path, "failed", _result("failed", 1))
+def test_the_note_carries_the_marker_the_header_and_the_commit(tmp_path):
+    (tmp_path / "netdryrun.env").write_text("NETDRYRUN_STATUS=failed\n")
+    (tmp_path / "netdryrun-summary.md").write_text("summary\n")
+    (tmp_path / "netdryrun-verdict.json").write_text(json.dumps(
+        {"schema": agent_result.RESULT_SCHEMA, "status": "failed", "passed": 3, "failed": 1,
+         "verdict": agent_result.DO_NOT_APPLY}))
+    p, calls = _run_note(tmp_path, {})
     assert p.returncode == 0, p.stderr
-    get, post = calls
-    assert get[0] == "GET" and get[1].startswith("/api/v4/projects/42/merge_requests/12/notes") and get[2] == "glpat-x"
-    assert post[0] == "POST" and post[1] == "/api/v4/projects/42/merge_requests/12/notes"
-    lines = post[3].split("\n")
-    assert lines[0] == "<!-- netdryrun-comment -->"
-    assert lines[1] == agent_result.pr_comment_header(_result("failed", 1)).split("\n")[0]
-    assert post[3].endswith("summary\n")
+    (path, text), = calls
+    assert path == "/api/v4/projects/42/merge_requests/12/notes"
+    lines = text.split("\n")
+    assert lines[0] == "<!-- netdryrun-comment examples/frr-bgp -->"
+    assert '"status": "failed"' in lines[1] and '"commit": "' + "cd" * 20 + '"' in lines[1]
 
 
-def test_the_mr_comment_is_updated_in_place(tmp_path):
-    old = [{"id": 3, "body": "someone else"}, {"id": 9, "body": "<!-- netdryrun-comment -->\nold"}]
-    _, calls = _comment(tmp_path, "passed", _result("passed"), notes=old)
-    assert [c[:2] for c in calls][1] == ("PUT", "/api/v4/projects/42/merge_requests/12/notes/9")
+def test_a_job_that_stopped_before_any_report_still_rewrites_the_note_as_error(tmp_path):
+    p, calls = _run_note(tmp_path, {})   # no netdryrun.env, no verdict, no summary
+    (_, text), = calls
+    assert '"status": "error"' in text.split("\n")[1]
 
 
-def test_the_header_is_held_to_the_runs_checked_status(tmp_path):
-    # the verdict file says passed, the run's checked status is failed: never a passing header
-    _, calls = _comment(tmp_path, "failed", _result("passed"))
-    assert '"status": "error"' in calls[-1][3].split("\n")[1]
+def test_no_note_without_a_merge_request_a_token_or_the_input(tmp_path):
+    for env in ({"CI_MERGE_REQUEST_IID": ""}, {"NETDRYRUN_GITLAB_TOKEN": ""}, {"NDR_MR_COMMENT": "false"}):
+        p, calls = _run_note(tmp_path, env)
+        assert p.returncode == 0 and calls == [], env
+    p, _ = _run_note(tmp_path, {"NETDRYRUN_GITLAB_TOKEN": ""})
+    assert "NETDRYRUN_GITLAB_TOKEN" in p.stdout
 
 
-def test_no_comment_without_a_merge_request_a_token_or_the_input(tmp_path):
-    for kw in ({"iid": ""}, {"token": ""}, {"enabled": "false"}):
-        p, calls = _comment(tmp_path, "passed", _result("passed"), **kw)
-        assert p.returncode == 0 and calls == [], kw
-    p, _ = _comment(tmp_path, "passed", _result("passed"), token="")
-    assert "NETDRYRUN_GITLAB_TOKEN" in p.stdout   # says which variable to set
-
-
-def test_a_comment_failure_never_changes_the_result(tmp_path):
-    env_url = "http://127.0.0.1:9/api/v4"   # nothing listens there
-    (tmp_path / "summary.md").write_text("s\n", encoding="utf-8")
-    (tmp_path / "verdict.json").write_text(json.dumps(_result("passed")), encoding="utf-8")
-    (tmp_path / "netdryrun.env").write_text("NETDRYRUN_STATUS=passed\n", encoding="utf-8")
-    env = {"PATH": os.environ.get("PATH", ""), "PYTHONPATH": str(ROOT / "src"), "NDR_VERDICT": "verdict.json",
-           "NDR_MARKDOWN": "summary.md", "NDR_MR_COMMENT": "true", "NDR_TOKEN_VAR": "T", "T": "x",
-           "CI_API_V4_URL": env_url, "CI_PROJECT_ID": "1", "CI_MERGE_REQUEST_IID": "1"}
-    p = subprocess.run([sys.executable, "-c", _note_script()], env=env, cwd=tmp_path, capture_output=True, text=True)
-    assert p.returncode == 0 and "WARNING" in p.stdout
+def test_without_netdryrun_installed_the_note_only_warns(tmp_path):
+    p, calls = _run_note(tmp_path, {"PYTHONPATH": ""}, python_args=("-S",))
+    assert p.returncode == 0 and calls == [] and "WARNING" in p.stdout

@@ -76,6 +76,24 @@ spec:
   script:
     - |
       set +e
+      # The merge request note (one per lab: marker, fixed header with the commit, then the summary), written
+      # however the script ends, even before Netdryrun was installed: a run that wrote no report rewrites the
+      # header as error. Its exit code is kept; a note problem is only a warning.
+      ndr_note() {
+      if [ -n "${VENV:-}" ] && [ -x "$VENV/bin/python" ]; then NDR_PY="$VENV/bin/python"; else NDR_PY=python3; fi
+      NDR_MARKDOWN="$NDR_MARKDOWN" "$NDR_PY" - <<'NOTE'
+      import os, sys
+      try:
+          from netdryrun.comment import main_gitlab
+      except ImportError as e:
+          if os.environ.get("NDR_MR_COMMENT") == "true" and os.environ.get("CI_MERGE_REQUEST_IID"):
+              print(f"WARNING: Netdryrun: no merge request note (Netdryrun is not installed: {e}). An older note "
+                    "may still be there: its header names the commit it describes")
+          sys.exit(0)
+      sys.exit(main_gitlab(os.environ))
+      NOTE
+      }
+      trap ndr_note EXIT
       # Root directly, else passwordless sudo, else the runner user (must be in the docker and clab_admins groups)
       if [ "$(id -u)" = 0 ]; then AS_ROOT=""; elif sudo -n true 2>/dev/null; then AS_ROOT="sudo"; else AS_ROOT=""; fi
       # Reports left in the workspace (committed in the MR, or from an earlier run on a shell runner)
@@ -135,51 +153,6 @@ spec:
           for k, v in out.items():
               f.write(f"NETDRYRUN_{k.upper()}={' '.join(str(v).split())}\n")
       EOF
-
-      # The merge request note: the fixed header (the same as the GitHub Action's PR comment), held to the
-      # run's checked status in netdryrun.env, then the summary. A problem here is a warning, never a result.
-      "$VENV/bin/python" - <<'NOTE'
-      import json, os, urllib.request
-      from netdryrun.agent_result import pr_comment_header
-      MARK = "<!-- netdryrun-comment -->"
-      iid, var = os.environ.get("CI_MERGE_REQUEST_IID", ""), os.environ.get("NDR_TOKEN_VAR", "")
-      if os.environ.get("NDR_MR_COMMENT") == "true" and iid:
-          token = os.environ.get(var, "")
-          if not token:
-              print(f"WARNING: Netdryrun: no merge request note: set the masked CI/CD variable {var} to a project "
-                    "access token with the api scope (https://github.com/netdryrun/netdryrun/blob/main/templates/README.md#merge-request-note)")
-          else:
-              try:
-                  status = dict(l.split("=", 1) for l in open("netdryrun.env").read().splitlines() if "=" in l).get("NETDRYRUN_STATUS")
-                  try:
-                      result = json.load(open(os.environ["NDR_VERDICT"], encoding="utf-8"))
-                  except Exception:
-                      result = {}
-                  if result.get("status") != status:
-                      result = {}
-                  try:
-                      summary = open(os.environ["NDR_MARKDOWN"], encoding="utf-8").read()
-                  except OSError:
-                      summary = ""
-                  body = MARK + "\n" + pr_comment_header(result) + "\n" + summary
-                  url = f"{os.environ['CI_API_V4_URL']}/projects/{os.environ['CI_PROJECT_ID']}/merge_requests/{iid}/notes"
-                  head = {"PRIVATE-TOKEN": token, "Content-Type": "application/json"}
-
-                  def call(method, u, data=None):
-                      req = urllib.request.Request(u, method=method, headers=head,
-                                                   data=json.dumps(data).encode() if data is not None else None)
-                      with urllib.request.urlopen(req, timeout=30) as r:
-                          return json.load(r)
-
-                  old = next((n["id"] for n in call("GET", url + "?per_page=100&sort=asc")
-                              if str(n.get("body", "")).startswith(MARK)), None)
-                  if old is None:
-                      call("POST", url, {"body": body})
-                  else:
-                      call("PUT", f"{url}/{old}", {"body": body})
-              except Exception as e:
-                  print(f"WARNING: Netdryrun: could not write the merge request note ({type(e).__name__}); the result is unchanged")
-      NOTE
 
       [ -f "$NDR_MARKDOWN" ] && cat "$NDR_MARKDOWN"
       case "$NDR_EXIT" in

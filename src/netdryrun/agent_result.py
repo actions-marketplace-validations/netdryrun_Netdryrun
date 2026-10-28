@@ -237,24 +237,29 @@ def _tested(cfg, deployed: bool, outside_root=lambda path: None) -> dict:
 STATUSES = ("passed", "failed", "inconclusive", "error")
 
 
-def pr_comment_header(result: dict) -> str:
-    """The first two lines of the PR comment (0.3.3), a fixed format an agent can read without parsing the
-    rest: an HTML comment with the result's status, verdict and counts as JSON, then the same in words.
+def pr_comment_header(result: dict, commit: str | None = None) -> str:
+    """The first two lines of the PR comment or MR note (0.3.3), a fixed format an agent can read without
+    parsing the rest: an HTML comment with the result's status, verdict, counts and the commit it describes as
+    JSON, then the same in words.
 
         <!-- netdryrun-verdict: {"schema": "netdryrun.mcp-result/v1", "status": ..., "verdict": ..., ...} -->
-        **Netdryrun: <verdict>** · status `<status>` · <n> passed, <n> failed
+        **Netdryrun: <verdict>** · status `<status>` · <n> passed, <n> failed · commit `<sha>`
 
     Only a known status whose verdict and counts agree with it is shown; anything else (no result, lab text,
-    a pass with failures) is status error, DO NOT APPLY THIS CHANGE: the header never claims a pass the run
-    didn't give."""
+    a pass with failures or with no check) is status error, DO NOT APPLY THIS CHANGE: the header never claims
+    a pass the run didn't give. `commit` (the head commit tested) is shown only when it is a hex SHA, so an
+    agent can tell a header left from an older commit."""
     status, verdict = result.get("status"), result.get("verdict")
     passed, failed = result.get("passed"), result.get("failed")
     counts_ok = all(isinstance(n, int) and not isinstance(n, bool) and n >= 0 for n in (passed, failed))
     ok = (status in STATUSES and counts_ok and verdict == VERDICTS.get(status, DO_NOT_APPLY)
-          and (status != "passed" or failed == 0))
+          and (status != "passed" or (failed == 0 and passed > 0)))
     if not ok:
         status, verdict = "error", DO_NOT_APPLY
         passed, failed = (passed, failed) if counts_ok else (0, 0)
     data = {"schema": RESULT_SCHEMA, "status": status, "verdict": verdict, "passed": passed, "failed": failed}
-    return (f"<!-- netdryrun-verdict: {json.dumps(data)} -->\n"
-            f"**Netdryrun: {verdict}** · status `{status}` · {passed} passed, {failed} failed\n")
+    words = f"**Netdryrun: {verdict}** · status `{status}` · {passed} passed, {failed} failed"
+    if isinstance(commit, str) and re.fullmatch(r"[0-9a-f]{7,40}", commit):
+        data["commit"] = commit
+        words += f" · commit `{commit[:12]}`"
+    return f"<!-- netdryrun-verdict: {json.dumps(data)} -->\n{words}\n"
