@@ -251,7 +251,7 @@ This tutorial takes a containerlab lab you already have and turns it into a test
 5. read the evidence when it fails,
 6. run the same test in GitHub Actions.
 
-It takes about 15 minutes. Every command and output below is from a real run (Netdryrun™ 0.3.0, containerlab 0.81.1, FRR 10.4.1, on WSL2).
+It takes about 15 minutes. Every command and output below is from a real run (Netdryrun™ 0.3.1, containerlab 0.81.1, FRR 10.4.1, on WSL2).
 
 ## Before you start
 
@@ -265,14 +265,14 @@ Any containerlab topology works. Here, the bundled `examples/frr-bgp` lab stands
 git clone https://github.com/netdryrun/netdryrun
 mkdir my-lab
 cp -r netdryrun/examples/frr-bgp/configs netdryrun/examples/frr-bgp/topology.clab.yml my-lab/
-sed -i 's/^name: ndr-frr-bgp/name: my-lab/' my-lab/topology.clab.yml
+sed -i 's/^name: ndr-frr-bgp/name: ndr-my-lab/' my-lab/topology.clab.yml
 ```
 
 The folder now holds a topology and router configs, and no `netdryrun.yml`:
 
 ```text
 my-lab/
-  topology.clab.yml     # name: my-lab, nodes r1 r2 r3
+  topology.clab.yml     # name: ndr-my-lab, nodes r1 r2 r3
   configs/
     daemons  r1.conf  r2.conf  r3.conf  vtysh.conf
 ```
@@ -285,17 +285,17 @@ The lab name (`name:` in the topology) must be unique on the machine. See [name 
 
 ```text
 $ netdryrun record my-lab/topology.clab.yml --deploy
-Deploying lab my-lab, then waiting 45s for the network to converge...
+Deploying lab ndr-my-lab, then waiting 45s for the network to converge...
 recording r1 (frr)
 recording r2 (frr)
 recording r3 (frr)
-Recorded 18 checks to /home/user/ndr-docs/my-lab/netdryrun.yml. Review it, then: netdryrun run /home/user/ndr-docs/my-lab
+Recorded 18 checks to /home/ndr/work/docs031/my-lab/netdryrun.yml. Review it, then: netdryrun run /home/ndr/work/docs031/my-lab
 ```
 
-This took 51 seconds. The file has one check for every established BGP session, every prefix count and every BGP route. The start of it:
+This took 50 seconds. The file has one check for every established BGP session, every prefix count and every BGP route. The start of it:
 
 ```yaml title="my-lab/netdryrun.yml (recorded)"
-# Recorded by netdryrun 0.3.0 record on 2026-10-27T04:38:28+00:00.
+# Recorded by netdryrun 0.3.1 record on 2026-10-28T02:26:27+00:00.
 # This is a baseline of the network's behavior when it was recorded. Review it before committing:
 # remove anything that is allowed to change, and add negative checks (route present: false,
 # ping expect: failure) for things that must never happen. Docs: https://netdryrun.com/reference/config/
@@ -324,17 +324,17 @@ Here is what happens if you skip this step. The change in step 5 adds a LAN on r
 
 ```text
 $ netdryrun run my-lab
-Netdryrun 0.3.0: 18 checks from my-lab/netdryrun.yml
-Deploying lab my-lab (3 nodes)...
-  [PASS] r1: BGP session to 10.0.12.2 is established -- state is established (10.3s)
+Netdryrun 0.3.1: 18 checks from my-lab/netdryrun.yml
+Deploying lab ndr-my-lab (3 nodes); this usually takes 30-90 s, longer the first time images are pulled...
+  [PASS] r1: BGP session to 10.0.12.2 is established -- state is established (10.9s)
   ...
 Convergence checks done; settling 10s before post-convergence checks...
-  [FAIL] r1: prefixes from 10.0.12.2 = 2 -- 6 ipv4-unicast prefixes accepted (0.2s)
-  [FAIL] r1: prefixes from 10.0.13.2 = 2 -- 6 ipv4-unicast prefixes accepted (0.2s)
-  [FAIL] r2: prefixes from 10.0.12.1 = 2 -- 6 ipv4-unicast prefixes accepted (0.2s)
-  [FAIL] r2: prefixes from 10.0.23.2 = 2 -- 6 ipv4-unicast prefixes accepted (0.2s)
-  [PASS] r3: prefixes from 10.0.13.1 = 2 -- 2 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.2s)
-  [PASS] r3: prefixes from 10.0.23.1 = 2 -- 2 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.2s)
+  [FAIL] r1: prefixes from 10.0.12.2 = 2 -- 6 ipv4-unicast prefixes accepted (0.1s)
+  [FAIL] r1: prefixes from 10.0.13.2 = 2 -- 6 ipv4-unicast prefixes accepted (0.1s)
+  [FAIL] r2: prefixes from 10.0.12.1 = 2 -- 6 ipv4-unicast prefixes accepted (0.1s)
+  [FAIL] r2: prefixes from 10.0.23.2 = 2 -- 6 ipv4-unicast prefixes accepted (0.1s)
+  [PASS] r3: prefixes from 10.0.13.1 = 2 -- 2 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.1s)
+  [PASS] r3: prefixes from 10.0.23.1 = 2 -- 2 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.1s)
 Destroying lab...
 FAILED: 14 passed, 4 failed (18 checks)
 ```
@@ -421,7 +421,7 @@ Check it without starting a lab:
 
 ```text
 $ netdryrun validate my-lab
-OK: my-lab/netdryrun.yml (13 checks, lab /home/user/ndr-docs/my-lab/topology.clab.yml, 3 nodes)
+OK: my-lab/netdryrun.yml (13 checks, lab /home/ndr/work/docs031/my-lab/topology.clab.yml, 3 nodes)
   - [bgp_session] r1: BGP session to 10.0.12.2 is established
   - [bgp_session] r1: BGP session to 10.0.13.2 is established
   - [bgp_session] r2: BGP session to 10.0.12.1 is established
@@ -461,51 +461,51 @@ Run it, and ask for the JSON and Markdown reports:
 ```text
 $ cd my-lab
 $ netdryrun run . --json report.json --markdown report.md
-Netdryrun 0.3.0: 13 checks from netdryrun.yml
-Deploying lab my-lab (3 nodes)...
-  [PASS] r1: BGP session to 10.0.12.2 is established -- state is established (14.0s)
-  [PASS] r1: BGP session to 10.0.13.2 is established -- state is established (14.0s)
-  [PASS] r2: BGP session to 10.0.12.1 is established -- state is established (14.0s)
-  [PASS] r2: BGP session to 10.0.23.2 is established -- state is established (14.0s)
-  [PASS] r3: BGP session to 10.0.13.1 is established -- state is established (14.0s)
-  [PASS] r3: BGP session to 10.0.23.1 is established -- state is established (14.0s)
-  [PASS] r1: route 192.168.2.0/24 via bgp is present -- active via bgp (14.0s)
-  [PASS] r1: route 192.168.3.0/24 via bgp is present -- active via bgp (14.0s)
-  [PASS] r1: ping 192.168.3.1 from 192.168.1.1 expects success -- 3/3 replies (need 2) (14.0s)
+Netdryrun 0.3.1: 13 checks from netdryrun.yml
+Deploying lab ndr-my-lab (3 nodes); this usually takes 30-90 s, longer the first time images are pulled...
+  [PASS] r1: BGP session to 10.0.12.2 is established -- state is established (13.8s)
+  [PASS] r1: BGP session to 10.0.13.2 is established -- state is established (13.8s)
+  [PASS] r2: BGP session to 10.0.12.1 is established -- state is established (13.8s)
+  [PASS] r2: BGP session to 10.0.23.2 is established -- state is established (13.8s)
+  [PASS] r3: BGP session to 10.0.13.1 is established -- state is established (13.8s)
+  [PASS] r3: BGP session to 10.0.23.1 is established -- state is established (13.8s)
+  [PASS] r1: route 192.168.2.0/24 via bgp is present -- active via bgp (13.8s)
+  [PASS] r1: route 192.168.3.0/24 via bgp is present -- active via bgp (13.8s)
+  [PASS] r1: ping 192.168.3.1 from 192.168.1.1 expects success -- 3/3 replies (need 2) (13.8s)
 Convergence checks done; settling 10s before post-convergence checks...
-  [PASS] r1: prefixes from 10.0.12.2 >= 2 and <= 10 -- 6 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.2s)
-  [PASS] r1: prefixes from 10.0.13.2 >= 2 and <= 10 -- 6 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.2s)
-  [PASS] r1: route 0.0.0.0/0 via bgp is absent -- absent (held 10s, 5 samples) (10.2s)
-  [FAIL] r1: route 10.0.23.0/30 via bgp is absent -- unexpectedly present via bgp (0.2s)
+  [PASS] r1: prefixes from 10.0.12.2 >= 2 and <= 10 -- 6 ipv4-unicast prefixes accepted (held 10s, 4 samples) (10.0s)
+  [PASS] r1: prefixes from 10.0.13.2 >= 2 and <= 10 -- 6 ipv4-unicast prefixes accepted (held 10s, 4 samples) (10.0s)
+  [PASS] r1: route 0.0.0.0/0 via bgp is absent -- absent (held 10s, 4 samples) (10.0s)
+  [FAIL] r1: route 10.0.23.0/30 via bgp is absent -- unexpectedly present via bgp (0.3s)
 Destroying lab...
 FAILED: 12 passed, 1 failed (13 checks)
   wrote json report: report.json
   wrote markdown report: report.md
 ```
 
-The run took 37 seconds and exited with code `1`. Sessions are up, the ping works, and the prefix count is inside its range. Only the negative check caught the problem: `redistribute connected` also announces r3's link subnets.
+The run took 41 seconds and exited with code `1`. Sessions are up, the ping works, and the prefix count is inside its range. Only the negative check caught the problem: `redistribute connected` also announces r3's link subnets.
 
 ## 6. Read the evidence
 
 ### Markdown report
 
-`report.md` is the text the GitHub Action puts on the job page and in the PR comment. Failures come first, and each failure has the raw command output in a collapsed block:
+`report.md` is the text the GitHub Action puts on the job page and in the PR comment. Failures come first, and each failure has the raw output of every command it ran in a collapsed block (here, the routing table and the BGP table):
 
 ````markdown title="report.md"
 ### ❌ Netdryrun failed
 
-**12 passed, 1 failed** on lab `my-lab`
+**12 passed, 1 failed** on lab ` ndr-my-lab `
 
 | | Check | Result | Time |
 |---|---|---|---|
-| ❌ | r1: route 10.0.23.0/30 via bgp is absent | unexpectedly present via bgp | 0.2s |
-| ✅ | r1: BGP session to 10.0.12.2 is established | state is established | 14.0s |
+| ❌ | r1: route 10.0.23.0/30 via bgp is absent | unexpectedly present via bgp | 0.3s |
+| ✅ | r1: BGP session to 10.0.12.2 is established | state is established | 13.8s |
 ...
-| ✅ | r1: route 0.0.0.0/0 via bgp is absent | absent (held 10s, 5 samples) | 10.2s |
+| ✅ | r1: route 0.0.0.0/0 via bgp is absent | absent (held 10s, 4 samples) | 10.0s |
 
 <details><summary>Evidence: r1: route 10.0.23.0/30 via bgp is absent</summary>
 
-`r1$ vtysh -c show ip route 10.0.23.0/30 json`
+` r1$ vtysh -c show ip route 10.0.23.0/30 json `
 
 ```
 {
@@ -514,12 +514,46 @@ The run took 37 seconds and exited with code `1`. Sessions are up, the ping work
       "prefix":"10.0.23.0/30",
       "prefixLen":30,
       "protocol":"bgp",
-      ...
+      "vrfId":0,
+      "vrfName":"default",
+      "selected":true,
+      "destSelected":true,
+      "distance":20,
+      "metric":0,
+      "installed":true,
+      "table":254,
+      "internalStatus":16,
+...
+```
+
+` r1$ vtysh -c show bgp ipv4 unicast 10.0.23.0/30 json `
+
+```
+{
+  "prefix":"10.0.23.0/30",
+  "version":4,
+  "advertisedTo":{
+    "10.0.12.2":{
+      "hostname":"r2"
+    },
+    "10.0.13.2":{
+      "hostname":"r3"
+    }
+  },
+  "pathCount":2,
+  "paths":[
+    {
+      "aspath":{
+...
+      "bestpath":{
+...
+      "bestpath":{
+...
 ```
 
 </details>
 
-<sub>netdryrun 0.3.0 · containerlab 0.81.1 · 2026-10-27T04:39:03+00:00 · full evidence in the JSON report</sub>
+<sub>netdryrun 0.3.1 · containerlab 0.81.1 · 2026-10-28T02:27:25+00:00 · full evidence in the JSON report</sub>
 ````
 
 ### JSON report
@@ -527,7 +561,7 @@ The run took 37 seconds and exited with code `1`. Sessions are up, the ping work
 `report.json` has everything ([schema](reference/cli.md#json)). The top level says what ran and where:
 
 ```json
-{"schema": "netdryrun.report/v1", "status": "failed", "lab": "my-lab", "error": null, "inconclusive_reason": null,
+{"schema": "netdryrun.report/v1", "status": "failed", "lab": "ndr-my-lab", "error": null, "inconclusive_reason": null,
  "summary": {"passed": 12, "failed": 1, "total": 13}}
 ```
 
@@ -535,7 +569,7 @@ The run took 37 seconds and exited with code `1`. Sessions are up, the ping work
 
 ```json
 "environment": {
-  "netdryrun": "0.3.0",
+  "netdryrun": "0.3.1",
   "containerlab": "0.81.1",
   "python": "3.10.12",
   "host": "Linux-6.18.54.1-microsoft-standard-WSL2-x86_64-with-glibc2.35",
@@ -557,8 +591,9 @@ The failed check, with its history of samples:
   "passed": false,
   "detail": "unexpectedly present via bgp",
   "attempts": 1,
-  "duration_s": 0.2,
-  "history": [{"t": 0.2, "passed": false, "detail": "unexpectedly present via bgp"}]
+  "duration_s": 0.3,
+  "started": "2026-10-28T02:27:55+00:00",
+  "history": [{"t": 0.3, "passed": false, "detail": "unexpectedly present via bgp"}]
 }
 ```
 
@@ -582,7 +617,7 @@ Its `evidence` holds the command and the full output. The interesting part: the 
 
 (Shortened; the report keeps every field.)
 
-To look at the routers yourself, rerun with `--keep-on-failure` and run commands with `docker exec clab-my-lab-r1 vtysh -c "..."`, then destroy the lab with the command Netdryrun prints. [Troubleshooting](troubleshooting.md#the-lab-never-converges-timeout) has an example.
+To look at the routers yourself, rerun with `--keep-on-failure` and run commands with `docker exec clab-ndr-my-lab-r1 vtysh -c "..."`, then destroy the lab with the command Netdryrun prints. [Troubleshooting](troubleshooting.md#the-lab-never-converges-timeout) has an example.
 
 ## 7. Fix the change and run again
 
@@ -611,8 +646,8 @@ Add a check that the change did what it should, so the test also proves the new 
 
 ```text
 $ netdryrun run . --json report.json --markdown report.md
-Netdryrun 0.3.0: 14 checks from netdryrun.yml
-Deploying lab my-lab (3 nodes)...
+Netdryrun 0.3.1: 14 checks from netdryrun.yml
+Deploying lab ndr-my-lab (3 nodes); this usually takes 30-90 s, longer the first time images are pulled...
   [PASS] r1: BGP session to 10.0.12.2 is established -- state is established (13.9s)
   [PASS] r1: BGP session to 10.0.13.2 is established -- state is established (13.9s)
   [PASS] r2: BGP session to 10.0.12.1 is established -- state is established (13.9s)
@@ -624,17 +659,17 @@ Deploying lab my-lab (3 nodes)...
   [PASS] r1: ping 192.168.3.1 from 192.168.1.1 expects success -- 3/3 replies (need 2) (13.9s)
   [PASS] r1: route 192.168.33.0/24 via bgp is present -- active via bgp (13.9s)
 Convergence checks done; settling 10s before post-convergence checks...
-  [PASS] r1: prefixes from 10.0.12.2 >= 2 and <= 10 -- 3 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.2s)
-  [PASS] r1: prefixes from 10.0.13.2 >= 2 and <= 10 -- 3 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.2s)
-  [PASS] r1: route 0.0.0.0/0 via bgp is absent -- absent (held 10s, 5 samples) (10.2s)
-  [PASS] r1: route 10.0.23.0/30 via bgp is absent -- absent (held 10s, 5 samples) (10.2s)
+  [PASS] r1: prefixes from 10.0.12.2 >= 2 and <= 10 -- 3 ipv4-unicast prefixes accepted (held 10s, 4 samples) (10.2s)
+  [PASS] r1: prefixes from 10.0.13.2 >= 2 and <= 10 -- 3 ipv4-unicast prefixes accepted (held 10s, 4 samples) (10.2s)
+  [PASS] r1: route 0.0.0.0/0 via bgp is absent -- absent (held 10s, 4 samples) (10.2s)
+  [PASS] r1: route 10.0.23.0/30 via bgp is absent -- absent (held 10s, 4 samples) (10.2s)
 Destroying lab...
 PASSED: 14 passed, 0 failed (14 checks)
   wrote json report: report.json
   wrote markdown report: report.md
 ```
 
-38 seconds, exit code `0`. Commit the change and the updated `netdryrun.yml` together.
+41 seconds, exit code `0`. Commit the change and the updated `netdryrun.yml` together.
 
 ## 8. Run it on every pull request
 
@@ -685,18 +720,18 @@ netdryrun run examples/frr-bgp
 
 ## At a glance
 
-Times are wall-clock for `netdryrun run` on WSL2 (20 cores, 16 GB) with images already pulled, measured on 2026-10-27 with containerlab 0.81.1 and Netdryrun™ 0.3.0 (`frr-bgp-broken`: 0.2.0, and `agent-demo`: a development build between 0.2.0 and 0.3.0; their checks did not change in 0.3.0. `srl-hidden-leak`: 0.3.0 plus the SR Linux fix that ships in 0.3.1). They include deploying and destroying the lab. The first run of each example also pulls its images.
+Times are wall-clock for `netdryrun run` on WSL2 (20 cores, 16 GB) with images already pulled, measured on 2026-10-27 with containerlab 0.81.1 and Netdryrun™ 0.3.1, by the live layer of the 0.3.1 release check, which ran every example once on the built package ([`releases/0.3.1/gate/live.json`](https://github.com/netdryrun/netdryrun/blob/main/releases/0.3.1/gate/live.json) in the repository). `agent-demo` is the whole `demo.sh`, both attempts. They include deploying and destroying the lab. The first run of each example also pulls its images.
 
 | Example | Network OS | Shows | Expected | Exit | Time |
 |---|---|---|---|---|---|
-| [frr-bgp](#frr-bgp) | FRR | Basic checks, best-path attributes, a leak guard, a link-failure scenario | `PASSED: 11 passed, 0 failed` | `0` | 84 s |
-| [frr-bgp-broken](#frr-bgp-broken) | FRR | A leaked default route caught | `FAILED: 5 passed, 1 failed` | `1` | 45 s |
-| [srl-frr](#srl-frr) | Nokia SR Linux + FRR | Mixed vendors | `PASSED: 7 passed, 0 failed` | `0` | 60 s |
-| [srl-hidden-leak](#srl-hidden-leak) | Nokia SR Linux + FRR | A leaked default that ping, sessions and the routing table miss, on both NOSes | `PASSED: 9 passed, 0 failed`; each leak `FAILED: 8 passed, 1 failed` | `0`; `1` | 52 to 84 s |
-| [sonic-frr](#sonic-frr) | SONiC VS + FRR | Configuring a NOS after boot, a port-down scenario | `PASSED: 8 passed, 0 failed` | `0` | 90 s |
-| [arista-frr](#arista-frr) | Arista cEOS + FRR (your image) | A bring-your-own vendor image | `PASSED: 10 passed, 0 failed` | `0` | 92 s |
-| [agent-demo](#agent-demo) `demo.sh` | FRR | An agent's leaky change rejected, the fix accepted | `Demo OK` | `0` | 65 s |
-| [batfish-pipeline](#batfish-pipeline) | FRR | Batfish first, then the lab; three bad changes | `PASSED: 10 passed, 0 failed` | `0` | 72 s |
+| [frr-bgp](#frr-bgp) | FRR | Basic checks, best-path attributes, a leak guard, a link-failure scenario | `PASSED: 11 passed, 0 failed` | `0` | 99 s |
+| [frr-bgp-broken](#frr-bgp-broken) | FRR | A leaked default route caught | `FAILED: 5 passed, 1 failed` | `1` | 39 s |
+| [srl-frr](#srl-frr) | Nokia SR Linux + FRR | Mixed vendors | `PASSED: 7 passed, 0 failed` | `0` | 59 s |
+| [srl-hidden-leak](#srl-hidden-leak) | Nokia SR Linux + FRR | A leaked default that ping, sessions and the routing table miss, on both NOSes | `PASSED: 9 passed, 0 failed`; each leak `FAILED: 8 passed, 1 failed` | `0`; `1` | 59 to 60 s |
+| [sonic-frr](#sonic-frr) | SONiC VS + FRR | Configuring a NOS after boot, a port-down scenario | `PASSED: 8 passed, 0 failed` | `0` | 92 s |
+| [arista-frr](#arista-frr) | Arista cEOS + FRR (your image) | A bring-your-own vendor image | `PASSED: 10 passed, 0 failed` | `0` | 97 s |
+| [agent-demo](#agent-demo) `demo.sh` | FRR | An agent's leaky change rejected, the fix accepted | `Demo OK` | `0` | 70 s |
+| [batfish-pipeline](#batfish-pipeline) | FRR | Batfish first, then the lab; three bad changes | `PASSED: 10 passed, 0 failed` | `0` | 100 s |
 
 ## frr-bgp
 
@@ -744,7 +779,7 @@ CI runs this example on every push and expects it to fail.
   [FAIL] srl1: no BGP path for 0.0.0.0/0 -- unexpectedly in the BGP table (1 path(s); as-path '65020', next hop 10.0.100.2, local-pref 100, MED 0, communities none) (2.4s)
 ```
 
-Needs Netdryrun 0.3.1 or later: 0.3.0 counts `srl1`'s own static default as a BGP path, so the good configs fail. Its times in the table were measured with that fix (0.3.0 plus the fix), over nine runs on 2026-10-27; the README lists each one.
+Needs Netdryrun 0.3.1 or later: 0.3.0 counts `srl1`'s own static default as a BGP path, so the good configs fail. Its times in the table are from the 0.3.1 release check (the good configs and each leak, once each); the README lists earlier runs of 0.3.0 plus the fix.
 
 ## sonic-frr
 
@@ -778,7 +813,7 @@ The image comes from the SONiC build server, not a registry. To get it and run t
     Demo OK: attempt 1 rejected by 5 leak guards with every other check passing; attempt 2 passed every check.
     ```
 
-    Attempt 1 ends `FAILED: 9 passed, 5 failed (14 checks)`, attempt 2 `PASSED: 14 passed, 0 failed (14 checks)`. The two runs together took about 65 s.
+    Attempt 1 ends `FAILED: 9 passed, 5 failed (14 checks)`, attempt 2 `PASSED: 14 passed, 0 failed (14 checks)`. The two runs together took about 70 s (0.3.1 release check).
 
 - `netdryrun run examples/agent-demo` shows the starting point, before anyone has worked the ticket: the guards pass and the 3 ticket checks fail, `FAILED: 11 passed, 3 failed (14 checks)`, exit code `1`. It took 119 seconds, because the failing ticket checks wait for their timeout.
 
@@ -924,25 +959,29 @@ netdryrun run examples/frr-bgp
 ```
 
 ```text
-Netdryrun 0.3.0: 7 checks from examples/frr-bgp/netdryrun.yml
+Netdryrun 0.3.1: 7 checks from examples/frr-bgp/netdryrun.yml
 Deploying lab ndr-frr-bgp (3 nodes); this usually takes 30-90 s, longer the first time images are pulled...
-  [PASS] r1: BGP session to 10.0.12.2 is established -- state is established (13.4s)
-  [PASS] r1: BGP session to 10.0.13.2 is established -- state is established (13.4s)
-  [PASS] r1: route 192.168.3.0/24 via bgp is present -- active via bgp (13.4s)
-  [PASS] r1: ping 192.168.3.1 from 192.168.1.1 expects success -- 3/3 replies (need 2) (13.4s)
-  [PASS] r1: BGP best path for 192.168.2.0/24 has as-path '65002', next hop 10.0.12.2 -- best path: as-path '65002', next hop 10.0.12.2, local-pref 100, MED 0, communities none (13.4s)
+  [PASS] r1: BGP session to 10.0.12.2 is established -- state is established (13.5s)
+  [PASS] r1: BGP session to 10.0.13.2 is established -- state is established (13.5s)
+  [PASS] r1: route 192.168.3.0/24 via bgp is present -- active via bgp (13.5s)
+  [PASS] r1: ping 192.168.3.1 from 192.168.1.1 expects success -- 3/3 replies (need 2) (13.5s)
 Convergence checks done; settling 10s before post-convergence checks...
-  [PASS] r1: prefixes from 10.0.12.2 >= 1 and <= 10 -- 2 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.1s)
-  [PASS] r1: route 0.0.0.0/0 via bgp is absent -- absent (held 10s, 5 samples) (10.1s)
+  [PASS] r1: prefixes from 10.0.12.2 >= 1 and <= 10 -- 2 ipv4-unicast prefixes accepted (held 10s, 4 samples) (10.3s)
+  [PASS] r1: BGP best path for 192.168.2.0/24 has as-path '65002', next hop 10.0.12.2 -- best path: as-path '65002', next hop 10.0.12.2, local-pref 100, MED 0, communities none (held 10s, 4 samples) (10.3s)
+  [PASS] r1: route 0.0.0.0/0 via bgp is absent -- absent (held 10s, 4 samples) (10.3s)
 Scenario: r1-r2 link fails
-  [PASS] [r1-r2 link fails] r1: route 192.168.2.0/24 via bgp is present -- active via bgp (8.2s)
-  [PASS] [r1-r2 link fails] r1: ping 192.168.2.1 from 192.168.1.1 expects success -- 3/3 replies (need 2) (8.2s)
-  [PASS] [r1-r2 link fails] r1: BGP best path for 192.168.2.0/24 has as-path '65003 65002', next hop 10.0.13.2 -- best path: as-path '65003 65002', next hop 10.0.13.2, local-pref 100, MED 0, communities none (11.3s)
-  [PASS] [r1-r2 link fails] r1: BGP session to 10.0.12.2 is down -- state is active (held 10s, 5 samples) (10.1s)
+  the fault took effect after 0s (2 BGP session(s) over the downed links are down)
+  settling 10s before the scenario's checks
+  [PASS] [r1-r2 link fails] r1: route 192.168.2.0/24 via bgp is present -- active via bgp (held 12s, 3 samples) (19.4s)
+  [PASS] [r1-r2 link fails] r1: ping 192.168.2.1 from 192.168.1.1 expects success -- 3/3 replies (need 2) (held 12s, 3 samples) (19.4s)
+  [PASS] [r1-r2 link fails] r1: BGP best path for 192.168.2.0/24 has as-path '65003 65002', next hop 10.0.13.2 -- best path: as-path '65003 65002', next hop 10.0.13.2, local-pref 100, MED 0, communities none (held 10s, 4 samples) (10.0s)
+  [PASS] [r1-r2 link fails] r1: BGP session to 10.0.12.2 is down -- state is active (held 10s, 4 samples) (10.0s)
 Restored 1 link(s) and 0 route injection(s); settling 10s
 Destroying lab...
 PASSED: 11 passed, 0 failed (11 checks)
 ```
+
+The `bgp_route` checks run with the post-convergence checks and must hold for 10 seconds, because the best path can change when a slower session comes up. In the scenario, Netdryrun first waits until both ends of the BGP session over the downed link see it down (here at once, because the interface itself went down), settles 10 seconds, and then the positive checks must keep passing for the hold window, not just once. See [scenario timing](../reference/config.md#scenario-timing).
 
 Now the broken change. `frr-bgp-broken` is the same triangle, but r2's config adds one line, `neighbor 10.0.12.1 default-originate`, toward r1:
 
@@ -951,7 +990,7 @@ netdryrun run examples/frr-bgp-broken
 ```
 
 ```text
-Netdryrun 0.3.0: 6 checks from examples/frr-bgp-broken/netdryrun.yml
+Netdryrun 0.3.1: 6 checks from examples/frr-bgp-broken/netdryrun.yml
 Deploying lab ndr-frr-broken (3 nodes); this usually takes 30-90 s, longer the first time images are pulled...
   [PASS] r1: BGP session to 10.0.12.2 is established -- state is established (13.5s)
   [PASS] r1: BGP session to 10.0.13.2 is established -- state is established (13.5s)
@@ -959,7 +998,7 @@ Deploying lab ndr-frr-broken (3 nodes); this usually takes 30-90 s, longer the f
   [PASS] r1: ping 192.168.3.1 from 192.168.1.1 expects success -- 3/3 replies (need 2) (13.5s)
 Convergence checks done; settling 10s before post-convergence checks...
   [PASS] r1: prefixes from 10.0.12.2 >= 1 and <= 10 -- 3 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.1s)
-  [FAIL] r1: route 0.0.0.0/0 via bgp is absent -- unexpectedly present via bgp (not selected) (0.1s)
+  [FAIL] r1: route 0.0.0.0/0 via bgp is absent -- unexpectedly present via bgp (not selected) (0.2s)
 Destroying lab...
 FAILED: 5 passed, 1 failed (6 checks)
 ```
@@ -1002,14 +1041,14 @@ Exit codes: `0` passed, `1` a check failed, `2` a setup problem (bad YAML, the l
 
 ## Times
 
-Wall-clock for `netdryrun run`, including deploying and destroying the lab, with images already pulled. Measured on 2026-10-27 on WSL2 (20 cores, 16 GB), containerlab 0.81.1, Netdryrun 0.3.0, from copies of the example folders with their own lab names:
+Wall-clock for `netdryrun run`, including deploying and destroying the lab, with images already pulled. Measured on 2026-10-28 on WSL2 (20 cores, 16 GB), containerlab 0.81.1, Netdryrun 0.3.1 installed from PyPI, running the two example folders of a fresh clone:
 
 | Run | Result | Exit | Time |
 |---|---|---|---|
-| `examples/frr-bgp` (7 checks and a link-failure scenario) | `PASSED: 11 passed, 0 failed` | `0` | 88 s |
-| `examples/frr-bgp-broken` | `FAILED: 5 passed, 1 failed` | `1` | 38 s |
+| `examples/frr-bgp` (7 checks and a link-failure scenario) | `PASSED: 11 passed, 0 failed` | `0` | 105 s |
+| `examples/frr-bgp-broken` | `FAILED: 5 passed, 1 failed` | `1` | 41 s |
 
-The failing run is shorter because it has no failure scenario. The [examples page](../examples.md) shows 84 s and 45 s for the same two labs from earlier runs on the same machine and date; runs differ by several seconds. On GitHub-hosted `ubuntu-latest` runners, the whole job (installing containerlab and Netdryrun, pulling FRR, running) took 100 to 107 s for `frr-bgp` and 54 to 66 s for `frr-bgp-broken`, over three CI runs on `main` on 2026-10-27, before the 0.3.0 release added a `bgp_route` check to `frr-bgp`; see [the FAQ](../faq.md#how-long-does-a-run-take-and-what-does-ci-cost). On a private repository, jobs are billed by the minute, rounded up: the `frr-bgp` job uses 2.
+The failing run is shorter because it has no failure scenario. `frr-bgp` takes longer than on 0.3.0 (88 s) because 0.3.1 settles 10 s after the fault and holds the scenario's checks for a full window, instead of judging them as soon as they pass. The [examples page](../examples.md) shows 99 s and 39 s for the same two labs from the 0.3.1 release check on the same machine the day before; runs differ by several seconds. On GitHub-hosted `ubuntu-latest` runners, the whole job (installing containerlab and Netdryrun, pulling FRR, running) took 100 to 107 s for `frr-bgp` and 54 to 66 s for `frr-bgp-broken`, over three CI runs on `main` on 2026-10-27, before the 0.3.0 release added a `bgp_route` check to `frr-bgp`; see [the FAQ](../faq.md#how-long-does-a-run-take-and-what-does-ci-cost). On a private repository, jobs are billed by the minute, rounded up: the `frr-bgp` job uses 2.
 
 ## Gotchas
 
@@ -1153,20 +1192,22 @@ netdryrun run examples/sonic-frr
 ```
 
 ```text
-Netdryrun 0.3.0: 6 checks from examples/sonic-frr/netdryrun.yml
+Netdryrun 0.3.1: 6 checks from examples/sonic-frr/netdryrun.yml
 Deploying lab ndr-sonic-frr (2 nodes); this usually takes 30-90 s, longer the first time images are pulled...
 Running setup on sonic1...
 setup done on sonic1 (4 commands)
-  [PASS] sonic1: BGP session to 10.0.40.2 is established -- state is established (13.5s)
-  [PASS] sonic1: route 192.168.20.0/24 via bgp is present -- active via bgp (13.5s)
-  [PASS] frr1: route 192.168.40.1/32 via bgp is present -- active via bgp (13.5s)
-  [PASS] sonic1: ping 192.168.20.1 from 192.168.40.1 expects success -- 3/3 replies (need 2) (13.5s)
-  [PASS] sonic1: BGP best path for 192.168.20.0/24 has as-path '65020', local-pref 100, next hop 10.0.40.2 -- best path: as-path '65020', next hop 10.0.40.2, local-pref 100, MED 0, communities none (13.5s)
+  [PASS] sonic1: BGP session to 10.0.40.2 is established -- state is established (13.7s)
+  [PASS] sonic1: route 192.168.20.0/24 via bgp is present -- active via bgp (13.7s)
+  [PASS] frr1: route 192.168.40.1/32 via bgp is present -- active via bgp (13.7s)
+  [PASS] sonic1: ping 192.168.20.1 from 192.168.40.1 expects success -- 3/3 replies (need 2) (13.7s)
 Convergence checks done; settling 10s before post-convergence checks...
   [PASS] frr1: prefixes from 10.0.40.1 >= 1 and <= 5 -- 1 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.2s)
+  [PASS] sonic1: BGP best path for 192.168.20.0/24 has as-path '65020', local-pref 100, next hop 10.0.40.2 -- best path: as-path '65020', next hop 10.0.40.2, local-pref 100, MED 0, communities none (held 10s, 5 samples) (10.2s)
 Scenario: SONiC port Ethernet0 goes down
-  [PASS] [SONiC port Ethernet0 goes down] frr1: BGP session to 10.0.40.1 is down -- state is connect (held 10s, 5 samples) (10.1s)
-  [PASS] [SONiC port Ethernet0 goes down] frr1: route 192.168.40.1/32 via bgp is absent -- absent (held 10s, 5 samples) (10.1s)
+  the fault took effect after 0s (1 BGP session(s) over the downed links are down)
+  settling 10s before the scenario's checks
+  [PASS] [SONiC port Ethernet0 goes down] frr1: BGP session to 10.0.40.1 is down -- state is connect (held 10s, 4 samples) (10.1s)
+  [PASS] [SONiC port Ethernet0 goes down] frr1: route 192.168.40.1/32 via bgp is absent -- absent (held 10s, 4 samples) (10.1s)
 Restored 1 link(s) and 0 route injection(s); settling 10s
 Destroying lab...
 PASSED: 8 passed, 0 failed (8 checks)
@@ -1203,13 +1244,13 @@ This workflow is a recipe, not something Netdryrun's own CI runs yet: SONiC isn'
 
 ## Times
 
-Wall-clock for `netdryrun run`, including deploying the lab, the `setup` lines, the checks, the port-down scenario and destroying the lab, with both images already loaded. Measured on 2026-10-27 on WSL2 (20 cores, 16 GB), containerlab 0.81.1, Netdryrun 0.3.0, from a copy of the example folder with its own lab name:
+Wall-clock for `netdryrun run`, including deploying the lab, the `setup` lines, the checks, the port-down scenario and destroying the lab, with both images already loaded. Measured on 2026-10-28 on WSL2 (20 cores, 16 GB), containerlab 0.81.1, Netdryrun 0.3.1 installed from PyPI, running the example folder of a fresh clone:
 
 | Run | Result | Exit | Time |
 |---|---|---|---|
-| `examples/sonic-frr` (6 checks and a port-down scenario) | `PASSED: 8 passed, 0 failed` | `0` | 97 s |
+| `examples/sonic-frr` (6 checks and a port-down scenario) | `PASSED: 8 passed, 0 failed` | `0` | 99 s |
 
-The checks passed 13.5 s after `setup` finished. The [examples page](../examples.md) shows 90 s from an earlier run on the same machine and date; runs differ by a few seconds. In CI, add the time to download the 230 MB image, which depends on the runner's network; caching the file avoids it.
+The positive checks passed 13.7 s after `setup` finished. The [examples page](../examples.md) shows 92 s from the 0.3.1 release check on the same machine the day before; runs differ by a few seconds. In CI, add the time to download the 230 MB image, which depends on the runner's network; caching the file avoids it.
 
 ## Gotchas
 
@@ -2266,7 +2307,7 @@ Source: https://netdryrun.com/troubleshooting/
 
 # Troubleshooting
 
-Each error below was reproduced on purpose on WSL2 (Ubuntu 22.04) with containerlab 0.81.1, using Netdryrun™ 0.2.0, and 0.3.0 for the inconclusive case. The error messages are copied from those runs; the surrounding lines (the version, the deploy progress line, and no `Destroying lab...` when nothing was deployed) are shown as 0.3.1 prints them. The entries for errors new in 0.3.1 quote the message as the 0.3.1 code writes it.
+Each error below was reproduced on purpose on WSL2 (Ubuntu 22.04) with containerlab 0.81.1 and Netdryrun™ 0.3.1, and the output is copied from those runs. The labs are copies of the [tutorial](tutorial.md)'s `my-lab` (lab name `ndr-my-lab`) and of the bundled examples, renamed `ndr-docs-*`. Where an entry shows what an older version did, it says which version.
 
 Exit code `2` means the run has no verdict (a config error, a lab error, a fault that did not take effect, or an internal error; `--debug` shows the traceback of an internal error). Exit code `1` means a check failed. See [exit codes](reference/cli.md#exit-codes).
 
@@ -2274,10 +2315,10 @@ Exit code `2` means the run has no verdict (a config error, a lab error, a fault
 
 ```text
 $ netdryrun validate my-lab
-config error: checks[2]: unknown keys ['presnt'] for type route; did you mean 'present'?; allowed: active, hold, name, node, prefix, present, protocol, timeout, type, vrf
+config error: checks[11]: unknown keys ['presnt'] for type route; did you mean 'present'?; allowed: active, hold, name, node, prefix, present, protocol, timeout, type, vrf
 ```
 
-Exit code `2`. From 0.3.1, a key Netdryrun doesn't know is an error at every level of the file (top level, `nodes`, checks, scenarios and their faults), not only inside checks. Before 0.3.1, a misspelled key at the top level, under `nodes` or inside a fault was ignored: a whole block of checks under `chekcs:` never ran, and nothing said so. Fix the spelling the message suggests; `allowed:` lists every key that fits there. The same goes for values from a fixed list (`afi`, `protocol`, `state`, `expect`, `driver`), and a key written twice in the same mapping is an error too (`duplicate key 'present' (first defined on line 12)`). Run `netdryrun validate` after upgrading: a file that 0.3.0 accepted can fail here, and every such failure was a check that didn't test what it said.
+Exit code `2`. From 0.3.1, a key Netdryrun doesn't know is an error at every level of the file (top level, `nodes`, checks, scenarios and their faults), not only inside checks. Before 0.3.1, a misspelled key at the top level, under `nodes` or inside a fault was ignored: a whole block of checks under `chekcs:` never ran, and nothing said so. 0.3.1 says `unknown top-level keys ['chekcs']; did you mean 'checks'?; allowed: checks, lab, nodes, scenarios, timeout`. Fix the spelling the message suggests; `allowed:` lists every key that fits there. The same goes for values from a fixed list (`afi`, `protocol`, `state`, `expect`, `driver`), and a key written twice in the same mapping is an error too (`not valid YAML at line 55, column 3: duplicate key 'present' (first defined on line 54)`). Run `netdryrun validate` after upgrading: a file that 0.3.0 accepted can fail here, and every such failure was a check that didn't test what it said.
 
 ## containerlab is not installed
 
@@ -2291,15 +2332,24 @@ Exit code `2`. Netdryrun drives the `containerlab` CLI and needs it on `PATH`. I
 
 ## Docker or containerlab permission denied
 
-As a user who is not in the `docker` and `clab_admins` groups:
+Without the `docker` group (here, with every supplementary group dropped), Netdryrun stops before deploying anything, because its first step is to ask Docker whether a lab with the same name is already running:
 
 ```text
 $ netdryrun run my-lab
 Netdryrun 0.3.1: 14 checks from my-lab/netdryrun.yml
-Deploying lab my-lab (3 nodes); this usually takes 30-90 s, longer the first time images are pulled...
-Destroying lab...
-warning: lab cleanup failed: ROR
-...
+ERROR: could not list Docker containers: permission denied while trying to connect to the docker API at unix:///var/run/docker.sock
+```
+
+Exit code `2`. `docker ps` fails the same way:
+
+```text
+$ docker ps
+permission denied while trying to connect to the docker API at unix:///var/run/docker.sock
+```
+
+A user in `docker` but not in `clab_admins` gets past that, and then containerlab refuses the deploy. Its message, from a run with Netdryrun 0.2.0 as a user `ndrtest`:
+
+```text
 ERROR: containerlab deploy failed:
 
    ERROR
@@ -2307,11 +2357,6 @@ ERROR: containerlab deploy failed:
   User 'ndrtest' is not part of containerlab admin group 'clab_admins', which is required to execute this command.
   To add yourself to this group, run the following command:
       $ sudo usermod -aG clab_admins ndrtest.
-```
-
-```text
-$ docker ps
-permission denied while trying to connect to the docker API at unix:///var/run/docker.sock
 ```
 
 Fix: add your user to both groups, then start a new login session so the groups apply.
@@ -2341,7 +2386,7 @@ ERROR: unknown node(s) r9; the topology has r1, r2, r3
 
 From 0.3.1, `netdryrun validate` reads the topology too and catches it without starting anything (`lab error: unknown node(s) r9; ...`). Before 0.3.1, `validate` checked only the file itself and printed `OK` for this typo.
 
-Exit code `2`, and nothing is deployed or destroyed: from 0.3.1, a lab you kept running with `--keep` survives a typo like this (0.3.0 and earlier destroyed it). Use the node names from the topology's `nodes:` section (`r1`), not the container names (`clab-my-lab-r1`).
+Exit code `2`, and nothing is deployed or destroyed: from 0.3.1, a lab you kept running with `--keep` survives a typo like this (0.3.0 and earlier destroyed it). Use the node names from the topology's `nodes:` section (`r1`), not the container names (`clab-ndr-my-lab-r1`).
 
 ## The lab never converges (timeout)
 
@@ -2350,20 +2395,19 @@ A positive check waits up to `timeout` seconds (default 120) for the network to 
 ```text
 $ netdryrun run slow
 Netdryrun 0.3.1: 14 checks from slow/netdryrun.yml
-Deploying lab ndrdocs-slow (3 nodes); this usually takes 30-90 s, longer the first time images are pulled...
-  [PASS] r1: BGP session to 10.0.13.2 is established -- state is established (13.8s)
+Deploying lab ndr-docs-slow (3 nodes); this usually takes 30-90 s, longer the first time images are pulled...
+  [PASS] r1: BGP session to 10.0.13.2 is established -- state is established (13.3s)
   ...
-  [FAIL] r1: BGP session to 10.0.12.2 is established -- state is idle (30.1s)
-  [FAIL] r2: BGP session to 10.0.12.1 is established -- state is idle (30.1s)
-  [FAIL] r1: route 192.168.33.0/24 via bgp is present -- not active via bgp; seen: nothing (30.1s)
+  [FAIL] r1: BGP session to 10.0.12.2 is established -- state is idle (30.0s)
+  [FAIL] r2: BGP session to 10.0.12.1 is established -- state is idle (30.0s)
 Convergence checks done; settling 10s before post-convergence checks...
-  ...
   [FAIL] r1: prefixes from 10.0.12.2 >= 2 and <= 10 -- not evaluated: BGP session(s) on r1 not established: 10.0.12.2 (idle) after waiting 30s. A post-convergence check only means something once every BGP session on its node is up (a leak can arrive over any of them). If a session is down on purpose, add a bgp_session check with state: down for it (30.0s)
+  ...
 Destroying lab...
-FAILED: 10 passed, 4 failed (14 checks)
+FAILED: 8 passed, 6 failed (14 checks)
 ```
 
-A check that fails at exactly its timeout (`30.1s` here) never reached the expected state. Two causes:
+A check that fails at exactly its timeout (`30.0s` here) never reached the expected state. Two causes:
 
 - **The change really breaks something.** The `detail` says what the router reported (`state is idle`). This is the test working.
 - **The lab is slow to boot.** SR Linux, SONiC and cEOS take longer than FRR. Raise `timeout` at the top of `netdryrun.yml`, or on one check. `examples/srl-frr` uses 120.
@@ -2373,18 +2417,18 @@ To see why, keep the lab and look inside:
 ```text
 $ netdryrun run slow --keep-on-failure
 ...
-Lab ndrdocs-slow left running for debugging; destroy with: containerlab destroy -t /home/user/ndr-docs/slow/topology.clab.yml --cleanup
-FAILED: 10 passed, 4 failed (14 checks)
-$ docker exec clab-ndrdocs-slow-r1 vtysh -c "show bgp summary"
+Lab ndr-docs-slow left running for debugging; destroy with: containerlab destroy -t /home/ndr/work/docs031/ts/slow/topology.clab.yml --cleanup
+FAILED: 8 passed, 6 failed (14 checks)
+$ docker exec clab-ndr-docs-slow-r1 vtysh -c "show bgp summary"
 ...
 Neighbor        V         AS   MsgRcvd   MsgSent   TblVer  InQ OutQ  Up/Down State/PfxRcd   PfxSnt Desc
 10.0.12.2       4      65099         6        12        0    0    0    never         Idle        0 N/A
-r3(10.0.13.2)   4      65003        38        40        3    0    0 00:01:17            2        3 FRRouting/10.4.1_git
+r3(10.0.13.2)   4      65003        34        40        4    0    0 00:01:06            3        4 FRRouting/10.4.1_git
 ```
 
 r1 expects AS 65099 at 10.0.12.2, but r2 is AS 65002. Destroy the lab with the command Netdryrun printed.
 
-The prefix check is a post-convergence check (it has `max`), so it reports `not evaluated`; see the next entry.
+The routes still arrive over the r1-r3 session, so the route and ping checks pass. r1's four post-convergence checks (the two prefix counts with `max`, and the two routes that must be absent) report `not evaluated`, because one of r1's sessions is down; see the next entry.
 
 ## Not evaluated (a session on the node never came up)
 
@@ -2424,40 +2468,50 @@ Fix: give the scenario's checks a `timeout` above the hold time (for example `ti
 ## Could not read BGP state to find the sessions over the links
 
 ```text
-ERROR: could not read BGP state on r2 to find the BGP sessions over the links the scenario takes down: unexpected output from `show bgp neighbors json`: no output. Netdryrun won't judge the scenario without knowing when the fault took effect
+ERROR: could not read BGP state on r2 to find the BGP sessions over the links the scenario takes down: `vtysh -c show bgp neighbors json` failed on r2 (rc=1): bgpd is not running. Netdryrun won't judge the scenario without knowing when the fault took effect
 ```
+
+Reproduced with a copy of `examples/frr-bgp` whose r2 starts without `bgpd`: the main checks on r1 run (the session to r2 fails), then the `r1-r2 link fails` scenario stops here.
 
 Exit code `2`. From 0.3.1, before a scenario takes links down, Netdryrun reads the BGP state of the nodes on both ends of each link (and the addresses of the downed interfaces) to know which sessions the fault must bring down. If that state can't be read, it can't tell when the fault took effect, so it stops before changing anything instead of judging the scenario on the settle delay alone (0.3.0 read it as "no sessions"). Usually the node's routing daemon is still starting or has crashed: check the node (`docker exec <container> vtysh -c "show bgp summary"`), raise the main checks' `timeout` so the lab is fully up before the scenarios start, and rerun. A node no driver can read (a Linux host) and a VRF the node doesn't have count as "no sessions", as before.
 
 ## SR Linux fails on a Windows drive (/mnt/c)
 
-On WSL, files under `/mnt/c` are on the Windows filesystem, which has no Linux permissions. If containerlab's lab directory is there, SR Linux cannot save its config. Running containerlab directly in such a folder:
+On WSL, files under `/mnt/c` are on the Windows filesystem, which has no Linux permissions. If containerlab's lab directory is there, SR Linux cannot save its config. Running containerlab directly in such a folder (a copy of `examples/srl-frr`):
 
 ```text
 $ containerlab deploy -t topology.clab.yml
-11:07:03 INFO Creating lab directory path=/mnt/c/Users/.../srlmnt/clab-ndrdocs-srlmnt
-11:07:03 INFO unable to adjust Labdir file ACLs: operation not supported
+09:54:58 INFO Creating lab directory path=/mnt/c/Users/.../d031_srlmnt/clab-ndr-docs-srlmnt
+09:54:58 INFO unable to adjust Labdir file ACLs: operation not supported
 ...
-11:07:32 ERRO node "srl1" post-deploy: command execution error:Error in /system:
+09:55:15 ERRO node "srl1" post-deploy: command execution error:Error in /system:
     Setting permissions for file '/etc/opt/srlinux/config.tmp' failed with error_code = 1 [Operation not permitted]
 Error: Commit failed
 ```
 
-The SR Linux container keeps running, but without its startup config, so every check fails:
+containerlab exits with an error, but the SR Linux container keeps running without its startup config until you destroy the lab. If you point Netdryrun's lab directory there yourself (`CLAB_LABDIR_BASE` under `/mnt/`), the run stops at the deploy, with exit code `2`:
 
 ```text
-  [FAIL] srl1: BGP session to 10.0.100.2 is established -- neighbor 10.0.100.2 not configured (seen: none) (122.6s)
+$ CLAB_LABDIR_BASE=$PWD netdryrun run .
+Netdryrun 0.3.1: 7 checks from netdryrun.yml
+Deploying lab ndr-docs-srlmnt (2 nodes); this usually takes 30-90 s, longer the first time images are pulled...
+Destroying lab...
+ERROR: containerlab deploy failed:
+...
+09:55:36 ERRO node "srl1" post-deploy: command execution error:Error in /system:
+    Setting permissions for file '/etc/opt/srlinux/config.tmp' failed with error_code = 1 [Operation not permitted]
+Error: Commit failed
 ```
 
-Netdryrun avoids this. When the topology is under `/mnt/`, it puts containerlab's lab directory in `~/.cache/netdryrun/labs` (unless you set `CLAB_LABDIR_BASE` yourself). The same folder with `netdryrun run .`:
+Without that, Netdryrun avoids this. When the topology is under `/mnt/`, it puts containerlab's lab directory in `~/.cache/netdryrun/labs` (unless you set `CLAB_LABDIR_BASE` yourself). The same folder with `netdryrun run .`:
 
 ```text
 $ netdryrun run .
-Netdryrun 0.3.1: 6 checks from netdryrun.yml
-Deploying lab ndrdocs-srlmnt (2 nodes); this usually takes 30-90 s, longer the first time images are pulled...
-  [PASS] srl1: BGP session to 10.0.100.2 is established -- state is established (31.2s)
+Netdryrun 0.3.1: 7 checks from netdryrun.yml
+Deploying lab ndr-docs-srlmnt (2 nodes); this usually takes 30-90 s, longer the first time images are pulled...
+  [PASS] srl1: BGP session to 10.0.100.2 is established -- state is established (32.8s)
   ...
-PASSED: 6 passed, 0 failed (6 checks)
+PASSED: 7 passed, 0 failed (7 checks)
 ```
 
 If you deploy with containerlab yourself (for example for `netdryrun check`), either keep the lab on the Linux filesystem (`~/...`) or set `CLAB_LABDIR_BASE` to a Linux path. Keeping labs on the Linux filesystem is also faster.
@@ -2468,23 +2522,27 @@ Arista does not allow cEOS to be redistributed, so you import it yourself. If th
 
 ```text
 $ netdryrun run ceos
-Netdryrun 0.3.1: 7 checks from ceos/netdryrun.yml
-Deploying lab ndrdocs-ceos (2 nodes); this usually takes 30-90 s, longer the first time images are pulled...
+Netdryrun 0.3.1: 8 checks from ceos/netdryrun.yml
+Deploying lab ndr-docs-ceos (2 nodes); this usually takes 30-90 s, longer the first time images are pulled...
 Destroying lab...
 ERROR: containerlab deploy failed:
-10:57:23 INFO Containerlab started version=0.81.1
-10:57:23 INFO Parsing & checking topology file=topology.clab.yml
-10:57:23 INFO Removing directory path=/home/user/ndr-docs/ceos/clab-ndrdocs-ceos
-10:57:23 INFO Pulling image image=docker.io/library/ceos:4.34.1F
-10:57:25 ERRO Failed to pull image image=docker.io/library/ceos:4.34.1F err="Error response from daemon: pull access denied for ceos, repository does not exist or may require 'docker login'"
+09:38:28 INFO Containerlab started version=0.81.1
+09:38:28 INFO Parsing & checking topology file=topology.clab.yml
+09:38:28 INFO Removing directory path=/home/ndr/work/docs031/ts/ceos/clab-ndr-docs-ceos
+09:38:28 INFO Creating docker network name=clab IPv4 subnet=172.20.20.0/24 IPv6 subnet=3fff:172:20:20::/64 MTU=0
+09:38:28 INFO Pulling image image=docker.io/library/ceos:4.34.1F
+09:38:30 ERRO Failed to pull image image=docker.io/library/ceos:4.34.1F err="Error response from daemon: pull access denied for ceos, repository does not exist or may require 'docker login'"
+...
 ```
+
+Exit code `2`. This is a copy of `examples/arista-frr` with the image changed to a tag that isn't in Docker.
 
 Fix: download cEOS-lab from arista.com (free account) and import it with the exact name and tag the topology uses: `docker import cEOS-lab-<version>.tar ceos:<version>`, as the comment in `examples/arista-frr/topology.clab.yml` says. Then check that Docker has it:
 
 ```text
 $ docker images ceos
 IMAGE          ID             DISK USAGE   CONTENT SIZE   EXTRA
-ceos:4.36.3M   94cc1e5462fe       3.55GB          976MB   U
+ceos:4.36.3M   94cc1e5462fe       3.55GB          976MB
 ```
 
 `examples/arista-frr` expects `ceos:4.36.3M`. Either import with that tag or change `image:` in the topology to match yours.
@@ -2492,10 +2550,14 @@ ceos:4.36.3M   94cc1e5462fe       3.55GB          976MB   U
 ## A lab named X is already running
 
 ```text
-ERROR: a lab named 'my-lab' is already running (3 container(s), e.g. clab-my-lab-r1): another Netdryrun run, or a lab deployed by hand or kept with --keep. Netdryrun won't redeploy or destroy it. Wait for the other run to finish, or remove the lab with: containerlab destroy -t /home/user/my-lab/topology.clab.yml --cleanup
+$ netdryrun run other-lab
+Netdryrun 0.3.1: 14 checks from other-lab/netdryrun.yml
+ERROR: a lab named 'ndr-my-lab' is already running (3 container(s), e.g. clab-ndr-my-lab-r1): another Netdryrun run, or a lab deployed by hand or kept with --keep. Netdryrun won't redeploy or destroy it. Wait for the other run to finish, or remove the lab with: containerlab destroy -t /home/ndr/work/docs031/ts/other-lab/topology.clab.yml --cleanup
 ```
 
-Exit code `2`, before anything is deployed. containerlab lab names are global on a machine: containers are named `clab-<lab>-<node>`. From 0.3.1, `netdryrun run` refuses to deploy a lab whose name is already in use, because redeploying would reconfigure the other lab's containers, and destroying it afterwards would remove them from under whoever is using it. Two runs of the same lab started at the same moment on one host get `another Netdryrun run is already using lab 'my-lab' on this host` instead.
+Here `my-lab` was left running with `--keep`, then `other-lab`, a copy with the same `name:`, was run.
+
+Exit code `2`, before anything is deployed. containerlab lab names are global on a machine: containers are named `clab-<lab>-<node>`. From 0.3.1, `netdryrun run` refuses to deploy a lab whose name is already in use, because redeploying would reconfigure the other lab's containers, and destroying it afterwards would remove them from under whoever is using it. Two runs of the same lab started at the same moment on one host get `another Netdryrun run is already using lab 'ndr-my-lab' on this host; wait for it to finish (two runs of the same lab would collide)` instead, and the first run carries on.
 
 Fix: wait for the other run, destroy the old lab with the command in the message (for a lab you kept with `--keep` or `--keep-on-failure`), or give every lab a unique `name:`. On a shared CI runner or machine, put something unique in the name (for example the branch). `netdryrun check` doesn't deploy, so it still runs against the running lab.
 
@@ -2521,17 +2583,19 @@ Before you run, check what is up with `docker ps` or `containerlab inspect --all
 
 ## A host port is already in use
 
-If a topology publishes ports on the host (`ports:` on a node), two labs cannot use the same host port:
+If a topology publishes ports on the host (`ports:` on a node), two containers cannot use the same host port, whether they are in two labs or in one. Here r1 and r2 of the same lab both publish `18179:179`:
 
 ```text
 $ netdryrun run p2
 Netdryrun 0.3.1: 14 checks from p2/netdryrun.yml
-Deploying lab ndrdocs-p2 (3 nodes); this usually takes 30-90 s, longer the first time images are pulled...
+Deploying lab ndr-docs-p2 (3 nodes); this usually takes 30-90 s, longer the first time images are pulled...
 Destroying lab...
 ERROR: containerlab deploy failed:
 ...
-11:05:40 ERRO node "r1" deploy: Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint clab-ndrdocs-p2-r1 (40a6a46a...): Bind for 0.0.0.0:18179 failed: port is already allocated
+09:53:26 ERRO node "r2" deploy: Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint clab-ndr-docs-p2-r2 (cd360913...): Bind for 0.0.0.0:18179 failed: port is already allocated
 ```
+
+Exit code `2`.
 
 Fix: Netdryrun does not need published ports; it runs every command with `docker exec`. Remove `ports:` from the topology, or use different host ports per lab. `docker ps` shows which container holds the port.
 
@@ -2540,12 +2604,14 @@ Fix: Netdryrun does not need published ports; it runs every command with `docker
 Failure scenarios take links down with `ip link` inside the node, which works on FRR, SONiC and cEOS but not yet on SR Linux. From 0.3.1, `netdryrun validate` refuses the file (exit code `2`). `run` finds out only when the scenario starts, after the main checks:
 
 ```text
+$ netdryrun validate srl-ld
+lab error: failure scenarios on SR Linux nodes (srl1) are not supported yet; take the link down on the FRR/Linux side of the link instead
 $ netdryrun run srl-ld
-Netdryrun 0.3.1: 6 checks from srl-ld/netdryrun.yml
-Deploying lab ndrdocs-srlld (2 nodes); this usually takes 30-90 s, longer the first time images are pulled...
-  [PASS] srl1: BGP session to 10.0.100.2 is established -- state is established (16.1s)
+Netdryrun 0.3.1: 7 checks from srl-ld/netdryrun.yml
+Deploying lab ndr-docs-srlld (2 nodes); this usually takes 30-90 s, longer the first time images are pulled...
+  [PASS] srl1: BGP session to 10.0.100.2 is established -- state is established (14.4s)
   ...
-  [PASS] frr1: ping 192.168.10.1 from 192.168.20.1 expects success -- 3/3 replies (need 2) (21.5s)
+  [PASS] srl1: BGP best path for 192.168.20.0/24 has as-path '65020', local-pref 100, next hop 10.0.100.2 -- best path: as-path '65020', next hop 10.0.100.2, local-pref 100, MED 0, communities none (held 11s, 3 samples) (10.6s)
 Scenario: srl1-frr1 link fails
 Destroying lab...
 ERROR: failure scenarios on SR Linux nodes (srl1) are not supported yet; take the link down on the FRR/Linux side of the link instead
@@ -2563,25 +2629,15 @@ The effect on the network is the same: the link is down for both sides. `node_is
 
 ## MCP tool calls time out in the client
 
-`dry_run` deploys a lab, so it takes 30 seconds to several minutes. Many MCP clients give up on a tool call sooner. Reproduced with the Python MCP SDK (mcp 2.3.0) and a 20-second client timeout:
+`dry_run` deploys a lab, so it takes 30 seconds to several minutes. Many MCP clients give up on a tool call sooner. Reproduced with the Python MCP SDK (mcp 2.3.0), `dry_run` on `my-lab` and a 20-second client timeout:
 
 ```text
 MCPError: Request 'tools/call' timed out
-after 20.0s
 ```
 
-With a 300-second timeout, the same call returned the full result after 143 seconds.
+With a 300-second timeout, the same call returned the full result (`"status": "passed"`) after 41 seconds.
 
-When the client gives up, it usually stops the server, and **the lab is left running**. Right after the timeout above:
-
-```text
-$ docker ps --format '{{.Names}} {{.Status}}'
-clab-my-lab-r1 Up 27 seconds
-clab-my-lab-r2 Up 27 seconds
-clab-my-lab-r3 Up 27 seconds
-```
-
-The next `dry_run` on the same folder redeploys over it and cleans up, or destroy it yourself with `containerlab destroy -t my-lab/topology.clab.yml --cleanup`.
+When the client gives up, it usually stops the server. From 0.3.1, the server then destroys the lab before it exits: in the run above, the lab's three containers were up when the call timed out and gone a few seconds later, before the client had exited. 0.3.0 and earlier left the lab running. A server killed without a chance to clean up (`SIGKILL`) still leaves it; the next `dry_run` on that lab then refuses to deploy (see [a lab named X is already running](#a-lab-named-x-is-already-running)) until you destroy it with `containerlab destroy -t my-lab/topology.clab.yml --cleanup`.
 
 Fixes:
 
@@ -2591,30 +2647,39 @@ Fixes:
 
 ## No PR comment on a big lab
 
-With `pr-comment: true`, the job log says `could not comment on the PR (needs permissions pull-requests: write ...)` even though the permission is set, and the lab has several hundred checks, for example a file `netdryrun record` wrote for a 20-node lab.
+GitHub rejects a comment longer than 65,536 characters. From 0.3.1, the Markdown report (the PR comment and the job summary) stays under that: failed checks come first, and once the table would pass about 65,000 characters it stops with one row that says how many it left out. For a run of 1,500 checks, 5 of them failed, the 0.3.1 report code produced 64,845 characters: the 5 failures and 763 passed checks, then
 
-GitHub rejects a comment longer than 65,536 characters. Netdryrun 0.3.0 lists every check in the comment, about 90 characters each, so above roughly 700 checks the comment is too long. The verdict, the job status and the reports are not affected. Fixed in 0.3.1: the table stops before the limit, failures first, and says how many checks it left out. On 0.3.0, trim the recorded file to the checks that matter, or split it into several `netdryrun.yml` files run as a [matrix](github-action.md#several-labs).
+```text
+| | … 732 more checks (0 failed, 732 passed) | not shown: too many for one comment; all are in the JSON report | |
+```
+
+The JSON report and the job status always have every check. If the left-out rows matter to your reviewers, trim the file to the checks that matter, or split it into several `netdryrun.yml` files run as a [matrix](github-action.md#several-labs).
+
+0.3.0 and earlier listed every check in the comment, about 90 characters each, so above roughly 700 checks GitHub rejected it: the job log said `could not comment on the PR (needs permissions pull-requests: write ...)` even though the permission was set. The verdict, the job status and the reports were not affected.
 
 ## Inconclusive: the lab never came up
 
-Exit code `3` means checks failed, but the lab never reached a testable state, so the result says nothing about your change. Reproduced with Netdryrun 0.3.0 by turning off `bgpd` in the FRR `daemons` file of a copy of `examples/frr-bgp` (and `timeout: 30`):
+Exit code `3` means checks failed, but the lab never reached a testable state, so the result says nothing about your change. Reproduced by turning off `bgpd` in the FRR `daemons` file of a copy of `examples/frr-bgp`, with `timeout: 30` and its failure scenario removed:
 
 ```text
 $ netdryrun run . --json report.json
 Netdryrun 0.3.1: 7 checks from netdryrun.yml
-Deploying lab ndrdocs-nobgp (3 nodes); this usually takes 30-90 s, longer the first time images are pulled...
+Deploying lab ndr-docs-nobgp (3 nodes); this usually takes 30-90 s, longer the first time images are pulled...
   [FAIL] r1: BGP session to 10.0.12.2 is established -- error: `vtysh -c show bgp neighbors json` failed on r1 (rc=1): bgpd is not running (33.1s)
   [FAIL] r1: BGP session to 10.0.13.2 is established -- error: `vtysh -c show bgp neighbors json` failed on r1 (rc=1): bgpd is not running (33.1s)
-  [FAIL] r1: route 192.168.3.0/24 via bgp is present -- not active via bgp; seen: nothing (33.1s)
+  [FAIL] r1: route 192.168.3.0/24 via bgp is present -- error: `vtysh -c show bgp ipv4 unicast 192.168.3.0/24 json` failed on r1 (rc=1): bgpd is not running (33.1s)
   [FAIL] r1: ping 192.168.3.1 from 192.168.1.1 expects success -- 0/3 replies (need 2) (33.1s)
-  [FAIL] r1: BGP best path for 192.168.2.0/24 has as-path '65002', next hop 10.0.12.2 -- error: `vtysh -c show bgp ipv4 unicast 192.168.2.0/24 json` failed on r1 (rc=1): bgpd is not running (33.1s)
+warning: r1 never returned BGP state; its post-convergence checks start without the BGP gate
 Convergence checks done; settling 10s before post-convergence checks...
   [FAIL] r1: prefixes from 10.0.12.2 >= 1 and <= 10 -- error: `vtysh -c show bgp neighbors json` failed on r1 (rc=1): bgpd is not running (30.1s)
-  [PASS] r1: route 0.0.0.0/0 via bgp is absent -- absent (held 10s, 5 samples) (10.1s)
+  [FAIL] r1: BGP best path for 192.168.2.0/24 has as-path '65002', next hop 10.0.12.2 -- error: `vtysh -c show bgp ipv4 unicast 192.168.2.0/24 json` failed on r1 (rc=1): bgpd is not running (0.1s)
+  [FAIL] r1: route 0.0.0.0/0 via bgp is absent -- error: `vtysh -c show bgp ipv4 unicast 0.0.0.0/0 json` failed on r1 (rc=1): bgpd is not running (0.1s)
 Destroying lab...
-INCONCLUSIVE: the lab did not reach a testable state: r1 never returned usable BGP state (r1: error: `vtysh -c show bgp neighbors json` failed on r1 (rc=1): bgpd is not running), and no check passed on any sample. Rerun with a longer timeout, or check that the lab boots (6 of 7 checks failed; this says nothing about the change)
+INCONCLUSIVE: the lab did not reach a testable state: r1 never returned usable BGP state (r1: error: `vtysh -c show bgp neighbors json` failed on r1 (rc=1): bgpd is not running), and no check passed on any sample. Rerun with a longer timeout, or check that the lab boots (7 of 7 checks failed; this says nothing about the change)
   wrote json report: report.json
 ```
+
+The run took 111 seconds. With the failure scenario left in, 0.3.1 doesn't get to this verdict: after the main checks it stops at the scenario with exit code `2` and [could not read BGP state on r1](#could-not-read-bgp-state-to-find-the-sessions-over-the-links), because it can't see which sessions the fault would take down. Either way the run is never `passed`.
 
 The JSON report has the same text in `inconclusive_reason`, and every unready sample in `history` is marked:
 
