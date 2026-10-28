@@ -67,9 +67,17 @@ def _table(vrf: str, family: int) -> str:
     return base if vrf == "default" else f"{vrf}.{base}"
 
 
+# `"data" : "..."` in an xnm:error answer, which Junos 26.2 prints as invalid JSON (a comma is missing)
+_ERROR_MESSAGE = re.compile(r'"message"\s*:\s*\[\s*\{\s*"data"\s*:\s*"([^"]*)"')
+
+
 def _json(command: str, text: str) -> dict:
     if isinstance(text, str) and text.lstrip().lower().startswith("error:"):
         raise DriverError(f"Junos error from `{command}`: {' '.join(text.split())[:200]}")
+    if isinstance(text, str) and '"xnm:error"' in text:
+        # e.g. "the routing subsystem is not running" while rpd starts: an error on that sample
+        messages = "; ".join(dict.fromkeys(_ERROR_MESSAGE.findall(text))) or "xnm:error"
+        raise DriverError(f"Junos error from `{command}`: {messages[:200]}")
     data = load_json(command, text)
     if not isinstance(data, dict):
         raise unexpected(command, text)

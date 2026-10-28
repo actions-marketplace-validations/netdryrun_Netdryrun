@@ -481,3 +481,18 @@ def test_refused_before_deploying():
     lab.nodes = FakeLab.nodes
     with pytest.raises(LabError, match="cJunosEvolved"):
         lab._require_linux_links("j1")
+
+
+@pytest.mark.parametrize("name,parse", [
+    ("junos_error_not_ready.txt", lambda t: junos.parse_bgp_neighbors(t, "master")),
+    ("junos_error_not_ready_route.txt", lambda t: junos.parse_routes(t, "0.0.0.0/0")),
+    ("junos_error_not_ready_ping.txt", junos.parse_ping),
+])
+def test_not_ready_daemon_is_an_error(name, parse):
+    """Captured while rpd was starting: an xnm:error (printed as invalid JSON) naming the cause. The ping
+    one also carries ping-results; it is still an error, never a ping result."""
+    with pytest.raises(DriverError, match="Junos error .*command-handler subsystem is not responding"):
+        parse(read(name))
+    if "ping" not in name:
+        with pytest.raises(DriverError, match="routing subsystem is not running"):
+            parse(read(name))

@@ -36,3 +36,6 @@ Captured live on 2026-10-28 from `cjunosevolved:26.2R1.7-EVO` (containerlab 0.81
 | `junos_route_table_v6.txt` | `show route table inet6.0 \| display json \| no-more` |
 | `junos_route_v6.txt` | `show route 2001:db8:20::/48 exact table inet6.0 all extensive \| display json \| no-more` |
 | `junos_version.txt` | `show version \| display json \| no-more` |
+| `junos_error_not_ready.txt` | `show bgp neighbor instance master \| display json \| no-more` (lab `ndr-junos-frr`, while rpd was starting) |
+| `junos_error_not_ready_route.txt` | `show route 0.0.0.0/0 exact table inet.0 all extensive \| display json \| no-more` (same moment) |
+| `junos_error_not_ready_ping.txt` | `ping 10.0.100.2 count 2 rapid wait 1 \| display json \| no-more` (same moment) |
