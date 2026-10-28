@@ -843,8 +843,8 @@ The node names and addresses are those of the [`frr-bgp` example](examples.md#fr
 netdryrun validate my-lab
 ```
 
-!!! note "Checked for syntax, not yet for behavior"
-    Each fragment passes `validate`. Lab tests that run each guard against a change it must catch are scheduled; until they land, run a guard against a known-bad change in your own lab before you trust it.
+!!! note "Tested in a lab"
+    Each fragment was run on 2026-10-28 with Netdryrun™ 0.3.1, containerlab 0.81.1 and FRR 10.4.1: every guard passed on the `frr-bgp` lab (or the variant named under it) and failed on a copy with the mistake it guards against, with only the guard failing. The **Tested** line under each fragment names both labs and quotes the failure. Each run had the fragment plus r1's two session checks. Your lab is not this lab: run a guard once against a known-bad change in yours before you trust it.
 
 Every key used here is in the [netdryrun.yml reference](reference/config.md), which also explains when each check runs. Most guards are [post-convergence checks](reference/config.md#convergence-semantics): they wait until every configured BGP session on their node is up, then must hold for 10 seconds, so they can't pass just because BGP hasn't come up yet.
 
@@ -860,6 +860,12 @@ The most common leak: someone adds `default-originate`, or an export filter that
   prefix: 0.0.0.0/0
   protocol: bgp
   present: false
+```
+
+**Tested:** passes on `frr-bgp`; fails on r2 with `neighbor 10.0.12.1 default-originate` (the `frr-bgp-broken` change), exit 1:
+
+```text
+  [FAIL] r1: route 0.0.0.0/0 via bgp is absent -- unexpectedly present via bgp (not selected) (0.6s)
 ```
 
 For IPv6, add the same check for `::/0`. The [`frr-bgp-broken`](examples.md#frr-bgp-broken) example is this check catching a leaked default, and [Ping and "BGP up" passed](posts/ping-missed-the-leak.md) walks through it.
@@ -878,6 +884,12 @@ One check per neighbor that catches a leak of *any* prefix, including ones nobod
 
 The count is of *accepted* prefixes (received minus rejected by import policy), so this also shows a filter that suddenly drops everything (`min`). `record --min-prefixes` writes the `min` side for every neighbor; add `max` by hand.
 
+**Tested:** passes on `frr-bgp` (2 prefixes); fails on r2 announcing 12 extra static /24s with `redistribute static`, exit 1:
+
+```text
+  [FAIL] r1: prefixes from 10.0.12.2 >= 1 and <= 10 -- 14 ipv4-unicast prefixes accepted (0.3s)
+```
+
 ### No infrastructure or link routes at the edge
 
 `redistribute connected` announces every connected subnet, including the point-to-point links between routers. The LAN arrives and the ping passes, but the link subnets leak too. List the infrastructure prefixes that must stay out of BGP: one check per prefix, because a check matches the prefix you give.
@@ -891,6 +903,12 @@ The count is of *accepted* prefixes (received minus rejected by import policy), 
 ```
 
 The [tutorial](tutorial.md#5-make-a-change-and-run-it) shows this check failing on a `redistribute connected` change while every session, the ping and the prefix-count range pass. Loopbacks and management ranges work the same way.
+
+**Tested:** passes on `frr-bgp`; fails on r3 with `redistribute connected`, exit 1:
+
+```text
+  [FAIL] r1: route 10.0.23.0/30 via bgp is absent -- unexpectedly present via bgp (0.4s)
+```
 
 ### Communities preserved, internal tags stripped
 
@@ -910,11 +928,18 @@ A route can arrive with the right prefix and the wrong attributes: a route-map r
 
 The bundled `frr-bgp` routers don't set communities, so the first check fails there by design: tag the route on r2 (a route-map with `set community 65002:100` on its export) before you rely on it. `bgp_route` also checks `as_path`, `as_path_regex`, `local_pref`, `med` and `next_hop`; see [bgp_route](reference/config.md#bgp_route).
 
+**Tested:** both pass on `frr-bgp` with r2 tagging its export to r1 (`route-map TAG-R1 permit 10` with `set community 65002:100`, applied `out` on `neighbor 10.0.12.1`). Without the tag (the bundled lab) the first fails; with `set community 65002:100 65002:666` the second fails. Exit 1 each time:
+
+```text
+  [FAIL] r1: BGP best path for 192.168.2.0/24 has communities 65002:100 -- missing communities 65002:100 (best path: as-path '65002', next hop 10.0.12.2, local-pref 100, MED 0, communities none) (0.5s)
+  [FAIL] r1: BGP best path for 192.168.2.0/24 has no communities 65002:666 blackhole -- carries communities 65002:666 (best path: as-path '65002', next hop 10.0.12.2, local-pref 100, MED 0, communities 65002:100 65002:666) (0.6s)
+```
+
 ### Max-prefix holds when a neighbor floods you
 
 A ceiling check says what the network *should* accept. This scenario makes a neighbor actually send too much, so the max-prefix limit in your config is exercised, not just written down. `inject_routes` makes an FRR node announce extra routes for the length of the scenario, then removes them.
 
-Here the config under test has `neighbor 10.0.12.2 maximum-prefix 10` on r1, and r2 floods 50 prefixes. FRR's default reaction is to close the session:
+Here the config under test has `neighbor 10.0.12.2 maximum-prefix 10 restart 1` on r1, and r2 floods 50 prefixes. FRR closes the session, and with `restart 1` reopens it a minute later:
 
 ```yaml title="scenarios:"
 - name: r2 sends more than the max-prefix limit
@@ -930,7 +955,19 @@ Here the config under test has `neighbor 10.0.12.2 maximum-prefix 10` on r1, and
       protocol: bgp
 ```
 
-In a triangle, r3 passes the flood on to r1 too, unless r1 also limits r3; the topology decides what your guards must cover. After a session closes on `maximum-prefix`, FRR keeps it down until it is cleared, unless the limit has `restart <minutes>`. Netdryrun checks that the network recovers after every scenario: if the session stays down, the checks that passed before the scenario are reported as failed `[after <scenario>] recovers: ...` checks, and later scenarios are skipped. Give the limit a `restart`, and check how long your lab takes to recover, before you rely on this one.
+**Tested:** passes on `frr-bgp` with that line on r1 (the session was `idle` during the flood and came back after it); fails on the bundled lab, which has no limit, exit 1:
+
+```text
+  [FAIL] [r2 sends more than the max-prefix limit] r1: BGP session to 10.0.12.2 is down -- state is established (0.5s)
+```
+
+**The limit needs `restart`.** Netdryrun checks that the network recovers after every scenario. With `maximum-prefix 10` and no `restart`, FRR kept the session down after the injected routes were withdrawn, and the run failed on recovery, exit 1 (later scenarios would have been skipped):
+
+```text
+  [FAIL] [after r2 sends more than the max-prefix limit] recovers: r1: BGP session to 10.0.12.2 is established -- state is idle (120.5s)
+```
+
+In a triangle, r3 also passes r2's flood on to r1, unless r1 limits r3 too: the topology decides what your guards must cover.
 
 ## Route checks for any protocol
 
@@ -941,6 +978,12 @@ In a triangle, r3 passes the flood on to r1 too, unless r1 also limits r3; the t
   node: r1
   prefix: 10.255.0.2/32
   protocol: ospf
+```
+
+**Tested:** passes on `frr-bgp` with `ospfd` enabled and OSPF on the r1-r2 link, r2 advertising loopback `10.255.0.2/32`; fails on the bundled lab (no OSPF) at its 60-second timeout, exit 1:
+
+```text
+  [FAIL] r1: route 10.255.0.2/32 via ospf is present -- not active via ospf; seen: nothing (60.4s)
 ```
 
 Netdryrun can't check OSPF or IS-IS adjacencies themselves yet: those checks are planned for 0.5. Until then, a route learned from the protocol is the evidence that the adjacency came up.
@@ -971,6 +1014,8 @@ Netdryrun can't check OSPF or IS-IS adjacencies themselves yet: those checks are
 
 Interface names are the ones inside the node (`eth1` on FRR). The [`frr-bgp` example](examples.md#frr-bgp) runs this scenario and also checks that the best path now goes through r3.
 
+**Tested:** passes on `frr-bgp`: `PASSED: 5 passed, 0 failed (5 checks)`, with the session over the failed link in `state is active`.
+
 ### A node is isolated: what depended on it goes away cleanly
 
 ```yaml title="scenarios:"
@@ -986,6 +1031,8 @@ Interface names are the ones inside the node (`eth1` on FRR). The [`frr-bgp` exa
       prefix: 192.168.3.0/24
       protocol: bgp
 ```
+
+**Tested:** passes on `frr-bgp`: `PASSED: 4 passed, 0 failed (4 checks)`.
 
 ### A peer sends prefixes it doesn't own
 
@@ -1013,9 +1060,18 @@ The import filter, exercised: r2 announces someone else's prefix and a more-spec
 
 The bundled `frr-bgp` routers accept everything (`route-map ALLOW-ALL`), so this scenario fails there: that is the finding it exists for.
 
+**Tested:** passes on `frr-bgp` with an import filter on r1 that accepts only the two LANs (`ip prefix-list LANS` permitting `192.168.2.0/24` and `192.168.3.0/24`, matched in a route-map applied `in` on **both** neighbors, because r3 passes r2's routes on); fails on the bundled lab, exit 1:
+
+```text
+  [FAIL] [r2 announces what it does not own] r1: route 8.8.8.0/24 via bgp is absent -- unexpectedly present via bgp (0.5s)
+  [FAIL] [r2 announces what it does not own] r1: route 192.168.3.0/25 via bgp is absent -- unexpectedly present via bgp (0.5s)
+```
+
+The prefix ceiling passed in both runs: two extra prefixes stay well under a `max` with room for growth. The checks that name the prefixes are what caught it.
+
 ### A customer exceeds its max-prefix
 
-The same as [max-prefix holds](#max-prefix-holds-when-a-neighbor-floods-you), seen from what must keep working: the customer's session closes, and the rest of the network carries on.
+The same as [max-prefix holds](#max-prefix-holds-when-a-neighbor-floods-you), seen from what must keep working: the customer's session closes, and the rest of the network carries on. The config under test has `neighbor 10.0.13.2 maximum-prefix 10 restart 1` on r1.
 
 ```yaml title="scenarios:"
 - name: customer r3 floods r1
@@ -1033,6 +1089,14 @@ The same as [max-prefix holds](#max-prefix-holds-when-a-neighbor-floods-you), se
       source: 192.168.1.1
       target: 192.168.2.1
 ```
+
+**Tested:** passes on `frr-bgp` with that line on r1: `PASSED: 5 passed, 0 failed (5 checks)`. Fails on the bundled lab, which has no limit, exit 1:
+
+```text
+  [FAIL] [customer r3 floods r1] r1: BGP session to 10.0.13.2 is down -- state is established (0.2s)
+```
+
+Without `restart`, it failed on recovery, as in [max-prefix holds](#max-prefix-holds-when-a-neighbor-floods-you).
 
 `inject_routes` runs on FRR nodes only. To flood a vendor router, inject from an FRR neighbor. `count` takes 1 to 10000 prefixes.
 
