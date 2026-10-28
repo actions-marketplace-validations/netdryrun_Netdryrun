@@ -88,9 +88,10 @@ A verdict is about the exact files the run used, not about a folder name. A prod
 
 | Field | Type | Meaning |
 |---|---|---|
-| `tested.files` | object | Path (relative to the folder of the check definition, `/`-separated) to the lowercase hex sha256 of that file, read before the run: the check definition, the topology and every config file the topology uses |
+| `tested.config` | string | Path of the check definition that ran, as the producer resolved it |
+| `tested.files` | object | Path (relative to the folder of the check definition, `/`-separated) to the lowercase hex sha256 of that file, read before the run: the check definition, the topology and every file the topology uses (bound files and folders, startup configs, licences, env files) |
 | `tested.lab_deployed_by_this_run` | boolean | `true` when the run deployed the environment from these files; `false` when it tested one that was already running, which may not run these files |
-| `tested.complete` | boolean | `false` when some file could not be read (for example, outside the folders the producer may read) or the list was cut short |
+| `tested.complete` | boolean | `false` when some file could not be read (for example, outside the folders the producer may read, or named by a URL or an environment variable the producer does not resolve) or the list was cut short |
 
 A consumer that presents a verdict SHOULD present it together with these hashes, and SHOULD treat any change to a listed file as needing a new run.
 

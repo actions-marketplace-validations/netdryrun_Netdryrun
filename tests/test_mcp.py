@@ -199,7 +199,7 @@ def test_the_result_names_the_files_it_tested(tmp_path, monkeypatch):
         return RunReport(config=cfg, results=[])
     monkeypatch.setattr(mcp_server, "run", fake_run)
     out = json.loads(mcp_server.dry_run(str(lab)))
-    assert out["tested"] == {"lab_deployed_by_this_run": True, "files": {
+    assert out["tested"] == {"config": str((lab / "netdryrun.yml").resolve()), "lab_deployed_by_this_run": True, "files": {
         "netdryrun.yml": _hash(lab / "netdryrun.yml"), "topology.clab.yml": _hash(lab / "topology.clab.yml"),
         "configs/daemons": _hash(lab / "configs" / "daemons"), "configs/r1.conf": _hash(lab / "configs" / "r1.conf"),
         "startup/r2.cfg": _hash(lab / "startup" / "r2.cfg"),
@@ -214,3 +214,57 @@ def test_the_result_names_the_files_it_tested(tmp_path, monkeypatch):
     # an edit changes the hash
     (lab / "configs" / "r1.conf").write_text("router bgp 65009\n")
     assert json.loads(mcp_server.dry_run(str(lab)))["tested"]["files"]["configs/r1.conf"] != out["tested"]["files"]["configs/r1.conf"]
+
+
+def test_tested_is_not_complete_when_the_topology_uses_files_it_cannot_list(tmp_path, monkeypatch):
+    # 0.3.2 multi-vendor audit: containerlab also reads files from topology groups, license and env-files, expands
+    # ~ and ${VAR}, and downloads URLs. A list that can't follow those must not claim to be complete.
+    from netdryrun import mcp_server
+    from netdryrun.runner import RunReport
+    monkeypatch.setattr(mcp_server, "run", lambda cfg, **_: RunReport(config=cfg, results=[]))
+    lab = tmp_path / "lab"
+    lab.mkdir()
+    (lab / "netdryrun.yml").write_text("lab: topology.clab.yml\nchecks:\n  - {type: route, node: r1, prefix: 10.0.0.0/24}\n")
+    (lab / "g.cfg").write_text("group config\n")
+    (lab / "lic.txt").write_text("licence\n")
+
+    def tested(nodes_extra="", top=""):
+        (lab / "topology.clab.yml").write_text(
+            f"name: t\ntopology:\n{top}  nodes:\n    r1: {{kind: linux, image: frr{nodes_extra}}}\n")
+        return json.loads(mcp_server.dry_run(str(lab)))["tested"]
+
+    assert tested()["complete"] is True
+    t = tested(top="  groups:\n    edge: {startup-config: g.cfg}\n")              # group-level files are listed
+    assert t["complete"] is True and "g.cfg" in t["files"]
+    t = tested(nodes_extra=", license: lic.txt")
+    assert "lic.txt" in t["files"]
+    for extra in (", startup-config: 'https://example.invalid/r1.cfg'", ", startup-config: '${HOME}/r1.cfg'",
+                  ", binds: ['~/.ssh/id_rsa:/tmp/k:ro']", ", env-files: [vars.env]"):
+        assert tested(nodes_extra=extra)["complete"] is False, extra
+
+
+def test_tested_names_the_config_that_ran(tmp_path, monkeypatch):
+    # with a relative path, the agent can see which netdryrun.yml the server picked
+    from netdryrun import mcp_server
+    from netdryrun.runner import RunReport
+    monkeypatch.setattr(mcp_server, "run", lambda cfg, **_: RunReport(config=cfg, results=[]))
+    _two_labs(tmp_path)
+    monkeypatch.setenv("NETDRYRUN_MCP_ROOT", str(tmp_path / "lab"))
+    monkeypatch.chdir(tmp_path / "server-cwd")
+    assert json.loads(mcp_server.dry_run("netdryrun.yml"))["tested"]["config"] == str((tmp_path / "lab" / "netdryrun.yml").resolve())
+
+
+def test_the_report_write_never_follows_a_hardlink(tmp_path, monkeypatch):
+    # 0.3.2 multi-vendor audit: write_text on a hardlinked netdryrun-report.json would rewrite the other file
+    from netdryrun import mcp_server
+    from netdryrun.runner import RunReport
+    monkeypatch.setattr(mcp_server, "run", lambda cfg, **_: RunReport(config=cfg, results=[]))
+    _two_labs(tmp_path)
+    outside = tmp_path / "outside.txt"
+    outside.write_text("keep me\n")
+    report = tmp_path / "lab" / "netdryrun-report.json"
+    report.unlink()
+    os.link(outside, report)
+    out = json.loads(mcp_server.dry_run(str(tmp_path / "lab")))
+    assert outside.read_text() == "keep me\n" and out["evidence_file"] == str(report)
+    assert json.loads(report.read_text())["status"] == "failed"

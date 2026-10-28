@@ -230,7 +230,7 @@ def test_dry_run_description_carries_the_agent_eval_interface_fixes():
 def test_tested_is_in_the_result_schema():
     s = {"schema": mcp_server.RESULT_SCHEMA, "status": "passed", "verdict": FROZEN[0], "passed": 1, "failed": 0,
          "failures": [], "checks": [], "inconclusive_reason": None, "error": None, "evidence_file": None,
-         "lab": "t", "tested": {"lab_deployed_by_this_run": True, "files": {"netdryrun.yml": "a" * 64},
+         "lab": "t", "tested": {"config": "/lab/netdryrun.yml", "lab_deployed_by_this_run": True, "files": {"netdryrun.yml": "a" * 64},
                                 "complete": True}}
     _validate(s, "run_result")
     with pytest.raises(jsonschema.ValidationError):

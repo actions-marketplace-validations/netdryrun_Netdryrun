@@ -275,10 +275,11 @@ TESTED_FILES_MAX = 200   # a bind of a large folder must not turn a dry run into
 def _tested(cfg, deployed: bool) -> dict:
     """What a run tested, so a verdict can be tied to a version of the files (agent eval T06: a run on the
     unedited folder looked like a run of the change): a sha256 of netdryrun.yml, the topology and every file the
-    topology binds or loads as a startup config (a bound folder: the files in it), read before the run. Keys
-    are paths relative to the folder of netdryrun.yml. With NETDRYRUN_MCP_ROOT set, a file outside it is not
-    read; `complete` is then false, as it is when a file can't be read or there are more than
-    TESTED_FILES_MAX."""
+    topology binds, loads as a startup config or licence, or reads as env-files, in defaults, kinds, groups and
+    nodes (a bound folder: the files in it), read before the run; `config` is the netdryrun.yml that ran. Keys
+    are paths relative to the folder of netdryrun.yml. `complete` is false when a file can't be read, is
+    outside NETDRYRUN_MCP_ROOT (not read), is named with ~, ${VAR} or a URL (containerlab resolves those; not
+    read here), or there are more than TESTED_FILES_MAX."""
     import hashlib
     import itertools
 
@@ -286,20 +287,31 @@ def _tested(cfg, deployed: bool) -> dict:
 
     base, lab_dir = cfg.path.parent.resolve(), cfg.lab.parent.resolve()
     sources = [cfg.path, cfg.lab]
+    complete = True
     try:
         t = (yaml.safe_load(cfg.lab.read_text(encoding="utf-8")) or {}).get("topology") or {}
     except (OSError, yaml.YAMLError, AttributeError):
-        t = {}
-    sections = [t.get("defaults"), *((t.get("kinds") or {}).values()), *((t.get("nodes") or {}).values())]
+        t, complete = {}, False
+    sections = [t.get("defaults"), *((t.get("kinds") or {}).values()), *((t.get("groups") or {}).values()),
+                *((t.get("nodes") or {}).values())]
+    refs: list[str] = []
     for sec in (s for s in sections if isinstance(s, dict)):
-        sources += [lab_dir / str(b).split(":", 1)[0] for b in sec.get("binds") or [] if isinstance(b, str)]
-        sc = sec.get("startup-config")
-        if isinstance(sc, str) and "\n" not in sc:   # containerlab also takes the config text inline
-            sources.append(lab_dir / sc)
+        refs += [str(b).split(":", 1)[0] for b in sec.get("binds") or [] if isinstance(b, str)]
+        refs += [str(e) for e in sec.get("env-files") or [] if isinstance(e, str)]
+        for key in ("startup-config", "license"):
+            v = sec.get(key)
+            if isinstance(v, str) and "\n" not in v:   # containerlab also takes a startup config inline
+                refs.append(v)
+    for ref in refs:
+        # containerlab expands ~ (the sudo user's home) and ${VAR}, and downloads URLs: not read here, so the
+        # list can't say it is complete
+        if ref.startswith("~") or "$" in ref or re.match(r"^[a-z][a-z0-9+.-]*://", ref, re.I):
+            complete = False
+        else:
+            sources.append(lab_dir / ref)
     files: dict[str, str] = {}
-    complete = True
     for src in sources:
-        src = Path(src).expanduser()
+        src = Path(src)
         if src.is_dir():   # stop walking at the cap: a bound system folder can hold many thousands of files
             found = list(itertools.islice((p for p in src.rglob("*") if p.is_file()), TESTED_FILES_MAX + 1))
         else:
@@ -319,7 +331,8 @@ def _tested(cfg, deployed: bool) -> dict:
                 files[key] = hashlib.sha256(f.read_bytes()).hexdigest()
             except OSError:
                 complete = False
-    return {"lab_deployed_by_this_run": deployed, "files": dict(sorted(files.items())), "complete": complete}
+    return {"config": str(cfg.path.resolve()), "lab_deployed_by_this_run": deployed,
+            "files": dict(sorted(files.items())), "complete": complete}
 
 
 def _execute(path: str, deploy: bool, keep: bool) -> str:
@@ -331,9 +344,12 @@ def _execute(path: str, deploy: bool, keep: bool) -> str:
     rep = run(cfg, deploy=deploy, keep=keep)
     evidence = cfg.path.parent / "netdryrun-report.json"
     try:
-        if evidence.is_symlink():
-            evidence.unlink()  # a planted link must not redirect the write to another file
-        evidence.write_text(report.to_json(rep), encoding="utf-8")
+        # a new file renamed over the old name: a planted symlink or hardlink there is replaced, never written through
+        tmp = evidence.with_name(f".{evidence.name}.{os.getpid()}.tmp")
+        tmp.unlink(missing_ok=True)
+        with open(tmp, "x", encoding="utf-8") as f:
+            f.write(report.to_json(rep))
+        os.replace(tmp, evidence)
     except OSError:
         evidence = None   # a read-only folder must not turn a finished run into a tool error with no verdict
     return json.dumps(_summary(rep, str(evidence) if evidence else None, tested), indent=2)

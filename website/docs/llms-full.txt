@@ -2347,9 +2347,10 @@ A verdict is about the exact files the run used, not about a folder name. A prod
 
 | Field | Type | Meaning |
 |---|---|---|
-| `tested.files` | object | Path (relative to the folder of the check definition, `/`-separated) to the lowercase hex sha256 of that file, read before the run: the check definition, the topology and every config file the topology uses |
+| `tested.config` | string | Path of the check definition that ran, as the producer resolved it |
+| `tested.files` | object | Path (relative to the folder of the check definition, `/`-separated) to the lowercase hex sha256 of that file, read before the run: the check definition, the topology and every file the topology uses (bound files and folders, startup configs, licences, env files) |
 | `tested.lab_deployed_by_this_run` | boolean | `true` when the run deployed the environment from these files; `false` when it tested one that was already running, which may not run these files |
-| `tested.complete` | boolean | `false` when some file could not be read (for example, outside the folders the producer may read) or the list was cut short |
+| `tested.complete` | boolean | `false` when some file could not be read (for example, outside the folders the producer may read, or named by a URL or an environment variable the producer does not resolve) or the list was cut short |
 
 A consumer that presents a verdict SHOULD present it together with these hashes, and SHOULD treat any change to a listed file as needing a new run.
 
@@ -2889,7 +2890,7 @@ From 0.3.2, every tool description carries the same rules, so an agent that read
   ],
   "evidence_file": "/path/to/lab/netdryrun-report.json",
   "verdict": "DO NOT APPLY THIS CHANGE",
-  "tested": {"lab_deployed_by_this_run": true, "complete": true, "files": {
+  "tested": {"config": "/path/to/examples/frr-bgp-broken/netdryrun.yml", "lab_deployed_by_this_run": true, "complete": true, "files": {
     "../frr-bgp/configs/r1.conf": "b57a37804e914b41b540ee8a9e4eb0ddcdafbc17657d4ddca8cfcd924d8b0d26",
     "netdryrun.yml": "0e32d31342f663bb19a9fd5dc53992bea8cb82433eab5a5cd04a3e1316523130",
     "r2-bad.conf": "57fad3080bcb61f973546e051a7211e87a221284682788e3a1753cc7a8a6a47e",
@@ -2897,7 +2898,7 @@ From 0.3.2, every tool description carries the same rules, so an agent that read
 }
 ```
 
-(`checks` and `tested.files` are shortened here; the real result lists every check and every file.) From 0.3.2, `tested` names what the run used: a sha256 of `netdryrun.yml`, the topology and every config file the topology binds or loads, read before the run. A verdict applies to those exact files, so paste it with them, and run again after any edit. `lab_deployed_by_this_run` is `false` for `run_checks`, which tests a lab that was already running.
+(`checks` and `tested.files` are shortened here; the real result lists every check and every file.) From 0.3.2, `tested` names what the run used: the `netdryrun.yml` it ran (`config`), and a sha256 of it, the topology and every file the topology binds or loads, read before the run; `complete` is `false` when a file couldn't be read, or is named with `~`, `${VAR}` or a URL, which containerlab resolves itself. A verdict applies to those exact files, so paste it with them, and run again after any edit. `lab_deployed_by_this_run` is `false` for `run_checks`, which tests a lab that was already running.
 
 From 0.3.2, `failures` lists each failed check with:
 
@@ -2945,7 +2946,7 @@ Replace `<lab>` with the folder that holds your `netdryrun.yml`. Protect that fi
 
 - **It never touches production.** The server has no tool that pushes config anywhere. It only builds and tests labs.
 - **No full device output in tool results.** Tool results contain normalized check results (name, pass/fail, a short detail), not full command output; that goes to the JSON report file. A detail or an error can still quote a fragment of lab text, such as a BGP state name or the last line of a failed command, so from 0.3.1 each is flattened to one line and capped at 300 characters (1,000 for errors). From 0.3.2 a failed check also carries an evidence excerpt, flattened the same way and capped at 200 characters. The `status` and `verdict` are computed from pass/fail only, never from that text: an agent should act on them and treat `detail`, `reason`, `error` and excerpts as data.
-- **Labs are code.** containerlab runs privileged containers. Only point the server at topologies you trust, on a machine you would let run Docker. The tools take any path the agent passes, and a `netdryrun.yml` can point at a topology in another folder. To keep an agent to one folder (Netdryrun 0.3.1 and later; 0.3.0 ignores the variable without a warning), set `NETDRYRUN_MCP_ROOT` in the server's environment (several folders separated by `:`, or `;` on Windows): every `netdryrun.yml`, the lab it points to and every topology must then resolve inside it, or the tool refuses. This stops an agent from being steered to a lab elsewhere; it does not make an untrusted lab inside the folder safe, since a topology can still mount host paths.
+- **Labs are code.** containerlab runs privileged containers. Only point the server at topologies you trust, on a machine you would let run Docker. The tools take any path the agent passes, and a `netdryrun.yml` can point at a topology in another folder. To keep an agent to one folder (Netdryrun 0.3.1 and later; 0.3.0 ignores the variable without a warning), set `NETDRYRUN_MCP_ROOT` in the server's environment (several folders separated by `:`, or `;` on Windows): every `netdryrun.yml`, the lab it points to and every topology must then resolve inside it, or the tool refuses. This stops an agent from being steered to a lab elsewhere; it does not make an untrusted lab inside the folder safe: a topology can still mount host paths, download configs from URLs, and run commands on the host (containerlab `stages` with `target: host`), all as root. An agent that can write a topology into the folder can therefore run code on the host through `dry_run`; give such an agent a machine or VM you would let it run code on.
 
 A pass is evidence from a lab, not a guarantee about production. See [what a lab cannot prove](trust.md#what-a-lab-cannot-prove).
 
