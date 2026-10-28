@@ -9,6 +9,8 @@
 
 **Test network changes before they touch production.**
 
+Netdryrun is an open-source (Apache-2.0) tool that dry-runs network changes in a real containerlab lab and returns a pass/fail verdict with evidence. It runs as a CLI, a GitHub Action, and an MCP server for AI agents.
+
 Software teams don't ship code without running its tests. Network changes deserve the same step: run the change in a real lab, check how the network behaves, and ship only on a pass. Netdryrun makes that one command, one CI step, or one tool call for an AI agent.
 
 **Already have a containerlab lab? [Add Netdryrun to it in 10 minutes](https://netdryrun.com/guides/your-lab/)**: record its steady state, add one guard, run it on every pull request.
