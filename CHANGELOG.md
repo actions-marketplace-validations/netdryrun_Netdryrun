@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.1 (unreleased)
+## 0.3.1 (2026-10-28)
 
 **Upgrading from 0.3.0, read this first:**
 - **Why:** 0.3.0 could report `passed` without testing what a file said (the paths are listed under Fixes, with rerunnable files in [the advisory](advisories/0.3.0-false-pass/README.md)), and had the injection paths listed under Security.
