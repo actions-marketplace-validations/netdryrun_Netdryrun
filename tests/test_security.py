@@ -21,7 +21,7 @@ ROOT = Path(__file__).parents[1]
 
 
 def write(tmp_path, body):
-    (tmp_path / "topo.clab.yml").write_text("name: t\ntopology:\n  nodes:\n    r1: {}\n")
+    (tmp_path / "topo.clab.yml").write_text("name: t\ntopology:\n  nodes:\n    r1: {kind: linux, image: frr}\n")
     p = tmp_path / "netdryrun.yml"
     p.write_text(body)
     return p

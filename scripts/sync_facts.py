@@ -34,9 +34,32 @@ PLATFORMS = {
     "eos": ("Arista EOS (cEOS, bring your own image)", "Arista EOS (bring your own cEOS image)", "Arista EOS"),
 }
 
+
+def _rel(paths) -> list[str]:
+    return sorted(str(p.relative_to(ROOT)).replace("\\", "/") for p in paths)
+
+
+# Example workflows that pin the GitHub Action.
+WORKFLOWS = _rel((ROOT / "examples").glob("*/*.yml"))
+
 # Public files the stale-phrase lint reads.
 PUBLIC = ["README.md", "AGENTS.md", "website/docs/llms.txt", "website/docs/llms-full.txt",
-          *sorted(str(p.relative_to(ROOT)).replace("\\", "/") for p in (ROOT / "website" / "docs").rglob("*.md"))]
+          *_rel((ROOT / "website" / "docs").rglob("*.md")), *WORKFLOWS]
+
+# Files whose facts blocks and GitHub Action refs are rewritten. Every Markdown page of the site is included,
+# so a new page (or a guide) that pins the Action can't be missed by a version bump.
+REWRITE = ["README.md", "AGENTS.md", "website/docs/llms.txt",
+           *_rel((ROOT / "website" / "docs").rglob("*.md")), *WORKFLOWS]
+
+# A corpus run that did not come from a release, keyed by the run's `generated` timestamp in results.json.
+# The sentence names what really ran. When the corpus is rerun on a release, the timestamp changes and the
+# override (and the "rerun pending" note) drops out by itself.
+DEV_BUILDS = {
+    "2026-10-26T21:43:03+00:00": ("a pre-release build (commit `ec23379`, which called itself 0.2.0; the tagged 0.2.0 "
+                                  "added the SONiC and EOS drivers and a scenario-recovery fix, `f6ea560`)"),
+    "2026-10-27T04:02:42+00:00": ("a development build from main after 0.2.0 (it called itself 0.2.0 and recorded no "
+                                  "commit) with the then-unreleased `inject_routes` fault (commit `d9da1ad`)"),
+}
 
 
 def _module(path: Path) -> ast.Module:
@@ -66,6 +89,7 @@ def facts() -> dict:
 
     return {"version": version, "platforms": [PLATFORMS[d] for d in PLATFORMS], "drivers": list(PLATFORMS),
             "check_types": check_types, "mcp_tools": mcp_tools,
+            "route_injection": '"inject_routes"' in (SRC / "config.py").read_text(encoding="utf-8"),
             "corpus": _corpus(ROOT / "corpus" / "results" / "results.json"),
             "corpus_v2": _corpus(ROOT / "corpus" / "v2" / "results" / "results.json")}
 
@@ -74,9 +98,12 @@ def _corpus(path: Path) -> dict:
     results = json.loads(path.read_text(encoding="utf-8"))
     cases = results["cases"]
     corpus = {"cases": len(cases), "harmful": sum(c["expected"] == "unsafe" for c in cases),
-              "generated": results["environment"]["generated"][:10], "ran_with": results["environment"]["netdryrun"]}
+              "generated": results["environment"]["generated"][:10], "ran_with": results["environment"]["netdryrun"],
+              "dev_build": DEV_BUILDS.get(results["environment"]["generated"], "")}
     for strategy in ("netdryrun", "ping", "sessions"):
         corpus[strategy] = sum(bool(c["strategies"][strategy]["correct"]) for c in cases)
+        corpus[f"{strategy}_approved_harmful"] = sum(c["expected"] == "unsafe" and not c["strategies"][strategy]["correct"]
+                                                     for c in cases)
     corpus["losses"] = [{"id": c["id"], "title": c["title"], "expected": c["expected"]}
                         for c in cases if not c["strategies"]["netdryrun"]["correct"]]
     return corpus
@@ -91,40 +118,57 @@ def blocks(f: dict) -> dict[str, str]:
     c = f["corpus"]
     scores = f"Netdryrun {c['netdryrun']}/{c['cases']}, ping-only {c['ping']}/{c['cases']}, sessions-up {c['sessions']}/{c['cases']}"
     c2 = f["corpus_v2"]
-    ran = _join(sorted({c["ran_with"], c2["ran_with"]}))
-    corpus_sentence = (f"On the {{link}}, Netdryrun judged {c['netdryrun']}/{c['cases']} realistic BGP changes correctly "
-                       f"(ping-only checks {c['ping']}/{c['cases']}, all-sessions-up checks {c['sessions']}/{c['cases']}) and "
-                       f"{c2['netdryrun']}/{c2['cases']} on the harder v2 ({c2['ping']}/{c2['cases']} and {c2['sessions']}/{c2['cases']}). "
-                       f"Both are small benchmarks the maintainers wrote on one FRR topology, with expected verdicts committed "
-                       f"before any run, and both ran on Netdryrun {ran}: they compare methods, they are not a production "
-                       "reliability estimate.")
+    v = f["version"]
+
+    def ran(x: dict) -> str:
+        return x["dev_build"] or f"Netdryrun {x['ran_with']}"
+    if not c["dev_build"] and not c2["dev_build"] and c["ran_with"] == c2["ran_with"]:
+        provenance = f"both ran on Netdryrun {c['ran_with']}"
+    elif c["dev_build"] and c2["dev_build"]:
+        provenance = f"neither ran on a released version. v1 ran on {ran(c)}; v2 on {ran(c2)}"
+    else:
+        provenance = f"v1 ran on {ran(c)}; v2 on {ran(c2)}"
+    historical = bool(c["dev_build"] or c2["dev_build"])
+    pending = f" A rerun of both on the released {v} is pending." if historical else ""
     losses = {kind: [x for x in c["losses"] if x["expected"] == kind] for kind in ("unsafe", "safe")}
+    safe = c["cases"] - c["harmful"]
+    corpus_sentence = ((f"Historical results, from builds before {v}: " if historical else "")
+                       + ("o" if historical else "O") + f"n the {{link}} v1 ({c['cases']} realistic BGP changes: {c['harmful']} harmful, {safe} safe), "
+                       f"Netdryrun judged {c['netdryrun']}/{c['cases']} correctly, ping-only checks {c['ping']}/{c['cases']} and "
+                       f"all-sessions-up checks {c['sessions']}/{c['cases']}. Netdryrun approved "
+                       f"{c['netdryrun_approved_harmful']} of the {c['harmful']} harmful changes (ping-only checks: "
+                       f"{c['ping_approved_harmful']} of {c['harmful']}) and blocked {len(losses['safe'])} of the {safe} safe ones. "
+                       f"On v2 ({c2['cases']} cases written after v1 to target v1's misses): Netdryrun {c2['netdryrun']}/{c2['cases']}, "
+                       f"ping-only {c2['ping']}/{c2['cases']}, all-sessions-up {c2['sessions']}/{c2['cases']}. "
+                       f"Both are small benchmarks the maintainers wrote on one FRR topology, with expected verdicts committed "
+                       f"before any run: they compare methods, they are not a production reliability estimate. "
+                       f"Provenance: {provenance}.{pending}")
     checks = _join([f"`{t}`" for t in f["check_types"]])
     attrs = "bgp_route" in f["check_types"]  # BGP best-path attribute checks exist
     covers = "BGP sessions, prefix counts, " + ("routes, BGP best-path attributes and ping" if attrs else "routes and ping")
     tools = _join([f"`{t}`" for t in f["mcp_tools"]])
-    v = f["version"]
+    scen = _join(["link-down", "node-isolation", *(["route-injection (FRR only)"] if f["route_injection"] else [])])
     return {
-        "readme_status": (f"> Status: **v{v}, early.** Works today with {long_} on Linux and WSL2. "
+        "readme_status": (f"> Status: **v{v}, early.** Runs on Linux and WSL2, with drivers for {long_}. "
                           + corpus_sentence.format(link="[verdict corpus](https://netdryrun.com/corpus/)")
                           + " Feedback and issues are very welcome."),
         "site_status": (f"Version {v}, early. Works with {mid} on Linux and WSL2. Check types: {checks} "
-                        f"(IPv4/IPv6 unicast {covers}), plus link-down and node-isolation failure scenarios. "
+                        f"(IPv4/IPv6 unicast {covers}), plus {scen} failure scenarios. "
                         + corpus_sentence.format(link="[verdict corpus](corpus.md)")
                         + " Issues and feedback: [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun/issues)."),
         "when_status": (f"It is early (version {v}). Drivers exist for {mid}, and checks cover {covers}, "
-                        "with link-down and node-isolation failure scenarios."),
+                        f"with {scen} failure scenarios."),
         "llms_summary": (f"> Netdryrun is an open-source tool (Python, Apache-2.0) that tests network changes in a real containerlab "
                          "virtual lab before they reach production. It waits for convergence, checks BGP sessions, prefixes, routes and "
                          f"reachability, and returns a pass/fail verdict with evidence. Supported network OSes: {long_}. "
                          "It runs locally, in GitHub Actions, or as an MCP server for AI agents.\n\n"
-                         f"Install: `pip install netdryrun` (current version {v}). Source: https://github.com/netdryrun/netdryrun\n\n"
+                         f"Install: `pipx install netdryrun` (or `uv tool install netdryrun`; current version {v}). Source: https://github.com/netdryrun/netdryrun\n\n"
                          f"Facts (generated from the source): version {v}; check types {checks}; MCP tools {tools}; "
                          f"verdict corpus {scores}."),
         "llms_corpus": (f"- [Verdict corpus](https://netdryrun.com/corpus/): {c['cases']} realistic BGP changes with pre-registered "
                         f"verdicts; {scores} correct"),
         "trust_scope": (f"Version {v} also covers only BGP (IPv4/IPv6 unicast), routes"
-                        + (", BGP best-path attributes" if attrs else "") + " and ping, plus link-down and node-isolation "
+                        + (", BGP best-path attributes" if attrs else "") + f" and ping, plus {scen} "
                         "failure scenarios. OSPF/IS-IS adjacencies and path checks"
                         + ("" if attrs else " and policy attributes") + " are not covered yet."),
         "built_losses": (f"**Verdict Corpus v1: wrong on {len(c['losses'])} of {c['cases']} cases.** It approved "
@@ -173,11 +217,7 @@ def main() -> int:
         return 0
     values, problems, changed = blocks(f), [], {}
 
-    for rel in ("README.md", "AGENTS.md", "website/docs/index.md", "website/docs/when-to-use-what.md",
-                "website/docs/llms.txt", "website/docs/github-action.md", "website/docs/trust.md",
-                "website/docs/how-its-built.md", "website/docs/ai-agents.md", "website/docs/faq.md",
-                "website/docs/tutorial.md", "website/docs/examples.md", "website/docs/troubleshooting.md",
-                "website/docs/batfish.md"):
+    for rel in REWRITE:
         path = ROOT / rel
         old = path.read_text(encoding="utf-8")
         new = sync_blocks(old, values, rel, problems)

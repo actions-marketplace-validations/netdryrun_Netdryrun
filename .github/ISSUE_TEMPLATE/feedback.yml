@@ -25,6 +25,34 @@ body:
         - Other
     validations: {required: true}
   - type: dropdown
+    id: topology
+    attributes:
+      label: Whose topology was it?
+      options:
+        - My own (I wrote it, or it models a network I work on)
+        - One of the examples, adapted
+        - One of the examples, unchanged
+    validations: {required: true}
+  - type: dropdown
+    id: review
+    attributes:
+      label: Would you put this verdict in a change review?
+      description: For example, attach it to a pull request or a change ticket as evidence.
+      options:
+        - "Yes"
+        - Not yet (say what's missing below)
+        - "No"
+  - type: input
+    id: nos
+    attributes:
+      label: Which network OS would you need it on?
+      description: Optional. For example FRR, SR Linux, SONiC, EOS, Junos, IOS XR, NX-OS.
+  - type: input
+    id: source
+    attributes:
+      label: Where did you hear about Netdryrun?
+      description: Optional. A link or a few words.
+  - type: dropdown
     id: again
     attributes:
       label: Will you keep using it?

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Rerun corpus case 12 with the lab kept, then show whether pe2 still gets the customer community.
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 2
 NDR_BIN=python bash scripts/dev.sh corpus/run.py --case 12 --keep 2>&1 | grep -E "^==|ping=|ERROR"
 P=$(docker ps --format '{{.Names}}' | grep -E 'pe1$' | head -1); P=${P%pe1}
 echo "--- containers prefix: $P"

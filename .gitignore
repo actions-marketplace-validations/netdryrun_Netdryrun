@@ -10,3 +10,8 @@ batfish-pipeline-reports/
 
 # MkDocs Material privacy plugin download cache
 website/.cache/
+
+# Release gate: mutmut working copy, local gate scratch
+mutants/
+.coverage
+coverage.json

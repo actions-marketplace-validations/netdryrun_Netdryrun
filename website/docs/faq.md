@@ -7,7 +7,7 @@ description: Frequently asked questions about Netdryrun. Does it touch productio
 
 ## Does Netdryrun touch my production network?
 
-No. Netdryrun™ only builds labs with containerlab on the machine where it runs, runs read-only commands inside the lab containers (with `docker exec`), and destroys the lab. It has no command, option or MCP tool that connects to a real device or pushes config anywhere. You apply the change to production yourself, with your normal process, after the test passes.
+No. Netdryrun™ only builds labs with containerlab on the machine where it runs, runs commands only inside the lab containers (with `docker exec`), and destroys the lab. Most are read-only show commands; the others take links down and up for failure scenarios, add and remove routes for `inject_routes` scenarios, and run any `setup` commands you write. It has no command, option or MCP tool that connects to a real device or pushes config anywhere. You apply the change to production yourself, with your normal process, after the test passes.
 
 ## What does a pass prove?
 
@@ -65,6 +65,8 @@ Plan for the sum of your nodes plus a few hundred MB for Docker and containerlab
 
 ### A 20-node lab
 
+These numbers come from one-off runs on the maintainer's machine. The topology, the recorded checks and the reports are not published yet, so treat them as a rough guide rather than evidence you can check.
+
 Measured on 2026-10-27 on the same WSL2 machine, images already pulled: a leaf-spine fabric of 4 spines and 16 leaves, all FRR 10.4.1, 64 links, eBGP on every link with ECMP. `netdryrun record` turned the running lab into 560 checks (128 sessions, 128 prefix counts, 304 routes) in 11 seconds. Then `netdryrun run` on those 560 checks:
 
 | Phase | Time |
@@ -104,7 +106,7 @@ Local runs are faster once images are pulled; see the times on the [examples pag
 
 ## Does it collect any data?
 
-No. The CLI, the GitHub Action and the MCP server have no telemetry and don't phone home. Reports are written only to the files you ask for. The one exception is opt-in: `cloud: true` on the GitHub Action uploads the JSON report to Netdryrun Cloud. See [privacy](trust.md#privacy) and the [privacy notice](privacy.md).
+No. The CLI, the GitHub Action and the MCP server have no telemetry and don't phone home. Reports are written only to the files you ask for. The GitHub Action's `cloud` input is reserved for Netdryrun Cloud, a hosted service that is not available yet; setting it today uploads nothing. See [privacy](trust.md#privacy) and the [privacy notice](privacy.md).
 
 ## What is the license?
 

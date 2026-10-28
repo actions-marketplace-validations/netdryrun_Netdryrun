@@ -40,7 +40,7 @@ my-lab/
     daemons  r1.conf  r2.conf  r3.conf  vtysh.conf
 ```
 
-The lab name (`name:` in the topology) must be unique on the machine. See [name collisions](troubleshooting.md#two-labs-with-the-same-name).
+The lab name (`name:` in the topology) must be unique on the machine. See [name collisions](troubleshooting.md#a-lab-named-x-is-already-running).
 
 ## 2. Record a baseline
 
@@ -52,7 +52,7 @@ Deploying lab my-lab, then waiting 45s for the network to converge...
 recording r1 (frr)
 recording r2 (frr)
 recording r3 (frr)
-Recorded 18 checks to /home/dmin/ndr-docs/my-lab/netdryrun.yml. Review it, then: netdryrun run /home/dmin/ndr-docs/my-lab
+Recorded 18 checks to /home/user/ndr-docs/my-lab/netdryrun.yml. Review it, then: netdryrun run /home/user/ndr-docs/my-lab
 ```
 
 This took 51 seconds. The file has one check for every established BGP session, every prefix count and every BGP route. The start of it:
@@ -83,7 +83,7 @@ checks:
 
 A recorded baseline says "nothing may change". That is rarely what you want. Decide what is allowed to change.
 
-Here is what happens if you skip this step. The change in step 5 adds a LAN on r3. Run against the raw baseline, the `exact: 2` prefix counts fail, because r1 and r2 now get 3 prefixes:
+Here is what happens if you skip this step. The change in step 5 adds a LAN on r3, and its first attempt announces it with `redistribute connected`. Run against the raw baseline, the `exact: 2` prefix counts fail, because r1 and r2 now get 6 prefixes:
 
 ```text
 $ netdryrun run my-lab
@@ -92,10 +92,10 @@ Deploying lab my-lab (3 nodes)...
   [PASS] r1: BGP session to 10.0.12.2 is established -- state is established (10.3s)
   ...
 Convergence checks done; settling 10s before post-convergence checks...
-  [FAIL] r1: prefixes from 10.0.12.2 = 2 -- 3 ipv4-unicast prefixes accepted (0.2s)
-  [FAIL] r1: prefixes from 10.0.13.2 = 2 -- 3 ipv4-unicast prefixes accepted (0.2s)
-  [FAIL] r2: prefixes from 10.0.12.1 = 2 -- 3 ipv4-unicast prefixes accepted (0.2s)
-  [FAIL] r2: prefixes from 10.0.23.2 = 2 -- 3 ipv4-unicast prefixes accepted (0.2s)
+  [FAIL] r1: prefixes from 10.0.12.2 = 2 -- 6 ipv4-unicast prefixes accepted (0.2s)
+  [FAIL] r1: prefixes from 10.0.13.2 = 2 -- 6 ipv4-unicast prefixes accepted (0.2s)
+  [FAIL] r2: prefixes from 10.0.12.1 = 2 -- 6 ipv4-unicast prefixes accepted (0.2s)
+  [FAIL] r2: prefixes from 10.0.23.2 = 2 -- 6 ipv4-unicast prefixes accepted (0.2s)
   [PASS] r3: prefixes from 10.0.13.1 = 2 -- 2 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.2s)
   [PASS] r3: prefixes from 10.0.23.1 = 2 -- 2 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.2s)
 Destroying lab...
@@ -184,7 +184,7 @@ Check it without starting a lab:
 
 ```text
 $ netdryrun validate my-lab
-OK: my-lab/netdryrun.yml (13 checks, lab /home/dmin/ndr-docs/my-lab/topology.clab.yml)
+OK: my-lab/netdryrun.yml (13 checks, lab /home/user/ndr-docs/my-lab/topology.clab.yml, 3 nodes)
   - [bgp_session] r1: BGP session to 10.0.12.2 is established
   - [bgp_session] r1: BGP session to 10.0.13.2 is established
   - [bgp_session] r2: BGP session to 10.0.12.1 is established
@@ -417,7 +417,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.3.0
+      - uses: netdryrun/netdryrun@v0.3.1
         with:
           path: network/
           pr-comment: true

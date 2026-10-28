@@ -1,0 +1,4 @@
+# vrf: all: devices answer keyed by VRF name, which 0.3.0 read as no routes, so present: false passed.
+lab: ../../examples/frr-bgp/topology.clab.yml
+checks:
+  - {type: route, node: r1, prefix: 0.0.0.0/0, vrf: all, present: false}

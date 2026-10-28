@@ -48,7 +48,9 @@ def test_srl_routes():
 def test_srl_bad_output_is_an_error():
     with pytest.raises(DriverError):
         srlinux.parse_bgp_neighbors("Parsing error: nope")
-    assert srlinux.parse_bgp_neighbors("") == {}
+    assert srlinux.parse_bgp_neighbors("{\n}") == {}  # sr_cli's answer when there are no neighbors
+    with pytest.raises(DriverError, match="unexpected output"):
+        srlinux.parse_bgp_neighbors("")  # no output at all is not "no neighbors"
 
 
 def test_frr_all_routes():
@@ -109,7 +111,7 @@ def test_srl_local_static_in_rib_is_not_bgp():
 
 
 def test_srl_empty_rib_adds_nothing():
-    assert srlinux.parse_routes("", "10.99.0.0/16", read("srl_rib_empty.txt")) == []
+    assert srlinux.parse_routes(read("srl_rib_empty.txt"), "10.99.0.0/16", read("srl_rib_empty.txt")) == []
 
 
 def test_detect_sonic_and_others():

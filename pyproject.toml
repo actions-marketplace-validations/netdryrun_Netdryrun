@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "netdryrun"
-version = "0.3.0"
+version = "0.3.1"
 description = "Test network changes before they touch production: real virtual labs, behavioral checks, evidence."
 readme = "README.md"
 license = "Apache-2.0"
@@ -25,8 +25,10 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Software Development :: Quality Assurance",
   "Topic :: Software Development :: Testing",
   "Topic :: System :: Networking",
@@ -35,7 +37,16 @@ dependencies = ["pyyaml>=6.0", "mcp>=2.0,<3"]
 
 [project.optional-dependencies]
 mcp = []  # kept so `pip install "netdryrun[mcp]"` keeps working; MCP is now built in
-dev = ["pytest>=8.0", "jsonschema>=4.18"]
+# The release gate (scripts/release_gate.py, RELEASING.md) uses everything below pytest/jsonschema.
+dev = [
+  "pytest>=8.0",
+  "jsonschema>=4.18",
+  "hypothesis>=6.100",
+  "pytest-cov>=5.0",
+  "coverage[toml]>=7.5",
+  "mutmut>=3.8,<4",
+  "ruff>=0.15",
+]
 
 [project.urls]
 Homepage = "https://netdryrun.com"
@@ -52,8 +63,48 @@ netdryrun-mcp = "netdryrun.mcp_server:main"
 packages = ["src/netdryrun"]
 
 [tool.hatch.build.targets.sdist]
-# The agent-eval transcripts and run folders (about 9 MB) are evidence for the repository, not part of the package
-exclude = ["examples/agent-eval/results", "examples/agent-eval/validation"]
+# The agent-eval transcripts and run folders (about 9 MB) are evidence for the repository, not part of the package.
+# The demo video and the website's copies of the demo GIFs (the same files are in .github/assets) only serve the site.
+exclude = ["examples/agent-eval/results", "examples/agent-eval/validation",
+           "website/docs/assets/video", "website/docs/assets/*.gif"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+# Lint for bugs, not style: pyflakes, pycodestyle errors, bugbear and pylint's error class.
+# Run by the release gate's static layer (python scripts/release_gate.py static).
+[tool.ruff]
+target-version = "py310"
+extend-exclude = ["examples/agent-eval/results", "examples/agent-eval/validation"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "B", "PLE"]
+ignore = [
+  "E501",  # line length is a style choice here; long lines are common and deliberate
+  "E702",  # `a; b` on one line, used in a few example helpers
+  "E731",  # a named lambda, used once in an example helper
+]
+
+[tool.ruff.lint.per-file-ignores]
+"examples/agent-eval/run_eval.py" = ["B007"]
+
+# Line coverage for the verdict modules (release gate, unit layer).
+[tool.coverage.run]
+source = ["netdryrun"]
+branch = true
+
+# Mutation testing of the verdict modules (release gate, mutation layer). mutmut copies the
+# project into mutants/ and runs the tests there, so the tests' data files are copied too.
+[tool.mutmut]
+source_paths = ["src/"]
+only_mutate = [
+  "src/netdryrun/checks.py",
+  "src/netdryrun/config.py",
+  "src/netdryrun/runner.py",
+  "src/netdryrun/drivers/*",
+]
+pytest_add_cli_args_test_selection = ["tests/"]
+also_copy = [
+  "examples/", "website/", "scripts/", "corpus/", "advisories/", ".github/", "action.yml", "server.json",
+  "README.md", "AGENTS.md", "CHANGELOG.md",
+]

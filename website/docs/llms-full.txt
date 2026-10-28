@@ -46,7 +46,7 @@ Deploying lab ndr-frr-broken (3 nodes)...
 FAILED: 5 passed, 1 failed (6 checks)
 ```
 
-The leaked default route was *received but not selected*: r1 kept its own default, so traffic still flowed and the ping passed. A ping test or a config linter would have missed it. Netdryrun counts a route that is in the routing table but not selected as present, so the "must be absent" check fails.
+The leaked default route was *received but not selected*: r1 kept its own default, so traffic still flowed and the ping passed. A ping test or a session check would have missed it. (A static analyzer such as Batfish also catches this particular leak; the [Batfish page](batfish.md) shows one that it misses and the lab catches.) Netdryrun counts a route that is in the routing table but not selected as present, so the "must be absent" check fails.
 
 The check that caught it:
 
@@ -58,7 +58,7 @@ The check that caught it:
   present: false
 ```
 
-Checks like this one run only after the network has converged and must hold for a time window, so they cannot pass just because BGP has not come up yet. See [convergence semantics](reference/config.md#convergence-semantics).
+Checks like this one run only after the network has converged (the positive checks passed and every configured BGP session on the node is up) and must hold for a time window, so they cannot pass just because BGP has not come up yet. See [convergence semantics](reference/config.md#convergence-semantics).
 
 ## Run it in GitHub Actions
 
@@ -70,7 +70,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.3.0
+      - uses: netdryrun/netdryrun@v0.3.1
         with:
           path: network/        # folder containing netdryrun.yml
 ```
@@ -83,7 +83,7 @@ Fastest start on your own topology: `netdryrun record my-lab/topology.clab.yml -
 
 
 ```bash
-pip install netdryrun
+pipx install netdryrun          # Ubuntu 24.04+: sudo apt install pipx && pipx ensurepath first
 netdryrun run path/to/folder    # the folder containing netdryrun.yml
 ```
 
@@ -102,7 +102,7 @@ Requirements: Linux or WSL2, Docker, containerlab, Python 3.10+. Walkthrough: [G
 ## Status
 
 
-Version 0.3.0, early. Works with FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image) on Linux and WSL2. Check types: `bgp_session`, `bgp_prefixes`, `route`, `bgp_route` and `ping` (IPv4/IPv6 unicast BGP sessions, prefix counts, routes, BGP best-path attributes and ping), plus link-down and node-isolation failure scenarios. On the [verdict corpus](corpus.md), Netdryrun judged 24/30 realistic BGP changes correctly (ping-only checks 20/30, all-sessions-up checks 15/30) and 16/18 on the harder v2 (9/18 and 7/18). Both are small benchmarks the maintainers wrote on one FRR topology, with expected verdicts committed before any run, and both ran on Netdryrun 0.2.0: they compare methods, they are not a production reliability estimate. Issues and feedback: [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun/issues).
+Version 0.3.1, early. Works with FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image) on Linux and WSL2. Check types: `bgp_session`, `bgp_prefixes`, `route`, `bgp_route` and `ping` (IPv4/IPv6 unicast BGP sessions, prefix counts, routes, BGP best-path attributes and ping), plus link-down, node-isolation and route-injection (FRR only) failure scenarios. On the [verdict corpus](corpus.md) v1 (30 realistic BGP changes: 19 harmful, 11 safe), Netdryrun judged 24/30 correctly, ping-only checks 20/30 and all-sessions-up checks 15/30. Netdryrun approved 5 of the 19 harmful changes (ping-only checks: 10 of 19) and blocked 1 of the 11 safe ones. On v2 (18 cases written after v1 to target v1's misses): Netdryrun 17/18, ping-only 9/18, all-sessions-up 7/18. Both are small benchmarks the maintainers wrote on one FRR topology, with expected verdicts committed before any run: they compare methods, they are not a production reliability estimate. Provenance: both ran on Netdryrun 0.3.1. Issues and feedback: [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun/issues).
 
 
 ---
@@ -120,7 +120,7 @@ GitHub starts a Linux machine with Docker, containerlab 0.81.1 and Netdryrun ins
 bash examples/agent-demo/demo.sh
 ```
 
-The [agent demo](https://github.com/netdryrun/netdryrun/tree/main/examples/agent-demo) boots four FRR routers twice, which takes a little over a minute. The first change opens the filters to make a ticket work and is rejected by the leak guards; the second adds two prefix-list lines and passes all 14 checks. The run ends with `Demo OK`. The other FRR examples (`netdryrun run examples/frr-bgp`, `examples/frr-bgp-broken`) work the same way.
+The [agent demo](https://github.com/netdryrun/netdryrun/tree/main/examples/agent-demo) boots four FRR routers twice, which takes about 65 s. The first change opens the filters to make a ticket work and is rejected by the leak guards; the second adds two prefix-list lines and passes all 14 checks. The run ends with `Demo OK`. The other FRR examples (`netdryrun run examples/frr-bgp`, `examples/frr-bgp-broken`) work the same way.
 
 The codespace runs on the 2-core machine and uses your GitHub account's free Codespaces allowance (GitHub Free includes 120 core-hours and 15 GB of storage a month, so about 60 hours on this machine; Pro includes 180 core-hours). Stop or delete the codespace when you're done ([github.com/codespaces](https://github.com/codespaces)) so it doesn't use more. VM-based nodes (vrnetlab) don't work in Codespaces, which has no nested virtualization.
 
@@ -141,26 +141,35 @@ containerlab needs root (or a user in the right groups) to create the lab. Run N
 ## Install
 
 ```bash
-pip install netdryrun
+pipx install netdryrun
 netdryrun --version
 ```
+
+On Ubuntu 24.04 and Debian 12 a plain `pip install` outside a virtualenv is refused ("externally managed environment"), so use pipx: `sudo apt install pipx && pipx ensurepath`, then open a new terminal. `uv tool install netdryrun`, or `pip install netdryrun` inside an activated virtualenv, work too.
 
 The MCP server for AI agents is included: run `netdryrun mcp`. See [AI agents](ai-agents.md).
 
 ## Run the examples
 
-The repository ships these example labs (Arista needs your own cEOS image; SONiC pulls `docker-sonic-vs`).
+The repository ships these example labs. The FRR and SR Linux images are pulled automatically on first use.
 
 ```bash
 git clone https://github.com/netdryrun/netdryrun && cd netdryrun
 netdryrun run examples/frr-bgp          # 3 FRR routers, should pass
 netdryrun run examples/srl-frr          # SR Linux + FRR, should pass
 netdryrun run examples/frr-bgp-broken   # a bad change, should fail
-netdryrun run examples/sonic-frr        # SONiC + FRR, should pass
 examples/agent-demo/demo.sh             # replay: a leaky change rejected, the fix accepted
 ```
 
-Each run deploys the lab, runs the checks, prints one line per check and destroys the lab. Images are pulled on first use, so the first run takes longer.
+`examples/sonic-frr` needs the `docker-sonic-vs` image, which is on no container registry: download it from the SONiC build server and `docker load` it first ([how](guides/sonic-ci.md#1-get-the-image)). Then:
+
+```bash
+netdryrun run examples/sonic-frr        # SONiC + FRR, should pass
+```
+
+`examples/arista-frr` needs a cEOS image you download from Arista and import yourself; see the [examples page](examples.md#arista-frr).
+
+Each run deploys the lab, runs the checks, prints one line per check and destroys the lab. The first run of an example takes longer while its images are pulled.
 
 ### Expected results
 
@@ -268,7 +277,7 @@ my-lab/
     daemons  r1.conf  r2.conf  r3.conf  vtysh.conf
 ```
 
-The lab name (`name:` in the topology) must be unique on the machine. See [name collisions](troubleshooting.md#two-labs-with-the-same-name).
+The lab name (`name:` in the topology) must be unique on the machine. See [name collisions](troubleshooting.md#a-lab-named-x-is-already-running).
 
 ## 2. Record a baseline
 
@@ -280,7 +289,7 @@ Deploying lab my-lab, then waiting 45s for the network to converge...
 recording r1 (frr)
 recording r2 (frr)
 recording r3 (frr)
-Recorded 18 checks to /home/dmin/ndr-docs/my-lab/netdryrun.yml. Review it, then: netdryrun run /home/dmin/ndr-docs/my-lab
+Recorded 18 checks to /home/user/ndr-docs/my-lab/netdryrun.yml. Review it, then: netdryrun run /home/user/ndr-docs/my-lab
 ```
 
 This took 51 seconds. The file has one check for every established BGP session, every prefix count and every BGP route. The start of it:
@@ -311,7 +320,7 @@ checks:
 
 A recorded baseline says "nothing may change". That is rarely what you want. Decide what is allowed to change.
 
-Here is what happens if you skip this step. The change in step 5 adds a LAN on r3. Run against the raw baseline, the `exact: 2` prefix counts fail, because r1 and r2 now get 3 prefixes:
+Here is what happens if you skip this step. The change in step 5 adds a LAN on r3, and its first attempt announces it with `redistribute connected`. Run against the raw baseline, the `exact: 2` prefix counts fail, because r1 and r2 now get 6 prefixes:
 
 ```text
 $ netdryrun run my-lab
@@ -320,10 +329,10 @@ Deploying lab my-lab (3 nodes)...
   [PASS] r1: BGP session to 10.0.12.2 is established -- state is established (10.3s)
   ...
 Convergence checks done; settling 10s before post-convergence checks...
-  [FAIL] r1: prefixes from 10.0.12.2 = 2 -- 3 ipv4-unicast prefixes accepted (0.2s)
-  [FAIL] r1: prefixes from 10.0.13.2 = 2 -- 3 ipv4-unicast prefixes accepted (0.2s)
-  [FAIL] r2: prefixes from 10.0.12.1 = 2 -- 3 ipv4-unicast prefixes accepted (0.2s)
-  [FAIL] r2: prefixes from 10.0.23.2 = 2 -- 3 ipv4-unicast prefixes accepted (0.2s)
+  [FAIL] r1: prefixes from 10.0.12.2 = 2 -- 6 ipv4-unicast prefixes accepted (0.2s)
+  [FAIL] r1: prefixes from 10.0.13.2 = 2 -- 6 ipv4-unicast prefixes accepted (0.2s)
+  [FAIL] r2: prefixes from 10.0.12.1 = 2 -- 6 ipv4-unicast prefixes accepted (0.2s)
+  [FAIL] r2: prefixes from 10.0.23.2 = 2 -- 6 ipv4-unicast prefixes accepted (0.2s)
   [PASS] r3: prefixes from 10.0.13.1 = 2 -- 2 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.2s)
   [PASS] r3: prefixes from 10.0.23.1 = 2 -- 2 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.2s)
 Destroying lab...
@@ -412,7 +421,7 @@ Check it without starting a lab:
 
 ```text
 $ netdryrun validate my-lab
-OK: my-lab/netdryrun.yml (13 checks, lab /home/dmin/ndr-docs/my-lab/topology.clab.yml)
+OK: my-lab/netdryrun.yml (13 checks, lab /home/user/ndr-docs/my-lab/topology.clab.yml, 3 nodes)
   - [bgp_session] r1: BGP session to 10.0.12.2 is established
   - [bgp_session] r1: BGP session to 10.0.13.2 is established
   - [bgp_session] r2: BGP session to 10.0.12.1 is established
@@ -645,7 +654,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.3.0
+      - uses: netdryrun/netdryrun@v0.3.1
         with:
           path: network/
           pr-comment: true
@@ -676,7 +685,7 @@ netdryrun run examples/frr-bgp
 
 ## At a glance
 
-Times are wall-clock for `netdryrun run` on WSL2 (20 cores, 16 GB) with images already pulled, measured on 2026-10-27 with containerlab 0.81.1 and Netdryrun™ 0.3.0 (`frr-bgp-broken` and `agent-demo`: 0.2.0, their checks did not change in 0.3.0; `srl-hidden-leak`: 0.3.0 plus the unreleased SR Linux fix). They include deploying and destroying the lab. The first run of each example also pulls its images.
+Times are wall-clock for `netdryrun run` on WSL2 (20 cores, 16 GB) with images already pulled, measured on 2026-10-27 with containerlab 0.81.1 and Netdryrun™ 0.3.0 (`frr-bgp-broken`: 0.2.0, and `agent-demo`: a development build between 0.2.0 and 0.3.0; their checks did not change in 0.3.0. `srl-hidden-leak`: 0.3.0 plus the SR Linux fix that ships in 0.3.1). They include deploying and destroying the lab. The first run of each example also pulls its images.
 
 | Example | Network OS | Shows | Expected | Exit | Time |
 |---|---|---|---|---|---|
@@ -735,7 +744,7 @@ CI runs this example on every push and expects it to fail.
   [FAIL] srl1: no BGP path for 0.0.0.0/0 -- unexpectedly in the BGP table (1 path(s); as-path '65020', next hop 10.0.100.2, local-pref 100, MED 0, communities none) (2.4s)
 ```
 
-Needs the SR Linux fix in the changelog's Unreleased section: 0.3.0 counts `srl1`'s own static default as a BGP path, so the good configs fail. Its times in the table were measured with that fix (0.3.0 plus the fix), over nine runs on 2026-10-27; the README lists each one.
+Needs Netdryrun 0.3.1 or later: 0.3.0 counts `srl1`'s own static default as a BGP path, so the good configs fail. Its times in the table were measured with that fix (0.3.0 plus the fix), over nine runs on 2026-10-27; the README lists each one.
 
 ## sonic-frr
 
@@ -769,7 +778,7 @@ The image comes from the SONiC build server, not a registry. To get it and run t
     Demo OK: attempt 1 rejected by 5 leak guards with every other check passing; attempt 2 passed every check.
     ```
 
-    Attempt 1 ends `FAILED: 9 passed, 5 failed (14 checks)`, attempt 2 `PASSED: 14 passed, 0 failed (14 checks)`. The two runs together took 65 seconds.
+    Attempt 1 ends `FAILED: 9 passed, 5 failed (14 checks)`, attempt 2 `PASSED: 14 passed, 0 failed (14 checks)`. The two runs together took about 65 s.
 
 - `netdryrun run examples/agent-demo` shows the starting point, before anyone has worked the ticket: the guards pass and the 3 ticket checks fail, `FAILED: 11 passed, 3 failed (14 checks)`, exit code `1`. It took 119 seconds, because the failing ticket checks wait for their timeout.
 
@@ -973,7 +982,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.3.0
+      - uses: netdryrun/netdryrun@v0.3.1
         with:
           path: network/        # the folder with netdryrun.yml
           pr-comment: true
@@ -1183,7 +1192,7 @@ jobs:
           curl -fsSL -o docker-sonic-vs.gz \
             "https://sonic-build.azurewebsites.net/api/sonic/artifacts?branchName=master&platform=vs&target=target/docker-sonic-vs.gz"
           docker load -i docker-sonic-vs.gz
-      - uses: netdryrun/netdryrun@v0.3.0
+      - uses: netdryrun/netdryrun@v0.3.1
         with:
           path: network/sonic/
 ```
@@ -1235,17 +1244,28 @@ checks:
     present: false
 ```
 
-Validation is strict: unknown keys inside a check, missing required keys, bad IP addresses and bad values are errors (exit code `2`). Run `netdryrun validate` to check a file without starting a lab.
+Validation is strict, and every problem is an error (exit code `2`) before anything is deployed. Run `netdryrun validate` to check a file without starting a lab. From 0.3.1:
+
+- **Unknown keys are errors at every level**: the top level, `nodes.<node>`, checks, scenarios, `link_down`, `node_isolated` and `inject_routes`. A misspelled key gets a suggestion: `unknown keys ['presnt'] for type route; did you mean 'present'?`. Before 0.3.1, a misspelled key at the top level, under `nodes` or inside a fault was ignored, so a misspelled block of checks never ran (keys inside a check or a scenario were already refused).
+- **Duplicate keys are errors**, at any depth: `duplicate key 'present' (first defined on line 12)`. Plain YAML keeps the last one silently. The topology file is read the same way. YAML merge keys (`<<: *anchor`) are allowed.
+- **Malformed YAML** is reported on one line, with its position: `netdryrun.yml: not valid YAML at line 7, column 3: ...`.
+- **Booleans must be real booleans**: `present` and `active` take unquoted `true` or `false`. A quoted `"false"`, `0`, `null` or an empty value is refused instead of being read as something else.
+- **Values come from fixed lists** where the drivers only understand certain values: `type`, `state`, `afi`, `protocol`, `expect` and `nodes.<node>.driver`. A near miss gets a suggestion (`afi: ipv4` → `did you mean 'ipv4-unicast'?`).
+- **Numbers are range-checked**: see the tables below. Required keys missing, IP addresses that don't parse, and keys that make no sense together (`min_replies` with `expect: failure`, `hold` on a check where it has no effect) are errors too.
 
 ## Top-level keys
 
 | Key | Required | Default | Meaning |
 |---|---|---|---|
 | `lab` | yes | | Path to the containerlab topology file, relative to `netdryrun.yml`. The topology must have a `name`. |
-| `timeout` | no | `120` | Seconds a positive check may wait for convergence. Each check can override it. |
+| `timeout` | no | `120` | Seconds a check may wait (see [convergence semantics](#convergence-semantics)). A positive number, at most `86400`. Each check can override it. |
 | `checks` | yes | | List of checks. At least one is required. |
+| `nodes` | no | | A mapping of node name to settings. Each node accepts only `driver` and `setup`. |
 | `nodes.<node>.driver` | no | detected | Force the driver for a node: `frr`, `srlinux`, `eos` or `sonic`. See [drivers](#drivers). |
 | `nodes.<node>.setup` | no | | Shell commands run inside the node after deploy, before any check. Each is retried every 5 s until it succeeds (the NOS may still be booting), within a shared 300 s budget. For NOSes that are configured after boot, such as SONiC. |
+| `scenarios` | no | | A non-empty list of [failure scenarios](#failure-scenarios). |
+
+No other top-level key is accepted.
 
 ## Keys every check accepts
 
@@ -1254,9 +1274,11 @@ Validation is strict: unknown keys inside a check, missing required keys, bad IP
 | `type` | required | `bgp_session`, `bgp_prefixes`, `route`, `bgp_route` or `ping` |
 | `node` | required | Node name from the topology (for example `r1`) |
 | `name` | generated | Label used in reports. The default describes the check, for example `r1: BGP session to 10.0.12.2 is established`. |
-| `timeout` | top-level `timeout` | Seconds this check may wait to pass. Positive number. |
-| `hold` | `--hold` (10) | Seconds a [post-convergence check](#convergence-semantics) must hold. Positive number. |
-| `vrf` | `default` | VRF (FRR) or network-instance (SR Linux) to look in. Letters, digits and `. _ : -`, at most 64 characters: the name goes into the device's CLI command, so anything else is refused. |
+| `timeout` | top-level `timeout` | Seconds this check may wait to pass. A positive number, at most `86400`. |
+| `hold` | `--hold` (10) | Seconds a [post-convergence check](#convergence-semantics) must hold. A positive number, at most `86400`. Only allowed on post-convergence checks: on any other check it would have no effect, so it is an error. |
+| `vrf` | `default` | VRF (FRR, SONiC, Arista EOS) or network-instance (SR Linux) to look in. Letters, digits and `. _ : -`, at most 64 characters: the name goes into the device's CLI command, so anything else is refused (0.3.1 and later; 0.3.0 did not check it). `vrf: all` is refused: name one VRF per check. A VRF that doesn't exist on the node is an error on every driver, never "no routes" (see [drivers](#drivers)). |
+
+Each check type accepts only these keys and the ones in its own table.
 
 IP addresses and prefixes are normalized, so `2001:db8:0::1` in YAML matches `2001:db8::1` on the device. Prefixes with host bits set are reduced to the network (`10.0.0.1/24` becomes `10.0.0.0/24`).
 
@@ -1289,7 +1311,7 @@ The number of prefixes accepted from a neighbor is within a range. Accepted mean
 | `min` | one of `min`, `max`, `exact` | | Lower bound, inclusive |
 | `max` | one of `min`, `max`, `exact` | | Upper bound, inclusive |
 | `exact` | one of `min`, `max`, `exact` | | Exact count |
-| `afi` | no | `ipv4-unicast` | Address family: `ipv4-unicast`, `ipv6-unicast` or `evpn` |
+| `afi` | no | `ipv4-unicast` | Address family: exactly one of `ipv4-unicast`, `ipv6-unicast` or `evpn` (case-insensitive). `evpn` is supported on FRR and SONiC only, not on SR Linux or Arista EOS |
 
 Rules:
 
@@ -1297,6 +1319,9 @@ Rules:
 - `exact` cannot be combined with `min` or `max`.
 - `min` must not be greater than `max`.
 - All three are non-negative integers.
+- `min: 0` on its own is refused: it always passes. Use `min: 1` or more, or add `max`.
+- Any other `afi` is refused (from 0.3.1). An address family the drivers don't report would read as 0 prefixes, which passes `max` and `exact: 0`.
+- `afi: evpn` on an SR Linux or Arista EOS node is refused before the lab deploys (exit code `2`): those drivers read only the IPv4 and IPv6 unicast counts (SR Linux has no received-routes counter for EVPN), so an EVPN count would always read 0. SR Linux refuses it from 0.3.1; before, the count read 0 and passed `max`.
 - The session must be `established`. Counters reset to 0 when a session drops, so a count from a down session would satisfy `max` by accident; Netdryrun fails the check instead.
 - If the session is established but the address family reports nothing, the count is 0.
 - A check with `max` or `exact` is a post-convergence check. A check with only `min` is a positive check.
@@ -1316,13 +1341,14 @@ A route is present in (or absent from) the routing table.
 | Key | Required | Default | Meaning |
 |---|---|---|---|
 | `prefix` | yes | | IPv4 or IPv6 prefix |
-| `present` | no | `true` | `false` means the route must be absent |
-| `protocol` | no | any | Only count routes from this protocol. See [protocol names](#protocol-names). |
+| `present` | no | `true` | `false` means the route must be absent. Unquoted `true` or `false` only |
+| `protocol` | no | any | Only count routes from this protocol: one of the names in [protocol names](#protocol-names). Case-insensitive |
 | `vrf` | no | `default` | VRF or network-instance |
-| `active` | no | `true` | With `present: true`: `false` also accepts a route that is in the table but not selected (for example a BGP default losing to a local one) |
+| `active` | no | `true` | With `present: true`: `false` also accepts a route that is in the table but not selected (for example a BGP default losing to a local one). Unquoted `true` or `false` only; not allowed with `present: false` |
 
 - **Present** means an *active* route matches: selected and installed on FRR, `active` on SR Linux.
-- **Absent** means no matching route at all, active or not. A route that was received but not selected (for example a leaked default losing to a local one) still counts as present, so `present: false` fails. This is how the [failing example](../index.md#a-failing-run) is caught.
+- **Absent** means no matching route at all, active or not. A BGP path that was received from a neighbor still counts as present, valid or not, selected or not (for example a leaked default losing to a local one), so `present: false` fails. This is how the [failing example](../index.md#a-failing-run) is caught. Every driver reads the BGP table for this as well as the routing table; there, only paths received from a neighbor count, not the router's own (network statements, redistribution, SR Linux's static and interface routes).
+- `protocol` must be a name the drivers report. `ebgp` and `ibgp` are refused: drivers report both as `bgp`. A name outside the list would match nothing and silently pass `present: false`.
 - `present: false` makes it a post-convergence check.
 
 ```yaml
@@ -1346,7 +1372,7 @@ Attributes of the BGP **best path** for a prefix: communities, AS path, local pr
 | `local_pref` | no | | Exact local preference |
 | `med` | no | | Exact MED. A path without MED counts as `0`, as best-path selection treats it by default |
 | `next_hop` | no | | Exact next hop address |
-| `present` | no | `true` | `false` means no path at all for the prefix in the BGP table, best or not |
+| `present` | no | `true` | `false` means no path at all for the prefix in the BGP table, best or not, valid or not. Unquoted `true` or `false` only |
 | `vrf` | no | `default` | VRF or network-instance |
 
 Rules:
@@ -1358,7 +1384,7 @@ Rules:
 - The check fails if there is no path, or no best path (for example when the next hop is unreachable). The failure detail shows what the best path actually carries.
 - **Local preference** is the effective value: a path without a LOCAL_PREF attribute (eBGP-learned or local) gets the device's default (FRR and SONiC: `bgp default local-preference`; SR Linux: the neighbor's `local-preference`; Arista EOS reports it directly). The exception is a locally originated path on Arista EOS, which reports no local preference; asserting `local_pref` on it fails with "not set".
 - **Next hop** is the address the device reports. For an IPv6 path FRR may list only the link-local next hop.
-- `present: false` and `without_communities` make it a post-convergence check: a "must not carry" check could pass on a transient best path before the real one arrives, so it must hold instead.
+- `present: false`, and any attribute key (`communities`, `without_communities`, `as_path`, `as_path_regex`, `local_pref`, `med`, `next_hop`), make it a post-convergence check. The best path can change when a slower session comes up, so an attribute check could pass on a temporary best path before the real one arrives; it is judged only after every BGP session on the node is up and the settle delay, and must hold (0.3.1 and later; 0.3.0 judged attribute checks other than `without_communities` on 2 early samples). A `bgp_route` with no attribute keys (the best path exists) is a positive check.
 
 ```yaml
 - type: bgp_route         # customer routes are tagged and preferred
@@ -1383,12 +1409,13 @@ Reachability from a node.
 | `target` | yes | | Destination IP address |
 | `source` | no | | Source IP address (passed as `ping -I`) |
 | `expect` | no | `success` | `success` or `failure` |
-| `count` | no | `3` | Packets to send. Non-negative integer. |
-| `min_replies` | no | `count - 1`, at least 1 | Replies needed for `expect: success`. One lost packet is tolerated by default (first-packet ARP). |
+| `count` | no | `3` | Packets to send. An integer from 1 to 1000. |
+| `min_replies` | no | `count - 1`, at least 1 | Replies needed for `expect: success`: an integer from 1 to `count`. One lost packet is tolerated by default (first-packet ARP). Not allowed with `expect: failure` |
 | `vrf` | no | `default` | Runs in the VRF (`ip vrf exec` on FRR) or network-instance namespace (`srbase-<name>` on SR Linux) |
 
 - `expect: failure` passes only with 0 replies, and is a post-convergence check.
-- If ping did not run at all (bad source address, missing VRF), the check fails with an error. It never counts as a successful "failure".
+- `expect: failure` also passes when ping reports the destination unreachable without sending anything: "Network unreachable" (or "Network is unreachable"), "No route to host" or "Destination unreachable" (0.3.1 and later). With no route at all, ping prints one of these and no statistics.
+- If ping did not run at all for any other reason (bad source address, missing VRF), the check fails with an error. It never counts as a successful "failure".
 
 ```yaml
 - type: ping
@@ -1429,14 +1456,28 @@ scenarios:
 | Key | Meaning |
 |---|---|
 | `name` | Label shown before each check (default: generated from the faults) |
-| `link_down` | `{node, interface}` or a list of them. Interface names as seen inside the node (`eth1` on FRR, `e1-1` on SR Linux): a Linux interface name of at most 15 letters, digits and `. _ @ -` |
-| `node_isolated` | A node name (or list): every lab link of that node goes down |
-| `inject_routes` | `{node, prefixes}` or `{node, count}` (or a list of them): the node announces extra routes. See below |
-| `checks` | Same check types as the top level, with the same convergence rules |
+| `link_down` | `{node, interface}` or a list of them; no other keys. Interface names as seen inside the node (for example `eth1` on FRR): a Linux interface name of at most 15 letters, digits and `. _ @ -` (checked from 0.3.1). SR Linux links can't be failed yet; fail the FRR or Linux side instead |
+| `node_isolated` | A node name, `{node}`, or a list of them: every lab link of that node goes down |
+| `inject_routes` | `{node, prefixes}` or `{node, count}` (or a list of them): the node announces extra routes. 0.3.1 and later. See below |
+| `checks` | Same check types and keys as the top level. See [scenario timing](#scenario-timing) |
 
-Scenarios run after the main checks, one at a time. Links and injected routes are always restored afterwards, even if a check fails, and Netdryrun waits for the network to settle before the next scenario. If the network does not recover, the checks that passed before the scenario are reported as failed `[after <scenario>] recovers: ...` checks.
+A scenario needs at least one fault and at least one check, and accepts no other keys. Scenarios run after the main checks, one at a time. Links and injected routes are always restored afterwards, even if a check fails, and Netdryrun waits for the network to settle before the next scenario. If the network does not recover, the checks that passed before the scenario are reported as failed `[after <scenario>] recovers: ...` checks, and later scenarios are skipped.
+
+### Scenario timing
+
+A scenario's positive checks ("the route is still there", "ping still works") are already true before the network notices the failure, so Netdryrun makes sure they are never judged on the state from before the fault (0.3.1 and later):
+
+1. Before taking links down, it notes the established BGP sessions that run over them, on both ends of each link (looking through bridges), in the default VRF and the VRFs the scenario's checks use. If that BGP state, or the addresses of the downed interfaces, can't be read, the run stops with exit code `2` naming the node, before any link goes down: "couldn't read it" is never taken for "there are none". A node no driver can read (a Linux host) and a VRF the node doesn't have have no sessions to note.
+2. After applying the faults, it waits until every one of those sessions is down **on both ends**: proof that the network saw the fault. The wait is capped at the largest `timeout` of the scenario's checks. If the fault still isn't visible by then, the run stops with exit code `2` and "the fault did not take effect", never a verdict. Without BFD, BGP can take its hold time (up to 180 s) to notice a failure: raise the checks' `timeout`, or lower the hold timers in the lab.
+3. It waits the settle delay (`--settle`), so withdrawals propagate beyond the adjacent routers.
+4. Positive checks must pass on 2 consecutive samples **and** keep passing for the hold window (`--hold`; a positive check can't set its own `hold`): a redundancy claim is about the whole failure, not one instant. A check that passes at first and then fails within the window fails.
+5. Post-convergence checks then wait for the same [BGP gate](#convergence-semantics) as at the top level: every BGP session on their node up, with unchanged prefix counts on 2 consecutive samples, capped at their `timeout`. Sessions over the downed links don't count (the fault took them down), nor do sessions a `bgp_session` check in the scenario or at the top level expects in another state. If another session on the node stays down, the checks fail as **not evaluated**; a session the fault takes down indirectly (for example iBGP between loopbacks whose only path was the downed link) needs a `bgp_session` check with `state: down` in the scenario. Then the checks must hold, as everywhere else. 0.3.1 and later.
+
+When the state was read and no BGP session runs over the downed links (static routing, a link without BGP, iBGP between loopbacks over an IGP), step 2 has nothing to observe; steps 3 to 5 still apply, so give such scenarios a `--settle` that covers the failure detection time. `inject_routes` faults have no step 2: Netdryrun instead waits until the injected prefixes are in the node's own BGP table. That alone doesn't show they reached the node under test; the BGP gate in step 5 does, for post-convergence checks: their node's prefix counts must stop changing first. The limit: a peer with a long advertisement interval (for example eBGP with a 30-second `advertisement-interval`) can hold the routes back for longer than 2 samples 3 seconds apart, so they can still arrive after the gate. Raise `--settle` above the advertisement interval for such labs.
 
 ### Injecting routes
+
+New in 0.3.1: Netdryrun 0.3.0 rejects the key as unknown.
 
 `inject_routes` makes a node announce routes it normally doesn't, so you can test what the rest of the network does with them: a customer leaking more-specifics, a peer announcing someone else's prefix, a flood that should trip a max-prefix limit.
 
@@ -1448,7 +1489,7 @@ Scenarios run after the main checks, one at a time. Links and injected routes ar
 | `from` | no | First prefix for `count`; its length is used for all of them. Default `100.64.0.0/24` |
 | `as_path` | no | List of AS numbers prepended to the injected routes, so they look learned from those networks |
 
-On the node, Netdryrun adds a blackhole static route and a BGP `network` statement per prefix (with `as_path`, through a route-map named `NDR-INJECT`). It applies them with `vtysh -f` and waits until every prefix is in the node's own BGP table before running the scenario's checks. Afterwards it removes exactly what it added and waits until the prefixes are gone. What the node's neighbors do with the routes is up to the policy under test: an outbound filter on the node itself can still stop them.
+On the node, Netdryrun adds a blackhole static route and a BGP `network` statement per prefix (with `as_path`, through a route-map named `NDR-INJECT`). It applies them with `vtysh -f` and waits until every prefix is in the node's own BGP table before running the scenario's checks (whose post-convergence checks then wait for the BGP gate on their own node; see [scenario timing](#scenario-timing)). Afterwards it removes exactly what it added and waits until the prefixes are gone. What the node's neighbors do with the routes is up to the policy under test: an outbound filter on the node itself can still stop them.
 
 Limits: only FRR nodes are supported. Any other node is refused before the lab deploys; inject the routes from an FRR neighbor instead. A prefix that is already a `network` statement or a static route on the node is refused, because removing it afterwards would delete real config. IPv6 prefixes need the BGP sessions to carry IPv6 unicast.
 
@@ -1456,7 +1497,7 @@ Limits: only FRR nodes are supported. Any other node is refused before the lab d
 
 Networks need time to converge, and some checks are trivially true before they do. Netdryrun splits checks into two groups.
 
-**Positive checks** (session `established`, prefix count with only `min`, route present, ping expected to succeed):
+**Positive checks** (session `established`, prefix count with only `min`, route present, a `bgp_route` best path that exists with no attribute asserted, ping expected to succeed):
 
 - Polled every 3 seconds until they pass on **2 consecutive samples**, or until `timeout` expires.
 - A single lucky sample is not enough. If the last sample passed but the streak was too short, the result says "not stable". If the check passed some samples but not consistently, the result says "flapping".
@@ -1464,14 +1505,25 @@ Networks need time to converge, and some checks are trivially true before they d
 **Post-convergence checks** are the ones that would pass on a network that has not come up yet:
 
 - routes that must be absent (`present: false` on `route` or `bgp_route`)
-- best paths that must not carry a community (`without_communities`)
+- best-path attributes (`bgp_route` with any of `communities`, `without_communities`, `as_path`, `as_path_regex`, `local_pref`, `med`, `next_hop`): a best path seen while a slower session is still coming up can be replaced when it arrives
 - pings that must fail (`expect: failure`)
 - sessions expected in a state other than `established`
 - prefix counts with an upper bound (`max` or `exact`), since 0 prefixes satisfies `max: 10` while BGP is still starting
 
-They run after every positive check has finished plus a settle delay (`--settle`, default 10 seconds; at least 30 seconds if the file has no positive checks, because nothing else has shown that the network converged). Each one must then hold for the hold window (`--hold` or the check's `hold`, default 10 seconds), sampled every 3 seconds. A violation at any sample fails the check immediately.
+They run in this order:
 
-Prefix counts with an upper bound first wait (up to `timeout`) for the count to enter the range, because counters ramp up, and then must hold.
+1. Every positive check has finished.
+2. **Every BGP session on the node is up.** Positive checks only prove convergence for the sessions and routes you happened to check, and a leak can arrive later over a session nobody checked. So for each node (and VRF) that carries a post-convergence check, Netdryrun waits until every configured BGP neighbor there is `established`, with unchanged prefix counts, on 2 consecutive samples. Neighbors that a `bgp_session` check expects in another state (for example `state: down`) don't count. The wait is capped at the largest `timeout` of that node's post-convergence checks. If a session there never comes up, those checks fail as **not evaluated**, naming the session: a down session is a finding, as everywhere else. If a session is down on purpose, add a `bgp_session` check with `state: down` for it. (A node that never answers with BGP state, or whose positive checks never got usable state, is not waited for; prefix counts still changing at the cap don't block.) A node that answers with **no BGP neighbors at all** is not converged: that is what a node answers before its BGP config is applied, and a leak can arrive once it is. Netdryrun keeps waiting, up to the cap; if the node still reports no neighbors then, its post-convergence checks run anyway, each with a warning in its result ("reported no BGP neighbors for N s; the check was evaluated without BGP convergence"), and the verdict is unchanged. So a node that doesn't run BGP adds one `timeout` of waiting before its post-convergence checks. 0.3.1 and later.
+3. A settle delay (`--settle`, default 10 seconds; at least 30 seconds if the file has no positive checks, because nothing else has shown that the network converged).
+4. Each one must then hold for the hold window (`--hold` or the check's `hold`, default 10 seconds), sampled every 3 seconds. A violation at any sample fails the check immediately.
+
+Prefix counts with an upper bound start like this (step 4), because counters ramp up and the BGP gate has already waited for stable counts:
+
+- `max` only: no wait. The count must be within `max` from the first sample of the hold window to the last (0 prefixes is within any `max`).
+- `exact: N` (N at least 1) and `min` with `max`: first a short wait, up to 30 seconds (or `timeout` if shorter), for the count to reach at least N (or `min`); a count that never gets there fails. Then the full condition (`exact`, or the whole range) must hold on every sample of the hold window, so a count that overshoots fails.
+- `exact: 0`: no wait; it must hold like `max: 0`.
+
+`hold` is accepted only on post-convergence checks. A positive check passes after 2 consecutive passing samples, so a `hold` on it would be ignored; that is an error rather than a silent no-op. (Inside a scenario, positive checks do hold for `--hold`; see [scenario timing](#scenario-timing).)
 
 Results are reported in the order the checks appear in the file.
 
@@ -1494,8 +1546,11 @@ A driver turns device state into a common shape. Netdryrun detects it from the t
 | `ping` success / failure | yes | yes | yes | yes |
 | Failure scenarios on the node's own links | yes | not yet (fail the FRR/Linux side instead) | yes | yes |
 | `inject_routes` on the node | yes | not yet (inject from an FRR neighbor) | not yet | not yet |
+| Tested on a live lab in CI | yes, on every push | yes, on every push | no: parsers tested against output captured from live labs | no: parsers tested against output captured from live labs |
 
-**Received-but-not-selected routes:** on SR Linux and Arista EOS, a BGP route that lost to a static or local route lives only in the BGP table, not the routing table. Both drivers read the BGP table too, so such a route still counts as present for `present: false`.
+**Received paths count as present on every driver:** a BGP route that lost to a static or local route, or that has an unresolvable next hop, may live only in the BGP table, not the routing table. Every driver reads the BGP table too, so a path received from a neighbor counts as present for `present: false`, valid or not, selected or not. The router's own paths (network statements, redistribution, and on SR Linux its static and interface routes listed in the BGP RIB) don't count as received.
+
+**Errors are never "nothing":** from 0.3.1, a failed command or output a driver doesn't recognize is an error on that sample (the check fails with `error: ...`), never read as "no routes" or "no sessions", which would pass `present: false` or `max`. A VRF that doesn't exist on the node is an error too, on every driver: FRR and SONiC confirm the VRF with `show vrf`, SR Linux reads the network-instance's oper-state, and Arista EOS requires the VRF in the `vrfs` map of its answer. `vrf: all` and other names that mean "every VRF" are refused.
 
 **SONiC:** `docker-sonic-vs` routes with FRR inside the container, so the `sonic` driver reads state through `vtysh` like the FRR driver. The image boots unconfigured; put interface IPs (`config interface ip add ...`) and BGP (`vtysh -c ...`) in `nodes.<node>.setup`. See `examples/sonic-frr`.
 
@@ -1508,7 +1563,7 @@ A driver turns device state into a common shape. Netdryrun detects it from the t
 | Arista EOS | `Cli -c "show ... \| json"`; `bgp_route` from `show ip bgp <prefix> vrf <vrf>` (the best path is the `active` one) |
 | SONiC | the FRR commands, through `vtysh` inside the container |
 
-If a driver can't read a `bgp_route` attribute, the run stops before deploying with "`<key>` is not supported on `<driver>`" (exit code `2`) instead of guessing. Today every driver reads every attribute.
+If a driver can't read what a check asks for, the run stops before deploying (exit code `2`) instead of guessing: "`<key>` is not supported on `<driver>`" for a `bgp_route` attribute (today every driver reads every attribute), and "afi evpn is not supported on eos" (or `srlinux`) for an EVPN prefix count on Arista EOS or SR Linux.
 
 Every command and its raw output is kept in the [JSON report](cli.md#json).
 
@@ -1526,7 +1581,7 @@ Every command and its raw output is kept in the [JSON report](cli.md#json).
 | `ospf6` | `ospf6` | `ospfv3` |
 | `isis` | `isis` | `isis` |
 
-Other protocol names are passed through in lower case as the device reports them. The failure detail lists the protocols that were seen, which helps when a name does not match.
+`protocol` must be one of these names (case-insensitive): `bgp`, `connected`, `local`, `static`, `kernel`, `ospf`, `ospf6`, `isis`, `rip`, `ripng`, `aggregate`, `eigrp`, `babel`, `nhrp`, `table`, `sharp`, `pbr`, `openfabric`, `bgp-evpn`, `bgp-vpn`, `dhcp`, `arp-nd`, `gribi`. Any other name is a config error with a suggestion where one is close (`direct` → `connected`, `ospfv3` → `ospf6`); `ebgp` and `ibgp` are refused because drivers report both as `bgp`. Before 0.3.1 an unknown name was passed through, matched nothing, and silently passed `present: false`. The failure detail lists the protocols that were seen.
 
 
 ---
@@ -1538,8 +1593,13 @@ Source: https://netdryrun.com/reference/cli/
 netdryrun run      [path] [options]   deploy the lab, run checks, destroy the lab
 netdryrun check    [path] [options]   run checks against an already running lab
 netdryrun validate [path]             validate netdryrun.yml without running anything
+netdryrun record   topology.clab.yml  snapshot a known-good lab into a netdryrun.yml baseline
+netdryrun mcp                         start the MCP server for AI agents (stdio)
+netdryrun feedback                    open a short feedback form on GitHub
 netdryrun --version
 ```
+
+`--debug` (before or after the command: `netdryrun --debug run` or `netdryrun run --debug`) prints the Python traceback of an internal error. Setting `NETDRYRUN_DEBUG=1` does the same.
 
 `path` is `netdryrun.yml` or the folder containing it. Default: the current folder.
 
@@ -1549,17 +1609,21 @@ netdryrun --version
 
 Deploys the containerlab topology (`containerlab deploy --reconfigure`), runs every check, writes reports, and destroys the lab (`containerlab destroy --cleanup`). The lab is destroyed even when checks fail, unless you ask to keep it.
 
+`run` refuses to start (exit code `2`) when a lab with the same name is already running: another Netdryrun run of the same lab, a lab deployed by hand, or one kept with `--keep`. Redeploying it would reconfigure the other lab's containers, and destroying it afterwards would pull them out from under whoever is using it. The error names a container and the command to remove the lab: `containerlab destroy -t <topology> --cleanup`. Two runs of the same lab started at the same moment on one host are also refused, by a lock (`another Netdryrun run is already using lab '<name>' on this host`). `check` doesn't deploy, so it runs against the existing lab.
+
 ### check
 
 Runs the checks against a lab that is already up, for example one left running with `--keep`. It does not deploy or destroy anything. It fails with an error if any of the lab's containers are not running.
 
 ### validate
 
-Loads and validates `netdryrun.yml` and prints the parsed checks. It does not need Docker or containerlab to be running.
+Loads and validates `netdryrun.yml` and prints the parsed checks. It does not need Docker or containerlab.
+
+From 0.3.1 it also reads the topology (strictly: malformed YAML and duplicate keys are errors) and checks what `run` checks before deploying: every node a check, fault or `setup` names exists; the driver can read every key the checks use (for example no `afi: evpn` on SR Linux or Arista EOS); and `inject_routes` names an FRR node. It also checks two things `run` finds out only after deploying: every node a check reads has a driver (detected from its kind and image, or set with `nodes.<node>.driver`), and no `link_down` or `node_isolated` fault targets an SR Linux node. Any of these is an error with exit code `2`. What it can't check without containerlab: whether containerlab accepts the topology itself (a misspelled `kind:`, a missing image).
 
 ```text
 $ netdryrun validate examples/frr-bgp
-OK: examples/frr-bgp/netdryrun.yml (7 checks, lab .../examples/frr-bgp/topology.clab.yml)
+OK: examples/frr-bgp/netdryrun.yml (7 checks, lab .../examples/frr-bgp/topology.clab.yml, 3 nodes)
   - [bgp_session] r1: BGP session to 10.0.12.2 is established
   ...
 ```
@@ -1591,8 +1655,9 @@ Snapshots a known-good lab into a `netdryrun.yml` baseline: every established BG
 | `--json FILE` | | Write the full evidence report as JSON |
 | `--markdown FILE` | | Write a Markdown summary (for PR comments) |
 | `--junit FILE` | | Write JUnit XML (for CI test reporting) |
-| `--settle SECONDS` | `10` | Wait before post-convergence checks |
-| `--hold SECONDS` | `10` | How long a post-convergence check must hold (a check's own `hold` key overrides it) |
+| `--settle SECONDS` | `10` | Wait before post-convergence checks, and in a scenario after the fault took effect |
+| `--hold SECONDS` | `10` | How long a post-convergence check must hold (a check's own `hold` key overrides it). In a scenario, positive checks must hold this long too |
+| `--debug` | | Print the traceback of an internal error |
 | `--no-step-summary` | | Do not append the Markdown summary to `$GITHUB_STEP_SUMMARY` |
 
 `run` only:
@@ -1610,8 +1675,26 @@ When a lab is kept, Netdryrun prints the command to destroy it. See [convergence
 |---|---|---|
 | `0` | `passed` | Every check passed |
 | `1` | `failed` | At least one check failed |
-| `2` | `error` | Config error, or the lab could not be deployed or reached (containerlab or Docker missing, deploy failed, containers not running, unknown driver) |
+| `2` | `error` | No verdict: the run could not start or could not finish. See below |
 | `3` | `inconclusive` | Checks failed, but the lab never reached a state where they mean anything: the result says nothing about the change. Rules below |
+| `130` | `error` | Interrupted by SIGINT (Ctrl-C): no verdict |
+| `143` | `error` | Interrupted by SIGTERM (for example a cancelled CI job or `docker stop`): no verdict |
+| `129` | `error` | Interrupted by SIGHUP (the terminal closed): no verdict |
+
+**Exit code 2** is used for every run that ends without a verdict (0.3.1 and later):
+
+- a config error: bad YAML, an unknown or duplicate key, a bad value (see [validation](config.md));
+- a bad topology, an unknown node, or a check a driver can't read;
+- a bad option, for example a negative `--settle`;
+- a lab problem: containerlab or Docker missing, deploy failed, containers not running, unknown driver, a lab with the same name already running;
+- a scenario whose fault did not take effect within the checks' timeout, or whose BGP state or interface addresses could not be read before the fault, so Netdryrun can't tell when it took effect (see [scenario timing](config.md#scenario-timing));
+- a link or injected route that could not be restored after a scenario;
+- a report that could not be written (`--json`, `--markdown`, `--junit`, or the GitHub Actions step summary), for example a path in a folder that doesn't exist. The verdict line is still printed and every other report is still written, but the evidence you asked for is missing, so the run exits `2`, with one line per report on stderr: `could not write <path>: <reason>; the verdict was <status>` (0.3.1 and later; 0.3.0 reported an internal error). The status inside the reports that were written is the verdict;
+- an internal error (a Netdryrun bug). It is reported on one line, never as a bare traceback, and never as exit code `1`, which would read as "the change broke something". Rerun with `--debug` or `NETDRYRUN_DEBUG=1` for the traceback, and please report it.
+
+The message is one line on stderr. With `--json` on `run` or `check`, a report with `status: error` and the message in `error` is written, including for a config error before anything starts and for an interrupted run.
+
+**Interrupted runs** (codes 129, 130, 143): SIGINT, SIGTERM and SIGHUP all clean up the same way. Netdryrun destroys the lab it deployed (unless `--keep` was set; `--keep-on-failure` doesn't apply, since an interrupted run has no verdict), writes the requested reports with `status: error`, and exits with 128 plus the signal number, the shell convention. A second signal during cleanup doesn't cut it short.
 
 ### When a run is inconclusive
 
@@ -1656,7 +1739,7 @@ FAILED: 5 passed, 1 failed (6 checks)
 | `lab` | string | containerlab lab name |
 | `config` | string | Path of the `netdryrun.yml` that was run |
 | `started`, `finished` | string | UTC timestamps (ISO 8601) |
-| `error` | string or null | Lab or driver error, if the run could not complete |
+| `error` | string or null | Why the run has no verdict (config, lab or driver error, interruption, internal error); null otherwise |
 | `inconclusive_reason` | string or null | Why the run is `inconclusive` ([rules](#when-a-run-is-inconclusive)); null otherwise |
 | `environment` | object | `netdryrun`, `containerlab` and `python` versions, `host` platform, and `nodes` (each with `kind` and `image`) |
 | `summary` | object | `passed`, `failed`, `total` |
@@ -1708,7 +1791,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.3.0
+      - uses: netdryrun/netdryrun@v0.3.1
         with:
           path: network/        # folder containing netdryrun.yml
 ```
@@ -1729,8 +1812,8 @@ It needs a Linux runner with Docker. GitHub-hosted `ubuntu-latest` runners work.
 | `hold` | `10` | Seconds a post-convergence check must hold |
 | `pr-comment` | `false` | On pull requests, post one comment with the verdict, failures first, and the evidence for each failed check. Updated in place on every push. Needs `permissions: pull-requests: write` |
 | `github-token` | `${{ github.token }}` | Token used for the PR comment |
-| `cloud` | `false` | Upload the evidence to Netdryrun Cloud (beta). Needs `permissions: id-token: write`; no secrets are configured |
-| `cloud-url` | `https://cloud.netdryrun.com` | Netdryrun Cloud address |
+| `cloud` | `false` | Reserved for Netdryrun Cloud, which is **not available yet**. With `true`, the action tries to POST the JSON report to `cloud-url` with a GitHub OIDC token; that address doesn't resolve today, so nothing is uploaded and you only get a warning ("evidence upload failed", or "needs 'permissions: id-token: write'" without that permission). Leave it off |
+| `cloud-url` | `https://cloud.netdryrun.com` | Reserved for Netdryrun Cloud (this address does not exist yet) |
 
 ## Outputs
 
@@ -1740,7 +1823,7 @@ It needs a Linux runner with Docker. GitHub-hosted `ubuntu-latest` runners work.
 | `inconclusive-reason` | Why the run was inconclusive; empty otherwise |
 | `passed` | Number of passed checks |
 | `failed` | Number of failed checks |
-| `evidence-url` | Link to the evidence page, when `cloud` is `true` |
+| `evidence-url` | Reserved for Netdryrun Cloud; always empty today |
 
 ## Examples
 
@@ -1757,7 +1840,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.3.0
+      - uses: netdryrun/netdryrun@v0.3.1
         with:
           path: network/
 ```
@@ -1765,12 +1848,16 @@ jobs:
 ### Use the outputs in a later step
 
 ```yaml
-      - uses: netdryrun/netdryrun@v0.3.0
+      - uses: netdryrun/netdryrun@v0.3.1
         id: ndr
         with:
           path: network/
       - if: always()
-        run: echo "Netdryrun ${{ steps.ndr.outputs.status }}: ${{ steps.ndr.outputs.passed }} passed, ${{ steps.ndr.outputs.failed }} failed"
+        env:
+          NDR_STATUS: ${{ steps.ndr.outputs.status }}
+          NDR_PASSED: ${{ steps.ndr.outputs.passed }}
+          NDR_FAILED: ${{ steps.ndr.outputs.failed }}
+        run: echo "Netdryrun $NDR_STATUS: $NDR_PASSED passed, $NDR_FAILED failed"
 ```
 
 ### Several labs
@@ -1785,7 +1872,7 @@ jobs:
         lab: [network/core, network/edge]
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.3.0
+      - uses: netdryrun/netdryrun@v0.3.1
         with:
           path: ${{ matrix.lab }}
           artifact-name: netdryrun-${{ strategy.job-index }}
@@ -1806,7 +1893,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.3.0
+      - uses: netdryrun/netdryrun@v0.3.1
         with:
           path: network/
           pr-comment: true
@@ -1816,10 +1903,10 @@ jobs:
 
 - **A lab is code that runs as root on the runner.** containerlab starts privileged containers with access to the host. Netdryrun passes the lab process a minimal environment (no job tokens, not the runner user's home directory), but that only narrows exposure; it is not a security boundary.
 - **Run labs from untrusted pull requests (forks) only in jobs with no secrets**, a read-only `GITHUB_TOKEN`, and without `id-token: write`. Never run them under `pull_request_target`.
-- `pr-comment` needs `pull-requests: write`; `cloud` needs `id-token: write`. Grant each only when you use it.
+- `pr-comment` needs `pull-requests: write`. Grant it only when you use it. Don't grant `id-token: write` for the `cloud` input: Netdryrun Cloud is not available yet.
 - Uploaded report artifacts contain raw command output from the lab and are kept for 14 days. Don't put real secrets in lab configs.
-- **The PR comment cannot be steered by lab text.** Check names, details, errors and device output are escaped before they are posted: no HTML, links, images, `@mentions` or `#123` references, and device output stays inside its code block. Report files already in the workspace (committed in the PR, or left by an earlier run on a self-hosted runner) are deleted before the run, and the `status` output is `error` unless the report matches the run's own exit code.
-- **Pass outputs to a shell through `env:`**, not by pasting `${{ steps.<id>.outputs.inconclusive-reason }}` into a `run:` script. The reason can quote lab output; Netdryrun strips quotes, backslashes, `$` and backticks from it, but `env:` is the safe pattern for any action output.
+- **The PR comment cannot be steered by lab text** (0.3.1 and later; 0.3.0 did not escape it). Check names, details, errors and device output are escaped before they are posted: no HTML, links, images, `@mentions` or `#123` references, and device output stays inside its code block. Report files already in the workspace (committed in the PR, or left by an earlier run on a self-hosted runner) are deleted before the run, and the `status` output is `error` unless the report matches the run's own exit code.
+- **Pass outputs to a shell through `env:`**, not by pasting `${{ steps.<id>.outputs.inconclusive-reason }}` into a `run:` script. The reason can quote lab output; from 0.3.1 Netdryrun strips quotes, backslashes, `$` and backticks from it, but `env:` is the safe pattern for any action output.
 
 
 ---
@@ -1876,7 +1963,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.3.0
+      - uses: netdryrun/netdryrun@v0.3.1
         with:
           path: examples/batfish-pipeline
 ```
@@ -1957,8 +2044,10 @@ AI agents are starting to change networks. Netdryrun™ includes an [MCP](https:
 ## Set up the MCP server
 
 ```bash
-pip install netdryrun
+pipx install netdryrun   # or uv tool install netdryrun
 ```
+
+On Ubuntu 24.04 and Debian 12, install pipx with `sudo apt install pipx && pipx ensurepath` and open a new terminal; a plain `pip install` outside a virtualenv is refused there.
 
 The MCP server is built in: `netdryrun mcp` starts it over stdio. The same requirements apply as for the CLI: Linux or WSL2, Docker, containerlab. The server runs labs on the machine where it runs.
 
@@ -1975,15 +2064,15 @@ Add `-s project` to write the server into `.mcp.json` in the current folder, so 
 On Windows, with Claude Code running on Windows and Netdryrun installed in WSL, start the server through `wsl.exe` and give the full path to `netdryrun` inside WSL:
 
 ```text
-$ claude mcp add -s project netdryrun -- wsl.exe -d Ubuntu-22.04 -- /home/dmin/ndr-docs/bin/netdryrun mcp
-Added stdio MCP server netdryrun with command: wsl.exe -d Ubuntu-22.04 -- /home/dmin/ndr-docs/bin/netdryrun mcp to project config
+$ claude mcp add -s project netdryrun -- wsl.exe -d Ubuntu-22.04 -- /home/user/ndr-docs/bin/netdryrun mcp
+Added stdio MCP server netdryrun with command: wsl.exe -d Ubuntu-22.04 -- /home/user/ndr-docs/bin/netdryrun mcp to project config
 $ claude mcp get netdryrun
 netdryrun:
   Scope: Project config (shared via .mcp.json)
   Status: ✓ Connected
   Type: stdio
   Command: wsl.exe
-  Args: -d Ubuntu-22.04 -- /home/dmin/ndr-docs/bin/netdryrun mcp
+  Args: -d Ubuntu-22.04 -- /home/user/ndr-docs/bin/netdryrun mcp
 ```
 
 (Claude Code 2.1.116. Use your own distribution name and path; `which netdryrun` inside WSL prints it.)
@@ -2071,11 +2160,13 @@ Solved means: finished unattended, the right verdict (safe, harmful or inconclus
 
 What failed, and what changed because of it:
 
-- **Paths on Windows.** Claude Code on Windows with the server in WSL is the setup this page documents. The smaller model passed the WSL path (`/mnt/c/...`) to its Windows file tools and was refused, and Netdryrun 0.3.0 refused the Windows path. The tools now accept both.
+- **Paths on Windows.** Claude Code on Windows with the server in WSL is the setup this page documents. The smaller model passed the WSL path (`/mnt/c/...`) to its Windows file tools and was refused, and Netdryrun 0.3.0 refused the Windows path. From 0.3.1 the tools accept both.
 - **A pass that covers too little (T09).** A "pure refactor" to `redistribute connected` also announces r1's link subnets. The given checks don't look at that, so Netdryrun says `passed`. The smaller model trusted the pass every time. The larger one caught it by reading the diff, not with Netdryrun. `record_baseline` would have shown it, and no agent used it. `AGENTS.md` now says a "no behavior change" ticket needs a baseline.
-- **A broken lab that says `failed` (T10).** With `bgpd` off on every router, the result is `failed`, not `inconclusive`: the inconclusive rule is conservative. Failed checks that never got usable state now carry `"unready": true`. Once, the smaller model turned `bgpd` back on in a file the ticket forbade and said apply.
+- **A broken lab that says `failed` (T10).** With `bgpd` off on every router, the result is `failed`, not `inconclusive`: the inconclusive rule is conservative. From 0.3.1, failed checks that never got usable state carry `"unready": true`. Once, the smaller model turned `bgpd` back on in a file the ticket forbade and said apply.
 - **No fix-and-rerun loop.** No agent made a wrong change and then fixed it to a pass: the larger model got every change right first time. So this doesn't measure that loop.
 - **A non-deterministic lab.** One wrong-looking change (a bare `network 192.168.0.0/16`) passed 5 of 8 runs. A single `passed` can be luck when the lab itself varies.
+
+The harness set `NETDRYRUN_MCP_ROOT` to the ticket folder, but 0.3.0 ignores that variable, so in the 0.3.0 runs the server was not confined to the folder; the agents had no shell.
 
 Ten small tickets written by the tool's author, two models, at most two runs each: evidence about the docs and the tool surface, not a rate. Full results, transcripts and every miss: [RESULTS.md](https://github.com/netdryrun/netdryrun/blob/main/examples/agent-eval/RESULTS.md).
 
@@ -2097,7 +2188,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.3.0
+      - uses: netdryrun/netdryrun@v0.3.1
         with:
           path: network/
           pr-comment: true
@@ -2118,10 +2209,10 @@ The server has these tools: `dry_run`, `run_checks`, `record_baseline`, `validat
 
 | Tool | Arguments | What it does |
 |---|---|---|
-| `dry_run` | `path`, `keep_lab` (default `false`) | Deploy the lab, run every check, destroy the lab, return the verdict. Takes 1 to 5 minutes. |
+| `dry_run` | `path`, `keep_lab` (default `false`) | Deploy the lab, run every check, destroy the lab, return the verdict. Takes 30 seconds to several minutes. |
 | `run_checks` | `path` | Run the checks against a lab that is already running (no deploy or destroy) |
 | `record_baseline` | `topology`, `deploy` (default `true`), `wait_seconds` (default `45`) | Deploy the lab, snapshot its BGP sessions, prefix counts and routes as `netdryrun.yml` text, destroy the lab. Returns the YAML; nothing is written to disk. Like [`netdryrun record`](reference/cli.md#record) |
-| `validate` | `path` | Validate `netdryrun.yml` without starting a lab |
+| `validate` | `path` | Validate `netdryrun.yml` and its topology without starting a lab: node names, drivers and supported keys, as `dry_run` checks them before deploying (0.3.1 and later) |
 | `check_types` | | List supported check types and their keys, to help write `netdryrun.yml` |
 
 The server also exposes the last full JSON report as a resource, `netdryrun://report/{path}`.
@@ -2149,11 +2240,11 @@ The server also exposes the last full JSON report as a resource, `netdryrun://re
 
 (`checks` is shortened here; the real result lists every check.)
 
-A failed check also has `"unready": true` when every sample of it failed for lack of state: the command failed on the device, its output could not be read, or BGP had no neighbors at all. That points at the lab as much as at the change. The [inconclusive rule](reference/cli.md#when-a-run-is-inconclusive) is conservative, so a lab where a daemon never started can still come back `failed` when other nodes' route and ping checks read cleanly. If the `unready` failures and details such as `bgpd is not running` sit on nodes the change doesn't explain, report the lab problem; don't rewrite the change, and don't apply it.
+From 0.3.1, a failed check also has `"unready": true` when every sample of it failed for lack of state: the command failed on the device, its output could not be read, or BGP had no neighbors at all. That points at the lab as much as at the change. The [inconclusive rule](reference/cli.md#when-a-run-is-inconclusive) is conservative, so a lab where a daemon never started can still come back `failed` when other nodes' route and ping checks read cleanly. If the `unready` failures and details such as `bgpd is not running` sit on nodes the change doesn't explain, report the lab problem; don't rewrite the change, and don't apply it.
 
 `verdict` is a separate field with one of three values:
 
-- `SAFE TO PROCEED` when `status` is `passed`
+- `SAFE TO PROCEED` when `status` is `passed`. It means every check in the file passed in the lab, and nothing more: a change that breaks something no check looks at gets it too (ticket T09 above). For a change that must not change behavior, record a baseline first
 - `DO NOT APPLY THIS CHANGE` for `failed` or `error`, including config errors
 - `INCONCLUSIVE: the lab did not reach a testable state; this says nothing about your change. Do not apply it until a run passes.` when `status` is `inconclusive`: the lab never came up far enough for the checks to mean anything ([rules](reference/cli.md#when-a-run-is-inconclusive)). `inconclusive_reason` says what was seen. Rerun it, perhaps with a longer `timeout`; don't rewrite the change because of it.
 
@@ -2164,8 +2255,8 @@ The full evidence is written to `netdryrun-report.json` next to `netdryrun.yml`.
 ## Safety model
 
 - **It never touches production.** The server has no tool that pushes config anywhere. It only builds and tests labs.
-- **No raw device output in tool results.** Tool results contain normalized check results (name, pass/fail, a short detail), not raw command output; that goes to the JSON report file. A detail or an error can still quote a fragment of lab text, such as a BGP state name or the last line of a failed command, so each is flattened to one line and capped at 300 characters (1,000 for errors). The `status` and `verdict` are computed from pass/fail only, never from that text: an agent should act on them and treat `detail` and `error` as data.
-- **Labs are code.** containerlab runs privileged containers. Only point the server at topologies you trust, on a machine you would let run Docker. The tools take any path the agent passes, and a `netdryrun.yml` can point at a topology in another folder. To keep an agent to one folder, set `NETDRYRUN_MCP_ROOT` in the server's environment (several folders separated by `:`, or `;` on Windows): every `netdryrun.yml`, the lab it points to and every topology must then resolve inside it, or the tool refuses. This stops an agent from being steered to a lab elsewhere; it does not make an untrusted lab inside the folder safe, since a topology can still mount host paths.
+- **No raw device output in tool results.** Tool results contain normalized check results (name, pass/fail, a short detail), not raw command output; that goes to the JSON report file. A detail or an error can still quote a fragment of lab text, such as a BGP state name or the last line of a failed command, so from 0.3.1 each is flattened to one line and capped at 300 characters (1,000 for errors). The `status` and `verdict` are computed from pass/fail only, never from that text: an agent should act on them and treat `detail` and `error` as data.
+- **Labs are code.** containerlab runs privileged containers. Only point the server at topologies you trust, on a machine you would let run Docker. The tools take any path the agent passes, and a `netdryrun.yml` can point at a topology in another folder. To keep an agent to one folder (Netdryrun 0.3.1 and later; 0.3.0 ignores the variable without a warning), set `NETDRYRUN_MCP_ROOT` in the server's environment (several folders separated by `:`, or `;` on Windows): every `netdryrun.yml`, the lab it points to and every topology must then resolve inside it, or the tool refuses. This stops an agent from being steered to a lab elsewhere; it does not make an untrusted lab inside the folder safe, since a topology can still mount host paths.
 
 A pass is evidence from a lab, not a guarantee about production. See [what a lab cannot prove](trust.md#what-a-lab-cannot-prove).
 
@@ -2175,21 +2266,28 @@ Source: https://netdryrun.com/troubleshooting/
 
 # Troubleshooting
 
-Each error below was reproduced on purpose on WSL2 (Ubuntu 22.04) with containerlab 0.81.1, using Netdryrun™ 0.2.0, and 0.3.0 for the inconclusive case. The output is copied from those runs. Rerun on 0.3.0, the missing-containerlab and unknown-node errors print the same messages.
+Each error below was reproduced on purpose on WSL2 (Ubuntu 22.04) with containerlab 0.81.1, using Netdryrun™ 0.2.0, and 0.3.0 for the inconclusive case. The error messages are copied from those runs; the surrounding lines (the version, the deploy progress line, and no `Destroying lab...` when nothing was deployed) are shown as 0.3.1 prints them. The entries for errors new in 0.3.1 quote the message as the 0.3.1 code writes it.
 
-Exit code `2` means the run could not complete (a config error or a lab error). Exit code `1` means a check failed. See [exit codes](reference/cli.md#exit-codes).
+Exit code `2` means the run has no verdict (a config error, a lab error, a fault that did not take effect, or an internal error; `--debug` shows the traceback of an internal error). Exit code `1` means a check failed. See [exit codes](reference/cli.md#exit-codes).
+
+## Unknown key ... did you mean
+
+```text
+$ netdryrun validate my-lab
+config error: checks[2]: unknown keys ['presnt'] for type route; did you mean 'present'?; allowed: active, hold, name, node, prefix, present, protocol, timeout, type, vrf
+```
+
+Exit code `2`. From 0.3.1, a key Netdryrun doesn't know is an error at every level of the file (top level, `nodes`, checks, scenarios and their faults), not only inside checks. Before 0.3.1, a misspelled key at the top level, under `nodes` or inside a fault was ignored: a whole block of checks under `chekcs:` never ran, and nothing said so. Fix the spelling the message suggests; `allowed:` lists every key that fits there. The same goes for values from a fixed list (`afi`, `protocol`, `state`, `expect`, `driver`), and a key written twice in the same mapping is an error too (`duplicate key 'present' (first defined on line 12)`). Run `netdryrun validate` after upgrading: a file that 0.3.0 accepted can fail here, and every such failure was a check that didn't test what it said.
 
 ## containerlab is not installed
 
 ```text
 $ netdryrun run my-lab
-Netdryrun 0.2.0: 14 checks from my-lab/netdryrun.yml
-Destroying lab...
-warning: lab cleanup failed: [Errno 2] No such file or directory: 'containerlab'
+Netdryrun 0.3.1: 14 checks from my-lab/netdryrun.yml
 ERROR: 'containerlab' not found on PATH
 ```
 
-Exit code `2`. Netdryrun drives the `containerlab` CLI and needs it on `PATH`. Install it ([containerlab.dev/install](https://containerlab.dev/install/)) and check with `containerlab version`. The same error names `docker` if Docker is missing. The cleanup warning is harmless: nothing was deployed.
+Exit code `2`. Netdryrun drives the `containerlab` CLI and needs it on `PATH`. Install it ([containerlab.dev/install](https://containerlab.dev/install/)) and check with `containerlab version`. The same error names `docker` if Docker is missing. Nothing was deployed, so nothing is destroyed.
 
 ## Docker or containerlab permission denied
 
@@ -2197,8 +2295,8 @@ As a user who is not in the `docker` and `clab_admins` groups:
 
 ```text
 $ netdryrun run my-lab
-Netdryrun 0.2.0: 14 checks from my-lab/netdryrun.yml
-Deploying lab my-lab (3 nodes)...
+Netdryrun 0.3.1: 14 checks from my-lab/netdryrun.yml
+Deploying lab my-lab (3 nodes); this usually takes 30-90 s, longer the first time images are pulled...
 Destroying lab...
 warning: lab cleanup failed: ROR
 ...
@@ -2233,25 +2331,17 @@ After this, the same user deployed and ran the lab. Running Netdryrun with `sudo
 
 ## A check names a node that is not in the topology
 
-`netdryrun validate` checks the file's syntax and values, not the node names against the topology. A typo (`r9` instead of `r1`) passes validation:
-
-```text
-$ netdryrun validate unk
-OK: unk/netdryrun.yml (14 checks, lab /home/dmin/ndr-docs/unk/topology.clab.yml)
-  - [bgp_session] r9: BGP session to 10.0.12.2 is established
-  ...
-```
-
-`run` catches it before anything is deployed:
+A typo (`r9` instead of `r1`) is caught before anything is deployed:
 
 ```text
 $ netdryrun run unk
-Netdryrun 0.2.0: 14 checks from unk/netdryrun.yml
-Destroying lab...
+Netdryrun 0.3.1: 14 checks from unk/netdryrun.yml
 ERROR: unknown node(s) r9; the topology has r1, r2, r3
 ```
 
-Exit code `2`. Use the node names from the topology's `nodes:` section (`r1`), not the container names (`clab-my-lab-r1`).
+From 0.3.1, `netdryrun validate` reads the topology too and catches it without starting anything (`lab error: unknown node(s) r9; ...`). Before 0.3.1, `validate` checked only the file itself and printed `OK` for this typo.
+
+Exit code `2`, and nothing is deployed or destroyed: from 0.3.1, a lab you kept running with `--keep` survives a typo like this (0.3.0 and earlier destroyed it). Use the node names from the topology's `nodes:` section (`r1`), not the container names (`clab-my-lab-r1`).
 
 ## The lab never converges (timeout)
 
@@ -2259,16 +2349,16 @@ A positive check waits up to `timeout` seconds (default 120) for the network to 
 
 ```text
 $ netdryrun run slow
-Netdryrun 0.2.0: 14 checks from slow/netdryrun.yml
-Deploying lab ndrdocs-slow (3 nodes)...
+Netdryrun 0.3.1: 14 checks from slow/netdryrun.yml
+Deploying lab ndrdocs-slow (3 nodes); this usually takes 30-90 s, longer the first time images are pulled...
   [PASS] r1: BGP session to 10.0.13.2 is established -- state is established (13.8s)
   ...
   [FAIL] r1: BGP session to 10.0.12.2 is established -- state is idle (30.1s)
   [FAIL] r2: BGP session to 10.0.12.1 is established -- state is idle (30.1s)
   [FAIL] r1: route 192.168.33.0/24 via bgp is present -- not active via bgp; seen: nothing (30.1s)
 Convergence checks done; settling 10s before post-convergence checks...
-  [FAIL] r1: prefixes from 10.0.12.2 >= 2 and <= 10 -- session is idle; prefix counts are only meaningful when established (30.4s)
   ...
+  [FAIL] r1: prefixes from 10.0.12.2 >= 2 and <= 10 -- not evaluated: BGP session(s) on r1 not established: 10.0.12.2 (idle) after waiting 30s. A post-convergence check only means something once every BGP session on its node is up (a leak can arrive over any of them). If a session is down on purpose, add a bgp_session check with state: down for it (30.0s)
 Destroying lab...
 FAILED: 10 passed, 4 failed (14 checks)
 ```
@@ -2283,7 +2373,7 @@ To see why, keep the lab and look inside:
 ```text
 $ netdryrun run slow --keep-on-failure
 ...
-Lab ndrdocs-slow left running for debugging; destroy with: containerlab destroy -t /home/dmin/ndr-docs/slow/topology.clab.yml --cleanup
+Lab ndrdocs-slow left running for debugging; destroy with: containerlab destroy -t /home/user/ndr-docs/slow/topology.clab.yml --cleanup
 FAILED: 10 passed, 4 failed (14 checks)
 $ docker exec clab-ndrdocs-slow-r1 vtysh -c "show bgp summary"
 ...
@@ -2293,6 +2383,51 @@ r3(10.0.13.2)   4      65003        38        40        3    0    0 00:01:17    
 ```
 
 r1 expects AS 65099 at 10.0.12.2, but r2 is AS 65002. Destroy the lab with the command Netdryrun printed.
+
+The prefix check is a post-convergence check (it has `max`), so it reports `not evaluated`; see the next entry.
+
+## Not evaluated (a session on the node never came up)
+
+```text
+  [FAIL] r1: prefixes from 10.0.12.2 >= 2 and <= 10 -- not evaluated: BGP session(s) on r1 not established: 10.0.12.2 (idle) after waiting 30s. A post-convergence check only means something once every BGP session on its node is up (a leak can arrive over any of them). If a session is down on purpose, add a bgp_session check with state: down for it
+```
+
+Exit code `1`. From 0.3.1, a post-convergence check (a route that must be absent, a ping that must fail, a prefix count with `max` or `exact`, a `bgp_route` attribute) starts only once every configured BGP neighbor on its node is up with stable prefix counts. A leak can arrive over any session, so a check that passed while one was still down would prove nothing. Netdryrun waits up to the largest `timeout` of the node's post-convergence checks; if a session is still down then, those checks fail as `not evaluated` and name the session.
+
+Fix: if the session should be up, it's a finding: look at it as in [the lab never converges](#the-lab-never-converges-timeout), or raise `timeout` for a slow NOS. If it is down on purpose (a shut neighbor, a peer that isn't in the lab), add a check that says so, and the wait leaves it out:
+
+```yaml
+- type: bgp_session
+  node: r1
+  neighbor: 10.0.12.2
+  state: down
+```
+
+## A node without BGP waits a whole timeout
+
+```text
+warning: h1 reported no BGP neighbors for 30s; the check was evaluated without BGP convergence
+```
+
+From 0.3.1, a node that answers with no BGP neighbors at all is treated as not converged yet, because that is also what a router answers before its BGP config is applied. Its post-convergence checks (a ping that must fail, for example) wait up to their `timeout`, then run with this warning in their result; the verdict is unchanged. On a node that really doesn't run BGP, lower the `timeout` of those checks to shorten the wait. If the node should have BGP neighbors, its BGP config was never applied: check its startup config or `setup` commands.
+
+## The fault did not take effect
+
+```text
+ERROR: scenario 'r1-r2 link fails': the fault did not take effect within 30s: BGP session(s) over the downed links still established (r2 -> 10.0.12.1). Netdryrun won't judge the scenario's checks on the state from before the fault. Without BFD, BGP can take its hold time (up to 180 s) to notice a failure: raise the checks' timeout, or lower the hold timers in the lab
+```
+
+Exit code `2`. From 0.3.1, after taking links down a scenario waits until every BGP session that ran over them is down on both ends, so its checks are never judged on the state from before the failure. The wait is capped at the largest `timeout` of the scenario's checks. Here the far end, r2, still had the session up when the time ran out: without BFD, a router notices a dead link only when its BGP hold timer expires (180 s on FRR by default).
+
+Fix: give the scenario's checks a `timeout` above the hold time (for example `timeout: 200` on them, or at the top of the file), lower the hold timers in the lab configs (`timers bgp 3 9` on FRR), or enable BFD. The links are restored and the lab destroyed as usual. See [scenario timing](reference/config.md#scenario-timing).
+
+## Could not read BGP state to find the sessions over the links
+
+```text
+ERROR: could not read BGP state on r2 to find the BGP sessions over the links the scenario takes down: unexpected output from `show bgp neighbors json`: no output. Netdryrun won't judge the scenario without knowing when the fault took effect
+```
+
+Exit code `2`. From 0.3.1, before a scenario takes links down, Netdryrun reads the BGP state of the nodes on both ends of each link (and the addresses of the downed interfaces) to know which sessions the fault must bring down. If that state can't be read, it can't tell when the fault took effect, so it stops before changing anything instead of judging the scenario on the settle delay alone (0.3.0 read it as "no sessions"). Usually the node's routing daemon is still starting or has crashed: check the node (`docker exec <container> vtysh -c "show bgp summary"`), raise the main checks' `timeout` so the lab is fully up before the scenarios start, and rerun. A node no driver can read (a Linux host) and a VRF the node doesn't have count as "no sessions", as before.
 
 ## SR Linux fails on a Windows drive (/mnt/c)
 
@@ -2318,8 +2453,8 @@ Netdryrun avoids this. When the topology is under `/mnt/`, it puts containerlab'
 
 ```text
 $ netdryrun run .
-Netdryrun 0.2.0: 6 checks from netdryrun.yml
-Deploying lab ndrdocs-srlmnt (2 nodes)...
+Netdryrun 0.3.1: 6 checks from netdryrun.yml
+Deploying lab ndrdocs-srlmnt (2 nodes); this usually takes 30-90 s, longer the first time images are pulled...
   [PASS] srl1: BGP session to 10.0.100.2 is established -- state is established (31.2s)
   ...
 PASSED: 6 passed, 0 failed (6 checks)
@@ -2333,13 +2468,13 @@ Arista does not allow cEOS to be redistributed, so you import it yourself. If th
 
 ```text
 $ netdryrun run ceos
-Netdryrun 0.2.0: 7 checks from ceos/netdryrun.yml
-Deploying lab ndrdocs-ceos (2 nodes)...
+Netdryrun 0.3.1: 7 checks from ceos/netdryrun.yml
+Deploying lab ndrdocs-ceos (2 nodes); this usually takes 30-90 s, longer the first time images are pulled...
 Destroying lab...
 ERROR: containerlab deploy failed:
 10:57:23 INFO Containerlab started version=0.81.1
 10:57:23 INFO Parsing & checking topology file=topology.clab.yml
-10:57:23 INFO Removing directory path=/home/dmin/ndr-docs/ceos/clab-ndrdocs-ceos
+10:57:23 INFO Removing directory path=/home/user/ndr-docs/ceos/clab-ndrdocs-ceos
 10:57:23 INFO Pulling image image=docker.io/library/ceos:4.34.1F
 10:57:25 ERRO Failed to pull image image=docker.io/library/ceos:4.34.1F err="Error response from daemon: pull access denied for ceos, repository does not exist or may require 'docker login'"
 ```
@@ -2354,9 +2489,17 @@ ceos:4.36.3M   94cc1e5462fe       3.55GB          976MB   U
 
 `examples/arista-frr` expects `ceos:4.36.3M`. Either import with that tag or change `image:` in the topology to match yours.
 
-## Two labs with the same name
+## A lab named X is already running
 
-containerlab lab names are global on a machine: containers are named `clab-<lab>-<node>`. Netdryrun deploys with `containerlab deploy --reconfigure`, so a second lab with the same `name:` **replaces** the first one, even from a different folder. Here `my-lab` was left running with `--keep`, then a copy of it in `other-lab` (same `name: my-lab`) was run:
+```text
+ERROR: a lab named 'my-lab' is already running (3 container(s), e.g. clab-my-lab-r1): another Netdryrun run, or a lab deployed by hand or kept with --keep. Netdryrun won't redeploy or destroy it. Wait for the other run to finish, or remove the lab with: containerlab destroy -t /home/user/my-lab/topology.clab.yml --cleanup
+```
+
+Exit code `2`, before anything is deployed. containerlab lab names are global on a machine: containers are named `clab-<lab>-<node>`. From 0.3.1, `netdryrun run` refuses to deploy a lab whose name is already in use, because redeploying would reconfigure the other lab's containers, and destroying it afterwards would remove them from under whoever is using it. Two runs of the same lab started at the same moment on one host get `another Netdryrun run is already using lab 'my-lab' on this host` instead.
+
+Fix: wait for the other run, destroy the old lab with the command in the message (for a lab you kept with `--keep` or `--keep-on-failure`), or give every lab a unique `name:`. On a shared CI runner or machine, put something unique in the name (for example the branch). `netdryrun check` doesn't deploy, so it still runs against the running lab.
+
+Before 0.3.1, Netdryrun deployed with `containerlab deploy --reconfigure` regardless, so a second lab with the same `name:` **replaced** the first one, even from a different folder. Here, on 0.2.0, `my-lab` was left running with `--keep`, then a copy of it in `other-lab` (same `name: my-lab`) was run:
 
 ```text
 $ netdryrun run other-lab
@@ -2374,7 +2517,7 @@ Netdryrun 0.2.0: 14 checks from my-lab/netdryrun.yml
 ERROR: lab containers not running: clab-my-lab-r1, clab-my-lab-r2, clab-my-lab-r3
 ```
 
-Fix: give every lab a unique `name:`. Before you run, check what is up with `docker ps` or `containerlab inspect --all`. On a shared CI runner or machine, put something unique in the name (for example the branch).
+Before you run, check what is up with `docker ps` or `containerlab inspect --all`.
 
 ## A host port is already in use
 
@@ -2382,8 +2525,8 @@ If a topology publishes ports on the host (`ports:` on a node), two labs cannot 
 
 ```text
 $ netdryrun run p2
-Netdryrun 0.2.0: 14 checks from p2/netdryrun.yml
-Deploying lab ndrdocs-p2 (3 nodes)...
+Netdryrun 0.3.1: 14 checks from p2/netdryrun.yml
+Deploying lab ndrdocs-p2 (3 nodes); this usually takes 30-90 s, longer the first time images are pulled...
 Destroying lab...
 ERROR: containerlab deploy failed:
 ...
@@ -2394,12 +2537,12 @@ Fix: Netdryrun does not need published ports; it runs every command with `docker
 
 ## link_down on an SR Linux node
 
-Failure scenarios take links down with `ip link` inside the node, which works on FRR, SONiC and cEOS but not yet on SR Linux. `validate` accepts the file; the error comes when the scenario starts, after the main checks:
+Failure scenarios take links down with `ip link` inside the node, which works on FRR, SONiC and cEOS but not yet on SR Linux. From 0.3.1, `netdryrun validate` refuses the file (exit code `2`). `run` finds out only when the scenario starts, after the main checks:
 
 ```text
 $ netdryrun run srl-ld
-Netdryrun 0.2.0: 6 checks from srl-ld/netdryrun.yml
-Deploying lab ndrdocs-srlld (2 nodes)...
+Netdryrun 0.3.1: 6 checks from srl-ld/netdryrun.yml
+Deploying lab ndrdocs-srlld (2 nodes); this usually takes 30-90 s, longer the first time images are pulled...
   [PASS] srl1: BGP session to 10.0.100.2 is established -- state is established (16.1s)
   ...
   [PASS] frr1: ping 192.168.10.1 from 192.168.20.1 expects success -- 3/3 replies (need 2) (21.5s)
@@ -2450,7 +2593,7 @@ Fixes:
 
 With `pr-comment: true`, the job log says `could not comment on the PR (needs permissions pull-requests: write ...)` even though the permission is set, and the lab has several hundred checks, for example a file `netdryrun record` wrote for a 20-node lab.
 
-GitHub rejects a comment longer than 65,536 characters. Netdryrun 0.3.0 lists every check in the comment, about 90 characters each, so above roughly 700 checks the comment is too long. The verdict, the job status and the reports are not affected. The next release shortens the table to fit, failures first. Until then, trim the recorded file to the checks that matter, or split it into several `netdryrun.yml` files run as a [matrix](github-action.md#several-labs).
+GitHub rejects a comment longer than 65,536 characters. Netdryrun 0.3.0 lists every check in the comment, about 90 characters each, so above roughly 700 checks the comment is too long. The verdict, the job status and the reports are not affected. Fixed in 0.3.1: the table stops before the limit, failures first, and says how many checks it left out. On 0.3.0, trim the recorded file to the checks that matter, or split it into several `netdryrun.yml` files run as a [matrix](github-action.md#several-labs).
 
 ## Inconclusive: the lab never came up
 
@@ -2458,8 +2601,8 @@ Exit code `3` means checks failed, but the lab never reached a testable state, s
 
 ```text
 $ netdryrun run . --json report.json
-Netdryrun 0.3.0: 7 checks from netdryrun.yml
-Deploying lab ndrdocs-nobgp (3 nodes)...
+Netdryrun 0.3.1: 7 checks from netdryrun.yml
+Deploying lab ndrdocs-nobgp (3 nodes); this usually takes 30-90 s, longer the first time images are pulled...
   [FAIL] r1: BGP session to 10.0.12.2 is established -- error: `vtysh -c show bgp neighbors json` failed on r1 (rc=1): bgpd is not running (33.1s)
   [FAIL] r1: BGP session to 10.0.13.2 is established -- error: `vtysh -c show bgp neighbors json` failed on r1 (rc=1): bgpd is not running (33.1s)
   [FAIL] r1: route 192.168.3.0/24 via bgp is present -- not active via bgp; seen: nothing (33.1s)
@@ -2481,7 +2624,7 @@ The JSON report has the same text in `inconclusive_reason`, and every unready sa
 
 How it differs from the other results:
 
-- **`error` (exit `2`):** the run could not start or finish: a config error, a missing tool, a failed deploy.
+- **`error` (exit `2`):** the run could not start or finish: a config error, a missing tool, a failed deploy, a fault that did not take effect.
 - **`failed` (exit `1`):** the lab was up and something is wrong. A configured BGP session that is down (an ASN typo, as in [the lab never converges](#the-lab-never-converges-timeout)) is `failed`, not `inconclusive`.
 - **`inconclusive` (exit `3`):** no positive check passed on any sample, and every failed check is on a node whose CLI or BGP never answered.
 
@@ -2499,7 +2642,7 @@ Source: https://netdryrun.com/faq/
 
 ## Does Netdryrun touch my production network?
 
-No. Netdryrun™ only builds labs with containerlab on the machine where it runs, runs read-only commands inside the lab containers (with `docker exec`), and destroys the lab. It has no command, option or MCP tool that connects to a real device or pushes config anywhere. You apply the change to production yourself, with your normal process, after the test passes.
+No. Netdryrun™ only builds labs with containerlab on the machine where it runs, runs commands only inside the lab containers (with `docker exec`), and destroys the lab. Most are read-only show commands; the others take links down and up for failure scenarios, add and remove routes for `inject_routes` scenarios, and run any `setup` commands you write. It has no command, option or MCP tool that connects to a real device or pushes config anywhere. You apply the change to production yourself, with your normal process, after the test passes.
 
 ## What does a pass prove?
 
@@ -2557,6 +2700,8 @@ Plan for the sum of your nodes plus a few hundred MB for Docker and containerlab
 
 ### A 20-node lab
 
+These numbers come from one-off runs on the maintainer's machine. The topology, the recorded checks and the reports are not published yet, so treat them as a rough guide rather than evidence you can check.
+
 Measured on 2026-10-27 on the same WSL2 machine, images already pulled: a leaf-spine fabric of 4 spines and 16 leaves, all FRR 10.4.1, 64 links, eBGP on every link with ECMP. `netdryrun record` turned the running lab into 560 checks (128 sessions, 128 prefix counts, 304 routes) in 11 seconds. Then `netdryrun run` on those 560 checks:
 
 | Phase | Time |
@@ -2596,7 +2741,7 @@ Local runs are faster once images are pulled; see the times on the [examples pag
 
 ## Does it collect any data?
 
-No. The CLI, the GitHub Action and the MCP server have no telemetry and don't phone home. Reports are written only to the files you ask for. The one exception is opt-in: `cloud: true` on the GitHub Action uploads the JSON report to Netdryrun Cloud. See [privacy](trust.md#privacy) and the [privacy notice](privacy.md).
+No. The CLI, the GitHub Action and the MCP server have no telemetry and don't phone home. Reports are written only to the files you ask for. The GitHub Action's `cloud` input is reserved for Netdryrun Cloud, a hosted service that is not available yet; setting it today uploads nothing. See [privacy](trust.md#privacy) and the [privacy notice](privacy.md).
 
 ## What is the license?
 
@@ -2615,7 +2760,7 @@ Source: https://netdryrun.com/corpus/
 How much does a typical "ping after the change" test miss? This corpus answers that with data anyone can rerun.
 
 !!! info "How to read these numbers"
-    This is a small benchmark the Netdryrun maintainers wrote: one FRR provider topology, 30 changes in v1 and 18 in v2, each labelled harmful or safe before any run. It compares testing methods on the same changes. It is **not** an independent benchmark and **not** a reliability estimate for production networks: "24/30" does not mean Netdryrun is right 80% of the time on your network. Both runs used Netdryrun 0.2.0; the current release is newer, and the [changes since](how-its-built.md#every-miss-and-what-it-changed) are listed per miss.
+    This is a small benchmark the Netdryrun maintainers wrote: one FRR provider topology, 30 changes in v1 and 18 in v2, each labelled harmful or safe before any run. It compares testing methods on the same changes. It is **not** an independent benchmark and **not** a reliability estimate for production networks: "24/30" does not mean Netdryrun is right 80% of the time on your network. Neither run used a released version. v1 ran on commit `ec23379`, a pre-release build that called itself 0.2.0 (the tagged 0.2.0 added a scenario-recovery fix and the SONiC and EOS drivers). v2 ran on a development build that also called itself 0.2.0 and recorded no commit ("commit `unknown`" below); it included the `inject_routes` fault, which first ships in 0.3.1. A rerun of both on the released 0.3.1 is pending, and these numbers will be replaced by its results. The [changes since](how-its-built.md#every-miss-and-what-it-changed) are listed per miss.
 
 There are two runs. The v1 results below are frozen as first published. [Corpus v2](#corpus-v2) is a second, separately pre-registered run that makes v1's misses testable, including scenarios where a customer or peer misbehaves.
 
@@ -2628,14 +2773,14 @@ There are two runs. The v1 results below are frozen as first published. [Corpus 
     1. **Ping only:** the customer pings the upstream and the peer.
     2. **All BGP sessions up:** every session established.
     3. **Netdryrun™ intent checks:** one [intent spec](https://github.com/netdryrun/netdryrun/blob/main/corpus/specs/intent.yml), written once and used unchanged for every case, so it can't be tuned to win.
-- **Rerun it:** `python corpus/run.py` on any Linux or WSL2 machine with Docker and containerlab.
-- **Rerun it on GitHub's machines:** fork the repository, then run the [Reproduce corpus](https://github.com/netdryrun/netdryrun/blob/main/.github/workflows/reproduce-corpus.yml) workflow from your fork's Actions tab. It installs containerlab 0.81.1 and Netdryrun on a GitHub-hosted runner, runs every case, uploads `results.json`, `RESULTS.md` and the run log as artifacts, and lists every verdict that differs from the committed [`results.json`](https://github.com/netdryrun/netdryrun/blob/main/corpus/results/results.json) in the run summary.
+- **Rerun it:** `python corpus/run.py` on any Linux or WSL2 machine with Docker and containerlab. It uses the Netdryrun code in your checkout.
+- **Rerun it on GitHub's machines:** fork the repository, then run the [Reproduce corpus](https://github.com/netdryrun/netdryrun/blob/main/.github/workflows/reproduce-corpus.yml) workflow from your fork's Actions tab. It has not been run on GitHub yet, and it covers v1 only. It installs containerlab 0.81.1 and Netdryrun from your checkout (not the build that produced the committed results, so a verdict that differs can come from a code change) on a GitHub-hosted runner, runs every v1 case, uploads `results.json`, `RESULTS.md` and the run log as artifacts, and lists every verdict that differs from the committed [`results.json`](https://github.com/netdryrun/netdryrun/blob/main/corpus/results/results.json) in the run summary.
 
 ## Results
 
 
 
-Generated 2026-10-26T21:43:03+00:00 with netdryrun 0.2.0, containerlab 0.81.1, FRR quay.io/frrouting/frr:10.4.1, commit `ec23379`. Rerun everything with `python corpus/run.py`.
+Generated 2026-10-27T18:00:53+00:00 with netdryrun 0.3.1, containerlab 0.81.1, FRR quay.io/frrouting/frr:10.4.1, commit `08059de`. Rerun everything with `python corpus/run.py`.
 
 **Conflict of interest:** the Netdryrun maintainers wrote this corpus and the runner. Expected verdicts were committed before any run (see the git history of [`corpus/cases/`](https://github.com/netdryrun/netdryrun/tree/main/corpus/cases)). Losses are kept and shown at the same size as the catches.
 
@@ -2663,8 +2808,8 @@ Generated 2026-10-26T21:43:03+00:00 with netdryrun 0.2.0, containerlab 0.81.1, F
 | `10-transit-export-filter-removed` [Upstream export filter replaced with permit-all](corpus/10-transit-export-filter-removed.md) | route-leak | unsafe | ❌ approved a bad change | ❌ approved a bad change | ✅ | I4 no peer route leaked to upstream; I5 upstream receives exactly our 2 prefixes |
 | `11-peer-export-filter-removed` [Peer export filter replaced with permit-all](corpus/11-peer-export-filter-removed.md) | route-leak | unsafe | ❌ approved a bad change | ❌ approved a bad change | ✅ | I4 no upstream route leaked to peer; I4 no default leaked to peer; I5 peer receives exactly our 2 prefixes |
 | `12-ibgp-send-community-dropped` [send-community removed on the pe1 to pe2 iBGP session](corpus/12-ibgp-send-community-dropped.md) | policy-bug | unsafe | ❌ approved a bad change | ❌ approved a bad change | ❌ approved a bad change | nothing |
-| `13-upstream-asn-typo` [Typo in the upstream's ASN (65020 instead of 65200)](corpus/13-upstream-asn-typo.md) | fat-finger | unsafe | ✅ | ✅ | ✅ | I1 pe1-up1 session up; I2 upstream has customer route; I2 upstream has our aggregate; I3 customer has upstream route; I3 customer has default; I3 customer reaches upstream; I5 upstream receives exactly our 2 prefixes |
-| `14-peer-session-shutdown` [Peer session administratively shut down](corpus/14-peer-session-shutdown.md) | fat-finger | unsafe | ✅ | ✅ | ✅ | I1 pe2-peer1 session up; I2 peer has customer route; I2 peer has our aggregate; I3 customer has peer route; I3 customer reaches peer; I5 peer receives exactly our 2 prefixes |
+| `13-upstream-asn-typo` [Typo in the upstream's ASN (65020 instead of 65200)](corpus/13-upstream-asn-typo.md) | fat-finger | unsafe | ✅ | ✅ | ✅ | I1 pe1-up1 session up; I2 upstream has customer route; I2 upstream has our aggregate; I3 customer has upstream route; I3 customer has default; I3 customer reaches upstream; I4 no peer route leaked to upstream; I5 upstream receives exactly our 2 prefixes |
+| `14-peer-session-shutdown` [Peer session administratively shut down](corpus/14-peer-session-shutdown.md) | fat-finger | unsafe | ✅ | ✅ | ✅ | I1 pe2-peer1 session up; I2 peer has customer route; I2 peer has our aggregate; I3 customer has peer route; I3 customer reaches peer; I4 no upstream route leaked to peer; I4 no default leaked to peer; I5 peer receives exactly our 2 prefixes |
 | `15-customer-filter-too-strict` [Customer prefix-list typo rejects the customer's /24](corpus/15-customer-filter-too-strict.md) | policy-bug | unsafe | ✅ | ❌ approved a bad change | ✅ | I2 upstream has customer route; I2 peer has customer route; I3 customer reaches upstream; I3 customer reaches peer; I5 upstream receives exactly our 2 prefixes; I5 peer receives exactly our 2 prefixes |
 | `16-mass-withdrawal` [Upstream export policy denies everything](corpus/16-mass-withdrawal.md) | withdrawal | unsafe | ✅ | ❌ approved a bad change | ✅ | I2 upstream has customer route; I2 upstream has our aggregate; I3 customer reaches upstream; I5 upstream receives exactly our 2 prefixes |
 | `17-default-leaked-to-peer` [default-originate configured toward the peer](corpus/17-default-leaked-to-peer.md) | route-leak | unsafe | ❌ approved a bad change | ❌ approved a bad change | ✅ | I4 no default leaked to peer; I5 peer receives exactly our 2 prefixes |
@@ -2677,7 +2822,7 @@ Generated 2026-10-26T21:43:03+00:00 with netdryrun 0.2.0, containerlab 0.81.1, F
 | `24-customer-blackholed` [Static discard route for the customer prefix on pe1](corpus/24-customer-blackholed.md) | fat-finger | unsafe | ✅ | ❌ approved a bad change | ✅ | I3 customer reaches upstream; I3 customer reaches peer |
 | `25-aggregate-typo` [Aggregate network statement typo (192.0.3.0/24)](corpus/25-aggregate-typo.md) | fat-finger | unsafe | ❌ approved a bad change | ❌ approved a bad change | ✅ | I2 upstream has our aggregate; I2 peer has our aggregate; I5 upstream receives exactly our 2 prefixes; I5 peer receives exactly our 2 prefixes |
 | `26-route-map-order-bug` [A permit-everything clause inserted before the peer export filter](corpus/26-route-map-order-bug.md) | route-leak | unsafe | ❌ approved a bad change | ❌ approved a bad change | ✅ | I4 no upstream route leaked to peer; I4 no default leaked to peer; I5 peer receives exactly our 2 prefixes |
-| `27-local-asn-typo` [pe2 configured with the wrong local ASN](corpus/27-local-asn-typo.md) | fat-finger | unsafe | ✅ | ✅ | ✅ | I1 pe1-pe2 iBGP up; I1 pe2-peer1 session up; I2 peer has customer route; I2 peer has our aggregate; I3 customer has peer route; I3 customer reaches peer; I5 peer receives exactly our 2 prefixes |
+| `27-local-asn-typo` [pe2 configured with the wrong local ASN](corpus/27-local-asn-typo.md) | fat-finger | unsafe | ✅ | ✅ | ✅ | I1 pe1-pe2 iBGP up; I1 pe2-peer1 session up; I2 peer has customer route; I2 peer has our aggregate; I3 customer has peer route; I3 customer reaches peer; I4 no upstream route leaked to peer; I4 no default leaked to peer; I5 peer receives exactly our 2 prefixes |
 | `28-customer-import-policy-removed` [Customer inbound route-map removed](corpus/28-customer-import-policy-removed.md) | policy-bug | unsafe | ✅ | ❌ approved a bad change | ✅ | I2 upstream has customer route; I2 peer has customer route; I3 customer reaches upstream; I3 customer reaches peer; I5 upstream receives exactly our 2 prefixes; I5 peer receives exactly our 2 prefixes |
 | `29-graceful-restart` [Enable BGP graceful restart on pe1](corpus/29-graceful-restart.md) | hygiene | safe | ✅ | ✅ | ✅ | nothing |
 | `30-peer-import-filter-removed` [Peer inbound filter replaced with permit-all](corpus/30-peer-import-filter-removed.md) | latent-risk | unsafe | ❌ approved a bad change | ❌ approved a bad change | ❌ approved a bad change | nothing |
@@ -2706,7 +2851,7 @@ These findings came after the run. The table above is left exactly as pre-regist
 The v1 results above are frozen. Corpus v2 is a separate, second run with its own pre-registered cases. It turns v1's misses into things a test can see:
 
 - **Unexpected routes** (v1 cases 18 and 23): the v2 intent spec says infrastructure prefixes and a sentinel list of well-known third-party prefixes must never be BGP routes at the customer, the upstream or the peer. These are `route` checks with `present: false`; no new check type is needed.
-- **Latent risks** (v1 cases 21 and 30): two failure scenarios use the new [`inject_routes`](reference/config.md#injecting-routes) fault to make a neighbor misbehave. The customer floods 200 more-specifics from its own /16, and the peer announces a more-specific of our customer's space and a third-party /24. The checks then verify that the max-prefix limit and the import filter actually hold.
+- **Latent risks** (v1 cases 21 and 30): two failure scenarios use the [`inject_routes`](reference/config.md#injecting-routes) fault, which ships in Netdryrun 0.3.1, to make a neighbor misbehave. The customer floods 200 more-specifics from its own /16, and the peer announces a more-specific of our customer's space and a third-party /24. The checks then verify that the max-prefix limit and the import filter actually hold.
 - **Rigid counts** (v1 case 06): announced-prefix counts are a range (2 to 51), so customer growth inside its block is not blocked.
 - **Vendor defaults** (v1 case 12): the FRR no-op is labeled safe, and the genuinely harmful variant is a separate case.
 
@@ -2714,7 +2859,7 @@ v2 changes two lines in the base lab so the customer's max-prefix limit can actu
 
 **Pre-registration:** all 18 cases and their expected verdicts were committed and pushed in [`322cc4e`](https://github.com/netdryrun/netdryrun/commit/322cc4ede21492c3914a0a53b67268bea7abf7d6) (2026-10-27 04:02 UTC), before any v2 case was deployed. Rerun it with `python corpus/run.py --corpus v2`.
 
-Generated 2026-10-27T04:02:42+00:00 with netdryrun 0.2.0, containerlab 0.81.1, FRR quay.io/frrouting/frr:10.4.1, commit `unknown`. Rerun everything with `python corpus/run.py --corpus v2`.
+Generated 2026-10-27T19:05:43+00:00 with netdryrun 0.3.1, containerlab 0.81.1, FRR quay.io/frrouting/frr:10.4.1, commit `08059de`. Rerun everything with `python corpus/run.py --corpus v2`.
 
 **Conflict of interest:** the Netdryrun maintainers wrote this corpus and the runner. Expected verdicts were committed before any run (see the git history of [`corpus/v2/cases/`](https://github.com/netdryrun/netdryrun/tree/main/corpus/v2/cases)). Losses are kept and shown at the same size as the catches.
 
@@ -2724,7 +2869,7 @@ Generated 2026-10-27T04:02:42+00:00 with netdryrun 0.2.0, containerlab 0.81.1, F
 |---|---|---|---|---|---|
 | Ping only | **9/18** | 2/11 | 9 | 0 | 0 |
 | All BGP sessions up | **7/18** | 0/11 | 11 | 0 | 0 |
-| Netdryrun intent checks | **16/18** | 9/11 | 2 | 0 | 0 |
+| Netdryrun intent checks | **17/18** | 10/11 | 1 | 0 | 0 |
 
 ### Every case
 
@@ -2747,12 +2892,11 @@ Generated 2026-10-27T04:02:42+00:00 with netdryrun 0.2.0, containerlab 0.81.1, F
 | `15-upstream-default-filtered` [Default route from the upstream filtered on import](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/15-upstream-default-filtered.yml) | policy-bug | unsafe | ❌ approved a bad change | ❌ approved a bad change | ✅ | I3 customer has default |
 | `16-customer-session-peer-group` [Customer session moved into a CUSTOMERS peer-group](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/16-customer-session-peer-group.yml) | refactor | safe | ✅ | ✅ | ✅ | nothing |
 | `17-customer-region-community` [Add an informational region community to customer routes](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/17-customer-region-community.yml) | hygiene | safe | ✅ | ✅ | ✅ | nothing |
-| `18-aggregate-discard-route-removed` [Discard route for our aggregate deleted as unused](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/18-aggregate-discard-route-removed.yml) | hygiene | unsafe | ❌ approved a bad change | ❌ approved a bad change | ❌ approved a bad change | nothing |
+| `18-aggregate-discard-route-removed` [Discard route for our aggregate deleted as unused](https://github.com/netdryrun/netdryrun/blob/main/corpus/v2/cases/18-aggregate-discard-route-removed.yml) | hygiene | unsafe | ❌ approved a bad change | ❌ approved a bad change | ✅ | I2 upstream has our aggregate; I2 peer has our aggregate; I5 upstream receives 2 to 51 prefixes from us; I5 peer receives 2 to 51 prefixes from us |
 
 ### Netdryrun's losses
 
 - **`04-redundant-aggregate-typo` Aggregate added on pe2 for redundancy, mistyped as 192.0.12.0/24** (false pass). Expected to be missed. I7 only spot-checks a few well-known prefixes, and nothing bounds what the customer receives.
-- **`18-aggregate-discard-route-removed` Discard route for our aggregate deleted as unused** (false pass). The blackhole static for 192.0.2.0/24 looks unused and is cleaned up. Either the aggregate stops being announced (if BGP requires a matching route), or it is still announced with nothing to absorb traffic for unused addresses in it: that traffic follows the upstream's default straight back to the upstream, a routing loop. Both are harmful.
 
 ### Findings after the run
 
@@ -2766,21 +2910,23 @@ These findings came after the v2 run. The table above is left exactly as pre-reg
 
 **Ping only's catch of case 14 is partly a lab artifact.** In the lab, the customer's BGP default is not active, because containerlab's management default route outranks it (the spec checks the default with `active: false` for this reason). Once the customer lost its specific routes, its pings had no path at all. A real customer with a working default would still ping, and the ping baseline would pass the change. The result stays as measured.
 
+**Rerun on the released 0.3.1 (2026-10-27, by the release gate):** every verdict matches the first run except case 18 (`18-aggregate-discard-route-removed`). The development build approved it; 0.3.1 rejects it, which is the pre-registered expected verdict, because the upstream and the peer no longer receive the aggregate (checks I2 and I5 fail). 0.3.1 changed how routes are read (received paths count, errors are never read as "no routes"), and this case was one of v2's two misses. Netdryrun is now 17/18 on v2. The cases and the expected verdicts are unchanged.
+
 
 ---
 Source: https://netdryrun.com/how-its-built/
 
 # How Netdryrun is built and verified
 
-A tool that approves network changes has to earn trust with evidence, not claims. Everything on this page links to something you can inspect or rerun yourself: the test corpus, the CI runs, the commit history and the release pipeline.
+A tool that approves network changes has to earn trust with evidence, not claims. Most of this page links to something you can inspect or rerun yourself: the test corpus, the CI runs, the commit history and the release pipeline. Where a claim can't be checked yet, the page says so.
 
 ## At a glance
 
 | | Evidence |
 |---|---|
-| Accuracy on realistic BGP changes | Verdict Corpus v1: **24/30** (ping only 20/30, sessions up 15/30). v2: **16/18** (ping only 9/18, sessions up 7/18). [Results](corpus.md) |
+| Accuracy on realistic BGP changes | Verdict Corpus v1: **24/30** (ping only 20/30, sessions up 15/30). v2: **17/18** (ping only 9/18, sessions up 7/18). Both ran on the released 0.3.1 (the release gate reruns them for every release). [Results](corpus.md) |
 | Expected verdicts fixed before any run | Committed first, never edited: [`b4df0b0`](https://github.com/netdryrun/netdryrun/commit/b4df0b0) (v1), [`322cc4e`](https://github.com/netdryrun/netdryrun/commit/322cc4e) (v2) |
-| Every result reproducible | One command locally, or the [Reproduce corpus](https://github.com/netdryrun/netdryrun/blob/main/.github/workflows/reproduce-corpus.yml) workflow from your own fork |
+| Results you can rerun | One command locally (`python corpus/run.py`, `--corpus v2` for v2). The [Reproduce corpus](https://github.com/netdryrun/netdryrun/blob/main/.github/workflows/reproduce-corpus.yml) workflow reruns v1 from your own fork; it has not been run on GitHub yet |
 | Real labs on every change | FRR and Nokia SR Linux labs boot in CI on every push and pull request ([runs](https://github.com/netdryrun/netdryrun/actions/workflows/ci.yml)) |
 | What users install is tested too | The released Action and the PyPI package, on every push and weekly ([`published-action.yml`](https://github.com/netdryrun/netdryrun/blob/main/.github/workflows/published-action.yml)) |
 | Supply chain | PyPI Trusted Publishing, CodeQL, OpenSSF Scorecard, every Action pinned to a commit |
@@ -2790,15 +2936,19 @@ A tool that approves network changes has to earn trust with evidence, not claims
 
 Netdryrun is developed by its maintainer, Victor Khen, with AI coding agents doing most of the implementation: code, tests, documentation and this website. The maintainer sets the direction, reviews the results, decides what ships and publishes every release. The [commit history](https://github.com/netdryrun/netdryrun/commits/main) records every change.
 
-We state this plainly because it should shape how you judge the tool: not by who or what wrote it, but by whether it holds up under checks you can run yourself. That is why every claim below comes with evidence. The project started in October 2026 and has no outside contributors yet.
+We state this plainly because it should shape how you judge the tool: not by who or what wrote it, but by whether it holds up under checks you can run yourself. That is why the claims below come with evidence.
+
+The project is very young. It started in October 2026: the first commit is dated 27 October 2026, and versions 0.1.0, 0.2.0 and 0.3.0 were all released that same day. It has no outside contributors yet.
 
 ## Pre-registered accuracy testing
 
 The [Verdict Corpus](corpus.md) measures Netdryrun on realistic BGP changes, each labelled harmful or safe in advance, and compares it with two common checks: "ping still works" and "all BGP sessions are up".
 
 - **Verdicts are committed before anything runs.** v1: all 30 cases with their expected verdicts in [`b4df0b0`](https://github.com/netdryrun/netdryrun/commit/b4df0b0), results later in [`7576298`](https://github.com/netdryrun/netdryrun/commit/7576298). v2: 18 new cases in [`322cc4e`](https://github.com/netdryrun/netdryrun/commit/322cc4e), results later in [`669b30f`](https://github.com/netdryrun/netdryrun/commit/669b30f). No case was edited after a run ([history of `corpus/cases/`](https://github.com/netdryrun/netdryrun/commits/main/corpus/cases)).
+- **The tool was run on the corpus during development, and changed before the published runs.** During 0.2.0 development, runs against the v1 cases found a bug (a change that broke a baseline check ended a scenario run as `error`) and showed that the new polling made the corpus 2 to 3 times faster; both are in the [changelog](https://github.com/netdryrun/netdryrun/blob/main/CHANGELOG.md). The expected verdicts were not changed; the v1 intent spec changed by one comment line.
+- **Neither published run used a release.** v1 ran on commit `ec23379`, which called itself 0.2.0, before the tagged 0.2.0 (which added a scenario-recovery fix and the SONiC and EOS drivers). v2 ran on a development build that also called itself 0.2.0, recorded no commit, and included the `inject_routes` fault, which first ships in 0.3.1. A rerun of both on the released 0.3.1 is pending.
 - **v2 is a harder test, not a friendlier one.** Its cases target the kinds of change v1 missed. It was written after seeing v1's results, which is a limitation to keep in mind.
-- **Everything reruns.** The runner ([`corpus/run.py`](https://github.com/netdryrun/netdryrun/blob/main/corpus/run.py)), every case and the raw output ([`results.json`](https://github.com/netdryrun/netdryrun/blob/main/corpus/results/results.json)) are public. `python corpus/run.py` reruns v1 and `--corpus v2` reruns v2. The GitHub workflow does the same on a hosted runner and lists any verdict that differs.
+- **Everything reruns.** The runner ([`corpus/run.py`](https://github.com/netdryrun/netdryrun/blob/main/corpus/run.py)), every case and the raw output ([`results.json`](https://github.com/netdryrun/netdryrun/blob/main/corpus/results/results.json)) are public. `python corpus/run.py` reruns v1 and `--corpus v2` reruns v2, with the code you have checked out (so a different verdict can come from a code change, not only from noise). The GitHub workflow reruns v1 the same way on a hosted runner and lists any verdict that differs; it has not been run on GitHub yet, and it does not cover v2.
 - **Limit of this evidence:** git commit dates come from the author's machine. The history proves the order of the commits and that the cases were not changed; it is not an independent timestamp.
 
 ## Every miss, and what it changed
@@ -2817,8 +2967,8 @@ A test you always pass tells you nothing. Netdryrun's misses stay in the publish
 | v1 [12](corpus/12-ibgp-send-community-dropped.md): send-community removed on iBGP | Approved | **Our label was wrong.** On FRR, communities are sent by default, so the change is a no-op ([AMENDMENTS.md](https://github.com/netdryrun/netdryrun/blob/main/corpus/AMENDMENTS.md), with a reproduction script) | Scored as a loss anyway, never corrected in our favour. v2 case 09 tests the corrected expectation and case 10 the truly harmful variant; both judged correctly | Label error |
 | v1 [18](corpus/18-redistribute-connected.md): redistribute connected on pe1 | Approved | Spec gap: nothing checked for infrastructure routes leaving the AS | New intent I6: no link or loopback routes at the customer, upstream or peer. v2 case 02 (the same mistake on pe2) caught | Fixed |
 | v1 [23](corpus/23-fat-finger-third-party-origin.md): pe1 originates 8.8.8.0/24 | Approved | Spec gap: nothing checked for third-party space | New intent I7, a sentinel list of well-known prefixes. v2 case 03 caught | Partly fixed (see v2 04) |
-| v1 [21](corpus/21-customer-max-prefix-removed.md): customer max-prefix removed | Approved | Latent risk, invisible until the customer misbehaves | New `inject_routes` failure scenario: the customer floods 200 prefixes. v2 cases 05 and 11 caught | Fixed |
-| v1 [30](corpus/30-peer-import-filter-removed.md): peer inbound filter replaced with permit-all | Approved | Latent risk, invisible until the peer misbehaves | The same scenario type, with the peer announcing routes it does not own. v2 case 06 caught | Fixed |
+| v1 [21](corpus/21-customer-max-prefix-removed.md): customer max-prefix removed | Approved | Latent risk, invisible until the customer misbehaves | New `inject_routes` failure scenario: the customer floods 200 prefixes. v2 cases 05 and 11 caught | Fixed (the scenario ships in 0.3.1) |
+| v1 [30](corpus/30-peer-import-filter-removed.md): peer inbound filter replaced with permit-all | Approved | Latent risk, invisible until the peer misbehaves | The same scenario type, with the peer announcing routes it does not own. v2 case 06 caught | Fixed (the scenario ships in 0.3.1) |
 | v2 04: redundant aggregate mistyped as 192.0.12.0/24 | Approved | I7 checks only a few well-known prefixes; nothing bounds what the customer receives | Predicted as a likely miss in the case file before the run | Open |
 | v2 18: discard route for the aggregate deleted | Approved | Causes a routing loop for unused addresses inside the aggregate; no check sends traffic there | A reachability check towards unused space would catch it | Open |
 
@@ -2836,13 +2986,15 @@ A second workflow, [`published-action.yml`](https://github.com/netdryrun/netdryr
 
 SONiC and Arista EOS are not in CI yet (cEOS is an image each user downloads from Arista). Their unit tests parse output captured from real lab runs ([`tests/fixtures`](https://github.com/netdryrun/netdryrun/tree/main/tests/fixtures)).
 
-## Performance at scale
+Every release also goes through a seven-layer release gate, from linting and mutation testing of the verdict logic to chaos runs on the built package, described in [RELEASING.md](https://github.com/netdryrun/netdryrun/blob/main/RELEASING.md); from the next release on, each release's results are committed in `releases/<version>/GATE.md`.
 
-On a 20-node leaf-spine fabric (4 spines, 16 leaves, FRR, 64 links), `netdryrun record` produced 560 checks in 11 seconds, and a full `netdryrun run` (deploy, convergence, all checks, destroy) took 65 seconds. A deliberately broken change failed exactly the 83 checks it should have. Full numbers, memory use and limits are in the [FAQ](faq.md#a-20-node-lab).
+## Performance on a 20-node fabric
 
-## Independent review
+On a 20-node leaf-spine fabric (4 spines, 16 leaves, FRR, 64 links), `netdryrun record` produced 560 checks in 11 seconds, and a full `netdryrun run` (deploy, convergence, all checks, destroy) took 65 seconds. A deliberately broken change failed exactly the 83 checks it should have. Full numbers, memory use and limits are in the [FAQ](faq.md#a-20-node-lab). These come from one-off runs on the maintainer's machine; the topology and the reports are not published yet, so you can't check them the way you can check the corpus.
 
-Before each release, the code is reviewed by AI models from other vendors (OpenAI GPT and xAI Grok) and by separate agent sessions that start without the author's context. Fixes from these reviews: [`ec23379`](https://github.com/netdryrun/netdryrun/commit/ec23379) (v0.2.0), [`6495759`](https://github.com/netdryrun/netdryrun/commit/6495759) (agent demo) and [`90fe0ae`](https://github.com/netdryrun/netdryrun/commit/90fe0ae): a security review of the MCP server, the GitHub Action and every path where lab output reaches a shell, a device CLI or a PR comment, with 7 findings, each fixed with a regression test.
+## Cross-model review (not a human audit)
+
+Before releases 0.1.0 and 0.2.0, the code was also reviewed by AI models from other vendors (OpenAI GPT and xAI Grok); 0.3.0 was not. Separate agent sessions that start without the author's context also review changes. These review outputs are not published. Fixes from these reviews: [`ec23379`](https://github.com/netdryrun/netdryrun/commit/ec23379) (v0.2.0), [`6495759`](https://github.com/netdryrun/netdryrun/commit/6495759) (agent demo) and [`90fe0ae`](https://github.com/netdryrun/netdryrun/commit/90fe0ae): a security review of the MCP server, the GitHub Action and every path where lab output reaches a shell, a device CLI or a PR comment, with 7 findings, each fixed with a regression test.
 
 These reviewers are AI models, not human auditors. No independent human security audit has been done yet. If you are qualified and willing to do one, we would welcome it: see the [security policy](https://github.com/netdryrun/netdryrun/security/policy).
 
@@ -2852,7 +3004,7 @@ Each was found by running Netdryrun against live labs or the corpus, and is reco
 
 - **False passes on SR Linux and Arista:** a leaked route that was received but not installed was invisible, so a `present: false` check passed when it should have failed. Fixed in [`77f43d6`](https://github.com/netdryrun/netdryrun/commit/77f43d6), with regression tests on captured output ([`test_drivers.py`](https://github.com/netdryrun/netdryrun/blob/main/tests/test_drivers.py)).
 - **Wrong status after a failure scenario:** a change that broke a baseline check ended as `error` instead of `failed`. Found with [`scripts/pack_verify.sh`](https://github.com/netdryrun/netdryrun/blob/main/scripts/pack_verify.sh); fixed in [`f6ea560`](https://github.com/netdryrun/netdryrun/commit/f6ea560).
-- **PR comments over GitHub's size limit on large labs:** found by the 20-node scale test. The comment now keeps every failure and summarizes the rest.
+- **PR comments over GitHub's size limit on large labs:** found by the 20-node scale test. From 0.3.1, the comment is cut to fit GitHub's limit, failures first, and says how many checks it left out; the JSON and JUnit reports keep every check.
 - **A mislabeled corpus case:** [case 12](corpus/12-ibgp-send-community-dropped.md), above.
 
 ## Supply-chain security
@@ -2932,7 +3084,7 @@ Netdryrun adds a test layer on top of a containerlab lab:
 - every run produces one pass/fail result, a CI-friendly exit code, and a JSON evidence file
 
 
-It is early (version 0.3.0). Drivers exist for FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image), and checks cover BGP sessions, prefix counts, routes, BGP best-path attributes and ping, with link-down and node-isolation failure scenarios.
+It is early (version 0.3.1). Drivers exist for FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image), and checks cover BGP sessions, prefix counts, routes, BGP best-path attributes and ping, with link-down, node-isolation and route-injection (FRR only) failure scenarios.
 
 It does not do static analysis, build labs for you, or test production devices.
 
@@ -2964,7 +3116,7 @@ Netdryrun™ is open source under the [Apache License 2.0](https://github.com/ne
 - Releases are built and published by a GitHub Actions workflow when a version tag (`v*`) is pushed. The workflow checks that the tag matches the package version before building.
 - Packages are uploaded to [PyPI](https://pypi.org/project/netdryrun/) with **Trusted Publishing** (OpenID Connect). No PyPI token or password is stored in the repository or its secrets; PyPI accepts the upload because it comes from that workflow in that repository.
 - The same workflow creates a GitHub release with the built files attached.
-- The GitHub Action (`netdryrun/netdryrun@v0.3.0`) installs Netdryrun from the action's own source at the tag you reference. Pin a tag or a commit SHA.
+- The GitHub Action (`netdryrun/netdryrun@v0.3.1`) installs Netdryrun from the action's own source at the tag you reference. Pin a tag or a commit SHA.
 
 ## Reporting a security issue
 
@@ -2980,7 +3132,7 @@ A Netdryrun pass means the change behaved correctly in a lab. The lab runs real 
 - **Timing at scale.** Convergence time in a small lab says little about convergence time in a large production network.
 
 
-Version 0.3.0 also covers only BGP (IPv4/IPv6 unicast), routes, BGP best-path attributes and ping, plus link-down and node-isolation failure scenarios. OSPF/IS-IS adjacencies and path checks are not covered yet.
+Version 0.3.1 also covers only BGP (IPv4/IPv6 unicast), routes, BGP best-path attributes and ping, plus link-down, node-isolation and route-injection (FRR only) failure scenarios. OSPF/IS-IS adjacencies and path checks are not covered yet.
 
 
 ## Running untrusted labs
@@ -2990,19 +3142,19 @@ containerlab runs privileged containers, so a topology and its configs are code 
 What follows from that, by design:
 
 - **`netdryrun.yml` is code too.** `nodes.<node>.setup` commands are shell commands run inside the node, and a `netdryrun.yml` can point at a topology in any folder. Review a `netdryrun.yml` the way you review a topology.
-- **Everything else in `netdryrun.yml` is data.** VRF and interface names are restricted to letters, digits and a few punctuation marks before they reach a device CLI, and addresses and prefixes must parse as IP. A check can't run a device command it doesn't name.
+- **Everything else in `netdryrun.yml` is data.** From 0.3.1, VRF and interface names are restricted to letters, digits and a few punctuation marks before they reach a device CLI, and addresses and prefixes must parse as IP. A check can't run a device command it doesn't name.
 - **`as_path_regex` runs with no time limit.** A pathological pattern can stall a run until your CI job's timeout; it can't do anything else. Set `timeout-minutes` on the job.
-- **Text from a lab is treated as untrusted** wherever it ends up: escaped in PR comments and step summaries, kept to one comment line in a recorded baseline, and flattened and capped in MCP results.
+- **Text from a lab is treated as untrusted** wherever it ends up (0.3.1 and later): escaped in PR comments and step summaries, kept to one comment line in a recorded baseline, and flattened and capped in MCP results.
 
 ## Privacy
 
 **The tool has no telemetry.** The CLI, the GitHub Action and the MCP server do not phone home or send usage data anywhere. Reports are written only to the files you ask for (and to the GitHub Actions step summary when running in Actions). containerlab and Docker may pull images from registries named in your topology, as they normally would.
 
-The one exception is opt-in: if you set `cloud: true` on the GitHub Action, the Action uploads the JSON report to Netdryrun Cloud. The report contains raw command output from your lab devices (configs and routing tables), which can reveal your test network's addressing and topology. Leave `cloud` off and nothing is uploaded.
+The GitHub Action has a `cloud` input reserved for a future hosted service, Netdryrun Cloud. **Netdryrun Cloud is not available yet**: its address doesn't exist, so setting `cloud: true` today uploads nothing and only adds an "evidence upload failed" warning. If it launches, uploading will stay opt-in, and its privacy terms will be published first. Leave `cloud` off.
 
 **No AI inside the tool.** The CLI, the GitHub Action and the MCP server contain no AI model and call no AI service; verdicts come from checks run against your lab. When an AI agent uses the MCP server, the agent sends whatever it chooses to the model provider *you* picked; Netdryrun is not part of that path.
 
-**AI in how we build it.** Development is done with Anthropic's Claude; releases are also reviewed by OpenAI and xAI models ([how it's built](how-its-built.md)). For a paid runnable-lab order, your sanitized configs are processed only with Anthropic's Claude, under terms that don't allow training on them, and deleted 30 days after delivery.
+**AI in how we build it.** Development is done with Anthropic's Claude. Releases 0.1.0 and 0.2.0 were also reviewed by OpenAI and xAI models ([how it's built](how-its-built.md)). If you are a [design partner](design-partners.md), the sanitized configs you send us are processed with Anthropic's Claude to build your lab, under terms that don't allow training on them, and with no other AI service. They are deleted within 30 days after delivery unless you ask us to keep them. There are no paid products yet. See the [privacy notice](privacy.md#configs-you-send-us).
 
 **This website** is static documentation hosted on GitHub Pages. It sets no cookies, has no analytics and no forms, and serves its fonts itself, so your browser contacts no third party. GitHub, as the host, receives your IP address and request details to serve the pages.
 
@@ -3073,7 +3225,7 @@ Netdryrun is young. We'd rather learn from a few real changes than guess. If you
 
 ## How your configs are handled
 
-You send sanitized configs only. They're used for your lab and nothing else, kept private, and deleted within 30 days after delivery unless you ask us to keep them. An NDA is available on request. See the [privacy notice](privacy.md).
+You send sanitized configs only. They're used for your lab and nothing else and kept private. We build labs with the help of Anthropic's Claude, so your configs are processed by it, under terms that don't allow training on them; no other AI service sees them. They're deleted within 30 days after delivery unless you ask us to keep them. An NDA is available on request. See the [privacy notice](privacy.md#configs-you-send-us).
 
 ## Apply
 
@@ -3111,9 +3263,9 @@ Netdryrun is operated by Victor Khen, Taiwan ("we"). Contact for anything about 
 
 ## The short version
 
-- **The Netdryrun tool** (CLI, GitHub Action, MCP server) has no telemetry. It sends us nothing. The GitHub Action uploads a report to Netdryrun Cloud only if you set `cloud: true`; Netdryrun Cloud is not open to the public yet, and its own privacy terms will be published here before it is.
+- **The Netdryrun tool** (CLI, GitHub Action, MCP server) has no telemetry. It sends us nothing. The GitHub Action has a `cloud` input reserved for Netdryrun Cloud, a hosted service that is not available yet; setting it today uploads nothing. Its own privacy terms will be published here before it launches.
 - **This website** sets no cookies, has no analytics and no forms, and serves its fonts itself.
-- **We see your data only if you email us or interact with the project on GitHub.**
+- **We see your data only if you email us, interact with the project on GitHub, or send us configs as a design partner.**
 
 ## This website
 
@@ -3123,13 +3275,17 @@ netdryrun.com is static documentation hosted on GitHub Pages. To deliver the pag
 
 When you write to an @netdryrun.com address, Cloudflare Email Routing forwards the message to our mailbox. We use your address and message only to answer you and keep the conversation for as long as it's useful, then delete it. Security reports may be kept as records of how the issue was handled. Lawful basis: our legitimate interest in answering you.
 
+## Configs you send us
+
+If you are a [design partner](design-partners.md), you send us sanitized configs so we can build a lab of part of your network. We use them only for your lab. We build labs with the help of Anthropic's Claude, so Anthropic processes the configs on our behalf, under commercial terms that don't allow training on them; no other AI service receives them. We delete them within 30 days after delivery unless you ask us to keep them. Lawful basis: your request (the work you asked us to do).
+
 ## GitHub and PyPI
 
 Issues, pull requests and discussions on [github.com/netdryrun](https://github.com/netdryrun) are public and governed by GitHub's terms and privacy statement. Downloads from PyPI are handled by the Python Software Foundation under the [PyPI privacy notice](https://policies.python.org/pypi.org/Privacy-Notice/). We don't combine this information with anything else.
 
 ## Transfers
 
-GitHub and Cloudflare are based in the United States. Transfers of personal data from the EU or UK rely on the EU-US Data Privacy Framework (and its UK extension) where the company is certified, and on the European Commission's standard contractual clauses otherwise.
+GitHub, Cloudflare and Anthropic are based in the United States. Transfers of personal data from the EU or UK rely on the EU-US Data Privacy Framework (and its UK extension) where the company is certified, and on the European Commission's standard contractual clauses otherwise.
 
 ## Your rights
 

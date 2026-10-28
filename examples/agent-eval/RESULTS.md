@@ -29,7 +29,7 @@ Per ticket (Y = solved):
 
 The Haiku runs were not pre-registered: the prediction covered only the default model. One more run, `invalid-haiku2-mcp-not-started`, is kept and labelled invalid: a harness bug (Git Bash rewrote the path of the `netdryrun` binary) meant the MCP server never started, so it measured the harness, not the agent. The grader now marks such runs invalid, and the harness refuses the bad path.
 
-Setup common to all runs: Windows 11, Claude Code headless (`claude -p`) in a fresh folder outside any repository, tools Read, Edit, Write, Glob and Grep inside that folder, WebFetch for `netdryrun.com` only, no shell; the Netdryrun MCP server in WSL 2 (Ubuntu 22.04) through `wsl.exe`, restricted to the ticket folder with `NETDRYRUN_MCP_ROOT`; containerlab 0.81.1, FRR 10.4.1. Wall time includes lab boot and every Netdryrun run. Each ticket ran once per run; "repeat" runs are the same setup again.
+Setup common to all runs: Windows 11, Claude Code headless (`claude -p`) in a fresh folder outside any repository, tools Read, Edit, Write, Glob and Grep inside that folder, WebFetch for `netdryrun.com` only, no shell; the Netdryrun MCP server in WSL 2 (Ubuntu 22.04) through `wsl.exe`. The harness set `NETDRYRUN_MCP_ROOT` to the ticket folder, but Netdryrun 0.3.0 ignores that variable (it takes effect from 0.3.1), so in the runs on 0.3.0 the MCP server was not confined to the folder; only the agent's own file tools were; containerlab 0.81.1, FRR 10.4.1. Wall time includes lab boot and every Netdryrun run. Each ticket ran once per run; "repeat" runs are the same setup again.
 
 ## What the runs show
 

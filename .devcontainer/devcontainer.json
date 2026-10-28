@@ -6,7 +6,7 @@
   // The tag is the containerlab version; keep it in step with action.yml.
   "image": "ghcr.io/srl-labs/containerlab/devcontainer-dind-slim:0.81.1",
   // 2 cores / 8 GB is the smallest Codespaces machine and runs the 4 FRR routers of the agent
-  // demo comfortably (the demo passes in about 70 s). It uses 2 of the free monthly core-hours per
+  // demo comfortably (the demo passes in about 65 s). It uses 2 of the free monthly core-hours per
   // hour: GitHub Free's 120 core-hours are about 60 hours on this machine.
   "hostRequirements": {
     "cpus": 2,

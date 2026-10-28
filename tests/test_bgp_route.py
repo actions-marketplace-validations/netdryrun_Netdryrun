@@ -134,7 +134,8 @@ def test_post_convergence_rules():
         return Check(type="bgp_route", params={"node": "r1", "prefix": "10.0.0.0/8", **p}, name="x", timeout=1)
     assert is_post_convergence(c(present=False))
     assert is_post_convergence(c(without_communities=["1:1"]))
-    assert not is_post_convergence(c(communities=["1:1"], local_pref=200))
+    assert is_post_convergence(c(communities=["1:1"], local_pref=200))
+    assert not is_post_convergence(c())   # presence only
 
 
 def test_unsupported_attribute_is_refused(monkeypatch):
@@ -148,3 +149,23 @@ def test_unsupported_attribute_is_refused(monkeypatch):
     monkeypatch.setattr(DRIVERS["frr"], "unsupported_bgp_attributes", frozenset({"med"}))
     with pytest.raises(DriverError, match="med is not supported on frr"):
         check_supported(FakeLab(), c)
+
+
+def test_evpn_prefix_counts_are_refused_on_eos():
+    from netdryrun.lab import Node
+
+    class FakeLab:
+        nodes = {"r1": Node("r1", "clab-t-r1", "arista_ceos", "ceos:4.33"),
+                 "r2": Node("r2", "clab-t-r2", "linux", "quay.io/frrouting/frr:10.4.1")}
+
+    def c(node, afi):
+        return Check(type="bgp_prefixes", params={"node": node, "neighbor": "10.0.0.1", "max": 0, "afi": afi},
+                     name=f"{node} {afi}", timeout=1)
+
+    # the EOS driver has no EVPN counts: the count would read 0 and pass max: 0
+    with pytest.raises(DriverError, match="afi evpn is not supported on eos"):
+        check_supported(FakeLab(), c("r1", "evpn"))
+    with pytest.raises(DriverError, match="afi evpn is not supported on eos"):
+        check_supported(FakeLab(), c("r2", "evpn"), override="eos")
+    check_supported(FakeLab(), c("r1", "ipv6-unicast"))
+    check_supported(FakeLab(), c("r2", "evpn"))   # FRR reads EVPN counts

@@ -12,7 +12,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 
-from .config import Check, community_name
+from .config import BGP_ATTRIBUTES, Check, community_name
 from .drivers import Driver
 
 REACH_WINDOW = 30.0  # seconds for post-convergence prefix counts to reach their range
@@ -77,7 +77,9 @@ def _route(d: Driver, p: dict) -> tuple[bool, str, list]:
     want_proto = str(p.get("protocol", "")).lower()
     matching = [r for r in obs.value if not want_proto or r.protocol == want_proto]
     active = [r for r in matching if r.active]
-    if p.get("present", True):
+    # `is not False`, the same test is_post_convergence uses, so the evaluator and the scheduler can never
+    # disagree on what a check means (config validation already insists on a real boolean)
+    if p.get("present", True) is not False:
         if active:
             return True, f"active via {active[0].protocol}", obs.evidence
         if p.get("active", True) is False and matching:
@@ -93,10 +95,23 @@ def _route(d: Driver, p: dict) -> tuple[bool, str, list]:
     return True, "absent", obs.evidence
 
 
+# "The destination is unreachable" is a ping result, not a ping that did not run: with no route at all,
+# iputils prints "connect: Network is unreachable" (busybox "sendto: Network unreachable") and no statistics.
+_UNREACHABLE = re.compile(r"network (is )?unreachable|no route to host|destination (host |net )?unreachable", re.I)
+
+
 def _ping(d: Driver, p: dict) -> tuple[bool, str, list]:
     count = int(p.get("count", 3))
     obs = d.ping(p["target"], p.get("source"), count, p.get("vrf", "default"))
     sent, received = obs.value
+    if sent == 0:
+        text = "\n".join(f"{e.get('output', '')}\n{e.get('stderr', '')}" for e in obs.evidence)
+        m = _UNREACHABLE.search(text)
+        if m:
+            why = f"0/{count} replies (destination unreachable: {m.group(0)})"
+            if p.get("expect", "success") == "failure":
+                return True, why, obs.evidence
+            return False, why, obs.evidence
     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
         err = obs.evidence[-1].get("stderr", "").strip() if obs.evidence else ""
         return False, f"error: ping did not run{': ' + err if err else ''}", obs.evidence
@@ -161,13 +176,15 @@ EVALUATORS = {"bgp_session": _bgp_session, "bgp_prefixes": _bgp_prefixes, "route
 
 def is_post_convergence(check: Check) -> bool:
     """Checks that are trivially true before the network converges, so they must run afterwards
-    and hold: "must be absent", "must fail", a session expected NOT established, and upper bounds
-    on prefix counts (0 prefixes satisfies "max: 10" while BGP is still coming up)."""
+    and hold: "must be absent", "must fail", a session expected NOT established, upper bounds on
+    prefix counts (0 prefixes satisfies "max: 10" while BGP is still coming up), and any assertion
+    about a best path's attributes (the best path can change when a slower session comes up)."""
     p = check.params
     return (
         (check.type in ("route", "bgp_route") and p.get("present", True) is False)
-        # "must not carry" passes on a transient best path before the real one arrives: hold it instead
-        or (check.type == "bgp_route" and "without_communities" in p)
+        # A best-path attribute (next hop, AS path, local-pref, MED, communities, or "must not carry") can
+        # pass on a transient best path before the real one arrives: judge it after convergence and hold it
+        or (check.type == "bgp_route" and any(k in p for k in BGP_ATTRIBUTES))
         or (check.type == "ping" and p.get("expect", "success") == "failure")
         or (check.type == "bgp_session" and p.get("state", "established") != "established")
         or (check.type == "bgp_prefixes" and ("max" in p or "exact" in p))
@@ -277,7 +294,7 @@ def run_round_robin(checks: list[Check], drivers: dict, interval: float = 3.0, c
     done: dict[int, Result] = {}
     while len(done) < len(checks):
         pending = [c for c in checks if id(c) not in done]
-        for c, (ok, detail, evidence) in zip(pending, _evaluate_all(pending, drivers)):
+        for c, (ok, detail, evidence) in zip(pending, _evaluate_all(pending, drivers), strict=True):
             st = state[id(c)]
             elapsed = clock() - t0
             st["history"].append(_sample(elapsed, ok, detail))
@@ -332,7 +349,7 @@ def hold_together(checks: list[Check], drivers: dict, hold: float = 10.0, interv
     reach = [(c, v) for c in checks if (v := views.get(id(c)))]
     if reach:
         for (orig, _), r in zip(reach, run_round_robin([v for _, v in reach], drivers, interval=interval,
-                                                       confirm=1, clock=clock, sleep=sleep)):
+                                                       confirm=1, clock=clock, sleep=sleep), strict=True):
             if not r.passed:
                 r.check = orig
                 failed[id(orig)] = r
@@ -344,7 +361,7 @@ def hold_together(checks: list[Check], drivers: dict, hold: float = 10.0, interv
     last: dict[int, tuple] = {}
     finished_ok: dict[int, float] = {}
     while live:
-        for c, (ok, detail, evidence) in zip(list(live), _evaluate_all(live, drivers)):
+        for c, (ok, detail, evidence) in zip(list(live), _evaluate_all(live, drivers), strict=True):
             t = clock() - t0
             hist[id(c)].append(_sample(t, ok, detail))
             last[id(c)] = (detail, evidence)

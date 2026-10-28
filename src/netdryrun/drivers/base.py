@@ -1,6 +1,10 @@
 """Driver interface. Every method returns normalized data plus the raw evidence it came from."""
 from __future__ import annotations
 
+import functools
+import ipaddress
+import json
+import re
 from dataclasses import dataclass, field
 
 from ..lab import Lab
@@ -8,6 +12,79 @@ from ..lab import Lab
 
 class DriverError(RuntimeError):
     pass
+
+
+class NoSuchInstance(DriverError):
+    """The device answered, and the VRF (or its BGP instance) asked for does not exist on it: there is
+    nothing there, unlike a command that failed or output that couldn't be read. Still an error for a
+    check (a check that names a VRF the node doesn't have is wrong); code that only needs to know which
+    BGP sessions exist (a scenario's snapshot) can read it as "none"."""
+
+
+# Same syntax as config.VRF_NAME. Checked again here: the name goes into device CLI strings, and a
+# driver must never be handed a name it would read as something else.
+_VRF_NAME = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.:-]{0,63}")
+# Names every supported NOS treats as "many VRFs at once" (output keyed by VRF), never one VRF
+SPECIAL_VRF_NAMES = frozenset({"all"})
+
+
+def check_vrf_name(vrf: object) -> str:
+    """The VRF name if a driver can ask for exactly that one VRF; DriverError otherwise."""
+    if not isinstance(vrf, str) or not _VRF_NAME.fullmatch(vrf):
+        raise DriverError(f"bad VRF name {str(vrf)[:70]!r}: use letters, digits and . _ : - (at most 64)")
+    if vrf.lower() in SPECIAL_VRF_NAMES:
+        raise DriverError(f"VRF {vrf!r} means every VRF on the device, not one VRF; name the VRF to check")
+    return vrf
+
+
+def unexpected(command: str, text: object) -> DriverError:
+    """The error for output that doesn't have the structure the parser knows. Never read it as 'nothing'."""
+    snippet = " ".join(str(text).split())[:200] or "no output"
+    return DriverError(f"unexpected output from `{command}`: {snippet}")
+
+
+def load_json(command: str, text: str):
+    """JSON from a device command. Empty output is not an empty result: every supported NOS prints a
+    JSON document (at least `{}`) for a state query that succeeded."""
+    if not isinstance(text, str) or not text.strip():
+        raise unexpected(command, "no output")
+    try:
+        return json.loads(text)
+    except (json.JSONDecodeError, RecursionError):
+        raise unexpected(command, text) from None
+
+
+def network(command: str, value: object):
+    """A prefix from device output; output with a key that isn't one is unexpected."""
+    try:
+        return ipaddress.ip_network(str(value), strict=False)
+    except ValueError:
+        raise unexpected(command, f"not a prefix: {str(value)[:80]!r}") from None
+
+
+def parser(command: str):
+    """Decorator for a parser of `command`'s output: anything that trips over the output's structure
+    (a wrong type, a missing key, a bad number) is reported as unexpected output, a DriverError."""
+    def wrap(fn):
+        @functools.wraps(fn)
+        def inner(*args, **kwargs):
+            try:
+                return fn(*args, **kwargs)
+            except DriverError:
+                raise
+            except (TypeError, ValueError, AttributeError, KeyError, IndexError, RecursionError) as e:
+                raise unexpected(command, f"{type(e).__name__}: {e}") from None
+        return inner
+    return wrap
+
+
+def as_int(command: str, value: object) -> int:
+    if isinstance(value, bool):
+        raise unexpected(command, f"not a number: {value!r}")
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        raise unexpected(command, f"not a number: {str(value)[:80]!r}") from None
 
 
 @dataclass
@@ -107,6 +184,8 @@ class Driver:
 
     # bgp_route keys this driver cannot read; a check that uses one is a setup error, never a guess
     unsupported_bgp_attributes: frozenset[str] = frozenset()
+    # bgp_prefixes address families this driver has no prefix counts for (refused before deploying)
+    unsupported_afis: frozenset[str] = frozenset()
 
     def bgp_paths(self, prefix: str, vrf: str = "default") -> Observation:
         """Every path for exactly `prefix` in the BGP table (list[BgpPath]), best path flagged."""

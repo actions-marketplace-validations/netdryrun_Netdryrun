@@ -9,8 +9,13 @@ description: Netdryrun command-line reference. The run, check and validate comma
 netdryrun run      [path] [options]   deploy the lab, run checks, destroy the lab
 netdryrun check    [path] [options]   run checks against an already running lab
 netdryrun validate [path]             validate netdryrun.yml without running anything
+netdryrun record   topology.clab.yml  snapshot a known-good lab into a netdryrun.yml baseline
+netdryrun mcp                         start the MCP server for AI agents (stdio)
+netdryrun feedback                    open a short feedback form on GitHub
 netdryrun --version
 ```
+
+`--debug` (before or after the command: `netdryrun --debug run` or `netdryrun run --debug`) prints the Python traceback of an internal error. Setting `NETDRYRUN_DEBUG=1` does the same.
 
 `path` is `netdryrun.yml` or the folder containing it. Default: the current folder.
 
@@ -20,17 +25,21 @@ netdryrun --version
 
 Deploys the containerlab topology (`containerlab deploy --reconfigure`), runs every check, writes reports, and destroys the lab (`containerlab destroy --cleanup`). The lab is destroyed even when checks fail, unless you ask to keep it.
 
+`run` refuses to start (exit code `2`) when a lab with the same name is already running: another Netdryrun run of the same lab, a lab deployed by hand, or one kept with `--keep`. Redeploying it would reconfigure the other lab's containers, and destroying it afterwards would pull them out from under whoever is using it. The error names a container and the command to remove the lab: `containerlab destroy -t <topology> --cleanup`. Two runs of the same lab started at the same moment on one host are also refused, by a lock (`another Netdryrun run is already using lab '<name>' on this host`). `check` doesn't deploy, so it runs against the existing lab.
+
 ### check
 
 Runs the checks against a lab that is already up, for example one left running with `--keep`. It does not deploy or destroy anything. It fails with an error if any of the lab's containers are not running.
 
 ### validate
 
-Loads and validates `netdryrun.yml` and prints the parsed checks. It does not need Docker or containerlab to be running.
+Loads and validates `netdryrun.yml` and prints the parsed checks. It does not need Docker or containerlab.
+
+From 0.3.1 it also reads the topology (strictly: malformed YAML and duplicate keys are errors) and checks what `run` checks before deploying: every node a check, fault or `setup` names exists; the driver can read every key the checks use (for example no `afi: evpn` on SR Linux or Arista EOS); and `inject_routes` names an FRR node. It also checks two things `run` finds out only after deploying: every node a check reads has a driver (detected from its kind and image, or set with `nodes.<node>.driver`), and no `link_down` or `node_isolated` fault targets an SR Linux node. Any of these is an error with exit code `2`. What it can't check without containerlab: whether containerlab accepts the topology itself (a misspelled `kind:`, a missing image).
 
 ```text
 $ netdryrun validate examples/frr-bgp
-OK: examples/frr-bgp/netdryrun.yml (7 checks, lab .../examples/frr-bgp/topology.clab.yml)
+OK: examples/frr-bgp/netdryrun.yml (7 checks, lab .../examples/frr-bgp/topology.clab.yml, 3 nodes)
   - [bgp_session] r1: BGP session to 10.0.12.2 is established
   ...
 ```
@@ -62,8 +71,9 @@ Snapshots a known-good lab into a `netdryrun.yml` baseline: every established BG
 | `--json FILE` | | Write the full evidence report as JSON |
 | `--markdown FILE` | | Write a Markdown summary (for PR comments) |
 | `--junit FILE` | | Write JUnit XML (for CI test reporting) |
-| `--settle SECONDS` | `10` | Wait before post-convergence checks |
-| `--hold SECONDS` | `10` | How long a post-convergence check must hold (a check's own `hold` key overrides it) |
+| `--settle SECONDS` | `10` | Wait before post-convergence checks, and in a scenario after the fault took effect |
+| `--hold SECONDS` | `10` | How long a post-convergence check must hold (a check's own `hold` key overrides it). In a scenario, positive checks must hold this long too |
+| `--debug` | | Print the traceback of an internal error |
 | `--no-step-summary` | | Do not append the Markdown summary to `$GITHUB_STEP_SUMMARY` |
 
 `run` only:
@@ -81,8 +91,26 @@ When a lab is kept, Netdryrun prints the command to destroy it. See [convergence
 |---|---|---|
 | `0` | `passed` | Every check passed |
 | `1` | `failed` | At least one check failed |
-| `2` | `error` | Config error, or the lab could not be deployed or reached (containerlab or Docker missing, deploy failed, containers not running, unknown driver) |
+| `2` | `error` | No verdict: the run could not start or could not finish. See below |
 | `3` | `inconclusive` | Checks failed, but the lab never reached a state where they mean anything: the result says nothing about the change. Rules below |
+| `130` | `error` | Interrupted by SIGINT (Ctrl-C): no verdict |
+| `143` | `error` | Interrupted by SIGTERM (for example a cancelled CI job or `docker stop`): no verdict |
+| `129` | `error` | Interrupted by SIGHUP (the terminal closed): no verdict |
+
+**Exit code 2** is used for every run that ends without a verdict (0.3.1 and later):
+
+- a config error: bad YAML, an unknown or duplicate key, a bad value (see [validation](config.md));
+- a bad topology, an unknown node, or a check a driver can't read;
+- a bad option, for example a negative `--settle`;
+- a lab problem: containerlab or Docker missing, deploy failed, containers not running, unknown driver, a lab with the same name already running;
+- a scenario whose fault did not take effect within the checks' timeout, or whose BGP state or interface addresses could not be read before the fault, so Netdryrun can't tell when it took effect (see [scenario timing](config.md#scenario-timing));
+- a link or injected route that could not be restored after a scenario;
+- a report that could not be written (`--json`, `--markdown`, `--junit`, or the GitHub Actions step summary), for example a path in a folder that doesn't exist. The verdict line is still printed and every other report is still written, but the evidence you asked for is missing, so the run exits `2`, with one line per report on stderr: `could not write <path>: <reason>; the verdict was <status>` (0.3.1 and later; 0.3.0 reported an internal error). The status inside the reports that were written is the verdict;
+- an internal error (a Netdryrun bug). It is reported on one line, never as a bare traceback, and never as exit code `1`, which would read as "the change broke something". Rerun with `--debug` or `NETDRYRUN_DEBUG=1` for the traceback, and please report it.
+
+The message is one line on stderr. With `--json` on `run` or `check`, a report with `status: error` and the message in `error` is written, including for a config error before anything starts and for an interrupted run.
+
+**Interrupted runs** (codes 129, 130, 143): SIGINT, SIGTERM and SIGHUP all clean up the same way. Netdryrun destroys the lab it deployed (unless `--keep` was set; `--keep-on-failure` doesn't apply, since an interrupted run has no verdict), writes the requested reports with `status: error`, and exits with 128 plus the signal number, the shell convention. A second signal during cleanup doesn't cut it short.
 
 ### When a run is inconclusive
 
@@ -127,7 +155,7 @@ FAILED: 5 passed, 1 failed (6 checks)
 | `lab` | string | containerlab lab name |
 | `config` | string | Path of the `netdryrun.yml` that was run |
 | `started`, `finished` | string | UTC timestamps (ISO 8601) |
-| `error` | string or null | Lab or driver error, if the run could not complete |
+| `error` | string or null | Why the run has no verdict (config, lab or driver error, interruption, internal error); null otherwise |
 | `inconclusive_reason` | string or null | Why the run is `inconclusive` ([rules](#when-a-run-is-inconclusive)); null otherwise |
 | `environment` | object | `netdryrun`, `containerlab` and `python` versions, `host` platform, and `nodes` (each with `kind` and `image`) |
 | `summary` | object | `passed`, `failed`, `total` |

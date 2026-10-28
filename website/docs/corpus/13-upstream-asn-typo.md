@@ -37,7 +37,7 @@ The expected verdict was committed to git before any run. All three strategies t
 |---|---|---|---|
 | Ping only | unsafe | ✅ | customer reaches upstream |
 | All BGP sessions up | unsafe | ✅ | pe1-up1 up |
-| Netdryrun intent checks | unsafe | ✅ | I1 pe1-up1 session up, I2 upstream has customer route, I2 upstream has our aggregate, I3 customer has upstream route, I3 customer has default, I3 customer reaches upstream, I5 upstream receives exactly our 2 prefixes |
+| Netdryrun intent checks | unsafe | ✅ | I1 pe1-up1 session up, I2 upstream has customer route, I2 upstream has our aggregate, I3 customer has upstream route, I3 customer has default, I3 customer reaches upstream, I4 no peer route leaked to upstream, I5 upstream receives exactly our 2 prefixes |
 
 ## What Netdryrun flagged
 
@@ -49,6 +49,7 @@ These checks from the [intent spec](https://github.com/netdryrun/netdryrun/blob/
 - **I3 customer has upstream route**: 203.0.113.0/24 must be in ce1's routing table as a bgp route
 - **I3 customer has default**: 0.0.0.0/0 must be in ce1's routing table as a bgp route
 - **I3 customer reaches upstream**: ce1 can ping 203.0.113.1 from 10.100.0.1
+- **I4 no peer route leaked to upstream**: 198.51.100.0/24 must not be in up1's routing table as a bgp route
 - **I5 upstream receives exactly our 2 prefixes**: up1 receives exactly 2 prefixes from 10.0.2.1
 
 ## Reproduce it
@@ -59,4 +60,4 @@ On Linux or WSL2 with Docker and containerlab, from a checkout of the repository
 python corpus/run.py --case 13
 ```
 
-Case file: [`corpus/cases/13-upstream-asn-typo.yml`](https://github.com/netdryrun/netdryrun/blob/main/corpus/cases/13-upstream-asn-typo.yml). Published result: netdryrun 0.2.0, containerlab 0.81.1, FRR `quay.io/frrouting/frr:10.4.1`, commit `ec23379`, run on 2026-10-26.
+Case file: [`corpus/cases/13-upstream-asn-typo.yml`](https://github.com/netdryrun/netdryrun/blob/main/corpus/cases/13-upstream-asn-typo.yml). Published result: netdryrun 0.3.1, containerlab 0.81.1, FRR `quay.io/frrouting/frr:10.4.1`, commit `08059de`, run on 2026-10-27.
