@@ -23,11 +23,11 @@ def nav_files(nav):
 
 def build() -> str:
     cfg = yaml.safe_load((HERE / "mkdocs.yml").read_text(encoding="utf-8").replace("!!python/name:", "#"))
-    parts = ["# Netdryrun: full documentation", "",
-             "> Netdryrun is an open-source tool that tests network changes in a real virtual lab before they reach production. "
-             "It boots the topology with containerlab, waits for convergence, checks BGP sessions, prefixes, routes and reachability, "
-             "and returns a pass/fail verdict with evidence. It runs locally, in GitHub Actions, or as an MCP server for AI agents.", "",
-             "Install: `pip install netdryrun` · Source: https://github.com/netdryrun/netdryrun · Docs: https://netdryrun.com/", ""]
+    # The summary, install line and facts come from llms.txt, which scripts/sync_facts.py keeps current.
+    llms = (DOCS / "llms.txt").read_text(encoding="utf-8")
+    summary = re.search(r"<!-- facts:llms_summary -->\n?(.*?)\n?<!-- /facts:llms_summary -->", llms, flags=re.S).group(1)
+    parts = ["# Netdryrun: full documentation", "", summary.strip(), "",
+             "Docs: https://netdryrun.com/ · Short index: https://netdryrun.com/llms.txt", ""]
     for rel in nav_files(cfg["nav"]):
         text = (DOCS / rel).read_text(encoding="utf-8")
         text = re.sub(r"^---\n.*?\n---\n", "", text, flags=re.S)           # front matter

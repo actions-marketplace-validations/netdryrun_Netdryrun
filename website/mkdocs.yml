@@ -62,6 +62,10 @@ exclude_docs: |
 not_in_nav: |
   /corpus/*.md
 
+# Per-page schema.org JSON-LD (FAQPage, TechArticle, BlogPosting, BreadcrumbList); the site-wide graph is in overrides/main.html.
+hooks:
+  - hooks/structured_data.py
+
 plugins:
   - search
   # Self-host fonts and other external assets at build time: visitors' browsers never contact Google.
@@ -88,7 +92,9 @@ nav:
   - Getting started: getting-started.md
   - "Tutorial: test a change on your own lab": tutorial.md
   - Examples: examples.md
+  - Guard recipes and scenarios: recipes.md
   - Guides:
+      - "Add Netdryrun to your lab (10 minutes)": guides/your-lab.md
       - Test an FRR change in CI: guides/frr-ci.md
       - Test a SONiC change in CI: guides/sonic-ci.md
   - Reference:
@@ -100,6 +106,8 @@ nav:
   - AI agents (MCP): ai-agents.md
   - Troubleshooting: troubleshooting.md
   - FAQ: faq.md
+  - Posts:
+      - "Ping and 'BGP up' passed. The route leak was still there.": posts/ping-missed-the-leak.md
   - Verdict corpus: corpus.md
   - How it's built: how-its-built.md
   - When to use what: when-to-use-what.md

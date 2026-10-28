@@ -5,14 +5,15 @@ build-backend = "hatchling.build"
 [project]
 name = "netdryrun"
 version = "0.3.1"
-description = "Find the route leaks that ping and 'BGP up' checks miss: test network changes in a real containerlab lab before production, with evidence."
+description = "Find the route leaks that ping and 'BGP up' checks miss: dry-run network changes in a real containerlab lab, with a pass/fail verdict and evidence. CLI, GitHub Action and MCP server."
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"
 authors = [{ name = "Netdryrun" }]
 keywords = [
   "network testing", "network automation", "bgp", "containerlab", "frr", "srlinux",
-  "netdevops", "network change validation", "mcp", "ci",
+  "sonic", "arista", "ceos", "netdevops", "network change validation", "mcp", "mcp-server",
+  "ai-agents", "ci", "github-actions", "dry-run",
 ]
 # The license is the SPDX expression above (PEP 639 License-Expression). PEP 639 deprecates License classifiers, so none is listed.
 classifiers = [
