@@ -1672,7 +1672,8 @@ def test_a_lab_that_never_reached_a_testable_state_is_inconclusive_with_scenario
     plain = _bgpd_off_everywhere(monkeypatch).run(checks, settle=0, hold=0)
     assert plain.status == "inconclusive" and plain.exit_code == 3
     e = _bgpd_off_everywhere(monkeypatch)
-    sc = Scenario("s", [Fault("link_down", "r1", "eth1")], [route("[s] x", node="r3")])
+    # as in examples/frr-bgp: the scenario faults and checks r1, a node the main checks show never gave state
+    sc = Scenario("s", [Fault("link_down", "r1", "eth1")], [route("[s] x")])
     rep = e.run(checks, [sc], settle=0, hold=0)
     assert rep.status == "inconclusive" and rep.exit_code == 3 and not rep.error
     assert rep.inconclusive_reason == plain.inconclusive_reason
@@ -1690,3 +1691,20 @@ def test_unreadable_snapshot_after_a_readable_failure_is_still_an_error(monkeypa
     rep = e.run([route("r", timeout=9)], [sc], settle=0, hold=0)
     assert rep.status == "error" and rep.exit_code == 2 and "r2" in rep.error
     assert e.lab.link_events() == []
+
+
+def test_scenarios_on_nodes_that_gave_state_still_run_after_an_unready_main_phase(monkeypatch):
+    """0.3.2 cold review, finding 2: the main checks are all on r1, which never gives state, but the scenario
+    faults r2 and checks r3, both readable. Its readable failure is a finding (exit 1), not inconclusive."""
+    e = make(monkeypatch, r1={"neighbors_error": DriverError("bgpd is not running"), "routes": {"default": never}},
+             r2={"neighbors": up("10.0.12.1"), "routes": {"default": always}},
+             r3={"neighbors": up(), "routes": {"default": never}})
+    sc = Scenario("s", [Fault("link_down", "r2", "eth2")], [route("[s] x", node="r3", timeout=9)])
+    main = [chk("bgp_session", "s", neighbor="10.0.12.2", timeout=9)]
+    assert e.run(main, settle=0, hold=0).status == "inconclusive"   # alone, the main phase never got state
+    e = make(monkeypatch, r1={"neighbors_error": DriverError("bgpd is not running"), "routes": {"default": never}},
+             r2={"neighbors": up("10.0.12.1"), "routes": {"default": always}},
+             r3={"neighbors": up(), "routes": {"default": never}})
+    rep = e.run(main, [sc], settle=0, hold=0)
+    assert rep.status == "failed" and rep.exit_code == 1
+    assert ("r2", "eth2", False) in e.lab.link_events()

@@ -20,7 +20,7 @@ import yaml
 
 from . import __version__
 from .checks import (Result, Unready, _sample, hold_together, inconclusive_reason, is_post_convergence,
-                     run_round_robin)
+                     never_ready_nodes, run_round_robin)
 from .config import Check, Config, ConfigError, Scenario, load
 from .drivers import DriverError, check_supported, detect, for_node
 from .drivers.base import NoSuchInstance
@@ -345,10 +345,14 @@ def run(config: Config, *, deploy: bool = True, keep: bool = False, keep_on_fail
         # The main checks already show the lab never reached a testable state (no node gave usable state, no
         # check passed on any sample): a scenario on a lab that never converged has no baseline to fault or
         # recover to, so skip them and report inconclusive (exit 3), as the same lab without scenarios does.
-        # The results hold failed checks, so this is never a pass; only a lab that never gave state skips them,
-        # so a scenario snapshot that can't be read after a readable main phase still stops the run (exit 2).
+        # The results hold failed checks, so this is never a pass. Only when every node the scenarios fault or
+        # check is one of those that never gave state: a scenario on a node that did could still find a real
+        # failure (exit 1), and a scenario snapshot that can't be read after a readable main phase still stops
+        # the run (exit 2).
         scenarios = config.scenarios
-        if scenarios and inconclusive_reason(report.results):
+        dead = never_ready_nodes(report.results)
+        touched = {c.node for sc in scenarios for c in sc.checks} | {f.node for sc in scenarios for f in sc.faults}
+        if scenarios and inconclusive_reason(report.results) and touched <= dead.keys():
             log(f"The lab never reached a testable state; {len(scenarios)} scenario(s) skipped")
             scenarios = []
         for sc in scenarios:
