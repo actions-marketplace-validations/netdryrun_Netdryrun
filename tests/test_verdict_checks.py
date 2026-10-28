@@ -1078,6 +1078,8 @@ def test_inconclusive_node_without_session_checks_uses_its_routing_table_then_ev
     assert inconclusive_reason(rs) is None
     rs = [res(chk("bgp_route", prefix="p"), unready=10), res(chk("route", prefix="q"), unready=9)]
     assert inconclusive_reason(rs) is None
+    rs = [res(chk("bgp_route", prefix="p"), unready=10), res(chk("ping", target="t"), unready=9)]   # bgp_route alone
+    assert inconclusive_reason(rs)
     rs = [res(chk("ping", target="t"), unready=10), res(chk("ping", target="u"), unready=9)]   # ping-only node
     assert inconclusive_reason(rs) is None
 
