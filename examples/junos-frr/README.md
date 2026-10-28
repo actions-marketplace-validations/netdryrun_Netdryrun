@@ -169,8 +169,8 @@ FAILED: 12 passed, 1 failed (13 checks)
 With the Junos leak, it's the guard on frr1:
 
 ```text
-  [PASS] j1: no BGP path for 0.0.0.0/0 -- no BGP path (held 12s, 4 samples) (12.3s)
-  [FAIL] frr1: no BGP path for 0.0.0.0/0 -- unexpectedly in the BGP table (1 path(s); as-path '65010', next hop 10.0.100.1, local-pref 100, MED 0, communities none) (0.8s)
+  [PASS] j1: no BGP path for 0.0.0.0/0 -- no BGP path (held 12s, 3 samples) (12.3s)
+  [FAIL] frr1: no BGP path for 0.0.0.0/0 -- unexpectedly in the BGP table (1 path(s); as-path '65010', next hop 10.0.100.1, local-pref 100, MED 0, communities none) (4.2s)
 FAILED: 12 passed, 1 failed (13 checks)
 ```
 
@@ -180,6 +180,6 @@ Measured on 2026-10-28 on WSL2 (20 threads, 16 GB), containerlab 0.81.1, cJunosE
 |---|---|---|---|
 | Good configs | `PASSED: 13 passed, 0 failed` | `0` | 398 s |
 | FRR leak (`leaks/frr1.conf`) | `FAILED: 12 passed, 1 failed` | `1` | 1385 s (a CPU-heavy job was running on the host; j1 took 1114 s to answer) |
-| Junos leak (`leaks/j1.cfg`) | `FAILED: 12 passed, 1 failed` | `1` | 56 s, with `netdryrun check` on the lab kept from the FRR-leak run, after removing the FRR leak and committing the Junos one through the CLI |
+| Junos leak (`leaks/j1.cfg`) | `FAILED: 12 passed, 1 failed` | `1` | 985 s (j1 took 756 s to answer); also 56 s with `netdryrun check` on the lab kept from the FRR-leak run, reconfigured through the CLI |
 
-The Junos leak wasn't run from a fresh deploy; its checks ran against the same running lab, reconfigured.
+Boot time varies most: the same lab had Junos answering after 251 s on a quiet host and after 756 s and 1114 s on a busier one.
