@@ -10,7 +10,7 @@ Written by `scripts/release_gate.py` (see [RELEASING.md](../../RELEASING.md)). D
 
 | Layer | Commit | Ran | Time | Result |
 |---|---|---|---|---|
-| [Layer 1: static](#layer-1-static) | `9b728e8be0` | 2026-10-27 23:03:52 UTC | 1.0 s | 13 PASS |
+| [Layer 1: static](#layer-1-static) | `a78d25e289` | 2026-10-28 01:56:08 UTC | 1.0 s | 13 PASS |
 | [Layer 2: unit tests on every supported Python](#layer-2-unit-tests-on-every-supported-python) | `9b728e8be0` | 2026-10-27 23:03:53 UTC | 3.1 min | 7 PASS |
 | [Layer 4: mutation testing](#layer-4-mutation-testing) | `9b728e8be0` | 2026-10-27 23:07:05 UTC | 19.6 min | 4 PASS |
 | [Layer 5: live matrix on the built package](#layer-5-live-matrix-on-the-built-package) | `9b728e8be0` | 2026-10-27 23:27:19 UTC | 142.9 min | 2 ACCEPTED, 46 PASS |
@@ -18,7 +18,7 @@ Written by `scripts/release_gate.py` (see [RELEASING.md](../../RELEASING.md)). D
 
 ## Layer 1: static
 
-Commit `9b728e8be022ee7dd63e8ab28b0d500ce149d68e` on `ndr/release-0.3.1`; 2026-10-27 23:03:52 UTC; 1.0 s; Linux 6.18.54.1-microsoft-standard-WSL2 (x86_64); Python 3.10.12; --strict.
+Commit `a78d25e28950f9ca62f7697747f9f228b560ff30` on `ndr/release-0.3.1`; 2026-10-28 01:56:08 UTC; 1.0 s; Linux 6.18.54.1-microsoft-standard-WSL2 (x86_64); Python 3.10.12; --strict.
 
 Tools: actionlint 1.7.7; ruff 0.17.3; shellcheck 0.8.0.
 
