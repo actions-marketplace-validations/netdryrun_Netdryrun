@@ -9,7 +9,11 @@
 
 **Test network changes before they touch production.**
 
+Netdryrun is an open-source (Apache-2.0) tool that dry-runs network changes in a real containerlab lab and returns a pass/fail verdict with evidence. It runs as a CLI, a GitHub Action, and an MCP server for AI agents.
+
 Software teams don't ship code without running its tests. Network changes deserve the same step: run the change in a real lab, check how the network behaves, and ship only on a pass. Netdryrun makes that one command, one CI step, or one tool call for an AI agent.
+
+**Already have a containerlab lab? [Add Netdryrun to it in 10 minutes](https://netdryrun.com/guides/your-lab/)**: record its steady state, add one guard, run it on every pull request.
 
 Netdryrun™ boots your topology as a real virtual network ([containerlab](https://containerlab.dev)), applies your configs, and checks how the network actually *behaves*: BGP sessions, prefix counts, routes, reachability. It catches the mistakes your checks describe, such as a route leak, before the change reaches production, and leaves the commands and raw output for a reviewer to inspect.
 
@@ -28,7 +32,7 @@ FAILED: 5 passed, 1 failed (6 checks)
 That run caught a leaked default route that was *received but not selected*. Ping and session checks alone would miss this example: every session is up and every address answers. (A static analyzer such as Batfish also catches this particular leak; the [Batfish page](https://netdryrun.com/batfish/) shows one that it misses and a lab catches.)
 
 <!-- facts:readme_status -->
-> Status: **v0.3.1.** Runs on Linux and WSL2, with drivers for FRR, Nokia SR Linux, SONiC (docker-sonic-vs) and Arista EOS (cEOS, bring your own image). On the [verdict corpus](https://netdryrun.com/corpus/) v1 (30 realistic BGP changes: 19 harmful, 11 safe), Netdryrun judged 24/30 correctly, ping-only checks 20/30 and all-sessions-up checks 15/30. Netdryrun approved 5 of the 19 harmful changes (ping-only checks: 10 of 19) and blocked 1 of the 11 safe ones. On v2 (18 cases written after v1 to target v1's misses): Netdryrun 17/18, ping-only 9/18, all-sessions-up 7/18. Expected verdicts were committed before any run, on one FRR topology; method, every miss and a one-command rerun are on the corpus page. Provenance: both ran on Netdryrun 0.3.1.
+> Status: **v0.3.1.** Runs on Linux and WSL2, with drivers for FRR, Nokia SR Linux, SONiC (docker-sonic-vs) and Arista EOS (cEOS, bring your own image). On the [verdict corpus](https://netdryrun.com/corpus/) v1 (30 realistic BGP changes: 19 harmful, 11 safe), Netdryrun judged 24/30 correctly, ping-only checks 20/30 and all-sessions-up checks 15/30. Netdryrun approved 5 of the 19 harmful changes (ping-only checks: 10 of 19) and blocked 1 of the 11 safe ones. On v2 (18 cases written after v1 to target v1's misses): Netdryrun 17/18, ping-only 9/18, all-sessions-up 7/18. Expected verdicts were committed before any run, on one FRR topology: a comparison of testing methods, not a production reliability estimate. Method, every miss and a one-command rerun are on the corpus page. Provenance: both ran on Netdryrun 0.3.1.
 <!-- /facts:readme_status -->
 
 ## Why

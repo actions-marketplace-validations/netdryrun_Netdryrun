@@ -12,6 +12,11 @@ Facts (generated from the source): version 0.3.1; check types `bgp_session`, `bg
 
 - [Overview](https://netdryrun.com/): what it does, a failing example, the GitHub Action
 - [Getting started](https://netdryrun.com/getting-started/): requirements, install, the examples
+- [FAQ](https://netdryrun.com/faq/): one-paragraph answers: how to test a BGP change before production, containerlab in CI, the MCP server, Batfish compared, what a pass proves, supported platforms, Windows, memory, CI cost, license
+- [Tutorial: test a change on your own lab](https://netdryrun.com/tutorial/): record a baseline, prune it, add negative checks, test a change, read the evidence, run it in GitHub Actions
+- [Examples](https://netdryrun.com/examples/): every bundled example lab, its checks, expected result, exit code and run time
+- [Add Netdryrun to the lab you already have](https://netdryrun.com/guides/your-lab/): an existing containerlab topology to a recorded baseline, one negative check and the GitHub Action in 10 minutes
+- [Guard recipes and scenarios](https://netdryrun.com/recipes/): copy-paste netdryrun.yml fragments for frequent BGP mistakes, and link-down, node-isolated and route-injection scenarios
 - [netdryrun.yml reference](https://netdryrun.com/reference/config/): every check type and key, convergence semantics
 - [CLI and reports](https://netdryrun.com/reference/cli/): commands, flags, exit codes, JSON/Markdown/JUnit reports
 - [GitHub Action](https://netdryrun.com/github-action/): inputs, outputs, security notes
@@ -19,9 +24,11 @@ Facts (generated from the source): version 0.3.1; check types `bgp_session`, `bg
 - [Test a SONiC change in CI](https://netdryrun.com/guides/sonic-ci/): getting docker-sonic-vs, configuring it after boot with setup lines, the checks that matter for SONiC, gotchas, measured times
 - [AI agents (MCP)](https://netdryrun.com/ai-agents/): MCP server tools, the result contract ([mcp-result-v1.json](https://netdryrun.com/schemas/mcp-result-v1.json)), the agent skill, an AGENTS.md snippet, and the safety model
 - [Network Change Verdict v1](https://netdryrun.com/spec/verdict-v1/): the open, versioned spec of the JSON verdict report ([report-v1.json](https://netdryrun.com/schemas/report-v1.json))
+- [Troubleshooting](https://netdryrun.com/troubleshooting/): real error messages and their fixes
 
 ## Optional
 
+- [Ping and "BGP up" passed. The route leak was still there.](https://netdryrun.com/posts/ping-missed-the-leak/): a leaked default route that ping and session checks miss, with the lab and evidence
 - [When to use what](https://netdryrun.com/when-to-use-what/): Batfish, pyATS/Genie, containerlab and Netdryrun compared
 - [Batfish, then Netdryrun](https://netdryrun.com/batfish/): a two-stage gate on FRR configs, with measured results and what each stage caught
 - [Trust and security](https://netdryrun.com/trust/): license, releases, security contact, limits, privacy
@@ -29,6 +36,12 @@ Facts (generated from the source): version 0.3.1; check types `bgp_session`, `bg
 - [Verdict corpus](https://netdryrun.com/corpus/): 30 realistic BGP changes with pre-registered verdicts; Netdryrun 24/30, ping-only 20/30, sessions-up 15/30 correct
 <!-- /facts:llms_corpus -->
 - [How it's built](https://netdryrun.com/how-its-built/): how results are checked and released, with evidence links; what is not claimed
+
+## Elsewhere
+
+- [Source on GitHub](https://github.com/netdryrun/netdryrun): code, examples, issues, AGENTS.md
+- [PyPI package](https://pypi.org/project/netdryrun/): `netdryrun`
+- MCP Registry: `io.github.netdryrun/netdryrun` (run with `uvx netdryrun mcp`)
 
 ## Full documentation
 

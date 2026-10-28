@@ -1,8 +1,12 @@
 # Netdryrun: full documentation
 
-> Netdryrun is an open-source tool that tests network changes in a real virtual lab before they reach production. It boots the topology with containerlab, waits for convergence, checks BGP sessions, prefixes, routes and reachability, and returns a pass/fail verdict with evidence. It runs locally, in GitHub Actions, or as an MCP server for AI agents.
+> Netdryrun is an open-source tool (Python, Apache-2.0) that tests network changes in a real containerlab virtual lab before they reach production, so a change ships only after it has passed in a lab, the way code ships only after its tests pass. It waits for convergence, checks BGP sessions, prefixes, routes and reachability, and returns a pass/fail verdict with evidence. Supported network OSes: FRR, Nokia SR Linux, SONiC (docker-sonic-vs) and Arista EOS (cEOS, bring your own image). It runs locally, in GitHub Actions, or as an MCP server for AI agents.
 
-Install: `pip install netdryrun` · Source: https://github.com/netdryrun/netdryrun · Docs: https://netdryrun.com/
+Install: `pipx install netdryrun` (or `uv tool install netdryrun`; current version 0.3.1). Source: https://github.com/netdryrun/netdryrun
+
+Facts (generated from the source): version 0.3.1; check types `bgp_session`, `bgp_prefixes`, `route`, `bgp_route` and `ping`; MCP tools `dry_run`, `verify_change`, `run_checks`, `record_baseline`, `validate` and `check_types`; verdict corpus Netdryrun 24/30, ping-only 20/30, sessions-up 15/30.
+
+Docs: https://netdryrun.com/ · Short index: https://netdryrun.com/llms.txt
 
 
 
@@ -102,7 +106,7 @@ Requirements: Linux or WSL2, Docker, containerlab, Python 3.10+. Walkthrough: [G
 ## Status
 
 
-Version 0.3.1. Works with FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image) on Linux and WSL2. Check types: `bgp_session`, `bgp_prefixes`, `route`, `bgp_route` and `ping` (IPv4/IPv6 unicast BGP sessions, prefix counts, routes, BGP best-path attributes and ping), plus link-down, node-isolation and route-injection (FRR only) failure scenarios. On the [verdict corpus](corpus.md) v1 (30 realistic BGP changes: 19 harmful, 11 safe), Netdryrun judged 24/30 correctly, ping-only checks 20/30 and all-sessions-up checks 15/30. Netdryrun approved 5 of the 19 harmful changes (ping-only checks: 10 of 19) and blocked 1 of the 11 safe ones. On v2 (18 cases written after v1 to target v1's misses): Netdryrun 17/18, ping-only 9/18, all-sessions-up 7/18. Expected verdicts were committed before any run, on one FRR topology; method, every miss and a one-command rerun are on the corpus page. Provenance: both ran on Netdryrun 0.3.1. Issues and feedback: [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun/issues).
+Version 0.3.1. Works with FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image) on Linux and WSL2. Check types: `bgp_session`, `bgp_prefixes`, `route`, `bgp_route` and `ping` (IPv4/IPv6 unicast BGP sessions, prefix counts, routes, BGP best-path attributes and ping), plus link-down, node-isolation and route-injection (FRR only) failure scenarios. On the [verdict corpus](corpus.md) v1 (30 realistic BGP changes: 19 harmful, 11 safe), Netdryrun judged 24/30 correctly, ping-only checks 20/30 and all-sessions-up checks 15/30. Netdryrun approved 5 of the 19 harmful changes (ping-only checks: 10 of 19) and blocked 1 of the 11 safe ones. On v2 (18 cases written after v1 to target v1's misses): Netdryrun 17/18, ping-only 9/18, all-sessions-up 7/18. Expected verdicts were committed before any run, on one FRR topology: a comparison of testing methods, not a production reliability estimate. Method, every miss and a one-command rerun are on the corpus page. Provenance: both ran on Netdryrun 0.3.1. Issues and feedback: [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun/issues).
 
 
 ---
@@ -828,6 +832,436 @@ The image comes from the SONiC build server, not a registry. To get it and run t
 ## Use an example as a template
 
 Copy a folder, change `name:` in `topology.clab.yml` (lab names must be unique on the machine), replace the configs with yours, and edit the checks. Or start from your own topology with `netdryrun record`, as in the [tutorial](tutorial.md).
+
+
+---
+Source: https://netdryrun.com/recipes/
+
+# Guard recipes and scenarios
+
+`netdryrun record` writes down what exists. These fragments add what must **never** happen, plus failures the network must survive. Paste them under `checks:` or `scenarios:` in your `netdryrun.yml`, then change the node names, neighbors and prefixes to your lab's.
+
+The node names and addresses are those of the [`frr-bgp` example](examples.md#frr-bgp): three FRR routers in a triangle, r1 (AS 65001, `10.0.12.1` to r2, `10.0.13.1` to r3), r2 (AS 65002) and r3 (AS 65003), each announcing one LAN, `192.168.<n>.0/24`. Every fragment on this page passes `netdryrun validate` when added to [`examples/frr-bgp/netdryrun.yml`](https://github.com/netdryrun/netdryrun/blob/main/examples/frr-bgp/netdryrun.yml). Check yours the same way, without starting a lab:
+
+```bash
+netdryrun validate my-lab
+```
+
+!!! note "Tested in a lab"
+    Each fragment was run on 2026-10-28 with Netdryrun™ 0.3.1, containerlab 0.81.1 and FRR 10.4.1: every guard passed on the `frr-bgp` lab (or the variant named under it) and failed on a copy with the mistake it guards against, with only the guard failing. The **Tested** line under each fragment names both labs and quotes the failure. Each run had the fragment plus r1's two session checks. Your lab is not this lab: run a guard once against a known-bad change in yours before you trust it.
+
+Every key used here is in the [netdryrun.yml reference](reference/config.md), which also explains when each check runs. Most guards are [post-convergence checks](reference/config.md#convergence-semantics): they wait until every configured BGP session on their node is up, then must hold for 10 seconds, so they can't pass just because BGP hasn't come up yet.
+
+## Guard recipes
+
+### No default route via BGP
+
+The most common leak: someone adds `default-originate`, or an export filter that matches the static default. The router may not even use the leaked route (it loses to its own default), so sessions, ping and the forwarding path all look unchanged. `route` with `present: false` fails on a BGP path that was received, selected or not.
+
+```yaml title="checks:"
+- type: route          # nobody sends r1 a default route
+  node: r1
+  prefix: 0.0.0.0/0
+  protocol: bgp
+  present: false
+```
+
+**Tested:** passes on `frr-bgp`; fails on r2 with `neighbor 10.0.12.1 default-originate` (the `frr-bgp-broken` change), exit 1:
+
+```text
+  [FAIL] r1: route 0.0.0.0/0 via bgp is absent -- unexpectedly present via bgp (not selected) (0.6s)
+```
+
+For IPv6, add the same check for `::/0`. The [`frr-bgp-broken`](examples.md#frr-bgp-broken) example is this check catching a leaked default, and [Ping and "BGP up" passed](posts/ping-missed-the-leak.md) walks through it.
+
+### A prefix-count ceiling
+
+One check per neighbor that catches a leak of *any* prefix, including ones nobody thought to list: a full table, a peer's routes passed to another peer, a redistribution that pulls in more than it should. Set `max` with room for normal growth.
+
+```yaml title="checks:"
+- type: bgp_prefixes   # r2 sends r1 between 1 and 10 prefixes
+  node: r1
+  neighbor: 10.0.12.2
+  min: 1
+  max: 10
+```
+
+The count is of *accepted* prefixes (received minus rejected by import policy), so this also shows a filter that suddenly drops everything (`min`). `record --min-prefixes` writes the `min` side for every neighbor; add `max` by hand.
+
+**Tested:** passes on `frr-bgp` (2 prefixes); fails on r2 announcing 12 extra static /24s with `redistribute static`, exit 1:
+
+```text
+  [FAIL] r1: prefixes from 10.0.12.2 >= 1 and <= 10 -- 14 ipv4-unicast prefixes accepted (0.3s)
+```
+
+### No infrastructure or link routes at the edge
+
+`redistribute connected` announces every connected subnet, including the point-to-point links between routers. The LAN arrives and the ping passes, but the link subnets leak too. List the infrastructure prefixes that must stay out of BGP: one check per prefix, because a check matches the prefix you give.
+
+```yaml title="checks:"
+- type: route          # the r2-r3 link subnet stays out of BGP
+  node: r1
+  prefix: 10.0.23.0/30
+  protocol: bgp
+  present: false
+```
+
+The [tutorial](tutorial.md#5-make-a-change-and-run-it) shows this check failing on a `redistribute connected` change while every session, the ping and the prefix-count range pass. Loopbacks and management ranges work the same way.
+
+**Tested:** passes on `frr-bgp`; fails on r3 with `redistribute connected`, exit 1:
+
+```text
+  [FAIL] r1: route 10.0.23.0/30 via bgp is absent -- unexpectedly present via bgp (0.4s)
+```
+
+### Communities preserved, internal tags stripped
+
+A route can arrive with the right prefix and the wrong attributes: a route-map rewrite that drops a customer community, or an internal tag that leaks to a peer. `bgp_route` checks the BGP best path's attributes. Quote communities: YAML reads some unquoted values as numbers.
+
+```yaml title="checks:"
+- type: bgp_route      # r2's LAN keeps its community on the way to r1
+  node: r1
+  prefix: 192.168.2.0/24
+  communities: ["65002:100"]
+
+- type: bgp_route      # and never carries the internal blackhole tag
+  node: r1
+  prefix: 192.168.2.0/24
+  without_communities: ["65002:666", blackhole]
+```
+
+The bundled `frr-bgp` routers don't set communities, so the first check fails there by design: tag the route on r2 (a route-map with `set community 65002:100` on its export) before you rely on it. `bgp_route` also checks `as_path`, `as_path_regex`, `local_pref`, `med` and `next_hop`; see [bgp_route](reference/config.md#bgp_route).
+
+**Tested:** both pass on `frr-bgp` with r2 tagging its export to r1 (`route-map TAG-R1 permit 10` with `set community 65002:100`, applied `out` on `neighbor 10.0.12.1`). Without the tag (the bundled lab) the first fails; with `set community 65002:100 65002:666` the second fails. Exit 1 each time:
+
+```text
+  [FAIL] r1: BGP best path for 192.168.2.0/24 has communities 65002:100 -- missing communities 65002:100 (best path: as-path '65002', next hop 10.0.12.2, local-pref 100, MED 0, communities none) (0.5s)
+  [FAIL] r1: BGP best path for 192.168.2.0/24 has no communities 65002:666 blackhole -- carries communities 65002:666 (best path: as-path '65002', next hop 10.0.12.2, local-pref 100, MED 0, communities 65002:100 65002:666) (0.6s)
+```
+
+### Max-prefix holds when a neighbor floods you
+
+A ceiling check says what the network *should* accept. This scenario makes a neighbor actually send too much, so the max-prefix limit in your config is exercised, not just written down. `inject_routes` makes an FRR node announce extra routes for the length of the scenario, then removes them.
+
+Here the config under test has `neighbor 10.0.12.2 maximum-prefix 10 restart 1` on r1, and r2 floods 50 prefixes. FRR closes the session, and with `restart 1` reopens it a minute later:
+
+```yaml title="scenarios:"
+- name: r2 sends more than the max-prefix limit
+  inject_routes: {node: r2, count: 50, from: 10.100.0.0/24}
+  checks:
+    - type: bgp_session    # the limit tripped and closed the session
+      node: r1
+      neighbor: 10.0.12.2
+      state: down
+    - type: route          # r2's LAN is still reachable, through r3
+      node: r1
+      prefix: 192.168.2.0/24
+      protocol: bgp
+```
+
+**Tested:** passes on `frr-bgp` with that line on r1 (the session was `idle` during the flood and came back after it); fails on the bundled lab, which has no limit, exit 1:
+
+```text
+  [FAIL] [r2 sends more than the max-prefix limit] r1: BGP session to 10.0.12.2 is down -- state is established (0.5s)
+```
+
+**The limit needs `restart`.** Netdryrun checks that the network recovers after every scenario. With `maximum-prefix 10` and no `restart`, FRR kept the session down after the injected routes were withdrawn, and the run failed on recovery, exit 1 (later scenarios would have been skipped):
+
+```text
+  [FAIL] [after r2 sends more than the max-prefix limit] recovers: r1: BGP session to 10.0.12.2 is established -- state is idle (120.5s)
+```
+
+In a triangle, r3 also passes r2's flood on to r1, unless r1 limits r3 too: the topology decides what your guards must cover.
+
+## Route checks for any protocol
+
+`route` reads the routing table, so its checks work for routes from any protocol, not only BGP: set `protocol` to `ospf`, `ospf6`, `isis`, `static`, `connected` and the other names in [protocol names](reference/config.md#protocol-names).
+
+```yaml title="checks:"
+- type: route          # r1 learns r2's loopback from OSPF, not from a static
+  node: r1
+  prefix: 10.255.0.2/32
+  protocol: ospf
+```
+
+**Tested:** passes on `frr-bgp` with `ospfd` enabled and OSPF on the r1-r2 link, r2 advertising loopback `10.255.0.2/32`; fails on the bundled lab (no OSPF) at its 60-second timeout, exit 1:
+
+```text
+  [FAIL] r1: route 10.255.0.2/32 via ospf is present -- not active via ospf; seen: nothing (60.4s)
+```
+
+Netdryrun can't check OSPF or IS-IS adjacencies themselves yet: those checks are planned for 0.5. Until then, a route learned from the protocol is the evidence that the adjacency came up.
+
+## Scenario catalog
+
+`scenarios:` runs extra checks while something is wrong, then restores the network. Each scenario needs at least one fault (`link_down`, `node_isolated` or `inject_routes`) and at least one check. Netdryrun waits until a link fault is visible in BGP before judging the checks; see [scenario timing](reference/config.md#scenario-timing).
+
+### A link fails: traffic reroutes
+
+```yaml title="scenarios:"
+- name: r1-r2 link fails
+  link_down: {node: r1, interface: eth1}
+  checks:
+    - type: route          # r2's LAN is still reachable, now via r3
+      node: r1
+      prefix: 192.168.2.0/24
+      protocol: bgp
+    - type: ping
+      node: r1
+      source: 192.168.1.1
+      target: 192.168.2.1
+    - type: bgp_session    # and the session over the failed link is really down
+      node: r1
+      neighbor: 10.0.12.2
+      state: down
+```
+
+Interface names are the ones inside the node (`eth1` on FRR). The [`frr-bgp` example](examples.md#frr-bgp) runs this scenario and also checks that the best path now goes through r3.
+
+**Tested:** passes on `frr-bgp`: `PASSED: 5 passed, 0 failed (5 checks)`, with the session over the failed link in `state is active`.
+
+### A node is isolated: what depended on it goes away cleanly
+
+```yaml title="scenarios:"
+- name: r2 isolated
+  node_isolated: r2      # every lab link of r2 goes down
+  checks:
+    - type: route          # r2's LAN is withdrawn, not left behind
+      node: r1
+      prefix: 192.168.2.0/24
+      present: false
+    - type: route          # r3's LAN still reaches r1 directly
+      node: r1
+      prefix: 192.168.3.0/24
+      protocol: bgp
+```
+
+**Tested:** passes on `frr-bgp`: `PASSED: 4 passed, 0 failed (4 checks)`.
+
+### A peer sends prefixes it doesn't own
+
+The import filter, exercised: r2 announces someone else's prefix and a more-specific of space it shouldn't send, with an AS path that makes them look learned from AS 65400. A correct import filter on r1 rejects them.
+
+```yaml title="scenarios:"
+- name: r2 announces what it does not own
+  inject_routes: {node: r2, prefixes: [8.8.8.0/24, 192.168.3.0/25], as_path: [65400]}
+  checks:
+    - type: route          # the hijacked prefix doesn't reach r1
+      node: r1
+      prefix: 8.8.8.0/24
+      protocol: bgp
+      present: false
+    - type: route          # nor the more-specific of r3's LAN
+      node: r1
+      prefix: 192.168.3.0/25
+      protocol: bgp
+      present: false
+    - type: bgp_prefixes   # r1 still accepts only r2's own prefixes
+      node: r1
+      neighbor: 10.0.12.2
+      max: 10
+```
+
+The bundled `frr-bgp` routers accept everything (`route-map ALLOW-ALL`), so this scenario fails there: that is the finding it exists for.
+
+**Tested:** passes on `frr-bgp` with an import filter on r1 that accepts only the two LANs (`ip prefix-list LANS` permitting `192.168.2.0/24` and `192.168.3.0/24`, matched in a route-map applied `in` on **both** neighbors, because r3 passes r2's routes on); fails on the bundled lab, exit 1:
+
+```text
+  [FAIL] [r2 announces what it does not own] r1: route 8.8.8.0/24 via bgp is absent -- unexpectedly present via bgp (0.5s)
+  [FAIL] [r2 announces what it does not own] r1: route 192.168.3.0/25 via bgp is absent -- unexpectedly present via bgp (0.5s)
+```
+
+The prefix ceiling passed in both runs: two extra prefixes stay well under a `max` with room for growth. The checks that name the prefixes are what caught it.
+
+### A customer exceeds its max-prefix
+
+The same as [max-prefix holds](#max-prefix-holds-when-a-neighbor-floods-you), seen from what must keep working: the customer's session closes, and the rest of the network carries on. The config under test has `neighbor 10.0.13.2 maximum-prefix 10 restart 1` on r1.
+
+```yaml title="scenarios:"
+- name: customer r3 floods r1
+  inject_routes: {node: r3, count: 200, from: 10.200.0.0/24}
+  checks:
+    - type: bgp_session    # r1's limit on r3 tripped
+      node: r1
+      neighbor: 10.0.13.2
+      state: down
+    - type: bgp_session    # the other session is untouched
+      node: r1
+      neighbor: 10.0.12.2
+    - type: ping           # and r2's LAN still answers
+      node: r1
+      source: 192.168.1.1
+      target: 192.168.2.1
+```
+
+**Tested:** passes on `frr-bgp` with that line on r1: `PASSED: 5 passed, 0 failed (5 checks)`. Fails on the bundled lab, which has no limit, exit 1:
+
+```text
+  [FAIL] [customer r3 floods r1] r1: BGP session to 10.0.13.2 is down -- state is established (0.2s)
+```
+
+Without `restart`, it failed on recovery, as in [max-prefix holds](#max-prefix-holds-when-a-neighbor-floods-you).
+
+`inject_routes` runs on FRR nodes only. To flood a vendor router, inject from an FRR neighbor. `count` takes 1 to 10000 prefixes.
+
+## Next
+
+- [Add Netdryrun to the lab you already have](guides/your-lab.md): record a baseline, then add these guards.
+- [netdryrun.yml reference](reference/config.md): every key and the convergence rules.
+- [Verdict corpus](corpus.md): 30 realistic BGP changes, and which checks caught each.
+
+
+---
+Source: https://netdryrun.com/guides/your-lab/
+
+# Add Netdryrun to the lab you already have (10 minutes)
+
+You have a containerlab BGP lab: a `topology.clab.yml` and its router configs. This page turns it into a test that every later change has to pass, in four steps:
+
+1. record the lab's steady state,
+2. review what was recorded,
+3. add one check for something that must never happen,
+4. run it on every pull request.
+
+The commands and output below are from a real run on Netdryrun™ 0.3.1, containerlab 0.81.1 and FRR 10.4.1 on WSL2, with the [`frr-bgp`](../examples.md#frr-bgp) example copied into a folder named `my-lab` standing in for your lab. The [tutorial](../tutorial.md) is the long version of the same path, with a failing change and the evidence it leaves.
+
+## Before you start
+
+- Netdryrun, Docker and containerlab on Linux or WSL2: see [Getting started](../getting-started.md#requirements). Or skip the install and use [GitHub Codespaces](../getting-started.md#try-it-in-your-browser), which has all three.
+- Nodes Netdryrun can read: FRR (an image whose name contains `frr`), Nokia SR Linux, SONiC or Arista cEOS. Linux hosts in the lab are fine; they just aren't checked. For another FRR-based image, set `nodes.<node>.driver: frr` ([drivers](../reference/config.md#drivers)).
+- A `name:` in the topology that no other running lab uses. Netdryrun deploys and destroys the lab itself.
+
+The ten minutes assume the images are already pulled. Recording took 50 seconds here, and each run about 40.
+
+## 1. Record the steady state
+
+```text
+$ netdryrun record my-lab/topology.clab.yml --deploy
+Deploying lab ndr-my-lab, then waiting 45s for the network to converge...
+recording r1 (frr)
+recording r2 (frr)
+recording r3 (frr)
+Recorded 18 checks to /home/ndr/work/docs031/my-lab/netdryrun.yml. Review it, then: netdryrun run /home/ndr/work/docs031/my-lab
+```
+
+`record --deploy` deploys the lab, waits for BGP to converge (`--wait`, 45 seconds by default), writes `netdryrun.yml` next to the topology, and destroys the lab. Without `--deploy` it reads a lab that is already running. It writes one check for every established BGP session, every prefix count, and up to 50 BGP routes per node:
+
+```yaml title="my-lab/netdryrun.yml (recorded)"
+# Recorded by netdryrun 0.3.1 record on 2026-10-28T02:26:27+00:00.
+# This is a baseline of the network's behavior when it was recorded. Review it before committing:
+# remove anything that is allowed to change, and add negative checks (route present: false,
+# ping expect: failure) for things that must never happen. Docs: https://netdryrun.com/reference/config/
+lab: topology.clab.yml
+timeout: 120
+checks:
+- type: bgp_session
+  node: r1
+  neighbor: 10.0.12.2
+- type: bgp_prefixes
+  node: r1
+  neighbor: 10.0.12.2
+  afi: ipv4-unicast
+  exact: 2
+- type: bgp_session
+  node: r1
+  neighbor: 10.0.13.2
+# ... 15 more: the same pattern for r2 and r3, plus one route check per learned LAN
+```
+
+!!! tip "A lab you just cloned"
+    The recorded file is the lab's steady state, written down. `netdryrun run` deploys the lab from scratch and checks that it reaches that state again. That is useful on its own, before you test any change: after you clone a public lab, bump an image tag, or move the lab to another machine or to CI, a pass says the lab still converges the way it did when you recorded it. A failure names the session or route that didn't come back.
+
+`record` reads BGP. Routes from OSPF, IS-IS, static or connected can be checked too: add `route` checks with `protocol: ospf` (or `isis`, `static`, `connected`) by hand. Checks for the OSPF and IS-IS adjacencies themselves are planned for 0.5.
+
+## 2. Review it
+
+A recorded baseline says "nothing may change", which is rarely what you want: `exact: 2` fails the day a site adds a LAN. Decide what is allowed to change.
+
+- **Keep** every `bgp_session` check.
+- **Turn exact prefix counts into ranges**, for example `min: 2` and `max: 10`. `max` stays a cheap leak guard. `netdryrun record --min-prefixes` records minimums from the start.
+- **Keep the route checks you care about**, and drop the rest.
+
+Add `--attributes` to `record` if you also want each route's AS path, local preference and communities pinned.
+
+## 3. Add one negative check
+
+`record` writes down only what exists. It can't know what must never exist. Start with the leak that the usual checks miss, a default route arriving over BGP:
+
+```yaml title="add under checks:"
+- type: route          # nobody sends r1 a default route
+  node: r1
+  prefix: 0.0.0.0/0
+  protocol: bgp
+  present: false
+```
+
+It fails on a BGP default that r1 received, even one r1 doesn't select, which is why ping and session checks miss it ([the story](../posts/ping-missed-the-leak.md)). More guards to paste, such as link subnets kept out of BGP, a community that must survive, and a neighbor flooding you, are on [Guard recipes](../recipes.md).
+
+Check the file without starting a lab. This is the tutorial's reviewed file, with the default-route check and one more for a link subnet:
+
+```text
+$ netdryrun validate my-lab
+OK: my-lab/netdryrun.yml (13 checks, lab /home/ndr/work/docs031/my-lab/topology.clab.yml, 3 nodes)
+  - [bgp_session] r1: BGP session to 10.0.12.2 is established
+  - [bgp_session] r1: BGP session to 10.0.13.2 is established
+  - [bgp_session] r2: BGP session to 10.0.12.1 is established
+  - [bgp_session] r2: BGP session to 10.0.23.2 is established
+  - [bgp_session] r3: BGP session to 10.0.13.1 is established
+  - [bgp_session] r3: BGP session to 10.0.23.1 is established
+  - [bgp_prefixes] r1: prefixes from 10.0.12.2 >= 2 and <= 10
+  - [bgp_prefixes] r1: prefixes from 10.0.13.2 >= 2 and <= 10
+  - [route] r1: route 192.168.2.0/24 via bgp is present
+  - [route] r1: route 192.168.3.0/24 via bgp is present
+  - [ping] r1: ping 192.168.3.1 from 192.168.1.1 expects success
+  - [route] r1: route 0.0.0.0/0 via bgp is absent
+  - [route] r1: route 10.0.23.0/30 via bgp is absent
+```
+
+Then run it: `netdryrun run my-lab`. On the unchanged lab, every check should pass. Then make your change and run it again. In the tutorial, a change that announced a new LAN with `redistribute connected` passed every session, the ping and the prefix range, and failed only a negative check:
+
+```text
+  [FAIL] r1: route 10.0.23.0/30 via bgp is absent -- unexpectedly present via bgp (0.3s)
+Destroying lab...
+FAILED: 12 passed, 1 failed (13 checks)
+```
+
+Exit code `1`, with the routing table and BGP table output that proved it in the report. [Read the evidence](../tutorial.md#6-read-the-evidence) shows the full report.
+
+## 4. Run it on every pull request
+
+Put the lab folder in your repository (here, `network/`) and add a workflow:
+
+```yaml title=".github/workflows/network-dryrun.yml"
+name: Network dry run
+on:
+  pull_request:
+    paths:
+      - "network/**"
+permissions:
+  contents: read
+  pull-requests: write   # only for pr-comment
+jobs:
+  dryrun:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: netdryrun/netdryrun@v0.3.1
+        with:
+          path: network/
+          pr-comment: true
+```
+
+Every pull request that touches `network/` now deploys the lab on the runner, runs the checks, posts the Markdown report as a comment, uploads `report.json`, and fails the job if a check fails. Make the job a required status check to block merges on a failure. Read the [Action security notes](../github-action.md#security-notes) before you run labs from forks.
+
+## What a pass means
+
+A pass says every check in the file held in the lab. It says nothing about behavior no check looks at, and a container lab isn't your production hardware or scale ([what a lab cannot prove](../trust.md#what-a-lab-cannot-prove)). The baseline and the guards are what make a pass worth something; review them like code.
+
+## Next
+
+- [Guard recipes and scenarios](../recipes.md): more negative checks, and failures the network must survive.
+- [Tutorial](../tutorial.md): the same path with a failing change, the fix, and the full evidence.
+- [AI agents](../ai-agents.md): let an agent run the same test before it proposes a change.
 
 
 ---
@@ -1690,6 +2124,14 @@ Snapshots a known-good lab into a `netdryrun.yml` baseline: every established BG
 | `--attributes` | Also record a `bgp_route` check per BGP route, pinning its best path's AS path, local preference and communities (not MED or next hop, which follow the topology) |
 | `--force` | Overwrite an existing file |
 
+### feedback
+
+Opens a short feedback form on GitHub in your browser, prefilled with your Netdryrun version and platform. Nothing is sent until you submit the form.
+
+| Option | Meaning |
+|---|---|
+| `--print-only` | Print the form's URL instead of opening a browser |
+
 ## Options
 
 `run` and `check`:
@@ -2500,7 +2942,7 @@ Source: https://netdryrun.com/ai-agents/
 
 # AI agents (MCP server)
 
-AI agents are starting to change networks. Netdryrun™ includes an [MCP](https://modelcontextprotocol.io) server that gives an agent a safety gate: it dry-runs the proposed change in a real lab and proceeds only if every check passes.
+Netdryrun™ includes an [MCP](https://modelcontextprotocol.io) server for testing network changes: `netdryrun mcp` (stdio). Before an AI agent applies a change, it calls `dry_run`; Netdryrun boots the changed configs in a real containerlab lab, runs the checks in `netdryrun.yml`, destroys the lab and returns a `verdict` field, so the agent proceeds only if every check passed. It is listed in the official MCP Registry as `io.github.netdryrun/netdryrun`, and it never connects to real devices.
 
 ## Watch the demo
 
@@ -3192,6 +3634,22 @@ Source: https://netdryrun.com/faq/
 
 # FAQ
 
+## What is Netdryrun?
+
+Netdryrun™ is an open-source (Apache-2.0) tool that dry-runs a network change in a real containerlab virtual lab before it reaches production. It boots your topology with the changed configs, waits for routing to converge, checks BGP sessions, prefix counts, routes, BGP best-path attributes and ping reachability against a `netdryrun.yml` file, and returns a pass/fail verdict with the commands and raw output as evidence. Supported network operating systems: FRR, Nokia SR Linux, SONiC (docker-sonic-vs) and Arista EOS (cEOS, bring your own image). It runs as a CLI, a GitHub Action and an MCP server for AI agents. See [Getting started](getting-started.md).
+
+## How do I test a BGP change before it reaches production?
+
+Build a containerlab lab of the affected part of the network, apply the change to its configs, and check how the network behaves, not only whether sessions come up. With Netdryrun: keep the topology and configs in Git, run `netdryrun record` once to write down the lab's current BGP sessions, prefix counts and routes as checks, add negative checks for what must never happen (for example `route 0.0.0.0/0` `present: false` on a router that must not learn a default), then run `netdryrun run` on every change. Exit code `0` means every check passed, `1` means the change broke a check, and the JSON report shows the evidence. The [tutorial](tutorial.md) walks through it on your own lab, and [Add Netdryrun to your lab](guides/your-lab.md) does it in ten minutes. A pass covers only what the checks describe, in a lab; see [What does a pass prove?](#what-does-a-pass-prove).
+
+## How do I run containerlab in CI?
+
+On GitHub, add the Netdryrun action to a workflow on `pull_request`: `uses: netdryrun/netdryrun@v0.3.1` with `path:` pointing at the folder that holds `netdryrun.yml`. It installs containerlab on the GitHub-hosted `ubuntu-latest` runner, deploys the lab, runs the checks, destroys the lab, uploads JSON and JUnit reports and fails the job on any failed check. A small FRR lab takes about 1 to 2 minutes per job ([measured times](#how-long-does-a-run-take-and-what-does-ci-cost)). Other CI systems can run the same `netdryrun run` command on a Linux runner with Docker and containerlab installed. See [GitHub Action](github-action.md), and the [FRR](guides/frr-ci.md) and [SONiC](guides/sonic-ci.md) CI guides.
+
+## Is there an MCP server for testing network changes?
+
+Yes. `netdryrun mcp` starts Netdryrun's built-in MCP server over stdio (`uvx netdryrun mcp` runs it without installing; in Claude Code, `claude mcp add netdryrun -- netdryrun mcp`). An AI agent calls `dry_run` with the path to a lab folder; Netdryrun deploys the lab, runs every check, destroys the lab and returns a `verdict` field: `SAFE TO PROCEED`, `DO NOT APPLY THIS CHANGE` or `INCONCLUSIVE`. The tools are `dry_run`, `verify_change`, `run_checks`, `record_baseline`, `validate` and `check_types`. It only builds labs on the machine where it runs and cannot connect to real devices. It is listed in the official MCP Registry as `io.github.netdryrun/netdryrun`. See [AI agents (MCP)](ai-agents.md).
+
 ## Does Netdryrun touch my production network?
 
 No. Netdryrun™ only builds labs with containerlab on the machine where it runs, runs commands only inside the lab containers (with `docker exec`), and destroys the lab. Most are read-only show commands; the others take links down and up for failure scenarios, add and remove routes for `inject_routes` scenarios, and run any `setup` commands you write. It has no command, option or MCP tool that connects to a real device or pushes config anywhere. You apply the change to production yourself, with your normal process, after the test passes.
@@ -3214,7 +3672,9 @@ A run is `inconclusive` (exit code `3`) when checks failed but the lab never rea
 
 The rules are conservative. A configured session that is down, a missing route or a failed ping is always `failed`, because an ASN typo looks exactly like a slow lab from the outside. See [when a run is inconclusive](reference/cli.md#when-a-run-is-inconclusive) and [troubleshooting](troubleshooting.md#inconclusive-the-lab-never-came-up).
 
-## How is it different from Batfish or pyATS?
+## Is Netdryrun an alternative to Batfish or pyATS?
+
+It complements them more than it replaces them. Netdryrun boots the real routing software in a lab and checks its behavior; Batfish analyzes configs without booting anything; pyATS is a general test framework for labs and production devices. Many teams run Batfish first and boot the lab only when it passes ([Batfish, then Netdryrun](batfish.md) measures that pipeline).
 
 - **Batfish** models configs without booting anything. It is fast, covers many vendors and large networks, and answers broad questions. Netdryrun runs the real routing software, so it sees what the implementation actually does, on fewer nodes.
 - **pyATS / Genie** is a full Python test framework with many parsers, for labs and production devices. Netdryrun is a YAML file of checks and a CLI, aimed at one job: a pass/fail gate in CI.
@@ -3302,6 +3762,171 @@ Apache-2.0, for the code. "Netdryrun" and the logo are trademarks: forks are wel
 ## Where do I get help?
 
 Read [Troubleshooting](troubleshooting.md) first. Then [open an issue](https://github.com/netdryrun/netdryrun/issues) with the JSON report attached. See [Support](support.md).
+
+
+---
+Source: https://netdryrun.com/posts/ping-missed-the-leak/
+
+# Ping and "BGP up" passed. The route leak was still there.
+
+*2026-10-28 · Netdryrun™ 0.3.1, containerlab 0.81.1, FRR 10.4.1*
+
+A one-line change makes a router send its neighbor a default route. After the change, both BGP sessions are established and the ping between the LANs answers. A test made of those checks reports a pass. The leaked default is in the neighbor's routing table anyway, received but not selected, waiting for the day the route it loses to goes away.
+
+This post walks through that case with the bundled [`frr-bgp-broken`](../examples.md#frr-bgp-broken) example: the lab, the change, the commands, the evidence, and what a lab run like this can and can't tell you. Everything quoted is real output from the runs named next to it.
+
+## The lab and the change
+
+Three FRR routers in a triangle, each in its own AS, each announcing one LAN over eBGP: r1 (AS 65001, `192.168.1.0/24`), r2 (AS 65002, `192.168.2.0/24`) and r3 (AS 65003, `192.168.3.0/24`). The example is the [`frr-bgp`](../examples.md#frr-bgp) lab with one change in r2's config, [`r2-bad.conf`](https://github.com/netdryrun/netdryrun/blob/main/examples/frr-bgp-broken/r2-bad.conf):
+
+```text title="r2-bad.conf"
+router bgp 65002
+ ...
+ address-family ipv4 unicast
+  network 192.168.2.0/24
+  ! The bad change: someone added default-originate toward r1
+  neighbor 10.0.12.1 default-originate
+```
+
+`default-originate` makes r2 announce `0.0.0.0/0` to r1 whether or not r2 has a default route itself. Toward a customer that is sometimes intended. Toward a peer, or a router that has its own way out, it offers to carry all traffic that has no more specific route.
+
+## The checks
+
+The example's [`netdryrun.yml`](https://github.com/netdryrun/netdryrun/blob/main/examples/frr-bgp-broken/netdryrun.yml) has six checks, all on r1: both BGP sessions established, between 1 and 10 prefixes from r2, a route to r3's LAN, a ping from r1's LAN to r3's, and one negative check:
+
+```yaml
+- type: route        # nothing should send r1 a default route
+  node: r1
+  prefix: 0.0.0.0/0
+  protocol: bgp
+  present: false
+```
+
+## The run
+
+On Linux or WSL2 with Docker and containerlab:
+
+```bash
+pipx install netdryrun
+git clone https://github.com/netdryrun/netdryrun && cd netdryrun
+netdryrun run examples/frr-bgp-broken
+```
+
+This output is from the re-recorded [FRR CI guide](../guides/frr-ci.md#3-run-it-locally):
+
+```text
+Netdryrun 0.3.1: 6 checks from examples/frr-bgp-broken/netdryrun.yml
+Deploying lab ndr-frr-broken (3 nodes); this usually takes 30-90 s, longer the first time images are pulled...
+  [PASS] r1: BGP session to 10.0.12.2 is established -- state is established (13.5s)
+  [PASS] r1: BGP session to 10.0.13.2 is established -- state is established (13.5s)
+  [PASS] r1: route 192.168.3.0/24 via bgp is present -- active via bgp (13.5s)
+  [PASS] r1: ping 192.168.3.1 from 192.168.1.1 expects success -- 3/3 replies (need 2) (13.5s)
+Convergence checks done; settling 10s before post-convergence checks...
+  [PASS] r1: prefixes from 10.0.12.2 >= 1 and <= 10 -- 3 ipv4-unicast prefixes accepted (held 10s, 5 samples) (10.1s)
+  [FAIL] r1: route 0.0.0.0/0 via bgp is absent -- unexpectedly present via bgp (not selected) (0.2s)
+Destroying lab...
+FAILED: 5 passed, 1 failed (6 checks)
+```
+
+Exit code `1`. In the 0.3.1 release check, the same example took 39 seconds from deploy to destroy, with the images already pulled ([`live.json`](https://github.com/netdryrun/netdryrun/blob/main/releases/0.3.1/gate/live.json)).
+
+## The diff against a ping-only check
+
+Five of the six checks passed. Split them by what a common pre-change test looks at:
+
+| Check | Result | Ping-only test | Sessions-up test | This file |
+|---|---|---|---|---|
+| ping 192.168.3.1 from 192.168.1.1 | pass | ✓ | | ✓ |
+| BGP session to r2 established | pass | | ✓ | ✓ |
+| BGP session to r3 established | pass | | ✓ | ✓ |
+| route to r3's LAN present | pass | | | ✓ |
+| 1 to 10 prefixes from r2 | pass (3 accepted) | | | ✓ |
+| no default route via BGP | **fail** | | | ✓ |
+| **Verdict** | | **pass** | **pass** | **fail** |
+
+A test made only of the ping, or only of the sessions, would have run on this same lab and passed this change. The prefix ceiling passed too: the leak added one prefix (2 became 3), well inside a range that leaves room for growth. Only the check that names the forbidden route failed.
+
+Why the ping still works: the LANs have more specific routes, so a default changes nothing for traffic between them. And r1 doesn't even select the leaked default: containerlab gives each node a default route through its management network, which FRR sees as a kernel route with distance 0, and that beats BGP's 20. So forwarding on r1 is exactly what it was before the change.
+
+The same pattern shows up in the [verdict corpus](../corpus.md), a benchmark of BGP changes the maintainers wrote on one FRR topology, with expected verdicts committed before any run. In [case 17](../corpus/17-default-leaked-to-peer.md), `default-originate` toward a peer, the ping-only and all-sessions-up strategies approved the change and Netdryrun's intent checks rejected it.
+
+## The evidence
+
+The run with `--json report.json` writes every command and its raw output next to each check. The verdict as the [MCP server](../ai-agents.md#result-and-verdict) returns it for this example, shortened to the failed check:
+
+```json
+{
+  "status": "failed",
+  "passed": 5,
+  "failed": 1,
+  "error": null,
+  "inconclusive_reason": null,
+  "lab": "ndr-frr-broken",
+  "checks": [
+    {"name": "r1: route 0.0.0.0/0 via bgp is absent", "passed": false,
+     "detail": "unexpectedly present via bgp (not selected)"}
+  ],
+  "evidence_file": "/path/to/lab/netdryrun-report.json",
+  "verdict": "DO NOT APPLY THIS CHANGE"
+}
+```
+
+The raw output behind a "(not selected)" verdict looks like this. This excerpt is from a different lab with the same leak: a peer router, `peer1`, received an upstream's default route (a validation run on Netdryrun 0.3.0, committed as the test fixture [`report-real-failed-leak.json`](https://github.com/netdryrun/netdryrun/blob/main/tests/fixtures/report-real-failed-leak.json). The report stores `output` as the command's text; here it is parsed and shortened to the fields that matter):
+
+```json
+{
+  "node": "peer1",
+  "cmd": "vtysh -c show ip route 0.0.0.0/0 json",
+  "rc": 0,
+  "output": {
+    "0.0.0.0/0": [
+      {"protocol": "bgp", "distance": 20,
+       "nexthops": [{"ip": "10.0.3.1", "interfaceName": "eth1", "active": true}]},
+      {"protocol": "kernel", "selected": true, "installed": true, "distance": 0,
+       "nexthops": [{"ip": "172.20.20.1", "interfaceName": "eth0", "active": true}]}
+    ]
+  }
+}
+```
+
+Two entries for `0.0.0.0/0`. The BGP one, from the neighbor at `10.0.3.1`, has no `selected` or `installed`. The kernel one, containerlab's management default through `eth0`, is selected and installed. A check that asks "what does the router forward with?" sees only the kernel route. Netdryrun's `present: false` counts any BGP path the router received, selected or not, and fails.
+
+To look at it yourself, rerun with `--keep-on-failure` and query the router, then destroy the lab with the command Netdryrun prints:
+
+```bash
+netdryrun run examples/frr-bgp-broken --keep-on-failure
+docker exec clab-ndr-frr-broken-r1 vtysh -c "show ip route 0.0.0.0/0"
+docker exec clab-ndr-frr-broken-r1 vtysh -c "show bgp ipv4 unicast 0.0.0.0/0"
+```
+
+## Why it matters if nothing changed
+
+In this lab the leak is harmless today. It stops being harmless when the route it loses to goes away: a link fails, someone cleans up a static default, a device without a management default runs the same config. Then the received default becomes the best route, and all traffic with no more specific route goes to the neighbor that leaked it. The [hidden-leak lab](https://github.com/netdryrun/netdryrun/tree/main/examples/srl-hidden-leak) shows the same leak on Nokia SR Linux and FRR, how to see it by hand in each CLI, and what happens when the static default goes away.
+
+A static analyzer such as Batfish also catches this particular leak, from the configs alone. The [Batfish page](../batfish.md) shows a leak it misses and the lab catches.
+
+## Try it without installing anything
+
+[Open Netdryrun in GitHub Codespaces](https://codespaces.new/netdryrun/netdryrun?quickstart=1) and click **Create codespace**. It comes with Docker, containerlab and Netdryrun, and pulls the FRR image. When the terminal shows `Ready`, run:
+
+```bash
+netdryrun run examples/frr-bgp-broken
+```
+
+It uses your GitHub account's free Codespaces hours (2-core machine). Stop or delete the codespace when you're done.
+
+To add the same check to a lab you already have, see [Add Netdryrun to the lab you already have](../guides/your-lab.md). More guards like this one are on [Guard recipes](../recipes.md).
+
+## What a lab can't prove
+
+This run shows one thing: in this lab, with these configs, r1 received a default route over BGP that it shouldn't have, and the check that names it caught it. It does not show:
+
+- **That your network is free of leaks.** The check knows about `0.0.0.0/0` and nothing else. A leak of any other prefix needs its own check, or a prefix ceiling tight enough to notice it. A pass covers the checks in the file and nothing more.
+- **That your vendor behaves like FRR.** The lab ran FRR containers. Route selection, defaults and timers on the routers you run in production can differ.
+- **Behavior at production scale.** Three routers and a handful of prefixes say nothing about full tables, many peers, hardware or ASIC limits, or convergence time at scale.
+- **What production traffic would do.** Ping tests a path between two addresses you choose; it's evidence for that path only.
+
+More in [what a lab cannot prove](../trust.md#what-a-lab-cannot-prove). A lab run is evidence for one change in one lab, and a reviewer can read every command and output behind it.
 
 
 ---

@@ -1,20 +1,38 @@
-# All crawlers, including AI search and training crawlers, are welcome.
+# All crawlers, including AI search, AI assistant and training crawlers, are welcome.
+# The named groups below say so explicitly; they grant nothing beyond the * group.
 User-agent: *
 Allow: /
 
+# OpenAI: training, ChatGPT search, and fetches on a user's request
 User-agent: GPTBot
-Allow: /
-
 User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
 Allow: /
 
+# Anthropic: training, Claude search, and fetches on a user's request
 User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
 Allow: /
 
+# Perplexity
 User-agent: PerplexityBot
+User-agent: Perplexity-User
 Allow: /
 
+# Google (Search, and Gemini / AI training) and Microsoft Bing (also feeds Copilot and ChatGPT search)
+User-agent: Googlebot
 User-agent: Google-Extended
+User-agent: Bingbot
+Allow: /
+
+# Apple, Common Crawl, and other assistants
+User-agent: Applebot
+User-agent: Applebot-Extended
+User-agent: CCBot
+User-agent: DuckAssistBot
+User-agent: MistralAI-User
+User-agent: meta-externalagent
 Allow: /
 
 Sitemap: https://netdryrun.com/sitemap.xml

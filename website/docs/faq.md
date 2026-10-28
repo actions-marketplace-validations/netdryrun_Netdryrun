@@ -1,9 +1,25 @@
 ---
 title: FAQ
-description: Frequently asked questions about Netdryrun. Does it touch production, what a pass proves, how it differs from Batfish and pyATS, supported network operating systems, Windows, memory needs, CI time and cost, privacy and license.
+description: Frequently asked questions about Netdryrun. What it is, how to test a BGP change before production, containerlab in CI, the MCP server for AI agents, whether it touches production, what a pass proves, how it differs from Batfish and pyATS, supported network operating systems, Windows, memory needs, CI time and cost, privacy and license.
 ---
 
 # FAQ
+
+## What is Netdryrun?
+
+Netdryrun™ is an open-source (Apache-2.0) tool that dry-runs a network change in a real containerlab virtual lab before it reaches production. It boots your topology with the changed configs, waits for routing to converge, checks BGP sessions, prefix counts, routes, BGP best-path attributes and ping reachability against a `netdryrun.yml` file, and returns a pass/fail verdict with the commands and raw output as evidence. Supported network operating systems: <!-- facts:faq_platforms -->FRR, Nokia SR Linux, SONiC (docker-sonic-vs) and Arista EOS (cEOS, bring your own image)<!-- /facts:faq_platforms -->. It runs as a CLI, a GitHub Action and an MCP server for AI agents. See [Getting started](getting-started.md).
+
+## How do I test a BGP change before it reaches production?
+
+Build a containerlab lab of the affected part of the network, apply the change to its configs, and check how the network behaves, not only whether sessions come up. With Netdryrun: keep the topology and configs in Git, run `netdryrun record` once to write down the lab's current BGP sessions, prefix counts and routes as checks, add negative checks for what must never happen (for example `route 0.0.0.0/0` `present: false` on a router that must not learn a default), then run `netdryrun run` on every change. Exit code `0` means every check passed, `1` means the change broke a check, and the JSON report shows the evidence. The [tutorial](tutorial.md) walks through it on your own lab, and [Add Netdryrun to your lab](guides/your-lab.md) does it in ten minutes. A pass covers only what the checks describe, in a lab; see [What does a pass prove?](#what-does-a-pass-prove).
+
+## How do I run containerlab in CI?
+
+On GitHub, add the Netdryrun action to a workflow on `pull_request`: `uses: netdryrun/netdryrun@v0.3.1` with `path:` pointing at the folder that holds `netdryrun.yml`. It installs containerlab on the GitHub-hosted `ubuntu-latest` runner, deploys the lab, runs the checks, destroys the lab, uploads JSON and JUnit reports and fails the job on any failed check. A small FRR lab takes about 1 to 2 minutes per job ([measured times](#how-long-does-a-run-take-and-what-does-ci-cost)). Other CI systems can run the same `netdryrun run` command on a Linux runner with Docker and containerlab installed. See [GitHub Action](github-action.md), and the [FRR](guides/frr-ci.md) and [SONiC](guides/sonic-ci.md) CI guides.
+
+## Is there an MCP server for testing network changes?
+
+Yes. `netdryrun mcp` starts Netdryrun's built-in MCP server over stdio (`uvx netdryrun mcp` runs it without installing; in Claude Code, `claude mcp add netdryrun -- netdryrun mcp`). An AI agent calls `dry_run` with the path to a lab folder; Netdryrun deploys the lab, runs every check, destroys the lab and returns a `verdict` field: `SAFE TO PROCEED`, `DO NOT APPLY THIS CHANGE` or `INCONCLUSIVE`. The tools are <!-- facts:mcp_tools -->`dry_run`, `verify_change`, `run_checks`, `record_baseline`, `validate` and `check_types`<!-- /facts:mcp_tools -->. It only builds labs on the machine where it runs and cannot connect to real devices. It is listed in the official MCP Registry as `io.github.netdryrun/netdryrun`. See [AI agents (MCP)](ai-agents.md).
 
 ## Does Netdryrun touch my production network?
 
@@ -27,7 +43,9 @@ A run is `inconclusive` (exit code `3`) when checks failed but the lab never rea
 
 The rules are conservative. A configured session that is down, a missing route or a failed ping is always `failed`, because an ASN typo looks exactly like a slow lab from the outside. See [when a run is inconclusive](reference/cli.md#when-a-run-is-inconclusive) and [troubleshooting](troubleshooting.md#inconclusive-the-lab-never-came-up).
 
-## How is it different from Batfish or pyATS?
+## Is Netdryrun an alternative to Batfish or pyATS?
+
+It complements them more than it replaces them. Netdryrun boots the real routing software in a lab and checks its behavior; Batfish analyzes configs without booting anything; pyATS is a general test framework for labs and production devices. Many teams run Batfish first and boot the lab only when it passes ([Batfish, then Netdryrun](batfish.md) measures that pipeline).
 
 - **Batfish** models configs without booting anything. It is fast, covers many vendors and large networks, and answers broad questions. Netdryrun runs the real routing software, so it sees what the implementation actually does, on fewer nodes.
 - **pyATS / Genie** is a full Python test framework with many parsers, for labs and production devices. Netdryrun is a YAML file of checks and a CLI, aimed at one job: a pass/fail gate in CI.

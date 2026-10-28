@@ -43,6 +43,10 @@ The agent contract: what an AI agent needs to choose Netdryrun, read its result 
 - **MCP tool descriptions** now all state when to use the tool (before proposing or applying a routing or policy change), that ping is not a test, the runtime (about 60–120 s per dry run), the requirements (Linux or WSL2, Docker and containerlab with root-equivalent rights; not macOS, not sandboxes without Docker-in-Docker), that inconclusive means stop with at most one retry, and never to invent or weaken checks but to call `record_baseline` when none exist. `dry_run` is named the primary tool.
 - **The MCP Registry description** (`server.json`) is now the opening of the one-sentence definition; the registry caps it at 100 characters.
 
+### Fixes
+
+- **GitHub Action:** the job is green only when the run exited `0` **and** its report says `passed`. Before, a run that exited `0` with a report that said otherwise, or with no report, set the `status` output to `error` but left the job green. No released version is known to produce that combination; this closes it for any future bug. Found by a new test that runs one report through the CLI, the MCP server and the Action and requires the same verdict from each.
+
 ## 0.3.1 (2026-10-28)
 
 **Upgrading from 0.3.0, read this first:**

@@ -140,8 +140,9 @@ def blocks(f: dict) -> dict[str, str]:
                        f"{c['ping_approved_harmful']} of {c['harmful']}) and blocked {len(losses['safe'])} of the {safe} safe ones. "
                        f"On v2 ({c2['cases']} cases written after v1 to target v1's misses): Netdryrun {c2['netdryrun']}/{c2['cases']}, "
                        f"ping-only {c2['ping']}/{c2['cases']}, all-sessions-up {c2['sessions']}/{c2['cases']}. "
-                       f"Expected verdicts were committed before any run, on one FRR topology; method, every miss and a "
-                       f"one-command rerun are on the corpus page. Provenance: {provenance}.{pending}")
+                       f"Expected verdicts were committed before any run, on one FRR topology: a comparison of testing methods, "
+                       f"not a production reliability estimate. Method, every miss and a one-command rerun are on the corpus page. "
+                       f"Provenance: {provenance}.{pending}")
     checks = _join([f"`{t}`" for t in f["check_types"]])
     attrs = "bgp_route" in f["check_types"]  # BGP best-path attribute checks exist
     covers = "BGP sessions, prefix counts, " + ("routes, BGP best-path attributes and ping" if attrs else "routes and ping")
@@ -240,6 +241,7 @@ def main() -> int:
     site = "website/overrides/main.html"
     text = (ROOT / site).read_text(encoding="utf-8")
     new = re.sub(r'("softwareVersion": ")[^"]*(")', rf'\g<1>{f["version"]}\g<2>', text)
+    new = re.sub(r"(Supported network operating systems: )[^.\"]*(\.)", rf"\g<1>{values['faq_platforms']}\g<2>", new)
     if new != text:
         changed[site] = new
 
