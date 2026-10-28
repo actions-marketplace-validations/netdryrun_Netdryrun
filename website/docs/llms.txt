@@ -19,6 +19,7 @@ Facts (generated from the source): version 0.3.1; check types `bgp_session`, `bg
 - [Guard recipes and scenarios](https://netdryrun.com/recipes/): copy-paste netdryrun.yml fragments for frequent BGP mistakes, and link-down, node-isolated and route-injection scenarios
 - [netdryrun.yml reference](https://netdryrun.com/reference/config/): every check type and key, convergence semantics
 - [CLI and reports](https://netdryrun.com/reference/cli/): commands, flags, exit codes, JSON/Markdown/JUnit reports
+- [Compatibility matrix](https://netdryrun.com/reference/compatibility/): each supported network OS, the exact image it is verified on, the date of its last live capture, and what each check does on it
 - [GitHub Action](https://netdryrun.com/github-action/): inputs, outputs, security notes
 - [Test an FRR change in CI](https://netdryrun.com/guides/frr-ci/): the lab folder, the checks that matter for FRR, a GitHub workflow, gotchas, measured times
 - [Test a SONiC change in CI](https://netdryrun.com/guides/sonic-ci/): getting docker-sonic-vs, configuring it after boot with setup lines, the checks that matter for SONiC, gotchas, measured times
