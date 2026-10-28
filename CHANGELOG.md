@@ -2,8 +2,14 @@
 
 ## Unreleased
 
+### Changed
+
+- **`netdryrun record` writes prefix-count ranges by default:** today's count as `min`, and `max` with 20% headroom (at least 2), instead of an exact count that broke on normal growth. A neighbor that sends nothing stays `exact: 0`. `--exact-prefixes` keeps the old behaviour; `--min-prefixes` is unchanged. The MCP `record_baseline` tool does the same.
+- **A truncated baseline is loud.** When a node has more BGP routes than `record` writes (50 per node), the file starts with an `# INCOMPLETE BASELINE` line naming the node and the count, and the line is printed on stderr.
+
 ### Added
 
+- **`record --guards`** (and `guards` on `record_baseline`) adds the standard guards on every BGP node: no default route via BGP, and no link subnet of the topology via BGP, except anything the node learns via BGP today.
 - **Exact MCP setup for Cursor, VS Code (Copilot agent mode), Windsurf and Codex CLI** on the AI agents page: the file, its location and the block for each, checked against each client's documentation on 2026-10-28 and linked to it. VS Code's key is `servers`, not `mcpServers`; Codex CLI's 60-second default tool timeout is shorter than a dry run, so the page raises it or points to `start_run`.
 - **The pull-request path for agents without Docker.** `netdryrun run --verdict FILE` (and `check`) writes the agent result, the same `netdryrun.mcp-result/v1` object the MCP tools return, with the files tested. The GitHub Action writes it (`verdict-report`, default `netdryrun-verdict.json`) and uploads it with the reports, and its PR comment now starts with a fixed header: a `<!-- netdryrun-verdict: {...} -->` line with the status, verdict and counts as JSON, then the verdict in words. The header is held to the run's checked exit code: a missing or contradicting result reads `error`. New guide: [AI agents without Docker](https://netdryrun.com/guides/agent-pr/).
 - **An asynchronous MCP shape.** `start_run` returns at once with a `run_id` and `status: running` (no verdict), and `get_result` polls it until the run finishes; the finished result is exactly `dry_run`'s, with its `run_id`. A dry run takes about 60–120 s, longer than some clients wait for one tool call (Codex CLI's default per-tool timeout is 60 s). A config error or a path outside `NETDRYRUN_MCP_ROOT` is answered at once; a run that stops on an internal error ends as `status: error`, never stuck at `running`. Runs live in the server process. The pending shape, `run_pending`, is in the result schema. `dry_run` is unchanged.

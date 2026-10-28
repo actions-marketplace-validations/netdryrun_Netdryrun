@@ -163,8 +163,9 @@ def _cmd_record(args) -> int:
             print(f"Deploying lab {lab.name}, then waiting {args.wait:g}s for the network to converge...", flush=True)
             lab.deploy()
             time.sleep(args.wait)
-        data, warnings = record(topo, include_routes=not args.no_routes, exact_prefixes=not args.min_prefixes,
-                                attributes=args.attributes, log=lambda m: print(m, flush=True))
+        mode = "exact" if args.exact_prefixes else "min" if args.min_prefixes else "range"
+        data, warnings = record(topo, include_routes=not args.no_routes, prefix_mode=mode, attributes=args.attributes,
+                                guards=args.guards, log=lambda m: print(m, flush=True))
     except LabError as e:
         print(f"lab error: {e}", file=sys.stderr)
         return 2
@@ -181,6 +182,8 @@ def _cmd_record(args) -> int:
     out.write_text(render(data, warnings), encoding="utf-8")
     for w in warnings:
         print(f"warning: {w}")
+    for w in (w for w in warnings if w.startswith("INCOMPLETE BASELINE")):
+        print(f"\n*** {w} ***", file=sys.stderr)
     print(f"Recorded {len(data['checks'])} checks to {out}. Review it, then: netdryrun run {out.parent}")
     return 0
 
@@ -251,7 +254,13 @@ def main(argv: list[str] | None = None) -> int:
     p_rec.add_argument("--out", metavar="FILE", help="where to write (default: netdryrun.yml next to the topology)")
     p_rec.add_argument("--deploy", action="store_true", help="deploy the lab first and destroy it afterwards")
     p_rec.add_argument("--wait", type=_seconds, default=45.0, help="with --deploy: seconds to let BGP converge (default 45)")
-    p_rec.add_argument("--min-prefixes", action="store_true", help="record prefix counts as minimums instead of exact")
+    counts = p_rec.add_mutually_exclusive_group()
+    counts.add_argument("--exact-prefixes", action="store_true",
+                        help="pin prefix counts exactly (default: today's count as min, max with 20%% headroom)")
+    counts.add_argument("--min-prefixes", action="store_true", help="record prefix counts as minimums only")
+    p_rec.add_argument("--guards", action="store_true",
+                       help="add the standard guards: no default route and no link subnet via BGP on each BGP node, "
+                            "except what it learns today")
     p_rec.add_argument("--no-routes", action="store_true", help="don't record individual BGP routes")
     p_rec.add_argument("--attributes", action="store_true",
                        help="also pin each BGP route's AS path, local preference and communities (bgp_route checks)")

@@ -265,12 +265,15 @@ def run_checks(path: str) -> str:
 
 @mcp.tool(description=_describe("""
     Snapshot a known-good lab (containerlab topology file) as netdryrun.yml check text: every established
-    BGP session, prefix count and BGP route. Call it when no checks exist, before changing the configs,
-    then dry-run the change against this baseline. With attributes=true, also pin each BGP route's AS path,
-    local preference and communities. Returns the YAML; nothing is written to disk. Show it to the human:
-    the checks belong to the network team.
+    BGP session, prefix count (today's count as min, max with 20% headroom) and BGP route. Call it when no
+    checks exist, before changing the configs, then dry-run the change against this baseline. With
+    attributes=true, also pin each BGP route's AS path, local preference and communities. With guards=true,
+    add the standard guards: no default route and no link subnet via BGP on each BGP node. A first line
+    starting "# INCOMPLETE BASELINE" means routes were left out: say so to the human. Returns the YAML;
+    nothing is written to disk. Show it to the human: the checks belong to the network team.
     """))
-def record_baseline(topology: str, deploy: bool = True, wait_seconds: float = 45, attributes: bool = False) -> str:
+def record_baseline(topology: str, deploy: bool = True, wait_seconds: float = 45, attributes: bool = False,
+                    guards: bool = False) -> str:
     import time
 
     from .record import record, render
@@ -292,7 +295,7 @@ def record_baseline(topology: str, deploy: bool = True, wait_seconds: float = 45
         if deploy:
             lab.deploy()
             time.sleep(wait_seconds)
-        data, warnings = record(topo, attributes=attributes)
+        data, warnings = record(topo, attributes=attributes, guards=guards)
     except LabError as e:
         return json.dumps({"error": str(e)})
     finally:

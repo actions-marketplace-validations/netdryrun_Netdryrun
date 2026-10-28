@@ -50,14 +50,16 @@ OK: examples/frr-bgp/netdryrun.yml (7 checks, lab .../examples/frr-bgp/topology.
 netdryrun record path/to/topology.clab.yml --deploy
 ```
 
-Snapshots a known-good lab into a `netdryrun.yml` baseline: every established BGP session, every prefix count (exact, or minimums with `--min-prefixes`) and up to 50 BGP routes per node. Commit it, and every later change is tested against today's behavior. Review the file before committing: remove what is allowed to change, and add negative checks for what must never happen.
+Snapshots a known-good lab into a `netdryrun.yml` baseline: every established BGP session, every prefix count and up to 50 BGP routes per node. From 0.3.3 a prefix count is a range: today's count as `min`, and `max` with 20% headroom (at least 2) for normal growth, which still catches a leak that multiplies the count; a neighbor that sends nothing stays `exact: 0`. When a node has more BGP routes than are recorded, the file starts with an `# INCOMPLETE BASELINE` line naming the node and the count, and the same line is printed on stderr: a change to an unrecorded route goes unnoticed, so add checks for the routes that matter. Commit it, and every later change is tested against today's behavior. Review the file before committing: remove what is allowed to change, and add negative checks for what must never happen.
 
 | Option | Meaning |
 |---|---|
 | `--out FILE` | Where to write (default: `netdryrun.yml` next to the topology) |
 | `--deploy` | Deploy the lab first and destroy it afterwards (otherwise the lab must be running) |
 | `--wait SECONDS` | With `--deploy`: time for BGP to converge before recording (default 45) |
-| `--min-prefixes` | Record prefix counts as minimums instead of exact |
+| `--exact-prefixes` | Pin prefix counts exactly (0.3.2 and earlier did this by default) |
+| `--min-prefixes` | Record prefix counts as minimums only |
+| `--guards` | Also add the standard [guards](../recipes.md#guard-recipes) on each BGP node: no default route via BGP (`0.0.0.0/0`, and `::/0` with IPv6 BGP) and no link subnet of the topology via BGP, each as a `route` check with `present: false`. Anything the node learns via BGP today gets no guard (a warning says so for a default route). From 0.3.3 |
 | `--no-routes` | Don't record individual routes |
 | `--attributes` | Also record a `bgp_route` check per BGP route, pinning its best path's AS path, local preference and communities (not MED or next hop, which follow the topology) |
 | `--force` | Overwrite an existing file |
