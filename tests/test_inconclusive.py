@@ -149,7 +149,7 @@ def test_other_statuses_unchanged():
     err = _report([result(SESSION, unready=10)], error="containerlab deploy failed")
     assert err.status == "error" and err.exit_code == 2 and err.inconclusive_reason is None
     ok = _report([result(SESSION, passed=True, samples_passed=2)])
-    assert ok.status == "passed" and ok.exit_code == 0 and _summary(ok, None)["verdict"] == "SAFE TO PROCEED"
+    assert ok.status == "passed" and ok.exit_code == 0 and _summary(ok, None)["verdict"] == "CHECKS PASSED (only what the checks cover)"
 
 
 def test_summary_flags_failed_checks_that_never_got_state():

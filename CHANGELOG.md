@@ -2,12 +2,18 @@
 
 ## 0.3.2 (unreleased)
 
-The agent contract: what an AI agent needs to choose Netdryrun, read its result and act on it safely. Tool names, parameters and behavior are unchanged.
+The agent contract: what an AI agent needs to choose Netdryrun, read its result and act on it safely. Tool names and parameters are unchanged.
+
+### Breaking change for agents: the pass verdict is renamed
+
+- **`SAFE TO PROCEED` is now `CHECKS PASSED (only what the checks cover)`.** A pass covers only what the checks look at; a change that breaks something no check covers passes too, so the verdict no longer says "safe". Wording like "safe to proceed" is kept for a planned before/after comparison verdict that passes only when a change shows no undeclared differences ([verdict spec](https://netdryrun.com/spec/verdict-v1/)).
+- **Who is affected:** an agent, prompt, `AGENTS.md` rule or script that matched the text `SAFE TO PROCEED` in an MCP result. It will no longer see that text, so it treats every pass as not-a-pass (fail closed, never the other way).
+- **Migration:** decide on the `status` field (`passed`, `failed`, `inconclusive`, `error`), the enum the verdict is mapped from, not on the verdict text; or match the new string exactly. Update `AGENTS.md` lines that say "only if the verdict is SAFE TO PROCEED" to "only if `status` is `passed`" ([snippet](https://netdryrun.com/ai-agents/#paste-this-into-your-network-repositorys-agentsmd)). The CLI, its exit codes, the JSON report and the GitHub Action are unchanged.
 
 ### Added
 
 - **A typed result for the MCP tools.** The results of `dry_run` and `run_checks` are defined by a published JSON Schema, [`mcp-result-v1.json`](https://netdryrun.com/schemas/mcp-result-v1.json), which also covers `validate`, `check_types` and `record_baseline` errors. Results carry `"schema": "netdryrun.mcp-result/v1"`. A test validates the results of real lab runs, and of the tools called over stdio, against it.
-- **The verdict strings are frozen**: `SAFE TO PROCEED`, `DO NOT APPLY THIS CHANGE` and `INCONCLUSIVE: the lab did not reach a testable state; this says nothing about your change. Do not apply it until a run passes.` They never change within v1.
+- **The verdict strings are frozen**: `CHECKS PASSED (only what the checks cover)`, `DO NOT APPLY THIS CHANGE` and `INCONCLUSIVE: the lab did not reach a testable state; this says nothing about your change. Do not apply it until a run passes.` They never change within v1.
 - **Failed results explain themselves.** A new `failures` list has one entry per failed check: the check name, its node, the one-line `reason`, a short `evidence` excerpt (the command, its exit code and the start of its output, one line, at most 200 characters) and one read-only `next_diagnostic` command for that node in its own CLI, such as `docker exec clab-lab-r1 vtysh -c 'show ip route 0.0.0.0/0'`. Run it on a lab kept with `keep_lab: true`.
 - **An agent skill**, `skills/netdryrun/SKILL.md`, installable from the repository's git URL: before applying a routing change, dry-run it; paste the verdict; stop on inconclusive; never write or weaken checks to make a change pass; use `record_baseline` when there are no checks.
 - **An AGENTS.md snippet** for your own network repositories, on the [AI agents](https://netdryrun.com/ai-agents/#paste-this-into-your-network-repositorys-agentsmd) page.

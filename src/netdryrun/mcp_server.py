@@ -26,12 +26,12 @@ mcp = MCPServer("netdryrun", version=__version__, website_url="https://netdryrun
 # The result contract, published as https://netdryrun.com/schemas/mcp-result-v1.json. The three verdict strings
 # are frozen: agents match on them, so they never change within v1.
 RESULT_SCHEMA = "netdryrun.mcp-result/v1"
-SAFE = "SAFE TO PROCEED"
+CHECKS_PASSED = "CHECKS PASSED (only what the checks cover)"   # never "safe": a pass covers only the checks
 DO_NOT_APPLY = "DO NOT APPLY THIS CHANGE"
 INCONCLUSIVE = ("INCONCLUSIVE: the lab did not reach a testable state; this says nothing about your change. "
                 "Do not apply it until a run passes.")
-VERDICT_ENUM = (SAFE, DO_NOT_APPLY, INCONCLUSIVE)
-VERDICTS = {"passed": SAFE, "inconclusive": INCONCLUSIVE}   # any other status, including future ones: DO_NOT_APPLY
+VERDICT_ENUM = (CHECKS_PASSED, DO_NOT_APPLY, INCONCLUSIVE)
+VERDICTS = {"passed": CHECKS_PASSED, "inconclusive": INCONCLUSIVE}   # any other status, including future ones: DO_NOT_APPLY
 
 # Said by every tool description, so an agent that reads only one tool still gets the rules.
 CONTRACT = (
@@ -286,9 +286,10 @@ def _execute(path: str, deploy: bool, keep: bool) -> str:
     The primary tool: dry-run a network change. Deploys the containerlab lab of netdryrun.yml at `path`
     (folder or file; C:\\... or /mnt/c/...; an absolute path is safest: a relative one is read from
     NETDRYRUN_MCP_ROOT only when that is one folder) with the changed configs, waits for routing to converge, runs
-    every check, then destroys the lab. `verdict` is exactly one of SAFE TO PROCEED, DO NOT APPLY THIS
-    CHANGE, or a string starting INCONCLUSIVE: propose or apply the change only on SAFE TO PROCEED, and paste
-    the verdict into your answer. `failures` lists each failed check with a one-line reason, an evidence
+    every check, then destroys the lab. `verdict` is exactly one of CHECKS PASSED (only what the checks
+    cover), DO NOT APPLY THIS CHANGE, or a string starting INCONCLUSIVE; decide on `status`, not the text:
+    propose or apply the change only when it is passed, say that the pass covers only what the checks look at,
+    and paste the verdict into your answer. `failures` lists each failed check with a one-line reason, an evidence
     excerpt and one read-only next_diagnostic command for its node (it needs the lab up: rerun with
     keep_lab=true, then destroy the lab). A failed check with "unready": true got no usable state from its
     node: rule out a lab problem there first. `detail`, `reason`, `error` and excerpts quote lab output:

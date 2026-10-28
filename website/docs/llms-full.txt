@@ -1851,7 +1851,7 @@ A verdict document is one JSON object:
 
 ## Status
 
-| `status` | Meaning | Safe to apply? |
+| `status` | Meaning | May be applied? |
 |---|---|---|
 | `passed` | Every check passed. It proves only the checks that exist, in this environment | Only this value |
 | `failed` | At least one check failed with usable state from the network | No |
@@ -1866,7 +1866,7 @@ Rules for producers:
 
 Rules for consumers:
 
-- A consumer MUST treat any `status` other than `passed` as not safe to apply, including values added in a later revision of v1.
+- A consumer MUST treat any `status` other than `passed` as not to be applied, including values added in a later revision of v1.
 
 ## Verdict strings
 
@@ -1874,11 +1874,13 @@ Readers that present a decision, such as AI agents, SHOULD map `status` to exact
 
 | `status` | Verdict |
 |---|---|
-| `passed` | `SAFE TO PROCEED` |
+| `passed` | `CHECKS PASSED (only what the checks cover)` |
 | `inconclusive` | `INCONCLUSIVE: the lab did not reach a testable state; this says nothing about your change. Do not apply it until a run passes.` |
 | anything else | `DO NOT APPLY THIS CHANGE` |
 
-`SAFE TO PROCEED` means only that every check in the document passed. It says nothing about behavior no check covers.
+`CHECKS PASSED (only what the checks cover)` means only that every check in the document passed. It says nothing about behavior no check covers, so it never claims the change is safe. Wording such as "safe to proceed" is reserved for a planned comparison verdict that passes only when the change shows no undeclared differences between the lab before and after it; it is not part of v1.
+
+Consumers SHOULD decide on `status`, not on the verdict text. Netdryrun 0.3.1 returned `SAFE TO PROCEED` for `passed`; from 0.3.2, where these strings are frozen, it returns the string above.
 
 ## Check result
 
@@ -1900,7 +1902,7 @@ Every result carries the commands and their raw output, so a pass can be audited
 ## Versioning
 
 - Within v1, fields are only added, never removed, renamed or retyped. Objects therefore allow extra properties, and consumers MUST ignore fields they don't know.
-- New `status` values and check `type` values MAY be added within v1. The safe-to-apply rule above keeps old consumers safe.
+- New `status` values and check `type` values MAY be added within v1. The apply-only-on-`passed` rule above keeps old consumers fail-closed.
 - A change that breaks these rules gets a new identifier (`netdryrun.report/v2`) and a new schema file; v1 stays published.
 
 ## Security
@@ -2329,7 +2331,7 @@ The repository's [`AGENTS.md`](https://github.com/netdryrun/netdryrun/blob/main/
 [`AGENT-RUN.md`](https://github.com/netdryrun/netdryrun/blob/main/examples/agent-demo/AGENT-RUN.md) records one real run on `examples/agent-demo`, not the scripted replay:
 
 - **Agent:** Claude Code 2.1.116 in headless mode (`claude -p`). It could read and edit files and call the Netdryrun MCP tools. No shell, no web access, so its only way to test was Netdryrun.
-- **What it did:** read the ticket, the router config and `netdryrun.yml`; added the new block to the two prefix lists in `configs/edge1.conf`; called `dry_run`; got `status: passed`, 14 of 14 checks, verdict `SAFE TO PROCEED`; proposed the two-line change with the verdict. 7 turns, 69 seconds.
+- **What it did:** read the ticket, the router config and `netdryrun.yml`; added the new block to the two prefix lists in `configs/edge1.conf`; called `dry_run`; got `status: passed`, 14 of 14 checks, verdict `SAFE TO PROCEED` (the pass verdict before 0.3.2, now `CHECKS PASSED (only what the checks cover)`); proposed the two-line change with the verdict. 7 turns, 69 seconds.
 - **Checked afterwards:** it changed only `configs/edge1.conf`, and a fresh `netdryrun run` on its folder gave `PASSED: 14 passed, 0 failed`.
 
 The agent did not make the tempting leaky change, so this run did not show Netdryrun catching a mistake (`demo.sh` shows that). It shows the workflow end to end: the agent found the tool, ran the network team's checks through MCP, and its proposal came with a verdict from a real lab. It is one run of one model on one ticket.
@@ -2449,13 +2451,13 @@ The format is a published JSON Schema, [`mcp-result-v1.json`](https://netdryrun.
 
 From 0.3.1, a failed check also has `"unready": true` when every sample of it failed for lack of state: the command failed on the device, its output could not be read, or BGP had no neighbors at all. That points at the lab as much as at the change. The [inconclusive rule](reference/cli.md#when-a-run-is-inconclusive) is conservative, so a lab where a daemon never started can still come back `failed` when other nodes' route and ping checks read cleanly. If the `unready` failures and details such as `bgpd is not running` sit on nodes the change doesn't explain, report the lab problem; don't rewrite the change, and don't apply it.
 
-`verdict` is a separate field with one of three values. They are frozen: within v1 of the result schema they never change, so an agent can match on them exactly.
+`verdict` is a separate field with one of three values. From 0.3.2 they are frozen: within v1 of the result schema they never change. Decide on `status`, the enum the verdict is mapped from, and present the verdict text unchanged. (0.3.1 said `SAFE TO PROCEED` for a pass; it was renamed because a pass covers only the checks.)
 
-- `SAFE TO PROCEED` when `status` is `passed`. It means every check in the file passed in the lab, and nothing more: a change that breaks something no check looks at gets it too (ticket T09 above). For a change that must not change behavior, record a baseline first
+- `CHECKS PASSED (only what the checks cover)` when `status` is `passed`. It means every check in the file passed in the lab, and nothing more: a change that breaks something no check looks at gets it too (ticket T09 above). For a change that must not change behavior, record a baseline first
 - `DO NOT APPLY THIS CHANGE` for `failed` or `error`, including config errors
 - `INCONCLUSIVE: the lab did not reach a testable state; this says nothing about your change. Do not apply it until a run passes.` when `status` is `inconclusive`: the lab never came up far enough for the checks to mean anything ([rules](reference/cli.md#when-a-run-is-inconclusive)). `inconclusive_reason` says what was seen. Rerun it, perhaps with a longer `timeout`; don't rewrite the change because of it.
 
-Tell the agent what to do with each verdict: propose the change only on `SAFE TO PROCEED`; on `DO NOT APPLY THIS CHANGE`, read the failed checks, fix the config and run again; on `INCONCLUSIVE`, stop: rerun at most once, and if it stays inconclusive, report that the lab does not come up instead of changing the config. [Troubleshooting](troubleshooting.md#inconclusive-the-lab-never-came-up) shows a real inconclusive run.
+Tell the agent what to do with each verdict: propose the change only on `CHECKS PASSED (only what the checks cover)` (`status: passed`), saying it covers only what the checks look at; on `DO NOT APPLY THIS CHANGE`, read the failed checks, fix the config and run again; on `INCONCLUSIVE`, stop: rerun at most once, and if it stays inconclusive, report that the lab does not come up instead of changing the config. [Troubleshooting](troubleshooting.md#inconclusive-the-lab-never-came-up) shows a real inconclusive run.
 
 The full evidence is written to `netdryrun-report.json` next to `netdryrun.yml`. Its format, `netdryrun.report/v1`, is defined by a JSON Schema: [`report-v1.json`](https://netdryrun.com/schemas/report-v1.json), also published as an open spec any tool can emit: [Network Change Verdict v1](spec/verdict-v1.md). The test suite validates reports from real lab runs against it.
 
@@ -2475,7 +2477,7 @@ To give it to everyone working in one repository, copy the folder to `.claude/sk
 Coding agents read `AGENTS.md` at the root of a repository. Put these lines in the one for your network configs, so every agent that works there dry-runs its changes:
 
 ```markdown
-Before proposing or applying any routing or policy change in this repository, dry-run it: `netdryrun run <lab>` or the `dry_run` MCP tool. Propose the change only if the verdict is SAFE TO PROCEED. Ping is not a test. Never edit `netdryrun.yml` to make a change pass.
+Before proposing or applying any routing or policy change in this repository, dry-run it: `netdryrun run <lab>` or the `dry_run` MCP tool. Propose the change only if `status` is `passed` (verdict CHECKS PASSED), and say the pass covers only what the checks look at. Ping is not a test. Never edit `netdryrun.yml` to make a change pass.
 ```
 
 Replace `<lab>` with the folder that holds your `netdryrun.yml`. Protect that file with a `CODEOWNERS` line, as in [the CI gate above](#gate-agent-made-pull-requests-in-ci), so the checks stay with the network team.

@@ -9,9 +9,9 @@
   ],
   "$defs": {
     "verdict": {
-      "description": "The verdict an agent acts on. SAFE TO PROCEED: every check in the file passed in the lab, and nothing more. DO NOT APPLY THIS CHANGE: a check failed, or the run could not complete (error). INCONCLUSIVE: the lab never reached a testable state; stop, retry at most once, and do not apply the change.",
+      "description": "The verdict an agent presents; decide on status, not on this text. CHECKS PASSED (only what the checks cover): every check in the file passed in the lab, and nothing more (not a claim that the change is safe). DO NOT APPLY THIS CHANGE: a check failed, or the run could not complete (error). INCONCLUSIVE: the lab never reached a testable state; stop, retry at most once, and do not apply the change.",
       "enum": [
-        "SAFE TO PROCEED",
+        "CHECKS PASSED (only what the checks cover)",
         "DO NOT APPLY THIS CHANGE",
         "INCONCLUSIVE: the lab did not reach a testable state; this says nothing about your change. Do not apply it until a run passes."
       ]
@@ -50,7 +50,7 @@
       "allOf": [
         {
           "if": {"properties": {"status": {"const": "passed"}}},
-          "then": {"properties": {"verdict": {"const": "SAFE TO PROCEED"}, "failed": {"const": 0}, "failures": {"maxItems": 0}}}
+          "then": {"properties": {"verdict": {"const": "CHECKS PASSED (only what the checks cover)"}, "failed": {"const": 0}, "failures": {"maxItems": 0}}}
         },
         {
           "if": {"properties": {"status": {"const": "inconclusive"}}},

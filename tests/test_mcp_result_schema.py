@@ -25,7 +25,7 @@ jsonschema = pytest.importorskip("jsonschema")
 ROOT = Path(__file__).parents[1]
 SCHEMA = json.loads((ROOT / "website/docs/schemas/mcp-result-v1.json").read_text(encoding="utf-8"))
 REAL = sorted((Path(__file__).parent / "fixtures").glob("report-real-*.json"))
-FROZEN = ("SAFE TO PROCEED", "DO NOT APPLY THIS CHANGE",
+FROZEN = ("CHECKS PASSED (only what the checks cover)", "DO NOT APPLY THIS CHANGE",
           "INCONCLUSIVE: the lab did not reach a testable state; this says nothing about your change. "
           "Do not apply it until a run passes.")
 
@@ -54,6 +54,15 @@ def test_schema_is_valid_and_the_verdict_enum_is_frozen():
     jsonschema.Draft202012Validator.check_schema(SCHEMA)
     assert tuple(SCHEMA["$defs"]["verdict"]["enum"]) == FROZEN == mcp_server.VERDICT_ENUM
     assert SCHEMA["$defs"]["schema_id"]["const"] == mcp_server.RESULT_SCHEMA
+
+
+def test_the_pass_verdict_claims_only_the_checks():
+    # roadmap review #8: a pass covers only what the checks look at, so it never says "safe"; "safe to proceed"
+    # is kept for a future verify_change pass with no undeclared differences
+    assert mcp_server.VERDICTS["passed"] == "CHECKS PASSED (only what the checks cover)"
+    texts = [mcp_server.VERDICT_ENUM, SCHEMA["$defs"]["verdict"]["enum"], SCHEMA["$defs"]["verdict"]["description"],
+             *(t.description for t in asyncio.run(mcp_server.mcp.list_tools()))]
+    assert not any("safe to proceed" in str(t).lower() for t in texts)
 
 
 @pytest.mark.skipif(not REAL, reason="no captured reports")
