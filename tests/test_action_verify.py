@@ -193,7 +193,7 @@ def test_verify_outputs(tmp_path):
                              "intent:\n  - prefix: 10.101.0.0/24\n    appears_on: [edge1, up1, peer1]\n")
     out = read_result(tmp_path, rep, "0")
     assert out == {"status": "matched", "verdict": "INTENT MATCHED", "passed": "1", "failed": "0",
-                   "inconclusive_reason": ""}
+                   "inconclusive_reason": "", "ok": "true"}
     rep, res = verify_report(tmp_path / "f", base().snap(), add_new_customer_block(base()).snap(), "intent: []\n")
     out = read_result(tmp_path, rep, "1")
     assert (out["status"], out["verdict"]) == ("failed", "UNDECLARED CHANGES: DO NOT APPLY")
@@ -215,7 +215,7 @@ def test_verify_outputs_cannot_be_spoofed(tmp_path):
     # and the other way round: a verify report read in run mode
     assert read_result(tmp_path, rep, "0", mode="run")["status"] == "error"
     assert read_result(tmp_path, run_rep, "0", mode="run") == {"status": "passed", "verdict": "SAFE TO PROCEED",
-                                                               "passed": "3", "failed": "0", "inconclusive_reason": ""}
+                                                               "passed": "3", "failed": "0", "inconclusive_reason": "", "ok": "true"}
 
 
 def test_verify_inconclusive_reason_cannot_inject_shell(tmp_path):
@@ -285,3 +285,30 @@ def test_cli_markdown_that_cannot_be_written_is_exit_2(tmp_path, monkeypatch, ca
     code = cli.main(["verify", "t.yml", "--before", "a", "--after", "b", "--intent", "i.yml",
                      "--markdown", str(tmp_path / "no" / "such" / "dir" / "s.md")])
     assert code == 2 and "the verdict was INTENT MATCHED" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("status,exit_code,green", [
+    ("matched", "0", True), ("no_change", "0", True),
+    ("failed", "1", False), ("inconclusive", "3", False), ("unhealthy_baseline", "3", False), ("error", "2", False),
+    ("matched", "1", False), ("no_change", "", False), ("failed", "0", False),   # report and exit code disagree
+])
+def test_verify_mode_is_green_only_on_exit_0_and_an_approving_verify_report(status, exit_code, green, tmp_path):
+    """main's rule (a green job needs exit 0 AND a passing report) applied to verify mode, where passing is
+    INTENT MATCHED or NO BEHAVIOR CHANGE: a status of `matched` must not turn the job red."""
+    from test_surfaces_agree import action_job_fails
+
+    snaps = {"matched": (base().snap(), add_new_customer_block(base()).snap(),
+                         "intent:\n  - prefix: 10.101.0.0/24\n    appears_on: [edge1, up1, peer1]\n"),
+             "no_change": (base().snap(), base().snap(), "intent: []\n"),
+             "failed": (base().snap(), add_new_customer_block(base()).snap(), "intent: []\n")}
+    if status in snaps:
+        rep, _ = verify_report(tmp_path / status, *snaps[status])
+    else:
+        rep, _ = verify_report(tmp_path / "x", base().snap(), base().snap(), "intent: []\n")
+        rep["status"], rep["verdict"] = status, vreport.VERDICTS[status]
+    out = read_result(tmp_path, rep, exit_code)
+    assert action_job_fails({"run": {"exit_code": exit_code}, "result": out}) is (not green), out
+    # a run-mode report never passes in verify mode
+    run_rep = {"status": "passed", "summary": {"passed": 1, "failed": 0}}
+    out = read_result(tmp_path, run_rep, "0")
+    assert out["status"] == "error" and action_job_fails({"run": {"exit_code": "0"}, "result": out})

@@ -565,3 +565,42 @@ def test_values_validate_their_normal_form():
         ItemKey("rib", "r1", "default", "ipv6", "unicast", "10.0.0.0/8", protocol="bgp")
     with pytest.raises(SnapshotError):
         AsPath((("set", (3, 1)),))
+
+
+# --- the must-fail matrix of verify on real output: every kind of item the live capture has, removed or
+# changed, fails an empty intent (the driver x check matrix, applied to verify's snapshot) --------------------
+
+def _one_of_each_kind(ns):
+    seen = {}
+    for k in sorted(ns.items):
+        seen.setdefault((k.kind, k.vrf, k.afi), k)
+    return sorted(seen.values())
+
+
+@pytest.mark.parametrize("change", ["removed", "changed"])
+def test_every_kind_of_item_in_the_live_capture_fails_an_empty_intent_when_it_changes(change):
+    from dataclasses import replace as dc_replace
+
+    from netdryrun.verify.engine import match
+    from netdryrun.verify.intent import parse_intent_text
+
+    ns = collect()
+    empty = parse_intent_text("intent: []\n", "empty")
+    keys = _one_of_each_kind(ns)
+    assert {k.kind for k in keys} == {"session", "rib", "path", "adj_out", "adj_in"}
+    for k in keys:
+        items = dict(ns.items)
+        v = items[k]
+        if change == "removed":
+            del items[k]
+        elif k.kind == "session":
+            items[k] = dc_replace(v, remote_as=(v.remote_as or 0) + 1)
+        elif k.kind == "rib":
+            items[k] = tuple(dc_replace(e, distance=e.distance + 1) for e in v)
+        elif k.kind == "path":
+            items[k] = dc_replace(v, attrs=dc_replace(v.attrs, med=(v.attrs.med or 0) + 1))
+        else:
+            items[k] = dc_replace(v, med=(v.med or 0) + 1)
+        after = Snapshot({"edge1": NodeSnapshot("edge1", "frr", ns.vrfs, items)})
+        m = match(Snapshot({"edge1": ns}), after, empty)
+        assert m.status == "failed" and [d.key for d in m.undeclared] == [k], (change, k)

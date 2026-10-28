@@ -253,6 +253,8 @@ runs:
         except Exception:
             out = {"status": "error", "passed": 0, "failed": 0, "inconclusive_reason": ""}
         out["verdict"] = VERDICT[out["status"]]   # from a fixed table, never from the report's text
+        # the one passing outcome per mode, after the cross-check above (a contradiction is status error)
+        out["ok"] = "true" if out["status"] in (("matched", "no_change") if VERIFY else ("passed",)) else "false"
         # The reason can quote lab output: one line, and no quotes, backslashes, $ or backticks, in case
         # a workflow pastes the output into a shell through an expression
         out["inconclusive_reason"] = re.sub(r"[`$\\\"']", "", " ".join(str(out["inconclusive_reason"]).split()))[:500]
@@ -317,9 +319,10 @@ runs:
         echo "Evidence: $URL"
 
     - name: Fail on failed checks
-      # The job is green only when the run exited 0 AND its report says passed: a report that contradicts
-      # the exit code, or no report, is status error and must never read as a pass
-      if: steps.run.outputs.exit_code != '0' || steps.result.outputs.status != 'passed'
+      # The job is green only when the run exited 0 AND its report passes (run: passed; verify: INTENT MATCHED
+      # or NO BEHAVIOR CHANGE): a report that contradicts the exit code, or no report, is status error and
+      # must never read as a pass
+      if: steps.run.outputs.exit_code != '0' || steps.result.outputs.ok != 'true'
       shell: bash
       env:
         NDR_STATUS: ${{ steps.result.outputs.status }}
