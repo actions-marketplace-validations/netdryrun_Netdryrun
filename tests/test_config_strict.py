@@ -377,3 +377,18 @@ def test_every_docs_snippet_validates(tmp_path, snippet):
 def test_config_reference_snippets_are_covered():
     snippets = [p for p in _doc_snippets() if p.id.startswith("website/docs/reference/config.md")]
     assert sum(_as_config(p.values[0]) is not None for p in snippets) >= 7
+
+
+# --- 0.3.2 cold review, finding 3: an IPv6 scope ID is copied into device CLI commands --------------------
+
+@pytest.mark.parametrize("target", ['"fe80::1%x\nconfigure\nno router bgp 65000"', '"fe80::1%eth1 ; reload"',
+                                    '"fe80::1%"', '"fe80::1%a\tb"'])
+def test_ipv6_scope_id_must_be_an_interface_name(tmp_path, target):
+    # ipaddress accepts any text after %, newlines included; the address reaches vtysh, Cli and sr_cli commands
+    with pytest.raises(ConfigError, match=r"checks\[0\].*scope"):
+        load(one_check(tmp_path, f"{{type: ping, node: r1, target: {target}}}"))
+
+
+def test_ipv6_scope_id_with_an_interface_name_still_loads(tmp_path):
+    cfg = load(one_check(tmp_path, '{type: ping, node: r1, target: "fe80::1%eth1.100"}'))
+    assert cfg.checks[0].params["target"] == "fe80::1%eth1.100"
