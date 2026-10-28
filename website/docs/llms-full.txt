@@ -2121,6 +2121,14 @@ Snapshots a known-good lab into a `netdryrun.yml` baseline: every established BG
 | `--attributes` | Also record a `bgp_route` check per BGP route, pinning its best path's AS path, local preference and communities (not MED or next hop, which follow the topology) |
 | `--force` | Overwrite an existing file |
 
+### feedback
+
+Opens a short feedback form on GitHub in your browser, prefilled with your Netdryrun version and platform. Nothing is sent until you submit the form.
+
+| Option | Meaning |
+|---|---|
+| `--print-only` | Print the form's URL instead of opening a browser |
+
 ## Options
 
 `run` and `check`:
