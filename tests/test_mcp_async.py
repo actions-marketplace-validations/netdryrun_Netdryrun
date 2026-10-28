@@ -155,3 +155,27 @@ def test_the_tools_are_listed_with_the_contract():
     assert "running" in tools["get_result"] and "no verdict" in tools["get_result"].lower()
     for name in ("start_run", "get_result"):
         assert mcp_server.CONTRACT in tools[name]
+
+
+def test_a_file_edited_while_the_run_is_in_progress_makes_it_an_error(lab, monkeypatch):
+    # 0.3.3 cold review 4: tested is read before the deploy; an edit during the run means the lab may have run
+    # either version, so the result can't be tied to the hashes: error, never a pass with the old hash
+    g = Gate(passed=True)
+    monkeypatch.setattr(mcp_server, "run", g)
+    rid = json.loads(mcp_server.start_run(str(lab)))["run_id"]
+    assert g.started.wait(5)
+    (lab / "topology.clab.yml").write_text((lab / "topology.clab.yml").read_text() + "# edited\n")
+    g.release.set()
+    done = _wait_finished(rid)
+    assert done["status"] == "error" and done["verdict"] == mcp_server.DO_NOT_APPLY
+    assert "topology.clab.yml" in done["error"] and done["tested"]["changed_during_run"] == ["topology.clab.yml"]
+    _validate(done)
+
+
+def test_the_server_destroys_its_labs_when_the_client_goes_away(monkeypatch):
+    # 0.3.3 cold review 8: stdio closed during a start_run: the worker thread dies with the process
+    calls = []
+    monkeypatch.setattr(mcp_server.mcp, "run", lambda *a, **k: None)
+    monkeypatch.setattr(mcp_server, "destroy_active_labs", lambda: calls.append("destroy"))
+    mcp_server.main()
+    assert calls == ["destroy"]

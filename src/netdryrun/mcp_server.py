@@ -22,7 +22,7 @@ from .drivers import DriverError
 from .lab import Lab, LabError
 from .agent_result import (CHECKS_PASSED, DO_NOT_APPLY, INCONCLUSIVE, RESULT_SCHEMA, TESTED_FILES_MAX,  # noqa: F401
                            VERDICT_ENUM, VERDICTS, _check, _containers, _evidence, _failures, _next_diagnostic,
-                           _show_command, _summary, _text)
+                           _show_command, _summary, _text, hold_to_files)
 from .agent_result import _tested as _tested_files
 from .runner import check_topology, destroy_active_labs, load_config, run
 
@@ -153,7 +153,7 @@ def _finish(cfg, rep, tested: dict) -> dict:
         os.replace(tmp, evidence)
     except OSError:
         evidence = None   # a read-only folder must not turn a finished run into a tool error with no verdict
-    return _summary(rep, str(evidence) if evidence else None, tested)
+    return hold_to_files(_summary(rep, str(evidence) if evidence else None, tested), cfg, tested, _outside_root)
 
 
 def _execute(path: str, deploy: bool, keep: bool) -> str:
@@ -358,7 +358,12 @@ def main() -> None:
                 signal.signal(sig, _on_terminate)
             except (ValueError, OSError):
                 pass
-    mcp.run()
+    try:
+        mcp.run()
+    finally:
+        # stdin closed (the client went away) while a start_run worker still runs: that thread dies with the
+        # process before its own cleanup, so destroy the labs this server started here
+        destroy_active_labs()
 
 
 if __name__ == "__main__":

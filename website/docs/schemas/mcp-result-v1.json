@@ -54,6 +54,7 @@
             "config": {"type": "string", "minLength": 1, "description": "Absolute path of the netdryrun.yml that ran (the server's view of the path the agent passed)"},
             "lab_deployed_by_this_run": {"type": "boolean", "description": "true for dry_run. false for run_checks: the lab was already running, so the files on disk may not be what it runs"},
             "files": {"type": "object", "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{64}$"}},
+            "changed_during_run": {"type": "array", "items": {"type": "string"}, "description": "Files that changed between the start and the end of a run that deployed from them; the result is then status error (from 0.3.3)"},
             "complete": {"type": "boolean", "description": "false when a file could not be read, was outside NETDRYRUN_MCP_ROOT, was named with ~, ${VAR} or a URL (resolved by containerlab, not read here), or there were more than 200"}
           }
         },

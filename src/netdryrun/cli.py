@@ -72,7 +72,8 @@ def _verdict_json(rep, args) -> str:
     if getattr(args, "tested", None) is None:   # no config was loaded: nothing ran
         return json.dumps({"schema": agent_result.RESULT_SCHEMA, "status": "error", "error": rep.error,
                            "verdict": agent_result.DO_NOT_APPLY}, indent=2)
-    return json.dumps(agent_result._summary(rep, getattr(args, "json", None), args.tested), indent=2)
+    result = agent_result._summary(rep, getattr(args, "json", None), args.tested)
+    return json.dumps(agent_result.hold_to_files(result, rep.config, args.tested), indent=2)
 
 
 def _cmd_run(args, deploy: bool) -> int:

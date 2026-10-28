@@ -105,3 +105,41 @@ def test_the_comment_header_never_carries_lab_text_or_a_pass_it_did_not_get():
         assert m and "-->" not in m.group(1) and "<" not in h.split("\n")[1]
         data = json.loads(m.group(1))
         assert data["status"] == "error" and data["verdict"] == agent_result.DO_NOT_APPLY
+
+
+def test_a_file_edited_during_the_run_makes_the_agent_result_an_error(lab, monkeypatch):
+    def run(cfg, deploy, keep, **_):
+        (lab / "netdryrun.yml").write_text((lab / "netdryrun.yml").read_text() + "# edited\n")
+        return _fake_run(True)(cfg, deploy, keep)
+    monkeypatch.setattr(cli, "run", run)
+    monkeypatch.setattr(cli, "install_signal_handlers", lambda: None)
+    v = lab / "verdict.json"
+    cli.main(["run", str(lab), "--verdict", str(v)])
+    out = json.loads(v.read_text())
+    _validate(out)
+    assert out["status"] == "error" and out["verdict"] == agent_result.DO_NOT_APPLY
+    assert out["tested"]["changed_during_run"] == ["netdryrun.yml"]
+
+
+def test_check_does_not_compare_files_a_running_lab_never_loaded(lab, monkeypatch):
+    def run(cfg, deploy, keep, **_):
+        (lab / "netdryrun.yml").write_text((lab / "netdryrun.yml").read_text() + "# edited\n")
+        return _fake_run(True)(cfg, deploy, keep)
+    monkeypatch.setattr(cli, "run", run)
+    monkeypatch.setattr(cli, "install_signal_handlers", lambda: None)
+    v = lab / "verdict.json"
+    cli.main(["check", str(lab), "--verdict", str(v)])
+    assert json.loads(v.read_text())["status"] == "passed"   # lab_deployed_by_this_run: false already says it
+
+
+@pytest.mark.parametrize("topology", [
+    "name: t\ntopology:\n  kinds: [1, 2]\n  nodes:\n    r1: {kind: linux, image: frr}\n",
+    "name: t\ntopology:\n  groups: [x]\n  nodes:\n    r1: {kind: linux, image: frr, binds: 'configs/r1.conf:/x'}\n",
+])
+def test_a_malformed_topology_never_crashes_the_agent_result(tmp_path, topology):
+    # 0.3.3 cold review 7: --verdict read the topology with no guard and crashed before any report was written
+    from netdryrun.runner import load_config
+    (tmp_path / "topology.clab.yml").write_text(topology)
+    (tmp_path / "netdryrun.yml").write_text("lab: topology.clab.yml\nchecks:\n  - {type: route, node: r1, prefix: 10.0.0.0/24}\n")
+    t = agent_result._tested(load_config(tmp_path), deployed=True)
+    assert t["complete"] is False and "netdryrun.yml" in t["files"]

@@ -16,7 +16,7 @@ import yaml
 from . import __version__
 from .config import community_name
 from .drivers import DriverError, detect, for_node
-from .lab import Lab
+from .lab import Lab, LabError
 
 MAX_ROUTES_PER_NODE = 50
 MAX_LINK_GUARDS_PER_NODE = 20
@@ -44,7 +44,7 @@ def record(topology: Path, include_routes: bool = True, prefix_mode: str = "rang
     lab = Lab(topology)
     warnings: list[str] = []
     checks: list[dict] = []
-    link_subnets = _link_subnets(lab) if guards else []
+    link_subnets = _link_subnets(lab, warnings) if guards else []
     for name, node in lab.nodes.items():
         try:
             detect(node)
@@ -112,21 +112,26 @@ def record(topology: Path, include_routes: bool = True, prefix_mode: str = "rang
     return data, warnings
 
 
-def _link_subnets(lab) -> list[str]:
-    """The subnets of the topology's links, from the addresses on their interfaces."""
+def _link_subnets(lab, warnings: list[str]) -> list[str]:
+    """The subnets of the topology's links, from the addresses on their interfaces. An interface whose
+    addresses can't be read is a warning: its subnet gets no guard, and the file says so."""
     nets: set = set()
     for end in (e for link in lab.links for e in link):
+        node = lab.nodes.get(end[0])
+        if node is None or node.kind in ("bridge", "ovs-bridge"):   # a host or bridge endpoint: nothing to read
+            continue
         try:
             nets |= {a.network for a in lab.interface_addresses(*end) if not a.ip.is_link_local}
-        except Exception:   # an endpoint that isn't a container (a bridge, a host link): no address to read
-            continue
+        except LabError as e:
+            warnings.append(f"{end[0]}: could not read the addresses of {end[1]} ({e}); its link subnet has no guard")
     return [str(n) for n in sorted(nets, key=lambda n: (n.version, n))]
 
 
 def _guards(name: str, neighbors: dict, bgp_now: dict[int, set[str]], link_subnets: list[str],
             warnings: list[str]) -> list[dict]:
     """--guards for one BGP node: checks that must never pass on what the network does today."""
-    v6 = any(":" in a for a in neighbors) or bool(bgp_now.get(6))
+    v6 = (any(":" in a for a in neighbors) or bool(bgp_now.get(6))   # IPv6 neighbors or routes, or IPv6
+          or any("ipv6" in afi for n in neighbors.values() for afi in n.prefixes))   # carried over IPv4
     out = []
     for fam, default in ((4, "0.0.0.0/0"), (6, "::/0")):
         if (fam == 6 and not v6) or fam not in bgp_now:   # no IPv6 BGP; or its routes couldn't be read (warned)

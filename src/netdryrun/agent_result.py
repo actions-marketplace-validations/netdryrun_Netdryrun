@@ -191,12 +191,30 @@ def _tested(cfg, deployed: bool, outside_root=lambda path: None) -> dict:
         t = (yaml.safe_load(cfg.lab.read_text(encoding="utf-8")) or {}).get("topology") or {}
     except (OSError, yaml.YAMLError, AttributeError):
         t, complete = {}, False
-    sections = [t.get("defaults"), *((t.get("kinds") or {}).values()), *((t.get("groups") or {}).values()),
-                *((t.get("nodes") or {}).values())]
+    if not isinstance(t, dict):
+        t, complete = {}, False
+    # A shape this can't read (a list where a mapping belongs) only makes the list incomplete: reading the
+    # files a run uses must never stop the run or its report
+    sections = [t.get("defaults")]
+    for key in ("kinds", "groups", "nodes"):
+        v = t.get(key) or {}
+        if isinstance(v, dict):
+            sections += v.values()
+        else:
+            complete = False
     refs: list[str] = []
-    for sec in (s for s in sections if isinstance(s, dict)):
-        refs += [str(b).split(":", 1)[0] for b in sec.get("binds") or [] if isinstance(b, str)]
-        refs += [str(e) for e in sec.get("env-files") or [] if isinstance(e, str)]
+    for sec in sections:
+        if sec is None:
+            continue
+        if not isinstance(sec, dict):
+            complete = False
+            continue
+        for key in ("binds", "env-files"):
+            v = sec.get(key) or []
+            if not isinstance(v, list):
+                complete = False
+                continue
+            refs += [str(b).split(":", 1)[0] if key == "binds" else str(b) for b in v if isinstance(b, str)]
         for key in ("startup-config", "license"):
             v = sec.get(key)
             if isinstance(v, str) and "\n" not in v:   # containerlab also takes a startup config inline
@@ -232,6 +250,22 @@ def _tested(cfg, deployed: bool, outside_root=lambda path: None) -> dict:
                 complete = False
     return {"config": str(cfg.path.resolve()), "lab_deployed_by_this_run": deployed,
             "files": dict(sorted(files.items())), "complete": complete}
+
+
+def hold_to_files(result: dict, cfg, tested: dict, outside_root=lambda path: None) -> dict:
+    """A run that deployed from the files is tied to their hashes, read before it started. If any of them
+    changed by the time it finished, the lab may have run either version: the result becomes an error (never a
+    pass with the old hashes), naming the files, with them in tested.changed_during_run. A run on a lab that
+    was already running (lab_deployed_by_this_run: false) didn't load the files, so nothing is compared."""
+    if not tested.get("lab_deployed_by_this_run"):
+        return result
+    before, now = tested.get("files") or {}, _tested(cfg, True, outside_root)["files"]
+    changed = sorted(k for k in set(before) | set(now) if before.get(k) != now.get(k))
+    if not changed:
+        return result
+    return {**result, "status": "error", "verdict": DO_NOT_APPLY, "tested": {**tested, "changed_during_run": changed},
+            "error": (f"files changed while the run was in progress: {', '.join(changed[:10])}. The lab may have "
+                      "run either version, so this result can't be tied to the hashes in tested: run again")}
 
 
 STATUSES = ("passed", "failed", "inconclusive", "error")

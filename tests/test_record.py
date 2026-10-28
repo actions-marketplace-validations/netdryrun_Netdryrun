@@ -143,3 +143,25 @@ def test_no_guards_unless_asked(monkeypatch):
     drivers = {"r1": FakeDrv({"10.0.12.2": {"ipv4-unicast": 2}}), "r2": FakeDrv({})}
     data, _ = run_record(monkeypatch, drivers)
     assert guards(data) == []
+
+
+def test_an_unreadable_interface_is_a_warning_not_a_missing_guard(monkeypatch):
+    # 0.3.3 cold review 5: interface_addresses raises LabError when it can't read them; that was swallowed
+    from netdryrun.lab import LabError
+
+    class Unreadable(FakeLab):
+        def interface_addresses(self, node, iface):
+            if node == "r2":
+                raise LabError("could not read the addresses of r2 eth1")
+            return super().interface_addresses(node, iface)
+    drivers = {"r1": FakeDrv({"10.0.12.2": {"ipv4-unicast": 2}}), "r2": FakeDrv({})}
+    data, warnings = run_record(monkeypatch, drivers, lab=Unreadable(None), guards=True)
+    assert "10.0.12.0/30" in guards(data, "r1")        # r1's end was read
+    assert any("r2" in w and "eth1" in w and "guard" in w for w in warnings)
+
+
+def test_ipv6_over_ipv4_sessions_gets_the_ipv6_default_guard(monkeypatch):
+    # 0.3.3 cold review 6: IPv6 unicast carried over IPv4 neighbors, no IPv6 BGP route today
+    drivers = {"r1": FakeDrv({"10.0.12.2": {"ipv4-unicast": 2, "ipv6-unicast": 0}}), "r2": FakeDrv({})}
+    data, _ = run_record(monkeypatch, drivers, guards=True)
+    assert "::/0" in guards(data, "r1")
