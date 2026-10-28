@@ -118,6 +118,15 @@ class CommandFailed(SnapshotError):
     retries these until its timeout; every other SnapshotError stops at once."""
 
 
+class CommandTimedOut(CommandFailed):
+    """A vtysh command that hit its time limit (exit code 124 from the exec): its output was cut. Retried like
+    any failed command; if it never finishes, the snapshot is incomplete and the verdict is INCONCLUSIVE naming
+    the command (no route ceiling: a snapshot is complete or it approves nothing)."""
+
+
+TIMED_OUT = 124
+
+
 def _bad(command: str, what: str) -> SnapshotError:
     return SnapshotError(f"unexpected output from `{command}`: {' '.join(str(what).split())[:240]}")
 
@@ -611,6 +620,8 @@ class FrrCollector:
     def _vtysh(self, command: str, raw: list[dict]) -> str:
         rc, out, err = self.exec_fn(self.node, ["vtysh", "-c", command])
         raw.append({"node": self.node, "cmd": f"vtysh -c '{command}'", "rc": rc, "output": out, "stderr": err[-2000:]})
+        if rc == TIMED_OUT:
+            raise CommandTimedOut(f"`vtysh -c '{command}'` on {self.node} did not finish in time; its output was cut")
         if rc != 0:
             msg = (err or out).strip().splitlines()
             raise CommandFailed(f"`vtysh -c '{command}'` failed on {self.node} (rc={rc}): {msg[-1] if msg else 'no output'}")
@@ -695,5 +706,5 @@ def show_command(key: ItemKey) -> str:
     return f"show bgp{in_vrf} {key.afi} unicast neighbors {key.neighbor} {which}"
 
 
-__all__ = ["CommandFailed", "FrrCollector", "parse_adj", "parse_bgp_table", "parse_neighbors", "parse_routes",
+__all__ = ["CommandFailed", "CommandTimedOut", "FrrCollector", "parse_adj", "parse_bgp_table", "parse_neighbors", "parse_routes",
            "show_command"]

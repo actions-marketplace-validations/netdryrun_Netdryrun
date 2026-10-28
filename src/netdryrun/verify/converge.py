@@ -21,7 +21,7 @@ import time
 from dataclasses import dataclass
 from typing import Callable
 
-from .frr import CommandFailed
+from .frr import CommandFailed, CommandTimedOut
 from .snapshot import Snapshot, SnapshotError
 
 POLL = 3.0
@@ -75,6 +75,10 @@ def stable_snapshot(collect: Callable[[], Snapshot], *, settle: float, timeout: 
         except CommandFailed as e:
             prev, last_failure = None, str(e)
             if clock() - t0 >= timeout:
+                if isinstance(e, CommandTimedOut):
+                    return Inconclusive(f"the snapshot was cut: a command never finished within its time limit "
+                                        f"before the {timeout:g}s timeout, so the snapshot is incomplete. Retry at most "
+                                        "once, then escalate: this says nothing about the change", [str(e)])
                 raise SnapshotUnreadable(f"could not read the snapshot within {timeout:g}s: {e}") from None
             sleep(POLL)
             continue

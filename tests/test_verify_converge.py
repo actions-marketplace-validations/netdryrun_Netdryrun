@@ -4,7 +4,7 @@ from dataclasses import replace
 import pytest
 
 from netdryrun.verify.converge import Inconclusive, SnapshotUnreadable, stable_snapshot
-from netdryrun.verify.frr import CommandFailed
+from netdryrun.verify.frr import CommandFailed, CommandTimedOut
 from netdryrun.verify.snapshot import SnapshotError
 from verify_helpers import base, path, session
 
@@ -80,6 +80,28 @@ def test_failed_commands_are_retried_then_unreadable():
     assert not isinstance(got, Inconclusive)
     with pytest.raises(SnapshotUnreadable):
         run(seq(CommandFailed("vtysh: bgpd not up")), timeout=30)
+
+
+def test_a_command_cut_by_its_time_limit_is_inconclusive_and_named():
+    """No route ceiling in verify mode: the snapshot is complete, or the verdict is INCONCLUSIVE naming what was
+    cut. A command that keeps hitting its time limit (a table too large to print in time) is a cut."""
+    cut = CommandTimedOut("`vtysh -c 'show bgp vrf all ipv4 unicast detail json'` on edge1 did not finish within 120s")
+    got, _ = run(seq(cut), timeout=300)
+    assert isinstance(got, Inconclusive) and "cut" in got.reason
+    assert got.moving == [str(cut)]
+    good = base().snap()
+    got, _ = run(seq(cut, good, good))                     # once, then complete: no cut
+    assert not isinstance(got, Inconclusive)
+
+
+def test_a_timed_out_command_is_a_cut_not_a_failure():
+    from netdryrun.verify.frr import FrrCollector
+
+    def exec_fn(node, argv):
+        return 124, "", "timed out after 120s"
+    with pytest.raises(CommandTimedOut) as e:
+        FrrCollector("edge1", exec_fn).collect()
+    assert "show vrf" in str(e.value) and "edge1" in str(e.value)
 
 
 def test_schema_errors_stop_at_once():

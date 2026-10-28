@@ -161,6 +161,20 @@ def test_collect_reads_every_vrf_afi_protocol_and_session():
     assert ItemKey("rib", "edge1", "default", "ipv4", "unicast", "172.20.20.0/24", protocol="connected") in ns.items
 
 
+def test_no_route_ceiling_every_route_is_in_the_snapshot():
+    """verify has no route ceiling (record keeps 50 per node; verify keeps everything): 20,000 extra routes are
+    20,000 extra items, each compared."""
+    data = json.loads(fixture("route_v4.txt"))
+    template = data["default"]["192.0.2.0/24"][0]
+    for i in range(20000):
+        p = f"10.{128 + i // 256}.{i % 256}.0/24"
+        data["default"][p] = [{**template, "prefix": p}]
+    ns = collect(overrides={frr.ROUTE_CMDS["ipv4"]: json.dumps(data)})
+    generated = {f"10.{128 + i // 256}.{i % 256}.0/24" for i in range(20000)}
+    extra = [k for k in ns.items if k.kind == "rib" and k.vrf == "default" and k.prefix in generated]
+    assert len(extra) == 20000
+
+
 def test_collect_keeps_raw_output_for_every_command():
     fake = FakeNode()
     ns = frr.FrrCollector("edge1", fake).collect()

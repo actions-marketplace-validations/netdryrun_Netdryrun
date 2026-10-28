@@ -380,9 +380,10 @@ def classify_nodes(lab: Lab, overrides: dict[str, str], unobserved: list[str]) -
     return out
 
 
-def collect(lab: Lab, nodes: dict[str, str]) -> Snapshot:
+def collect(lab: Lab, nodes: dict[str, str], cmd_timeout: float = 60) -> Snapshot:
+    """`cmd_timeout`: each command's time limit; one that hits it was cut (CommandTimedOut), never "nothing"."""
     def exec_fn(node, argv):
-        r = lab.exec(node, argv, timeout=60)
+        r = lab.exec(node, argv, timeout=cmd_timeout)
         return r.rc, r.stdout, r.stderr
     snaps = {n: FrrCollector(n, exec_fn).collect() for n, drv in sorted(nodes.items()) if drv == "frr"}
     reasons = {n: ("named --unobserved or a host/bridge kind: no routing driver") for n, d in nodes.items() if not d}
@@ -455,7 +456,7 @@ def real_side(*, nodes: dict[str, str], setup: dict, settle: float, timeout: flo
                 return r.rc, r.stdout, r.stderr
             bgp_nodes = {n for n, drv in nodes.items() if drv == "frr" and expects_bgp(exec_fn, n)}
             log(f"[{label}] waiting for a stable snapshot (settle {settle:g}s, timeout {timeout:g}s)...")
-            snap = stable_snapshot(lambda: collect(lab, nodes), settle=settle, timeout=timeout, log=log,
+            snap = stable_snapshot(lambda: collect(lab, nodes, max(60.0, timeout)), settle=settle, timeout=timeout, log=log,
                                    bgp_nodes=bgp_nodes)
             extra = on_up(lab, topology) if on_up is not None and isinstance(snap, Snapshot) else None
         return snap, round(time.monotonic() - t0, 1), extra
