@@ -212,10 +212,7 @@ def test_exit_code_table_matches_the_code():
 
 # A shipped topology that can't pin its image yet, and why. Pinning is how a NOS update shows up as a
 # deliberate commit (with re-captured fixtures) instead of a silent change under the tests.
-UNPINNED_ON_PURPOSE = {
-    "examples/sonic-frr/topology.clab.yml": "docker-sonic-vs is loaded from the SONiC master CI build by "
-    "scripts/get_sonic_vs.sh and tagged :latest locally; to pin, record the build id and load it as a dated tag",
-}
+UNPINNED_ON_PURPOSE: dict[str, str] = {}
 
 
 def _topologies():

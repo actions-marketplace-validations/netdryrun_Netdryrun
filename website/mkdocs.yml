@@ -102,6 +102,7 @@ nav:
       - CLI and reports: reference/cli.md
       - "verify (0.4, FRR only)": reference/verify.md
       - "Network Change Verdict v1 (spec)": spec/verdict-v1.md
+      - Compatibility matrix: reference/compatibility.md
   - GitHub Action: github-action.md
   - Batfish, then Netdryrun: batfish.md
   - AI agents (MCP): ai-agents.md
