@@ -1763,3 +1763,27 @@ def test_a_node_without_bgp_checks_is_still_released_at_the_cap(monkeypatch):
     # a static-routing node (no BGP check on it anywhere) may answer with no neighbors for good
     e = make(monkeypatch, r1={"neighbors": up(), "routes": {"default": never}})
     assert e.run([leak("neg", timeout=24)], settle=10, hold=10).status == "passed"
+
+
+@pytest.mark.parametrize("bgp_check", [
+    lambda: chk("bgp_session", "s down", neighbor="10.0.12.9", state="down", timeout=24),
+    lambda: chk("bgp_prefixes", "max", neighbor="10.0.12.2", max=3, timeout=24),
+    lambda: chk("bgp_route", "attr", prefix="192.168.2.0/24", as_path="65002", timeout=24),
+    lambda: route("bgp route", prefix="192.168.9.0/24", protocol="BGP", present=False, timeout=24),
+], ids=["bgp_session", "bgp_prefixes", "bgp_route", "route-protocol-bgp"])
+def test_each_kind_of_bgp_check_marks_its_node_as_running_bgp(monkeypatch, bgp_check):
+    # one BGP check of any kind on the node is enough: the plain leak guard beside it is then not evaluated
+    e = make(monkeypatch, r1={"neighbors": up(), "routes": {"default": never}, "paths": {"default": lambda t, p: []}})
+    rep = e.run([leak("plain leak guard", timeout=24), bgp_check()], settle=0, hold=0)
+    assert by_name(rep)["plain leak guard"].detail.startswith("not evaluated: r1 reported no BGP neighbors")
+
+
+def test_the_no_neighbors_result_is_a_complete_failed_result(monkeypatch):
+    e = make(monkeypatch, r1={"neighbors": up(), "routes": {"default": never}})
+    rep = e.run([leak("leak", protocol="bgp", timeout=240)], settle=0, hold=0)
+    r = by_name(rep)["leak"]
+    assert r.passed is False and r.samples_passed == 0 and r.evidence == []
+    assert isinstance(r.duration, float) and r.duration >= 240
+    assert iso(r.started)
+    assert len(r.history) == 50 and r.attempts > 50 and r.samples_unready == r.attempts   # last 50 kept, all counted
+    assert all(h.get("unready") for h in r.history)

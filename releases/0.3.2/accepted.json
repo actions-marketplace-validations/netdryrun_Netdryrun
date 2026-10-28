@@ -2302,8 +2302,8 @@
    "diff": "7ba89f46e72febda"
   },
   "netdryrun.runner.x__bgp_convergence_gate__mutmut_129": {
-   "reason": "message text only: the VRF part of the no-neighbors detail text; it is still an Unready detail",
-   "diff": "eabd1d328ee0fece"
+   "reason": "message text only: the detail text of a failing gate sample; it is still an Unready detail, so the sample stays unready",
+   "diff": "f558f63faac9328b"
   },
   "netdryrun.runner.x__bgp_convergence_gate__mutmut_130": {
    "reason": "message text only: the VRF part of the no-neighbors detail text; it is still an Unready detail",
@@ -2329,6 +2329,34 @@
    "reason": "message text only: the detail text of a failing gate sample; it is still an Unready detail, so the sample stays unready",
    "diff": "55814c4db1d02935"
   },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_153": {
+   "reason": "message text only: the VRF part of the no-neighbors detail text; it is still an Unready detail",
+   "diff": "ee77631a3057eaa0"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_154": {
+   "reason": "message text only: the VRF part of the no-neighbors detail text; it is still an Unready detail",
+   "diff": "afe8e0ef1c70c717"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_155": {
+   "reason": "message text only: the VRF part of the no-neighbors detail text; it is still an Unready detail",
+   "diff": "5a7a32805de5fe28"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_156": {
+   "reason": "message text only: the VRF part of the no-neighbors detail text; it is still an Unready detail",
+   "diff": "2782258b74b4054c"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_157": {
+   "reason": "message text only: the VRF part of the no-neighbors detail text; it is still an Unready detail",
+   "diff": "b8d663b353c725d7"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_158": {
+   "reason": "message text only: the VRF part of the no-neighbors detail text; it is still an Unready detail",
+   "diff": "734e87112b25e71d"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_159": {
+   "reason": "message text only: the VRF part of the no-neighbors detail text; it is still an Unready detail",
+   "diff": "31572a51f62417e2"
+  },
   "netdryrun.runner.x__bgp_convergence_gate__mutmut_162": {
    "reason": "message text only: the detail text of a gate result or gate warning; same verdict, same passed/unready sample flags and counts",
    "diff": "2e0b5c40fdad098c"
@@ -2346,8 +2374,8 @@
    "diff": "da64eadd016750db"
   },
   "netdryrun.runner.x__bgp_convergence_gate__mutmut_166": {
-   "reason": "message text only: the detail text of a gate result or gate warning; same verdict, same passed/unready sample flags and counts",
-   "diff": "1a51157e5cd4d51b"
+   "reason": "message text only: the detail text of a failing gate sample; it is still an Unready detail, so the sample stays unready",
+   "diff": "61c9ea5dd917527a"
   },
   "netdryrun.runner.x__bgp_convergence_gate__mutmut_167": {
    "reason": "message text only: the detail text of a gate result or gate warning; same verdict, same passed/unready sample flags and counts",
@@ -2365,9 +2393,45 @@
    "reason": "message text only: the detail text of a down-session history sample (a plain string either way, never unready)",
    "diff": "470b1fb07d8ac4c9"
   },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_187": {
+   "reason": "message text only: the VRF part of the no-neighbors detail text; it is still an Unready detail",
+   "diff": "c0b82fe2f3382265"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_188": {
+   "reason": "message text only: the VRF part of the no-neighbors detail text; it is still an Unready detail",
+   "diff": "eb55ad8409bd3d25"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_189": {
+   "reason": "message text only: the VRF part of the no-neighbors detail text; it is still an Unready detail",
+   "diff": "927bfe7ad64f82d4"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_190": {
+   "reason": "message text only: the VRF part of the no-neighbors detail text; it is still an Unready detail",
+   "diff": "621361111e929dbd"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_191": {
+   "reason": "message text only: the VRF part of the no-neighbors detail text; it is still an Unready detail",
+   "diff": "ba56f671f597d5b8"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_192": {
+   "reason": "message text only: the VRF part of the no-neighbors detail text; it is still an Unready detail",
+   "diff": "fd6f6d13ed40a052"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_193": {
+   "reason": "message text only: the VRF part of the no-neighbors detail text; it is still an Unready detail",
+   "diff": "5bea4b3e7790b58f"
+  },
   "netdryrun.runner.x__bgp_convergence_gate__mutmut_200": {
    "reason": "equivalent: the streak is only compared with >= 2 and == 0, and a streak that grows by 2 instead of 1 crosses both on the same sample",
    "diff": "64c6a7cf6a4e010d"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_201": {
+   "reason": "message text only: the detail text of a gate result or gate warning; same verdict, same passed/unready sample flags and counts",
+   "diff": "d5e9fb56b3a8acfb"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_207": {
+   "reason": "message text only: the detail text of a down-session history sample (a plain string either way, never unready)",
+   "diff": "285890f8f983e833"
   },
   "netdryrun.runner.x__bgp_convergence_gate__mutmut_216": {
    "reason": "message text only: the detail text of one history sample; its passed and unready flags are unchanged",
@@ -2385,9 +2449,17 @@
    "reason": "message text only: the detail text of one history sample; its passed and unready flags are unchanged",
    "diff": "434cf44d34e9823c"
   },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_225": {
+   "reason": "equivalent: the streak is only compared with >= 2 and == 0, and a streak that grows by 2 instead of 1 crosses both on the same sample",
+   "diff": "cddeed32544cd70d"
+  },
   "netdryrun.runner.x__bgp_convergence_gate__mutmut_229": {
    "reason": "equivalent: `first` is only tested for truth; None and False are both false",
    "diff": "93227f965a847fb4"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_241": {
+   "reason": "message text only: the detail text of one history sample; its passed and unready flags are unchanged",
+   "diff": "a46cb9a76a26a1b5"
   },
   "netdryrun.runner.x__bgp_convergence_gate__mutmut_243": {
    "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
@@ -2397,13 +2469,17 @@
    "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
    "diff": "75b5e5235745915d"
   },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_246": {
+   "reason": "message text only: the detail text of one history sample; its passed and unready flags are unchanged",
+   "diff": "4ce2949d4dd53f3f"
+  },
   "netdryrun.runner.x__bgp_convergence_gate__mutmut_247": {
-   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
-   "diff": "a50dd170cc851d53"
+   "reason": "message text only: the detail text of one history sample; its passed and unready flags are unchanged",
+   "diff": "0a12a4dd4421a015"
   },
   "netdryrun.runner.x__bgp_convergence_gate__mutmut_248": {
-   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
-   "diff": "8875fdcfee48dd1a"
+   "reason": "message text only: the detail text of one history sample; its passed and unready flags are unchanged",
+   "diff": "11be0c19663fde7a"
   },
   "netdryrun.runner.x__bgp_convergence_gate__mutmut_249": {
    "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
@@ -2422,8 +2498,8 @@
    "diff": "9ca28868732e1f40"
   },
   "netdryrun.runner.x__bgp_convergence_gate__mutmut_254": {
-   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
-   "diff": "757b0b90ec070e18"
+   "reason": "equivalent: `first` is only tested for truth; None and False are both false",
+   "diff": "39bd4f7076e09175"
   },
   "netdryrun.runner.x__bgp_convergence_gate__mutmut_255": {
    "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
@@ -2449,6 +2525,14 @@
    "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
    "diff": "5ff4d646b722d680"
   },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_268": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "c5367845bf4c1803"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_269": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "8747ad78ef288ee8"
+  },
   "netdryrun.runner.x__bgp_convergence_gate__mutmut_272": {
    "reason": "message text only: the text of a not-evaluated detail; the result is still failed with the same samples and counts",
    "diff": "97c0ae923f537e7c"
@@ -2462,28 +2546,148 @@
    "diff": "8ec4818cb67c6063"
   },
   "netdryrun.runner.x__bgp_convergence_gate__mutmut_275": {
-   "reason": "message text only: the text of a not-evaluated detail; the result is still failed with the same samples and counts",
-   "diff": "31fa667cc902c419"
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "7704580a6d39f5a7"
   },
   "netdryrun.runner.x__bgp_convergence_gate__mutmut_276": {
-   "reason": "message text only: the text of a not-evaluated detail; the result is still failed with the same samples and counts",
-   "diff": "ea3b56bb3a20bd73"
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "1e5b2542259d89d0"
   },
   "netdryrun.runner.x__bgp_convergence_gate__mutmut_277": {
-   "reason": "message text only: the text of a not-evaluated detail; the result is still failed with the same samples and counts",
-   "diff": "272c7c9aab130396"
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "7e43d73b3db2c465"
   },
   "netdryrun.runner.x__bgp_convergence_gate__mutmut_278": {
-   "reason": "message text only: the text of a not-evaluated detail; the result is still failed with the same samples and counts",
-   "diff": "53fac908668beb42"
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "fd5766df744a9080"
   },
   "netdryrun.runner.x__bgp_convergence_gate__mutmut_279": {
    "reason": "message text only: the text of a not-evaluated detail; the result is still failed with the same samples and counts",
    "diff": "34b16ff7095c1555"
   },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_280": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "f8e7515fe23996ae"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_281": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "b3604f256ff882b9"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_282": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "b2cf598c05f86ef5"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_283": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "6534956c00321b3d"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_287": {
+   "reason": "message text only: the explanation in a not-evaluated detail; the result is still failed and unready",
+   "diff": "039ab250be58d127"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_288": {
+   "reason": "message text only: the explanation in a not-evaluated detail; the result is still failed and unready",
+   "diff": "1ec62bfe261e0ab6"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_289": {
+   "reason": "message text only: the explanation in a not-evaluated detail; the result is still failed and unready",
+   "diff": "09cac8378d372f0e"
+  },
   "netdryrun.runner.x__bgp_convergence_gate__mutmut_300": {
    "reason": "equivalent: Result.samples_passed defaults to 0, the value passed explicitly",
    "diff": "3137e23bf03eb8e5"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_317": {
+   "reason": "report precision only: the duration of a not-evaluated result rounded to 2 decimals instead of 1; same verdict",
+   "diff": "9838a9f0caab3a8b"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_325": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "04a41fbfa671f521"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_326": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "18f0998ac654ede7"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_327": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "24937f705a6f0135"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_328": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "1b2b82a7d53a7a8e"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_330": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "5b1020c13f1290a5"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_331": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "1b404554fa09fe8b"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_332": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "89e3f734f76176d5"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_333": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "4f0b22b6464c0fc8"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_335": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "aaa56ec4ef3a8c51"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_336": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "42c77c6b64942829"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_337": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "0be2e83ef91cc84f"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_338": {
+   "reason": "message text only: the text of the no-BGP-neighbors warning (logged and added to the detail); the check still goes ahead with the same verdict",
+   "diff": "94105043b385b371"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_339": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "8fd51b804806b27e"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_350": {
+   "reason": "message text only: the text of a not-evaluated detail; the result is still failed with the same samples and counts",
+   "diff": "55f2e22fc8061390"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_351": {
+   "reason": "message text only: the text of a not-evaluated detail; the result is still failed with the same samples and counts",
+   "diff": "ad522a4e7abad41c"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_352": {
+   "reason": "message text only: the text of a not-evaluated detail; the result is still failed with the same samples and counts",
+   "diff": "ba3c49b1be946e4f"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_353": {
+   "reason": "message text only: the text of a not-evaluated detail; the result is still failed with the same samples and counts",
+   "diff": "7240e7527b500da3"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_354": {
+   "reason": "message text only: the text of a not-evaluated detail; the result is still failed with the same samples and counts",
+   "diff": "5c94bd910166cb42"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_355": {
+   "reason": "message text only: the text of a not-evaluated detail; the result is still failed with the same samples and counts",
+   "diff": "e4d3a314f9b7455d"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_356": {
+   "reason": "message text only: the text of a not-evaluated detail; the result is still failed with the same samples and counts",
+   "diff": "9878bcf01c7736bc"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_357": {
+   "reason": "message text only: the text of a not-evaluated detail; the result is still failed with the same samples and counts",
+   "diff": "97551dba510458a2"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_378": {
+   "reason": "equivalent: Result.samples_passed defaults to 0, the value passed explicitly",
+   "diff": "f2236fd0a4b31754"
   },
   "netdryrun.runner.x__bgp_convergence_gate__mutmut_61": {
    "reason": "equivalent: the initial streak is never read: every answer sets it, and the first established sample gets 1 because counts != None",
@@ -2518,8 +2722,52 @@
    "diff": "0a2a6d72eb95a4b4"
   },
   "netdryrun.runner.x__bgp_convergence_gate__mutmut_72": {
+   "reason": "equivalent: the default of a missing protocol only has to differ from 'bgp'; None, '' and any other text all do",
+   "diff": "8d2ff21719f2ed97"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_74": {
+   "reason": "equivalent: the default of a missing protocol only has to differ from 'bgp'; None, '' and any other text all do",
+   "diff": "fe5e1fc6cf3d58d7"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_77": {
+   "reason": "equivalent: the default of a missing protocol only has to differ from 'bgp'; None, '' and any other text all do",
+   "diff": "92a7caf8c00b0877"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_86": {
+   "reason": "equivalent: the initial streak is never read: every answer sets it, and the first established sample gets 1 because counts != None",
+   "diff": "248f84716693174d"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_87": {
+   "reason": "equivalent: the initial counts are never read: they are compared only once the streak is > 0, which only an established sample that also sets counts makes",
+   "diff": "7843f768c3d58438"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_88": {
+   "reason": "equivalent: the initial counts are never read: they are compared only once the streak is > 0, which only an established sample that also sets counts makes",
+   "diff": "e145ae06d6c255da"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_92": {
+   "reason": "equivalent: the initial empty flag is never read: every answer sets it, and it is read only for a node that answered",
+   "diff": "465749804991003d"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_93": {
+   "reason": "equivalent: the initial empty flag is never read: every answer sets it, and it is read only for a node that answered",
+   "diff": "0b97e79a37f0c814"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_94": {
+   "reason": "equivalent: the initial empty flag is never read: every answer sets it, and it is read only for a node that answered",
+   "diff": "fdc205023ae84cff"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_95": {
    "reason": "equivalent: the initial detail is never read: every failing sample sets it before it is used (and it is only message text)",
-   "diff": "61a3a258415e6e02"
+   "diff": "511025f7bdc2aa4c"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_96": {
+   "reason": "equivalent: the initial detail is never read: every failing sample sets it before it is used (and it is only message text)",
+   "diff": "6eab5eaef1b3fd74"
+  },
+  "netdryrun.runner.x__bgp_convergence_gate__mutmut_97": {
+   "reason": "equivalent: the initial detail is never read: every failing sample sets it before it is used (and it is only message text)",
+   "diff": "91915468578d18ce"
   },
   "netdryrun.runner.x__link_sessions__mutmut_12": {
    "reason": "message text only: the text of the LabError raised either way when BGP state can't be read before a fault (exit 2)",
