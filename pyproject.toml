@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "netdryrun"
 version = "0.3.1"
-description = "Test network changes before they touch production: real virtual labs, behavioral checks, evidence."
+description = "Find the route leaks that ping and 'BGP up' checks miss: test network changes in a real containerlab lab before production, with evidence."
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"
