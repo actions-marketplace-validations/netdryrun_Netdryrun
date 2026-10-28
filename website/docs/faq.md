@@ -45,9 +45,9 @@ The rules are conservative. A configured session that is down, a missing route o
 
 ## Is Netdryrun an alternative to Batfish or pyATS?
 
-It complements them more than it replaces them. Netdryrun boots the real routing software in a lab and checks its behavior; Batfish analyzes configs without booting anything; pyATS is a general test framework for labs and production devices. Many teams run Batfish first and boot the lab only when it passes ([Batfish, then Netdryrun](batfish.md) measures that pipeline).
+It complements them more than it replaces them. Netdryrun boots the real routing software in a lab and checks its behavior; Batfish models the network from its configs without booting anything; pyATS is a general test framework for labs and production devices. Many teams run Batfish first and boot the lab only when it passes ([Batfish, then Netdryrun](batfish.md) measures that pipeline).
 
-- **Batfish** models configs without booting anything. It is fast, covers many vendors and large networks, and answers broad questions. Netdryrun runs the real routing software, so it sees what the implementation actually does, on fewer nodes.
+- **Batfish** models routing and forwarding from the configs, without booting anything. It covers many vendors and large networks, and answers questions about every flow or route, including what changes between two snapshots or under failures. Netdryrun runs the real routing software, so it sees what the implementation actually does, on fewer nodes.
 - **pyATS / Genie** is a full Python test framework with many parsers, for labs and production devices. Netdryrun is a YAML file of checks and a CLI, aimed at one job: a pass/fail gate in CI.
 
 They work together. See [When to use what](when-to-use-what.md) for a longer, neutral comparison.
