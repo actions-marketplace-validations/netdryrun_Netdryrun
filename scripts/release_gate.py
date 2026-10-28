@@ -653,18 +653,21 @@ def layer_mutation(args) -> Layer:
         caught = len(checked) - len(survived)
         score = 100.0 * caught / max(1, len(checked))
         untested = sum(checked[n] == "no tests" for n in survived)
-        summary = (f"{caught}/{len(checked)} mutants caught ({score:.1f}%); not caught: "
+        by_class = accepted_by_class(accepted, survived, diffs)
+        summary = (f"{len(mine)} generated, {caught}/{len(checked)} caught ({score:.1f}%); not caught: "
                    f"{len(survived) - untested} survived the tests, {untested} in code no test runs"
-                   + (f", {len(survived) - len(open_)} accepted" if len(survived) != len(open_) else "")
-                   + (f"; {len(stale)} accepted entries no longer match their mutant's diff (re-review them)"
+                   + (f", {len(survived) - len(open_)} accepted ("
+                      + ", ".join(f"{v} {k}" for k, v in sorted(by_class.items())) + ")"
+                      if len(survived) != len(open_) else "")
+                   + (f"; {len(stale)} accepted entries don't accept their mutant (diff moved, no class, or no reviewed argument): see the notes"
                       if stale else ""))
         if not checked:
             layer.add(f"mutants-{module}", f"no surviving mutants in {VERDICT_MODULES[module]}", BLOCKER, False,
                       "no mutants were checked", tail(out), p.seconds)
             continue
         layer.add(f"mutants-{module}", f"no surviving mutants in {VERDICT_MODULES[module]}", BLOCKER, not open_,
-                  summary, tail("\n".join(f"{n}: {checked[n]}" + (f"  [accepted: {reason(accepted[n])}]" if accepted_now(accepted, n, diffs)
-                                                                   else "  [STALE acceptance]" if n in accepted else "")
+                  summary, tail("\n".join(f"{n}: {checked[n]}" + (f"  [accepted, {accepted[n]['class']}: {reason(accepted[n])}]" if accepted_now(accepted, n, diffs)
+                                                                   else f"  [NOT accepted: {acceptance_problem(accepted[n], n, diffs)}]" if n in accepted else "")
                                           for n in survived), 40), p.seconds if module == modules[0] else 0.0,
                   cmdline(["mutmut", *cmd[3:]]))
     gone = sorted(n for n in accepted if n not in survived_names
@@ -688,10 +691,52 @@ def reason(entry) -> str:
     return entry if isinstance(entry, str) else entry.get("reason", "")
 
 
+# Every accepted survivor says why in one of these classes (RELEASE-GATE.md, Layer 4).
+ACCEPT_CLASSES = ("message-text", "logging", "equivalent", "timing-only", "safety")
+
+# The functions that decide a verdict: check evaluation, the convergence and no-neighbor gates, inconclusive
+# classification, the fault-visible wait and the exit-code mapping. A survivor here is accepted only with a
+# written argument that it can't turn a failure into a pass, checked by the Layer 6 adversarial reviewer
+# ("argument" and "reviewed" in its accepted.json entry). The `tested` hashing (agent_result.py) is not in
+# the mutated modules; its behaviour is pinned by tests.
+VERDICT_FUNCTIONS = frozenset({
+    "checks._bgp_session", "checks._bgp_prefixes", "checks._route", "checks._ping", "checks._bgp_route",
+    "checks._not_configured", "checks.is_post_convergence", "checks._evaluate", "checks._counts", "checks.run_check",
+    "checks.hold_check", "checks.converge_then_hold", "checks.run_round_robin", "checks._reach_view",
+    "checks.hold_together", "checks.never_ready_nodes", "checks.inconclusive_reason",
+    "runner._bgp_convergence_gate", "runner._wait_fault_visible", "runner._link_sessions",
+    "runner._sessions_over_links", "runner._reach_then_hold", "runner.run_scenario",
+    "runner.RunReport.passed", "runner.RunReport.failed", "runner.RunReport.status",
+    "runner.RunReport.inconclusive_reason", "runner.RunReport.exit_code",
+})
+
+
+def acceptance_problem(entry, name: str, diffs: dict[str, str]) -> str | None:
+    """Why an accepted.json entry doesn't accept this mutant today, or None if it does."""
+    if not isinstance(entry, dict):
+        return "no entry, or the old format with no diff fingerprint"
+    if name not in diffs or entry.get("diff") != mutant_fingerprint(diffs[name]):
+        return "its diff fingerprint doesn't match this mutant (code moved: re-review)"
+    if entry.get("class") not in ACCEPT_CLASSES:
+        return f"no class (one of {', '.join(ACCEPT_CLASSES)})"
+    if mutant_function(name) in VERDICT_FUNCTIONS and not (entry.get("argument") and entry.get("reviewed")):
+        return ("a verdict-deciding function: needs a written argument that it can't turn a failure into a pass, "
+                "checked by the adversarial reviewer (argument, reviewed)")
+    return None
+
+
+def accepted_by_class(accepted: dict, names, diffs: dict[str, str]) -> dict[str, int]:
+    out: dict[str, int] = {}
+    for n in names:
+        if acceptance_problem(accepted.get(n), n, diffs) is None:
+            out[accepted[n]["class"]] = out.get(accepted[n]["class"], 0) + 1
+    return out
+
+
 def accepted_now(accepted: dict, name: str, diffs: dict[str, str]) -> bool:
-    """Accepted only if the entry pins the diff this mutant has today."""
-    entry = accepted.get(name)
-    return isinstance(entry, dict) and name in diffs and entry.get("diff") == mutant_fingerprint(diffs[name])
+    """Accepted only if the entry pins the diff this mutant has today, names a class, and, in a verdict-deciding
+    function, carries a reviewed argument."""
+    return acceptance_problem(accepted.get(name), name, diffs) is None
 
 
 def pin_accepted(args, accepted: dict, diffs: dict[str, str]) -> None:
@@ -739,8 +784,10 @@ def mutant_section(survivors: dict[str, list[str]], status: dict, accepted: dict
     for func, ns in sorted(by_func.items(), key=lambda kv: (-len(kv[1]), kv[0])):
         lines += [f"## `{func}` ({len(ns)})", ""]
         for n in ns:
-            note = (f" (accepted: {reason(accepted[n])})" if accepted_now(accepted, n, diffs) else
-                    f" (STALE acceptance, re-review: {reason(accepted[n])})" if n in accepted else "")
+            note = (f" (accepted, {accepted[n]['class']}: {reason(accepted[n])})" if accepted_now(accepted, n, diffs) else
+                    f" (NOT accepted: {acceptance_problem(accepted[n], n, diffs)}; {reason(accepted[n])})" if n in accepted else "")
+            if n in accepted and isinstance(accepted[n], dict) and accepted[n].get("argument"):
+                note += f"; argument: {accepted[n]['argument']}; reviewed: {accepted[n].get('reviewed', 'no')}"
             fp = mutant_fingerprint(diffs.get(n, ""))
             lines += [f"`{n}`: {status[n]}{note}; diff fingerprint `{fp}`", "", "```diff",
                       diffs.get(n) or "(no diff)", "```", ""]
@@ -929,6 +976,22 @@ def live_examples(live: Live, args) -> None:
               "\n".join(f"{n}: {s:.0f} s (documented {'-'.join(map(str, d))} s)" for n, s, d in times))
 
 
+def harmful_approved(cases: list[dict]) -> list[str]:
+    """The case IDs where a harmful change got Netdryrun's approval: the false passes, counted on their own."""
+    return sorted(c["id"] for c in cases
+                  if c.get("expected") == "harmful" and c.get("strategies", {}).get("netdryrun", {}).get("verdict") == "safe")
+
+
+def harmful_approved_check(published: list[dict], rerun: list[dict]) -> tuple[bool, str]:
+    """A harmful case approved that isn't among the published known misses is a BLOCKER, whatever the score."""
+    known, now = set(harmful_approved(published)), harmful_approved(rerun)
+    new = [c for c in now if c not in known]
+    summary = f"harmful changes approved: {len(now)} ({', '.join(now) or 'none'}); published known misses: "               f"{', '.join(sorted(known)) or 'none'}"
+    if new:
+        summary += f"; new, not published: {', '.join(new)}"
+    return not new, summary
+
+
 def live_corpora(live: Live, args) -> None:
     """Rerun both Verdict Corpus versions from a scratch copy; every verdict must match results.json."""
     layer = live.layer
@@ -958,6 +1021,11 @@ def live_corpora(live: Live, args) -> None:
                   BLOCKER, p.code == 0 and not diffs,
                   f"exit {p.code}" if p.code else (f"{len(diffs)} verdict(s) differ" if diffs else "all verdicts match"),
                   "\n".join(diffs) or tail(p.out), p.seconds, cmdline(["python", "corpus/run.py", "--corpus", version]))
+        if p.code == 0 and fresh.exists():
+            ok, summary = harmful_approved_check(list(old.values()), list(new.values()))
+            layer.add(f"corpus-{version}-harmful-approved",
+                      f"Verdict Corpus {version}: no harmful change approved beyond the published known misses",
+                      BLOCKER, ok, summary)
         live.assert_clean(f"corpus-{version}", f"Verdict Corpus {version}")
 
 
