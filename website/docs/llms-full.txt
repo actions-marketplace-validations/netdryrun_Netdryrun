@@ -888,7 +888,7 @@ One check per neighbor that catches a leak of *any* prefix, including ones nobod
   max: 10
 ```
 
-The count is of *accepted* prefixes (received minus rejected by import policy), so this also shows a filter that suddenly drops everything (`min`). From 0.3.3, `netdryrun record` writes both sides for every neighbor: today's count as `min` and `max` with 20% headroom; adjust `max` to the growth you expect. `record --guards` also writes the no-default-route and link-subnet guards below for every BGP node.
+The count is of *accepted* prefixes (received minus rejected by import policy), so this also shows a filter that suddenly drops everything (`min`). From 0.3.3, `netdryrun record` writes both sides for every neighbor: today's count as `min` and `max` with 20% headroom; adjust `max` to the growth you expect. `record` also writes the no-default-route and link-subnet guards below for every BGP node (`--no-guards` leaves them out).
 
 **Tested:** passes on `frr-bgp` (2 prefixes); fails on r2 announcing 12 extra static /24s with `redistribute static`, exit 1:
 
@@ -1182,7 +1182,7 @@ A recorded baseline allows only modest growth: from 0.3.3 each prefix count is t
 
 - **Keep** every `bgp_session` check.
 - **Set the prefix ranges to the growth you expect**, for example `max: 10` where sites are added often. `max` stays a cheap leak guard. `--exact-prefixes` pins exact counts; `--min-prefixes` records minimums only.
-- **Add the standard guards** with `netdryrun record --guards`: no default route and no link subnet via BGP on each BGP node.
+- **Keep the standard guards** `record` adds: no default route and no link subnet via BGP on each BGP node. A prefix range has room for one leaked default route; the guard is what catches it.
 - **Keep the route checks you care about**, and drop the rest.
 
 Add `--attributes` to `record` if you also want each route's AS path, local preference and communities pinned.
@@ -1722,6 +1722,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false   # the lab runs privileged containers: leave no token in .git/config
       - uses: netdryrun/netdryrun@v0.3.3
         with:
           path: network/        # the folder with netdryrun.yml
@@ -2193,7 +2195,7 @@ Snapshots a known-good lab into a `netdryrun.yml` baseline: every established BG
 | `--wait SECONDS` | With `--deploy`: time for BGP to converge before recording (default 45) |
 | `--exact-prefixes` | Pin prefix counts exactly (0.3.2 and earlier did this by default) |
 | `--min-prefixes` | Record prefix counts as minimums only |
-| `--guards` | Also add the standard [guards](../recipes.md#guard-recipes) on each BGP node: no default route via BGP (`0.0.0.0/0`, and `::/0` with IPv6 BGP) and no link subnet of the topology via BGP, each as a `route` check with `present: false`. Anything the node learns via BGP today gets no guard (a warning says so for a default route). From 0.3.3 |
+| `--no-guards` | Leave out the standard [guards](../recipes.md#guard-recipes), which `record` writes by default from 0.3.3: on each BGP node, no default route via BGP (`0.0.0.0/0`, and `::/0` with IPv6 BGP) and no link subnet of the topology via BGP, each as a `route` check with `present: false`. Anything the node learns via BGP today gets no guard (a warning says so for a default route). They are on by default because a prefix-count range has room for one leaked default route |
 | `--no-routes` | Don't record individual routes |
 | `--attributes` | Also record a `bgp_route` check per BGP route, pinning its best path's AS path, local preference and communities (not MED or next hop, which follow the topology) |
 | `--force` | Overwrite an existing file |
@@ -2692,6 +2694,7 @@ jobs:
 
 - **A lab is code that runs as root on the runner.** containerlab starts privileged containers with access to the host. Netdryrun passes the lab process a minimal environment (no job tokens, not the runner user's home directory), but that only narrows exposure; it is not a security boundary.
 - **Run labs from untrusted pull requests (forks) only in jobs with no secrets**, a read-only `GITHUB_TOKEN`, and without `id-token: write`. Never run them under `pull_request_target`.
+- **Check out with `persist-credentials: false`.** `actions/checkout` otherwise leaves the job token in `.git/config`, where a privileged lab container can read it during the run (the PR comment step gets its own token from `github-token`).
 - **The comment starts with a fixed header** (from 0.3.3), so a coding agent reads the verdict without parsing the rest. After the update marker, which names the lab (``, so each lab has its own comment), come two lines:
 
     ```text

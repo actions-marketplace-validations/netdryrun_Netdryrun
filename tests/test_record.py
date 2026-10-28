@@ -139,12 +139,6 @@ def test_no_guard_against_what_the_network_does_today(monkeypatch):
     assert any("r1" in w and "0.0.0.0/0" in w for w in warnings)
 
 
-def test_no_guards_unless_asked(monkeypatch):
-    drivers = {"r1": FakeDrv({"10.0.12.2": {"ipv4-unicast": 2}}), "r2": FakeDrv({})}
-    data, _ = run_record(monkeypatch, drivers)
-    assert guards(data) == []
-
-
 def test_an_unreadable_interface_is_a_warning_not_a_missing_guard(monkeypatch):
     # 0.3.3 cold review 5: interface_addresses raises LabError when it can't read them; that was swallowed
     from netdryrun.lab import LabError
@@ -165,3 +159,32 @@ def test_ipv6_over_ipv4_sessions_gets_the_ipv6_default_guard(monkeypatch):
     drivers = {"r1": FakeDrv({"10.0.12.2": {"ipv4-unicast": 2, "ipv6-unicast": 0}}), "r2": FakeDrv({})}
     data, _ = run_record(monkeypatch, drivers, guards=True)
     assert "::/0" in guards(data, "r1")
+
+
+def test_guards_are_on_by_default_and_can_be_turned_off(monkeypatch):
+    # 0.3.3 audit (Grok): with ranges by default, one leaked default route fits inside the prefix range;
+    # the no-default-route guard is what catches it, so record writes the guards unless asked not to
+    drivers = {"r1": FakeDrv({"10.0.12.2": {"ipv4-unicast": 2}}), "r2": FakeDrv({})}
+    data, _ = run_record(monkeypatch, drivers)
+    assert "0.0.0.0/0" in guards(data)
+    data, _ = run_record(monkeypatch, drivers, guards=False)
+    assert guards(data) == []
+
+
+def test_a_failed_route_read_says_its_link_guards_are_missing(monkeypatch):
+    from netdryrun.drivers import DriverError
+
+    class NoRoutes(FakeDrv):
+        def all_routes(self, vrf="default", family=4):
+            raise DriverError("vtysh timed out")
+    drivers = {"r1": NoRoutes({"10.0.12.2": {"ipv4-unicast": 2}}), "r2": FakeDrv({})}
+    _, warnings = run_record(monkeypatch, drivers)
+    assert any(w.startswith("INCOMPLETE BASELINE") and "r1" in w and "guard" in w for w in warnings)
+
+
+def test_the_link_guard_cap_is_loud(monkeypatch):
+    links = [((("r1", f"eth{i}")), ("r2", f"eth{i}")) for i in range(1, rec.MAX_LINK_GUARDS_PER_NODE + 3)]
+    addrs = {(n, f"eth{i}"): [f"10.{i}.0.{1 if n == 'r1' else 2}/30"] for i in range(1, 30) for n in ("r1", "r2")}
+    drivers = {"r1": FakeDrv({"10.0.12.2": {"ipv4-unicast": 2}}), "r2": FakeDrv({})}
+    _, warnings = run_record(monkeypatch, drivers, lab=FakeLab(None, addresses=addrs, links=links))
+    assert any(w.startswith("INCOMPLETE BASELINE") and "link subnets" in w for w in warnings)

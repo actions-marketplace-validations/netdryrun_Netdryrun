@@ -56,7 +56,7 @@ def test_component_publishes_reports_even_when_checks_fail():
 
 def test_component_removes_stale_reports_before_the_run():
     script = _script()
-    rm = script.index("rm -f")
+    rm = script.index("for f in ")
     assert rm < script.index("netdryrun run")
     for f in ('"$NDR_JSON"', '"$NDR_JUNIT"', '"$NDR_MARKDOWN"', "netdryrun.env"):
         assert f in script[rm:script.index("\n", rm)]
@@ -108,7 +108,7 @@ def test_component_writes_and_keeps_the_agent_result():
     assert inputs["mr-comment-token-variable"]["default"] == "NETDRYRUN_GITLAB_TOKEN"
     script = _script()
     assert '--verdict "$NDR_VERDICT"' in script
-    rm = script.index("rm -f")
+    rm = script.index("for f in ")
     assert '"$NDR_VERDICT"' in script[rm:script.index("\n", rm)]   # a committed verdict file never counts
     (job,) = body.values()
     assert "$[[ inputs.verdict-report ]]" in job["artifacts"]["paths"]

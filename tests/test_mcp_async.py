@@ -179,3 +179,39 @@ def test_the_server_destroys_its_labs_when_the_client_goes_away(monkeypatch):
     monkeypatch.setattr(mcp_server, "destroy_active_labs", lambda: calls.append("destroy"))
     mcp_server.main()
     assert calls == ["destroy"]
+
+
+def test_a_worker_that_dies_on_a_base_exception_ends_as_error(lab, monkeypatch):
+    # 0.3.3 audit (ChatGPT, Grok): KeyboardInterrupt/SystemExit in the worker left the run "running" forever
+    g = Gate(error=KeyboardInterrupt())
+    monkeypatch.setattr(mcp_server, "run", g)
+    rid = json.loads(mcp_server.start_run(str(lab)))["run_id"]
+    g.release.set()
+    done = _wait_finished(rid)
+    assert done["status"] == "error" and done["verdict"] == mcp_server.DO_NOT_APPLY
+
+
+def test_run_ids_never_collide(lab, monkeypatch):
+    import uuid as _uuid
+    same = _uuid.UUID(int=7 << 100)
+    import itertools
+    # run IDs are the high 12 hex digits of the UUID: vary those
+    ids = itertools.chain([same, same], (_uuid.UUID(int=i << 100) for i in itertools.count(100)))
+    monkeypatch.setattr(mcp_server.uuid, "uuid4", lambda: next(ids))
+    g = Gate()
+    monkeypatch.setattr(mcp_server, "run", g)
+    a = json.loads(mcp_server.start_run(str(lab)))["run_id"]
+    b = json.loads(mcp_server.start_run(str(lab)))["run_id"]
+    assert a != b
+    g.release.set()
+
+
+def test_each_async_run_has_its_own_evidence_file(lab, monkeypatch):
+    # 0.3.3 audit (Grok): every start_run wrote one netdryrun-report.json, so an earlier run's evidence_file
+    # pointed at a later run's report
+    g = Gate()
+    monkeypatch.setattr(mcp_server, "run", g)
+    rids = [json.loads(mcp_server.start_run(str(lab)))["run_id"] for _ in range(2)]
+    g.release.set()
+    files = [_wait_finished(r)["evidence_file"] for r in rids]
+    assert files[0] != files[1] and all(r in f for r, f in zip(rids, files, strict=True))

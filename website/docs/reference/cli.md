@@ -59,7 +59,7 @@ Snapshots a known-good lab into a `netdryrun.yml` baseline: every established BG
 | `--wait SECONDS` | With `--deploy`: time for BGP to converge before recording (default 45) |
 | `--exact-prefixes` | Pin prefix counts exactly (0.3.2 and earlier did this by default) |
 | `--min-prefixes` | Record prefix counts as minimums only |
-| `--guards` | Also add the standard [guards](../recipes.md#guard-recipes) on each BGP node: no default route via BGP (`0.0.0.0/0`, and `::/0` with IPv6 BGP) and no link subnet of the topology via BGP, each as a `route` check with `present: false`. Anything the node learns via BGP today gets no guard (a warning says so for a default route). From 0.3.3 |
+| `--no-guards` | Leave out the standard [guards](../recipes.md#guard-recipes), which `record` writes by default from 0.3.3: on each BGP node, no default route via BGP (`0.0.0.0/0`, and `::/0` with IPv6 BGP) and no link subnet of the topology via BGP, each as a `route` check with `present: false`. Anything the node learns via BGP today gets no guard (a warning says so for a default route). They are on by default because a prefix-count range has room for one leaked default route |
 | `--no-routes` | Don't record individual routes |
 | `--attributes` | Also record a `bgp_route` check per BGP route, pinning its best path's AS path, local preference and communities (not MED or next hop, which follow the topology) |
 | `--force` | Overwrite an existing file |

@@ -98,7 +98,16 @@ spec:
       if [ "$(id -u)" = 0 ]; then AS_ROOT=""; elif sudo -n true 2>/dev/null; then AS_ROOT="sudo"; else AS_ROOT=""; fi
       # Reports left in the workspace (committed in the MR, or from an earlier run on a shell runner)
       # must never be read or uploaded as this run's result
-      $AS_ROOT rm -f -- "$NDR_JSON" "$NDR_JUNIT" "$NDR_MARKDOWN" "$NDR_VERDICT" netdryrun.env
+      # A directory at a report path (committed in the MR) would make the report write fail and turn a failed
+      # run into "error": remove it too, but never the workspace or anything above it.
+      for f in "$NDR_JSON" "$NDR_JUNIT" "$NDR_MARKDOWN" "$NDR_VERDICT" netdryrun.env; do
+        if [ -d "$f" ] && [ ! -L "$f" ] && [ "$(realpath -- "$f")" != "$(realpath .)" ] \
+           && case "$(realpath .)/" in "$(realpath -- "$f")/"*) false;; *) true;; esac; then
+          $AS_ROOT rm -rf -- "$f"
+        else
+          $AS_ROOT rm -f -- "$f"
+        fi
+      done
 
       # Docker: the runner's (shell runner, mounted socket) or our own daemon (privileged Docker-in-Docker image)
       if ! docker info >/dev/null 2>&1 && [ -x /usr/local/share/docker-init.sh ]; then

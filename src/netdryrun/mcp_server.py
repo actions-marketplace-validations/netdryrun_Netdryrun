@@ -141,9 +141,9 @@ def _prepare(path: str, deploy: bool):
     return cfg, _tested(cfg, deployed=deploy), None   # read before the run: the files the lab is deployed from
 
 
-def _finish(cfg, rep, tested: dict) -> dict:
+def _finish(cfg, rep, tested: dict, evidence_name: str = "netdryrun-report.json") -> dict:
     """The result of a finished run, with the full report written next to netdryrun.yml."""
-    evidence = cfg.path.parent / "netdryrun-report.json"
+    evidence = cfg.path.parent / evidence_name
     try:
         # a new file renamed over the old name: a planted symlink or hardlink there is replaced, never written through
         tmp = evidence.with_name(f".{evidence.name}.{os.getpid()}.{threading.get_ident()}.tmp")
@@ -218,16 +218,19 @@ def start_run(path: str, keep_lab: bool = False) -> str:
     cfg, tested, err = _prepare(path, deploy=True)
     if err:
         return json.dumps(err)
-    run_id = uuid.uuid4().hex[:12]
     entry = {"started": time.monotonic(), "result": None}
     with _RUNS_LOCK:
+        run_id = uuid.uuid4().hex[:12]
+        while run_id in _RUNS:   # never two runs under one ID
+            run_id = uuid.uuid4().hex[:12]
         _forget_old_runs()
         _RUNS[run_id] = entry
 
     def work() -> None:
         try:
-            result = _finish(cfg, run(cfg, deploy=True, keep=keep_lab), tested)
-        except Exception as e:   # never a run that stays "running" forever
+            # its own report file: several runs of one folder must not share the evidence of the last one
+            result = _finish(cfg, run(cfg, deploy=True, keep=keep_lab), tested, f"netdryrun-report-{run_id}.json")
+        except BaseException as e:   # never a run that stays "running" forever, whatever ends the worker
             result = _setup_error(f"internal error: {type(e).__name__}: {e}. This is a Netdryrun bug, not a "
                                   "verdict on the change")
         entry["result"] = {**result, "run_id": run_id}
@@ -267,13 +270,14 @@ def run_checks(path: str) -> str:
     Snapshot a known-good lab (containerlab topology file) as netdryrun.yml check text: every established
     BGP session, prefix count (today's count as min, max with 20% headroom) and BGP route. Call it when no
     checks exist, before changing the configs, then dry-run the change against this baseline. With
-    attributes=true, also pin each BGP route's AS path, local preference and communities. With guards=true,
-    add the standard guards: no default route and no link subnet via BGP on each BGP node. A first line
+    attributes=true, also pin each BGP route's AS path, local preference and communities. By default it also
+    adds the standard guards (no default route and no link subnet via BGP on each BGP node); guards=false
+    leaves them out. A first line
     starting "# INCOMPLETE BASELINE" means routes were left out: say so to the human. Returns the YAML;
     nothing is written to disk. Show it to the human: the checks belong to the network team.
     """))
 def record_baseline(topology: str, deploy: bool = True, wait_seconds: float = 45, attributes: bool = False,
-                    guards: bool = False) -> str:
+                    guards: bool = True) -> str:
     import time
 
     from .record import record, render

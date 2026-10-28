@@ -78,3 +78,26 @@ def test_without_netdryrun_installed_the_step_only_warns(tmp_path):
     p = subprocess.run([sys.executable, "-S", "-c", step_script()], cwd=tmp_path, env={"PATH": ""},
                        capture_output=True, text=True)
     assert p.returncode == 0 and "::warning" in p.stdout
+
+
+# ------------------------------------------- 0.3.3 audit (Grok): a directory committed at a report path
+
+RUN = next(s for s in ACTION["runs"]["steps"] if s.get("name") == "Run Netdryrun")
+
+
+def removal_loop() -> str:
+    run = RUN["run"]
+    start = run.index("for f in ")
+    end = run.index("done", start) + len("done")
+    return run[start:end].replace("sudo ", "")
+
+
+def test_a_committed_directory_at_a_report_path_is_removed_but_never_the_workspace(tmp_path):
+    ws = tmp_path / "ws"
+    (ws / "netdryrun-report.json").mkdir(parents=True)     # planted by a PR: the report write would fail
+    (ws / "netdryrun-report.json" / "x").write_text("x")
+    (ws / "keep.txt").write_text("keep")
+    env = {"PATH": "/usr/bin:/bin", "NDR_JSON": "netdryrun-report.json", "NDR_JUNIT": ".", "NDR_VERDICT": ".."}
+    subprocess.run(["bash", "-c", removal_loop()], cwd=ws, env=env, check=True)
+    assert not (ws / "netdryrun-report.json").exists()
+    assert (ws / "keep.txt").exists() and ws.exists() and tmp_path.exists()   # "." and ".." untouched

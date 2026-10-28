@@ -229,6 +229,9 @@ def _tested(cfg, deployed: bool, outside_root=lambda path: None) -> dict:
     files: dict[str, str] = {}
     for src in sources:
         src = Path(src)
+        if outside_root(src.resolve()):   # not even listed or walked: the root check comes first
+            complete = False
+            continue
         if src.is_dir():   # stop walking at the cap: a bound system folder can hold many thousands of files
             found = list(itertools.islice((p for p in src.rglob("*") if p.is_file()), TESTED_FILES_MAX + 1))
         else:

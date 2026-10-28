@@ -69,7 +69,7 @@ A recorded baseline allows only modest growth: from 0.3.3 each prefix count is t
 
 - **Keep** every `bgp_session` check.
 - **Set the prefix ranges to the growth you expect**, for example `max: 10` where sites are added often. `max` stays a cheap leak guard. `--exact-prefixes` pins exact counts; `--min-prefixes` records minimums only.
-- **Add the standard guards** with `netdryrun record --guards`: no default route and no link subnet via BGP on each BGP node.
+- **Keep the standard guards** `record` adds: no default route and no link subnet via BGP on each BGP node. A prefix range has room for one leaked default route; the guard is what catches it.
 - **Keep the route checks you care about**, and drop the rest.
 
 Add `--attributes` to `record` if you also want each route's AS path, local preference and communities pinned.

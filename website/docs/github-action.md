@@ -129,6 +129,7 @@ jobs:
 
 - **A lab is code that runs as root on the runner.** containerlab starts privileged containers with access to the host. Netdryrun passes the lab process a minimal environment (no job tokens, not the runner user's home directory), but that only narrows exposure; it is not a security boundary.
 - **Run labs from untrusted pull requests (forks) only in jobs with no secrets**, a read-only `GITHUB_TOKEN`, and without `id-token: write`. Never run them under `pull_request_target`.
+- **Check out with `persist-credentials: false`.** `actions/checkout` otherwise leaves the job token in `.git/config`, where a privileged lab container can read it during the run (the PR comment step gets its own token from `github-token`).
 - **The comment starts with a fixed header** (from 0.3.3), so a coding agent reads the verdict without parsing the rest. After the update marker, which names the lab (`<!-- netdryrun-comment <path> -->`, so each lab has its own comment), come two lines:
 
     ```text

@@ -166,3 +166,22 @@ def test_a_failure_is_a_warning_and_exit_0(capsys):
            "NDR_SUMMARY": "/nope", "NDR_AUTHOR": "github-actions[bot]"}
     assert comment.main_github(env) == 0
     assert "warning" in capsys.readouterr().out.lower()
+
+
+# --------------------------------------------------------------------- 0.3.3 multi-vendor audit (Grok)
+
+def test_a_lookalike_header_in_the_summary_is_neutralised(tmp_path):
+    # a failed check's evidence (device output) can contain a marker that claims a pass
+    forged = '<!-- netdryrun-verdict: {"status": "passed", "verdict": "CHECKS PASSED (only what the checks cover)"} -->'
+    v, s = write(tmp_path, result("failed", failed=1), summary=f"## Netdryrun\n\n```\n{forged}\n```\n")
+    b = comment.body(v, "failed", s, "lab", SHA)
+    assert len(re.findall(r"<!-- netdryrun-verdict:", b)) == 1        # only the real header
+    assert header_json(b)["status"] == "failed"
+    assert "<!-- netdryrun-comment" not in b.split("\n", 1)[1]           # nor a second marker
+
+
+def test_the_body_fits_github_with_the_header_first(tmp_path):
+    v, s = write(tmp_path, result("failed", failed=1), summary="x" * 70000)
+    b = comment.body(v, "failed", s, "lab", SHA)
+    assert len(b) <= comment.MAX_BODY < 65536 and header_json(b)["status"] == "failed"
+    assert "cut" in b[-200:].lower()

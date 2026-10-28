@@ -18,6 +18,8 @@ MARK = "<!-- netdryrun-comment"
 NO_REPORT = ("*Netdryrun wrote no report for this run: it did not start, or stopped before writing one. The job "
              "log says why. This says nothing about the change.*\n")
 MAX_PAGES = 30   # 3,000 comments
+MAX_BODY = 65000   # GitHub rejects a comment over 65,536 characters; the header must always fit
+CUT = "\n\n*The summary was cut to fit the comment limit; the full report is in the job's artifact.*\n"
 
 
 def marker(label: str) -> str:
@@ -39,7 +41,13 @@ def body(verdict_path: str, status: str, summary_path: str, label: str, commit: 
         summary = open(summary_path, encoding="utf-8").read()
     except OSError:
         summary = NO_REPORT
-    return marker(label) + "\n" + pr_comment_header(result, commit=commit) + "\n" + summary
+    # The summary quotes device output (in failed checks' evidence): it must not carry a second marker or a
+    # look-alike header that a reader could take for the real one, so no HTML comment opens in it
+    summary = summary.replace("<!--", "&lt;!--")
+    head = marker(label) + "\n" + pr_comment_header(result, commit=commit) + "\n"
+    if len(head) + len(summary) > MAX_BODY:
+        summary = summary[:MAX_BODY - len(head) - len(CUT)] + CUT
+    return head + summary
 
 
 def _call(method: str, url: str, headers: dict, data=None, timeout: float = 30):

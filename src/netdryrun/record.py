@@ -32,13 +32,15 @@ def prefix_range(count: int) -> dict:
 
 
 def record(topology: Path, include_routes: bool = True, prefix_mode: str = "range", attributes: bool = False,
-           guards: bool = False, log=lambda _: None) -> tuple[dict, list[str]]:
+           guards: bool = True, log=lambda _: None) -> tuple[dict, list[str]]:
     """Return (netdryrun.yml data, warnings) for the running lab described by `topology`.
     prefix_mode: "range" (default: prefix_range), "exact", or "min".
     With `attributes`, each recorded BGP route also gets a bgp_route check pinning its best path's
     AS path, local preference and communities (not MED or next hop, which follow the topology).
-    With `guards`, the standard guard recipes that can be read from the lab: no default route via BGP, and
-    no link subnet of the topology via BGP, on every BGP node, except what the node learns via BGP today."""
+    With `guards` (the default from 0.3.3: a prefix range has room for one leaked default route, so the
+    no-default-route guard is what catches it), the standard guard recipes that can be read from the lab: no
+    default route via BGP, and no link subnet of the topology via BGP, on every BGP node, except what the node
+    learns via BGP today."""
     if prefix_mode not in ("range", "exact", "min"):
         raise ValueError(f"prefix_mode must be range, exact or min, got {prefix_mode!r}")
     lab = Lab(topology)
@@ -134,7 +136,11 @@ def _guards(name: str, neighbors: dict, bgp_now: dict[int, set[str]], link_subne
           or any("ipv6" in afi for n in neighbors.values() for afi in n.prefixes))   # carried over IPv4
     out = []
     for fam, default in ((4, "0.0.0.0/0"), (6, "::/0")):
-        if (fam == 6 and not v6) or fam not in bgp_now:   # no IPv6 BGP; or its routes couldn't be read (warned)
+        if fam == 6 and not v6:
+            continue
+        if fam not in bgp_now:   # its routes couldn't be read: a guard against what it has today can't be built
+            warnings.append(f"INCOMPLETE BASELINE: {name}: IPv{fam} routes could not be read, so no IPv{fam} "
+                            "guards (no default route, no link subnet) were recorded for it")
             continue
         if default in bgp_now[fam]:
             warnings.append(f"{name}: learns {default} via BGP today; no 'no default route' guard recorded")
@@ -143,7 +149,9 @@ def _guards(name: str, neighbors: dict, bgp_now: dict[int, set[str]], link_subne
     # a subnet the node learns via BGP today, or whose family couldn't be read, gets no guard
     links = [n for n in link_subnets if n not in bgp_now.get(6 if ":" in n else 4, {n})]
     if len(links) > MAX_LINK_GUARDS_PER_NODE:
-        warnings.append(f"{name}: {len(links)} link subnets; guarded the first {MAX_LINK_GUARDS_PER_NODE}")
+        warnings.append(f"INCOMPLETE BASELINE: {name} has {len(links)} link subnets; only the first "
+                        f"{MAX_LINK_GUARDS_PER_NODE} are guarded. A leak of another one goes unnoticed: add guards "
+                        "for the ones that matter")
     out += [{"type": "route", "node": name, "prefix": n, "protocol": "bgp", "present": False}
             for n in links[:MAX_LINK_GUARDS_PER_NODE]]
     return out

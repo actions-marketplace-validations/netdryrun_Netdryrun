@@ -21,6 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false   # the lab runs privileged containers: leave no token in .git/config
       - uses: netdryrun/netdryrun@v0.3.3
         with:
           path: network/        # the folder with netdryrun.yml

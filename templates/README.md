@@ -100,7 +100,7 @@ GitLab's job token can't write merge request notes, so the note needs a token:
 2. In **Settings > CI/CD > Variables**, add it as `NETDRYRUN_GITLAB_TOKEN`, **masked**. Merge request branches are usually not protected, so leave **Protected** off, or the job won't see it.
 3. Set `mr-comment: true`, and run the job in merge request pipelines (for example `rules: [{if: $CI_PIPELINE_SOURCE == "merge_request_event"}]` on the job).
 
-Anyone who can push a branch that edits `.gitlab-ci.yml` can read that variable in their own job. Give the token only the Reporter role, and don't use this on projects where untrusted people can push branches. Without the token, the job prints a warning naming the variable and the result is unchanged; a note that can't be written is also only a warning.
+Anyone who can push a branch that edits `.gitlab-ci.yml` can read that variable in their own job (or point `CI_API_V4_URL` elsewhere). And the token is in the job's environment while the lab runs: the lab's containers are privileged, so an untrusted topology can read it from the host. Give the token only the Reporter role, and use `mr-comment` only where everyone who can open a merge request is trusted. Without the token, the job prints a warning naming the variable and the result is unchanged; a note that can't be written is also only a warning.
 
 ## Runner requirements
 

@@ -110,7 +110,16 @@ runs:
         set +e
         # Reports left in the workspace (committed in the PR, or from an earlier run on a self-hosted
         # runner) must never be read, posted or uploaded as this run's result
-        sudo rm -f -- "$NDR_JSON" "$NDR_JUNIT" "$NDR_VERDICT" netdryrun-summary.md netdryrun-comment.json
+        # A directory at a report path (committed in the PR) would make the report write fail and turn a
+        # failed run into "error": remove it too, but never the workspace or anything above it.
+        for f in "$NDR_JSON" "$NDR_JUNIT" "$NDR_VERDICT" netdryrun-summary.md netdryrun-comment.json; do
+          if [ -d "$f" ] && [ ! -L "$f" ] && [ "$(realpath -- "$f")" != "$(realpath .)" ] \
+             && case "$(realpath .)/" in "$(realpath -- "$f")/"*) false;; *) true;; esac; then
+            sudo rm -rf -- "$f"
+          else
+            sudo rm -f -- "$f"
+          fi
+        done
         # containerlab needs root on GitHub-hosted runners. Pass only what Netdryrun needs (not the
         # job's tokens, not the runner user's home). This only narrows the environment: a lab runs
         # privileged containers, so run untrusted topologies only in jobs without secrets.
