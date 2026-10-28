@@ -52,14 +52,19 @@ class FakeLab:
 class FakeDrv:
     name = "frr"
 
-    def __init__(self, counts, routes4=(), routes6=()):
-        self.counts, self.routes = counts, {4: list(routes4), 6: list(routes6)}
+    def __init__(self, counts, routes4=(), routes6=(), received=()):
+        self.counts, self.table, self.received = counts, {4: list(routes4), 6: list(routes6)}, set(received)
 
     def bgp_neighbors(self, vrf="default"):
         return Observation({a: BgpNeighbor(a, "established", pfx) for a, pfx in self.counts.items()}, [])
 
     def all_routes(self, vrf="default", family=4):
-        return Observation([Route(p, "bgp", True) for p in self.routes[family]], [])
+        return Observation([Route(p, "bgp", True) for p in self.table[family]], [])
+
+    def routes(self, prefix, vrf="default"):
+        table = self.table[6 if ":" in prefix else 4]
+        return Observation([Route(prefix, "bgp", prefix in table)] if prefix in table or prefix in self.received
+                           else [], [{"cmd": "show route"}])
 
 
 def run_record(monkeypatch, drivers, lab=None, **kw):
@@ -188,3 +193,30 @@ def test_the_link_guard_cap_is_loud(monkeypatch):
     drivers = {"r1": FakeDrv({"10.0.12.2": {"ipv4-unicast": 2}}), "r2": FakeDrv({})}
     _, warnings = run_record(monkeypatch, drivers, lab=FakeLab(None, addresses=addrs, links=links))
     assert any(w.startswith("INCOMPLETE BASELINE") and "link subnets" in w for w in warnings)
+
+
+
+def test_never_a_guard_the_recording_lab_already_fails(monkeypatch):
+    # an edge router that receives a default from upstream without selecting it: the routing table doesn't
+    # list it, but the guard (route present: false via bgp) fails on a received route too. No guard for it,
+    # and the file says why in a comment.
+    drivers = {"r1": FakeDrv({"10.0.12.2": {"ipv4-unicast": 3}}, routes4=["192.168.2.0/24"], received=["0.0.0.0/0"]),
+               "r2": FakeDrv({})}
+    data, warnings = run_record(monkeypatch, drivers)
+    assert "0.0.0.0/0" not in guards(data, "r1") and "10.0.12.0/30" in guards(data, "r1")
+    text = rec.render(data, warnings)
+    assert any(line.startswith("# warning: r1") and "0.0.0.0/0" in line and "baseline" in line
+               for line in text.splitlines())
+
+
+def test_every_guard_written_passes_on_the_recording_lab(monkeypatch):
+    from netdryrun.checks import _evaluate
+    from netdryrun.config import Check
+    drivers = {"r1": FakeDrv({"10.0.12.2": {"ipv4-unicast": 2}, "fd00::2": {"ipv6-unicast": 1}}, routes6=["fd01::/64"],
+                             received=["::/0"]),
+               "r2": FakeDrv({"10.0.12.1": {"ipv4-unicast": 1}})}
+    data, _ = run_record(monkeypatch, drivers)
+    for c in (c for c in data["checks"] if c.get("present") is False):
+        params = {k: v for k, v in c.items() if k != "type"}
+        ok, detail, _ = _evaluate(Check("route", params, "g", 30), drivers[c["node"]])
+        assert ok, (c, detail)

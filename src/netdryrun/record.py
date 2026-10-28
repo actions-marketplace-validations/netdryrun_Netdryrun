@@ -14,7 +14,8 @@ from pathlib import Path
 import yaml
 
 from . import __version__
-from .config import community_name
+from .checks import _evaluate
+from .config import Check, community_name
 from .drivers import DriverError, detect, for_node
 from .lab import Lab, LabError
 
@@ -109,7 +110,7 @@ def record(topology: Path, include_routes: bool = True, prefix_mode: str = "rang
                         if c:
                             checks.append(c)
         if guards and neighbors:
-            checks += _guards(name, neighbors, bgp_now, link_subnets, warnings)
+            checks += _guards(name, drv, neighbors, bgp_now, link_subnets, warnings)
     data = {"lab": topology.name, "timeout": 120, "checks": checks}
     return data, warnings
 
@@ -129,9 +130,12 @@ def _link_subnets(lab, warnings: list[str]) -> list[str]:
     return [str(n) for n in sorted(nets, key=lambda n: (n.version, n))]
 
 
-def _guards(name: str, neighbors: dict, bgp_now: dict[int, set[str]], link_subnets: list[str],
+def _guards(name: str, drv, neighbors: dict, bgp_now: dict[int, set[str]], link_subnets: list[str],
             warnings: list[str]) -> list[dict]:
-    """--guards for one BGP node: checks that must never pass on what the network does today."""
+    """The standard guards for one BGP node: checks that must hold on what the network does today. Each one
+    is evaluated on the recording lab with the real check before it is written: a guard the baseline itself
+    fails (a default received from upstream but not selected, which the routing table doesn't list) is left
+    out, and a warning, a comment in the file, says why."""
     v6 = (any(":" in a for a in neighbors) or bool(bgp_now.get(6))   # IPv6 neighbors or routes, or IPv6
           or any("ipv6" in afi for n in neighbors.values() for afi in n.prefixes))   # carried over IPv4
     out = []
@@ -154,7 +158,15 @@ def _guards(name: str, neighbors: dict, bgp_now: dict[int, set[str]], link_subne
                         "for the ones that matter")
     out += [{"type": "route", "node": name, "prefix": n, "protocol": "bgp", "present": False}
             for n in links[:MAX_LINK_GUARDS_PER_NODE]]
-    return out
+    kept = []
+    for g in out:
+        ok, detail, _ = _evaluate(Check("route", {k: v for k, v in g.items() if k != "type"}, "guard", 30), drv)
+        if ok:
+            kept.append(g)
+        else:
+            warnings.append(f"{name}: no guard against {g['prefix']} via BGP: the baseline lab already fails it "
+                            f"({' '.join(str(detail).split())})")
+    return kept
 
 
 def _attribute_check(drv, node: str, prefix: str) -> dict | None:
