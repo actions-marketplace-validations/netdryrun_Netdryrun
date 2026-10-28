@@ -39,3 +39,6 @@ Captured live on 2026-10-28 from `cjunosevolved:26.2R1.7-EVO` (containerlab 0.81
 | `junos_error_not_ready.txt` | `show bgp neighbor instance master \| display json \| no-more` (lab `ndr-junos-frr`, while rpd was starting) |
 | `junos_error_not_ready_route.txt` | `show route 0.0.0.0/0 exact table inet.0 all extensive \| display json \| no-more` (same moment) |
 | `junos_error_not_ready_ping.txt` | `ping 10.0.100.2 count 2 rapid wait 1 \| display json \| no-more` (same moment) |
+| `junos_route_ibgp.txt` | `show route 10.50.0.0/24 exact table inet.0 all extensive \| display json \| no-more` (lab `ndr-junos-ibgp`: iBGP from FRR, next hop set to 10.60.0.1, reached by a static via 10.0.1.2) |
+| `junos_route_ibgp_noexport.txt` | `show route 10.51.0.0/24 exact table inet.0 all extensive \| display json \| no-more` (same lab: community no-export, local-pref 200 set by the peer) |
+| `junos_bgp_neighbor_ibgp.txt` | `show bgp neighbor instance master \| display json \| no-more` (same lab) |

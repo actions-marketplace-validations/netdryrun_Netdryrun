@@ -496,3 +496,15 @@ def test_not_ready_daemon_is_an_error(name, parse):
     if "ping" not in name:
         with pytest.raises(DriverError, match="routing subsystem is not running"):
             parse(read(name))
+
+
+def test_ibgp_next_hop_is_the_protocol_next_hop():
+    """iBGP: Junos shows the BGP NEXT_HOP (10.60.0.1) as the protocol next hop and the resolved forwarding
+    next hop (10.0.1.2) under nh. next_hop is the BGP attribute, as on every other driver."""
+    (p,) = junos.parse_bgp_paths(read("junos_route_ibgp.txt"), "10.50.0.0/24")
+    assert (p.best, p.next_hop, p.neighbor, p.as_path, p.local_pref, p.communities) == \
+        (True, "10.60.0.1", "10.0.1.2", "", 100, ["65001:50"])
+    (q,) = junos.parse_bgp_paths(read("junos_route_ibgp_noexport.txt"), "10.51.0.0/24")
+    assert q.local_pref == 200 and q.next_hop == "10.0.1.2" and q.communities == ["65001:51", "65535:65281"]  # no-export, canonical
+    n = junos.parse_bgp_neighbors(read("junos_bgp_neighbor_ibgp.txt"), "master")
+    assert n["10.0.1.2"].state == "established" and n["10.0.1.2"].prefixes == {"ipv4-unicast": 2}

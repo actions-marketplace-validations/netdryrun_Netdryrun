@@ -164,6 +164,8 @@ CASES = [
          junos_route_empty),
     Case("junos.parse_bgp_paths[leak]", lambda t: junos.parse_bgp_paths(t, "0.0.0.0/0"), ["junos_route_leak.txt"],
          junos_route_empty),
+    Case("junos.parse_bgp_paths[ibgp]", lambda t: junos.parse_bgp_paths(t, "10.50.0.0/24"),
+         ["junos_route_ibgp.txt"], junos_route_empty),
     Case("junos.parse_bgp_paths[hidden next hop]", lambda t: junos.parse_bgp_paths(t, "10.31.0.0/24"),
          ["junos_route_hidden_nexthop.txt"], junos_route_empty),
     Case("srlinux.parse_attr_set", lambda t: srlinux.parse_attr_set(t, SRL_ROW),

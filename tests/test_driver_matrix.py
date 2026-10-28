@@ -310,6 +310,10 @@ def _cells() -> list[Cell]:
     add("junos", "fail", "wrong as_path", {**br, "as_path": "65999"}, paths(fx("junos_route_paths.txt")))
     add("junos", "fail", "wrong local_pref", {**br, "local_pref": 999}, paths(fx("junos_route_paths.txt")))
     add("junos", "fail", "community missing", {**br, "communities": ["65000:999"]}, paths(fx("junos_route_paths.txt")))
+    add("junos", "fail", "no-export present", {"type": "bgp_route", "prefix": "10.51.0.0/24",
+                                               "without_communities": ["no-export"]}, paths(fx("junos_route_ibgp_noexport.txt")))
+    add("junos", "fail", "iBGP next hop is the protocol next hop, not the forwarding one",
+        {"type": "bgp_route", "prefix": "10.50.0.0/24", "next_hop": "10.0.1.2"}, paths(fx("junos_route_ibgp.txt")))
     add("junos", "fail", "leaked default in the BGP table", {"type": "bgp_route", "prefix": "0.0.0.0/0", "present": False},
         paths(fx("junos_route_leak.txt")))
     p = {"type": "ping", "target": "10.20.0.1"}
