@@ -3,6 +3,7 @@ allow-intent-edit), the stale-report and output protections, and the PR comment 
 `netdryrun verify --markdown` summary)."""
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -45,6 +46,7 @@ def test_before_is_the_pr_base_and_after_the_head():
     env = step("Check the intent file")["env"]
     assert env["NDR_BASE"] == "${{ github.event.pull_request.base.sha }}"
     assert env["NDR_HEAD"] == "${{ github.event.pull_request.head.sha }}"
+    assert env["NDR_MERGE"] == "${{ github.sha }}"
     assert step("Check the intent file")["if"] == "inputs.mode == 'verify'"
     run = step("Run Netdryrun")
     assert run["env"]["NDR_BASE"] == "${{ steps.intent.outputs.base }}"
@@ -88,6 +90,10 @@ def repo(tmp_path):
     return r
 
 
+def git_ok(r: Path, *args: str) -> bool:
+    return subprocess.run(["git", *args], cwd=r, capture_output=True).returncode == 0
+
+
 def commit(r: Path, files: dict[str, str]) -> str:
     for name, text in files.items():
         (r / name).write_text(text)
@@ -96,11 +102,21 @@ def commit(r: Path, files: dict[str, str]) -> str:
     return git(r, "rev-parse", "HEAD").strip()
 
 
-def check_intent(r: Path, base: str, head: str, allow="false", intent="netdryrun-intent.yml", topology="lab/topology.clab.yml"):
+def merged(r: Path, base: str, head: str) -> str:
+    """GitHub's merge commit for a PR: the head's tree (here the base is an ancestor), parents base and head."""
+    return git(r, "commit-tree", f"{head}^{{tree}}", "-p", base, "-p", head, "-m", "merge").strip()
+
+
+def check_intent(r: Path, base: str, head: str, allow="false", intent="netdryrun-intent.yml", topology="lab/topology.clab.yml",
+                 merge=None):
     out = r / "gh-output.txt"
     out.write_text("")
-    env = {**os.environ, "NDR_BASE": base, "NDR_HEAD": head, "NDR_ALLOW_INTENT_EDIT": allow, "NDR_INTENT": intent,
-           "NDR_TOPOLOGY": topology, "GITHUB_OUTPUT": str(out)}
+    if merge is None:
+        full = re.compile(r"[0-9a-f]{40}")
+        known = full.fullmatch(base) and full.fullmatch(head) and git_ok(r, "cat-file", "-e", f"{head}^{{commit}}")
+        merge = merged(r, base, head) if known else ("e" * 40 if full.fullmatch(head) else "")
+    env = {**os.environ, "NDR_BASE": base, "NDR_HEAD": head, "NDR_MERGE": merge, "NDR_ALLOW_INTENT_EDIT": allow,
+           "NDR_INTENT": intent, "NDR_TOPOLOGY": topology, "GITHUB_OUTPUT": str(out)}
     p = subprocess.run([sys.executable, "-c", python_of("Check the intent file")], cwd=r, env=env,
                        capture_output=True, text=True)
     summary = r / "netdryrun-summary.md"
@@ -112,7 +128,7 @@ def test_a_pr_that_leaves_the_intent_alone_runs(repo):
     h = commit(repo, {"lab/edge1.conf": "! after\n"})
     code, log, out, summary = check_intent(repo, b, h)
     assert code == 0, log
-    assert out == f"base={b}\nhead={h}\n" and summary is None
+    assert out == f"base={b}\nhead={merged(repo, b, h)}\n" and summary is None
 
 
 @pytest.mark.parametrize("how", ["edit", "add"])
@@ -136,7 +152,7 @@ def test_allow_intent_edit_lets_it_run_with_a_warning(repo):
     h = commit(repo, {"netdryrun-intent.yml": "intent:\n  - {prefix: 10.101.0.0/24, appears_on: [up1]}\n"})
     code, log, out, _ = check_intent(repo, b, h, allow="true")
     assert code == 0 and "::warning title=Netdryrun verify::intent edited in this PR" in log
-    assert out == f"base={b}\nhead={h}\n"
+    assert out == f"base={b}\nhead={merged(repo, b, h)}\n"
 
 
 def test_an_intent_in_a_subfolder_and_a_moved_intent(repo):
@@ -155,7 +171,7 @@ def test_an_intent_in_a_subfolder_and_a_moved_intent(repo):
     ({"base": "", "head": ""}, "runs on pull_request events"),
     ({"base": "main", "head": "HEAD"}, "runs on pull_request events"),          # only full SHAs
     ({"topology": " "}, "needs the topology input"),
-    ({"intent": "missing-intent.yml"}, "the intent file is not in the PR head"),
+    ({"intent": "missing-intent.yml"}, "the intent file is not in the PR merged into its base"),
 ])
 def test_the_rule_refuses_what_it_cannot_check(repo, kw, msg):
     b = git(repo, "rev-parse", "HEAD").strip()
@@ -312,3 +328,22 @@ def test_verify_mode_is_green_only_on_exit_0_and_an_approving_verify_report(stat
     run_rep = {"status": "passed", "summary": {"passed": 1, "failed": 0}}
     out = read_result(tmp_path, run_rep, "0")
     assert out["status"] == "error" and action_job_fails({"run": {"exit_code": "0"}, "result": out})
+
+
+def test_cold_4_after_is_the_pr_merged_into_the_base_branch_as_it_is_now(repo):
+    """Cold review: the Action booted the PR head, never what lands. The base branch moved on after the PR
+    branched (it defines a route-map) and the PR applies it: each alone is harmless, together they are the
+    change. After must be GitHub's merge commit, before the base branch tip."""
+    fork = git(repo, "rev-parse", "HEAD").strip()
+    h = commit(repo, {"lab/edge1.conf": "! applies ROUTE-MAP-X\n"})
+    git(repo, "checkout", "-q", fork)
+    tip = commit(repo, {"lab/policy.conf": "! defines ROUTE-MAP-X\n"})
+    (repo / "lab" / "edge1.conf").write_text("! applies ROUTE-MAP-X\n")
+    git(repo, "add", ".")
+    merge = git(repo, "commit-tree", git(repo, "write-tree").strip(), "-p", tip, "-p", h, "-m", "merge").strip()
+    code, log, out, _ = check_intent(repo, fork, h, merge=merge)
+    assert code == 0, log
+    assert out == f"base={tip}\nhead={merge}\n"
+    # a github.sha that is not this PR's merge commit is refused
+    code, log, _, _ = check_intent(repo, fork, h, merge=tip)
+    assert code == 1 and "is not this pull request's merge commit" in log

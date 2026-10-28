@@ -7,7 +7,7 @@ branding:
 
 inputs:
   mode:
-    description: "run (the default): deploy the lab of netdryrun.yml and run its checks. verify: on a pull request, boot the topology with the base commit's configs and with the head's, and fail on every behavior difference the intent file doesn't declare (0.4, FRR only)"
+    description: "run (the default): deploy the lab of netdryrun.yml and run its checks. verify: on a pull request, boot the topology with the base branch's configs and with the PR merged into it, and fail on every behavior difference the intent file doesn't declare (0.4, FRR only)"
     default: run
   path:
     description: "mode: run: netdryrun.yml or the folder containing it"
@@ -94,6 +94,7 @@ runs:
         NDR_ALLOW_INTENT_EDIT: ${{ inputs.allow-intent-edit }}
         NDR_BASE: ${{ github.event.pull_request.base.sha }}
         NDR_HEAD: ${{ github.event.pull_request.head.sha }}
+        NDR_MERGE: ${{ github.sha }}
       run: |
         # Reports left in the workspace must never be read, posted or uploaded as this run's result
         sudo rm -f -- "$NDR_JSON" "$NDR_JUNIT" netdryrun-summary.md netdryrun-comment.json
@@ -111,19 +112,28 @@ runs:
             sys.exit(1)
 
         base, head = os.environ.get("NDR_BASE", ""), os.environ.get("NDR_HEAD", "")
+        merge = os.environ.get("NDR_MERGE", "")
         sha = re.compile(r"[0-9a-f]{40}(?:[0-9a-f]{24})?")
-        if not (sha.fullmatch(base) and sha.fullmatch(head)):
-            fail("mode: verify runs on pull_request events: it compares the PR's base commit with its head")
+        if not (sha.fullmatch(base) and sha.fullmatch(head) and sha.fullmatch(merge)):
+            fail("mode: verify runs on pull_request events: it compares the base branch with the PR merged into it")
         if not os.environ.get("NDR_TOPOLOGY", "").strip():
             fail("mode: verify needs the topology input (the containerlab topology file)")
         intent = os.environ.get("NDR_INTENT", "").strip()
         if not intent:
             fail("mode: verify needs the intent-file input")
-        for c in (base, head):   # a shallow checkout (the default) holds neither commit
+        for c in (merge, base, head):   # a shallow checkout (the default) may hold only the merge commit
             if git("cat-file", "-e", f"{c}^{{commit}}").returncode != 0:
-                git("fetch", "--no-tags", "--depth=1", "origin", c)
+                git("fetch", "--no-tags", "--depth=2", "origin", c)
                 if git("cat-file", "-e", f"{c}^{{commit}}").returncode != 0:
                     fail(f"cannot fetch commit {c} (use actions/checkout with fetch-depth: 0)")
+        # What lands is the PR merged into the base branch as it is now (GitHub's merge commit, github.sha), not
+        # the PR head: two edits can each be harmless and harmful together. Before = the merge's first parent
+        # (the base branch tip), after = the merge commit; its second parent must be this PR's head.
+        parents = git("rev-list", "--parents", "-n", "1", merge).stdout.split()
+        if len(parents) != 3 or parents[2] != head:
+            fail("github.sha is not this pull request's merge commit (its parents must be the base branch and the PR "
+                 "head): run mode: verify on the pull_request event, whose default checkout is that merge commit")
+        base, head = parents[1], merge
         changed = git("diff", "--name-only", "--no-renames", base, head, "--", intent)
         if changed.returncode != 0:
             fail(f"cannot compare the intent file between the base and the head: {' '.join(changed.stderr.split())[:300]}")
@@ -136,7 +146,7 @@ runs:
             print("::warning title=Netdryrun verify::intent edited in this PR: allowed by allow-intent-edit, so a "
                   "code-owner review of the intent file must be required by branch protection")
         if git("cat-file", "-e", f"{head}:./{os.path.normpath(intent)}").returncode != 0:
-            fail("the intent file is not in the PR head: add it (from the ticket) in a reviewed change first")
+            fail("the intent file is not in the PR merged into its base: add it (from the ticket) in a reviewed change first")
         with open(os.environ["GITHUB_OUTPUT"], "a") as f:
             f.write(f"base={base}\nhead={head}\n")
         EOF
@@ -194,7 +204,7 @@ runs:
             code=$?
             ;;
           verify)
-            # Before = the PR's base commit, after = its head; the standing guards are the base's
+            # Before = the base branch tip, after = the PR's merge commit; the standing guards are the base's
             # netdryrun.yml next to the topology. git runs as root on the runner's checkout: trust
             # exactly that repository.
             top="$(git rev-parse --show-toplevel)"
