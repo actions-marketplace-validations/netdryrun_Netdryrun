@@ -4,6 +4,7 @@
 
 ### Added
 
+- **The pull-request path for agents without Docker.** `netdryrun run --verdict FILE` (and `check`) writes the agent result, the same `netdryrun.mcp-result/v1` object the MCP tools return, with the files tested. The GitHub Action writes it (`verdict-report`, default `netdryrun-verdict.json`) and uploads it with the reports, and its PR comment now starts with a fixed header: a `<!-- netdryrun-verdict: {...} -->` line with the status, verdict and counts as JSON, then the verdict in words. The header is held to the run's checked exit code: a missing or contradicting result reads `error`. New guide: [AI agents without Docker](https://netdryrun.com/guides/agent-pr/).
 - **An asynchronous MCP shape.** `start_run` returns at once with a `run_id` and `status: running` (no verdict), and `get_result` polls it until the run finishes; the finished result is exactly `dry_run`'s, with its `run_id`. A dry run takes about 60–120 s, longer than some clients wait for one tool call (Codex CLI's default per-tool timeout is 60 s). A config error or a path outside `NETDRYRUN_MCP_ROOT` is answered at once; a run that stops on an internal error ends as `status: error`, never stuck at `running`. Runs live in the server process. The pending shape, `run_pending`, is in the result schema. `dry_run` is unchanged.
 
 ## 0.3.2 (2026-10-28)

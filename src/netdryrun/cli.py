@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import os
 import signal
@@ -40,7 +41,8 @@ def _write_outputs(rep, args) -> list[str]:
     """Write every requested report, even if an earlier one fails. Returns one line per report that could
     not be written (empty if all were)."""
     failures = []
-    outputs = {"json": report.to_json, "markdown": report.to_markdown, "junit": report.to_junit}
+    outputs = {"json": report.to_json, "markdown": report.to_markdown, "junit": report.to_junit,
+               "verdict": lambda r: _verdict_json(r, args)}
     for key, render in outputs.items():
         path = getattr(args, key, None)
         if path:
@@ -62,14 +64,28 @@ def _write_outputs(rep, args) -> list[str]:
     return failures
 
 
+def _verdict_json(rep, args) -> str:
+    """The agent result (netdryrun.mcp-result/v1), as the MCP tools return it. A run that never started (a
+    config error) is the setup error; `tested` was read before the run."""
+    from . import agent_result
+
+    if getattr(args, "tested", None) is None:   # no config was loaded: nothing ran
+        return json.dumps({"schema": agent_result.RESULT_SCHEMA, "status": "error", "error": rep.error,
+                           "verdict": agent_result.DO_NOT_APPLY}, indent=2)
+    return json.dumps(agent_result._summary(rep, getattr(args, "json", None), args.tested), indent=2)
+
+
 def _cmd_run(args, deploy: bool) -> int:
     try:
         cfg = load_config(args.path)
     except ConfigError as e:
         print(f"config error: {e}", file=sys.stderr)
-        if getattr(args, "json", None):
+        if getattr(args, "json", None) or getattr(args, "verdict", None):
             _write_outputs(error_report(args.path, f"config error: {e}"), args)
         return 2
+    if getattr(args, "verdict", None):
+        from .agent_result import _tested
+        args.tested = _tested(cfg, deployed=deploy)   # the files this run uses, read before it starts
     print(f"Netdryrun {__version__}: {len(cfg.checks)} checks from {cfg.path}")
     install_signal_handlers()
     try:
@@ -209,6 +225,9 @@ def main(argv: list[str] | None = None) -> int:
         p.add_argument("--json", metavar="FILE", help="write the full evidence report as JSON")
         p.add_argument("--markdown", metavar="FILE", help="write a Markdown summary (for PR comments)")
         p.add_argument("--junit", metavar="FILE", help="write JUnit XML (for CI test reporting)")
+        p.add_argument("--verdict", metavar="FILE",
+                       help="write the agent result as JSON: status, verdict, failures and the files tested, "
+                            "the shape the MCP tools return (netdryrun.mcp-result/v1)")
         p.add_argument("--settle", type=_seconds, default=10.0, help="seconds to wait before negative checks (default 10)")
         p.add_argument("--hold", type=_seconds, default=10.0, help="seconds a negative check must hold (default 10)")
         p.add_argument("--no-step-summary", action="store_true", help="don't append to $GITHUB_STEP_SUMMARY")

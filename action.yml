@@ -15,6 +15,9 @@ inputs:
   json-report:
     description: Path for the JSON evidence report
     default: netdryrun-report.json
+  verdict-report:
+    description: "Path for the agent result: status, verdict, failures and the sha256 of every file tested, as JSON in the shape the MCP tools return (netdryrun.mcp-result/v1). Uploaded with the reports"
+    default: netdryrun-verdict.json
   junit-report:
     description: Path for the JUnit XML report
     default: netdryrun-junit.xml
@@ -97,19 +100,20 @@ runs:
         NDR_PATH: ${{ inputs.path }}
         NDR_JSON: ${{ inputs.json-report }}
         NDR_JUNIT: ${{ inputs.junit-report }}
+        NDR_VERDICT: ${{ inputs.verdict-report }}
         NDR_SETTLE: ${{ inputs.settle }}
         NDR_HOLD: ${{ inputs.hold }}
       run: |
         set +e
         # Reports left in the workspace (committed in the PR, or from an earlier run on a self-hosted
         # runner) must never be read, posted or uploaded as this run's result
-        sudo rm -f -- "$NDR_JSON" "$NDR_JUNIT" netdryrun-summary.md netdryrun-comment.json
+        sudo rm -f -- "$NDR_JSON" "$NDR_JUNIT" "$NDR_VERDICT" netdryrun-summary.md netdryrun-comment.json
         # containerlab needs root on GitHub-hosted runners. Pass only what Netdryrun needs (not the
         # job's tokens, not the runner user's home). This only narrows the environment: a lab runs
         # privileged containers, so run untrusted topologies only in jobs without secrets.
         sudo env -i "PATH=$PATH" "HOME=/root" "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
           netdryrun run "$NDR_PATH" \
-          --json "$NDR_JSON" --junit "$NDR_JUNIT" --markdown netdryrun-summary.md --settle "$NDR_SETTLE" --hold "$NDR_HOLD"
+          --json "$NDR_JSON" --junit "$NDR_JUNIT" --verdict "$NDR_VERDICT" --markdown netdryrun-summary.md --settle "$NDR_SETTLE" --hold "$NDR_HOLD"
         echo "exit_code=$?" >> "$GITHUB_OUTPUT"
 
     - name: Read result
@@ -147,6 +151,7 @@ runs:
         path: |
           ${{ inputs.json-report }}
           ${{ inputs.junit-report }}
+          ${{ inputs.verdict-report }}
         if-no-files-found: ignore
         retention-days: 14
 
@@ -157,11 +162,28 @@ runs:
         GH_TOKEN: ${{ inputs.github-token }}
         REPO: ${{ github.repository }}
         PR: ${{ github.event.pull_request.number }}
+        NDR_VERDICT: ${{ inputs.verdict-report }}
+        NDR_STATUS: ${{ steps.result.outputs.status }}
       run: |
         # A comment problem must never turn a test result red: every failure here is a warning.
         set +e
         [ -f netdryrun-summary.md ] || { echo "no summary to post"; exit 0; }
-        python -c "import json; b = open('netdryrun-summary.md', encoding='utf-8').read(); json.dump({'body': '<!-- netdryrun-comment -->\n' + b}, open('netdryrun-comment.json', 'w'))"
+        # A fixed header first (a machine-readable line, then the verdict in words), so an agent reads the
+        # verdict without parsing the summary. Built from the agent result, held to the run's checked status:
+        # a verdict file that disagrees with it, or none, reads as error.
+        python - <<'EOF'
+        import json, os
+        from netdryrun.agent_result import pr_comment_header
+        try:
+            result = json.load(open(os.environ["NDR_VERDICT"], encoding="utf-8"))
+        except Exception:
+            result = {}
+        if result.get("status") != os.environ.get("NDR_STATUS"):
+            result = {}
+        body = open("netdryrun-summary.md", encoding="utf-8").read()
+        json.dump({"body": "<!-- netdryrun-comment -->\n" + pr_comment_header(result) + "\n" + body},
+                  open("netdryrun-comment.json", "w"))
+        EOF
         ID=$(gh api "repos/$REPO/issues/$PR/comments" --paginate --jq '.[] | select(.body | startswith("<!-- netdryrun-comment -->")) | .id' 2>/dev/null | awk 'NR==1')
         if [ -n "$ID" ]; then
           gh api -X PATCH "repos/$REPO/issues/comments/$ID" --input netdryrun-comment.json --silent

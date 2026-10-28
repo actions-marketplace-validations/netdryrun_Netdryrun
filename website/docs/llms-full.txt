@@ -1700,6 +1700,67 @@ The positive checks passed 13.7 s after `setup` finished. The [examples page](..
 
 
 ---
+Source: https://netdryrun.com/guides/agent-pr/
+
+# AI agents without Docker: the pull-request path
+
+The [MCP server](../ai-agents.md) needs Docker and containerlab on the machine the agent runs on. Many coding agents run in a sandbox without them. They can still get a verdict: they push their change to a branch and open a pull request, the [GitHub Action](../github-action.md) runs the lab on a GitHub runner, and the agent reads the result. This page is that flow, from 0.3.3.
+
+## 1. The workflow in the network repository
+
+```yaml
+# .github/workflows/netdryrun.yml
+name: Netdryrun
+on: pull_request
+permissions:
+  contents: read
+  pull-requests: write      # for the comment
+jobs:
+  verdict:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: netdryrun/netdryrun@v0.3.2
+        with:
+          path: network/        # the folder with netdryrun.yml
+          pr-comment: true
+```
+
+The job fails on anything but a pass, so branch protection can require it. A pull request from a fork can't be commented on (GitHub gives fork runs a read-only token); the verdict is still in the job result and the artifact.
+
+## 2. What the agent reads
+
+**The comment.** The Action posts one comment and updates it on every push. Its first lines have a fixed format:
+
+```text
+
+
+**Netdryrun: DO NOT APPLY THIS CHANGE** · status `failed` · 5 passed, 1 failed
+```
+
+Read the JSON on the second line and decide on `status`. The rest of the comment is the human summary: failed checks first, with their evidence.
+
+**The artifact.** For the full detail, the job uploads `netdryrun-verdict.json` with the reports (artifact `netdryrun-report`). It is the same object the MCP tools return: `status`, the frozen `verdict`, `failures` with a reason, an evidence excerpt and a read-only `next_diagnostic` command for each failed check, and `tested`, a sha256 of `netdryrun.yml`, the topology and every config file the run used. Schema: [mcp-result-v1.json](https://netdryrun.com/schemas/mcp-result-v1.json).
+
+## 3. What the agent does with it
+
+- **`passed`**: propose the change, and say the pass covers only what the checks look at (`CHECKS PASSED (only what the checks cover)`).
+- **`failed`**: read `failures`, fix the config, push again. The comment updates in place. Never edit `netdryrun.yml` to make a change pass.
+- **`inconclusive`** or **`error`**: a setup problem that says nothing about the change. Push no fix for it; report it to the human.
+
+The verdict applies to the commit the job ran on. After any push, wait for the new run.
+
+## Paste this into the repository's AGENTS.md
+
+```markdown
+Network changes in this repository are dry-run by Netdryrun on every pull request. After you push, wait for
+the "Netdryrun" check, then read the second line of the Netdryrun comment (a JSON object) and act on its
+`status`: propose the change only on `passed`; on `failed`, fix the config and push again; on `inconclusive`
+or `error`, stop and tell the human. Never edit `netdryrun.yml` to make a change pass.
+```
+
+
+---
 Source: https://netdryrun.com/reference/config/
 
 # netdryrun.yml reference
@@ -2144,6 +2205,7 @@ Opens a short feedback form on GitHub in your browser, prefilled with your Netdr
 | `--json FILE` | | Write the full evidence report as JSON |
 | `--markdown FILE` | | Write a Markdown summary (for PR comments) |
 | `--junit FILE` | | Write JUnit XML (for CI test reporting) |
+| `--verdict FILE` | | Write the agent result as JSON: status, verdict, failures and the sha256 of every file tested, the shape the MCP tools return (from 0.3.3) |
 | `--settle SECONDS` | `10` | Wait before post-convergence checks, and in a scenario after the fault took effect |
 | `--hold SECONDS` | `10` | How long a post-convergence check must hold (a check's own `hold` key overrides it). In a scenario, positive checks must hold this long too |
 | `--debug` | | Print the traceback of an internal error |
@@ -2254,6 +2316,10 @@ Long outputs are truncated (the last 20,000 characters of command output are kep
 ### Markdown
 
 `--markdown FILE` writes a short summary: a heading (passed, failed, inconclusive, or could not run), the reason when inconclusive, the pass/fail counts and lab name, a table of checks with failures first, and a footer with the Netdryrun and containerlab versions. This is the same text appended to the GitHub Actions step summary.
+
+### Agent result
+
+`--verdict FILE` (from 0.3.3) writes what an AI agent reads: the same `netdryrun.mcp-result/v1` object the MCP tools return ([schema](https://netdryrun.com/schemas/mcp-result-v1.json)), with `status`, the frozen `verdict` string, `failures` (each with a reason, an evidence excerpt and a read-only `next_diagnostic` command), `evidence_file` (the `--json` report, if requested) and `tested` (the `netdryrun.yml` that ran and a sha256 of every file the topology uses, read before the run; `lab_deployed_by_this_run` is `false` for `check`). A config error writes the setup-error shape: `status: error`, an `error` line and `DO NOT APPLY THIS CHANGE`. Decide on `status`, not on the text.
 
 ### JUnit XML
 
@@ -2517,6 +2583,7 @@ It needs a Linux runner with Docker. GitHub-hosted `ubuntu-latest` runners work.
 | `containerlab-version` | `0.81.1` | containerlab version to install, pinned for reproducible runs. Empty means latest. If containerlab is already installed, it is used as is, with a warning if the version differs. |
 | `json-report` | `netdryrun-report.json` | Path for the JSON evidence report |
 | `junit-report` | `netdryrun-junit.xml` | Path for the JUnit XML report |
+| `verdict-report` | `netdryrun-verdict.json` | Path for the agent result: status, verdict, failures and the sha256 of every file tested, in the shape the MCP tools return ([schema](https://netdryrun.com/schemas/mcp-result-v1.json)). Uploaded with the reports (from 0.3.3) |
 | `upload-artifact` | `true` | Upload the reports as a workflow artifact |
 | `artifact-name` | `netdryrun-report` | Name of the uploaded artifact |
 | `settle` | `10` | Seconds to wait before post-convergence checks |
@@ -2614,6 +2681,14 @@ jobs:
 
 - **A lab is code that runs as root on the runner.** containerlab starts privileged containers with access to the host. Netdryrun passes the lab process a minimal environment (no job tokens, not the runner user's home directory), but that only narrows exposure; it is not a security boundary.
 - **Run labs from untrusted pull requests (forks) only in jobs with no secrets**, a read-only `GITHUB_TOKEN`, and without `id-token: write`. Never run them under `pull_request_target`.
+- **The comment starts with a fixed header** (from 0.3.3), so a coding agent reads the verdict without parsing the rest. After the update marker `` come two lines:
+
+    ```text
+    
+    **Netdryrun: DO NOT APPLY THIS CHANGE** · status `failed` · 5 passed, 1 failed
+    ```
+
+    The JSON holds only the status, the frozen verdict string and the counts, and it is held to the run's checked exit code: a missing or contradicting result reads `error` and `DO NOT APPLY THIS CHANGE`. See [agents without Docker](guides/agent-pr.md).
 - `pr-comment` needs `pull-requests: write`. Grant it only when you use it. Don't grant `id-token: write` for the `cloud` input: Netdryrun Cloud is not available yet.
 - Uploaded report artifacts contain raw command output from the lab and are kept for 14 days. Don't put real secrets in lab configs.
 - **The PR comment cannot be steered by lab text** (0.3.1 and later; 0.3.0 did not escape it). Check names, details, errors and device output are escaped before they are posted: no HTML, links, images, `@mentions` or `#123` references, and device output stays inside its code block. Report files already in the workspace (committed in the PR, or left by an earlier run on a self-hosted runner) are deleted before the run, and the `status` output is `error` unless the report matches the run's own exit code.

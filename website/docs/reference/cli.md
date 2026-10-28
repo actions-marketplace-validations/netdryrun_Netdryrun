@@ -79,6 +79,7 @@ Opens a short feedback form on GitHub in your browser, prefilled with your Netdr
 | `--json FILE` | | Write the full evidence report as JSON |
 | `--markdown FILE` | | Write a Markdown summary (for PR comments) |
 | `--junit FILE` | | Write JUnit XML (for CI test reporting) |
+| `--verdict FILE` | | Write the agent result as JSON: status, verdict, failures and the sha256 of every file tested, the shape the MCP tools return (from 0.3.3) |
 | `--settle SECONDS` | `10` | Wait before post-convergence checks, and in a scenario after the fault took effect |
 | `--hold SECONDS` | `10` | How long a post-convergence check must hold (a check's own `hold` key overrides it). In a scenario, positive checks must hold this long too |
 | `--debug` | | Print the traceback of an internal error |
@@ -189,6 +190,10 @@ Long outputs are truncated (the last 20,000 characters of command output are kep
 ### Markdown
 
 `--markdown FILE` writes a short summary: a heading (passed, failed, inconclusive, or could not run), the reason when inconclusive, the pass/fail counts and lab name, a table of checks with failures first, and a footer with the Netdryrun and containerlab versions. This is the same text appended to the GitHub Actions step summary.
+
+### Agent result
+
+`--verdict FILE` (from 0.3.3) writes what an AI agent reads: the same `netdryrun.mcp-result/v1` object the MCP tools return ([schema](https://netdryrun.com/schemas/mcp-result-v1.json)), with `status`, the frozen `verdict` string, `failures` (each with a reason, an evidence excerpt and a read-only `next_diagnostic` command), `evidence_file` (the `--json` report, if requested) and `tested` (the `netdryrun.yml` that ran and a sha256 of every file the topology uses, read before the run; `lab_deployed_by_this_run` is `false` for `check`). A config error writes the setup-error shape: `status: error`, an `error` line and `DO NOT APPLY THIS CHANGE`. Decide on `status`, not on the text.
 
 ### JUnit XML
 

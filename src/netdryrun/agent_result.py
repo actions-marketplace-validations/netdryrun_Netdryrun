@@ -4,6 +4,7 @@ import, so the plain CLI can write it."""
 from __future__ import annotations
 
 import ipaddress
+import json
 import os
 import re
 import shlex
@@ -231,3 +232,29 @@ def _tested(cfg, deployed: bool, outside_root=lambda path: None) -> dict:
                 complete = False
     return {"config": str(cfg.path.resolve()), "lab_deployed_by_this_run": deployed,
             "files": dict(sorted(files.items())), "complete": complete}
+
+
+STATUSES = ("passed", "failed", "inconclusive", "error")
+
+
+def pr_comment_header(result: dict) -> str:
+    """The first two lines of the PR comment (0.3.3), a fixed format an agent can read without parsing the
+    rest: an HTML comment with the result's status, verdict and counts as JSON, then the same in words.
+
+        <!-- netdryrun-verdict: {"schema": "netdryrun.mcp-result/v1", "status": ..., "verdict": ..., ...} -->
+        **Netdryrun: <verdict>** · status `<status>` · <n> passed, <n> failed
+
+    Only a known status whose verdict and counts agree with it is shown; anything else (no result, lab text,
+    a pass with failures) is status error, DO NOT APPLY THIS CHANGE: the header never claims a pass the run
+    didn't give."""
+    status, verdict = result.get("status"), result.get("verdict")
+    passed, failed = result.get("passed"), result.get("failed")
+    counts_ok = all(isinstance(n, int) and not isinstance(n, bool) and n >= 0 for n in (passed, failed))
+    ok = (status in STATUSES and counts_ok and verdict == VERDICTS.get(status, DO_NOT_APPLY)
+          and (status != "passed" or failed == 0))
+    if not ok:
+        status, verdict = "error", DO_NOT_APPLY
+        passed, failed = (passed, failed) if counts_ok else (0, 0)
+    data = {"schema": RESULT_SCHEMA, "status": status, "verdict": verdict, "passed": passed, "failed": failed}
+    return (f"<!-- netdryrun-verdict: {json.dumps(data)} -->\n"
+            f"**Netdryrun: {verdict}** · status `{status}` · {passed} passed, {failed} failed\n")
