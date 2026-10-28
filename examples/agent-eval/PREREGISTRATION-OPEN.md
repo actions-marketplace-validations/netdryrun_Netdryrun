@@ -12,7 +12,7 @@ The first eval measured Claude models, which are among the strongest tool-using 
 - Differences from Claude Code, on purpose: a one-line system message saying it works alone with tools; tool results longer than 12,000 characters are cut (with a note saying so); a turn limit of 60; context 32,768 tokens; temperature 0.2. The time limit is 60 minutes per ticket instead of 30, because the models run on a laptop (RTX 4050, 6 GB; 32 GB RAM) and a slow machine shouldn't count as a stuck agent. Wall times are reported but not compared with the Claude runs.
 - Models, through Ollama 0.40 on the same machine: `qwen3:4b` (a small model many people run locally) and `qwen3:30b-a3b` (the largest open model this machine runs at a usable speed). Thinking on, the Ollama default for these models.
 - Netdryrun: the 0.3.1 release candidate (`ndr/release-0.3.1`, commit `9b728e8`), installed from source in its own virtualenv. `AGENTS.md` from the same commit. The prompt gives the folder's Windows path (`--path-style windows`), which 0.3.1 accepts.
-- Lab: WSL 2 (Ubuntu 24.04, distribution `Ubuntu-ndr`), containerlab, FRR 10.4.1. One ticket at a time (`--parallel 1`).
+- Lab: WSL 2 (Ubuntu 22.04, distribution `Ubuntu-ndr`), containerlab 0.81.1, FRR 10.4.1. One ticket at a time (`--parallel 1`).
 
 ## What is measured
 
