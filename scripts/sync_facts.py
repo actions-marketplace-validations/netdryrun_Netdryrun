@@ -241,6 +241,7 @@ def main() -> int:
     site = "website/overrides/main.html"
     text = (ROOT / site).read_text(encoding="utf-8")
     new = re.sub(r'("softwareVersion": ")[^"]*(")', rf'\g<1>{f["version"]}\g<2>', text)
+    new = re.sub(r"(Supported network operating systems: )[^.\"]*(\.)", rf"\g<1>{values['faq_platforms']}\g<2>", new)
     if new != text:
         changed[site] = new
 

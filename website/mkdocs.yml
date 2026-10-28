@@ -62,6 +62,10 @@ exclude_docs: |
 not_in_nav: |
   /corpus/*.md
 
+# Per-page schema.org JSON-LD (FAQPage, TechArticle, BlogPosting, BreadcrumbList); the site-wide graph is in overrides/main.html.
+hooks:
+  - hooks/structured_data.py
+
 plugins:
   - search
   # Self-host fonts and other external assets at build time: visitors' browsers never contact Google.
