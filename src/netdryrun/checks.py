@@ -392,12 +392,16 @@ def hold_together(checks: list[Check], drivers: dict, hold: float = 10.0, interv
 
 def never_ready_nodes(results: list[Result]) -> dict[str, str]:
     """The nodes that never gave usable state in these results (condition 4 of inconclusive_reason), each with
-    the detail of its first state check: every sample of every bgp_session and bgp_prefixes check on it was
-    unready, or, for a node without such checks, every sample of every check on it."""
+    the detail of its first state check. A node's state checks are its bgp_session and bgp_prefixes checks; else
+    its route and bgp_route checks (its routing table); else, for a ping-only node, every check on it. The node
+    never gave usable state when every sample of every one of them was unready. A ping can't show that a node
+    gave control-plane state, so a ping with no replies doesn't count where the node has a state check (agent
+    eval T10: bgpd off on every router, routes unreadable, pings answered with 0 replies)."""
     never_ready: dict[str, str] = {}
     for node in sorted({r.check.node for r in results}):
         on_node = [r for r in results if r.check.node == node]
-        state = [r for r in on_node if r.check.type in ("bgp_session", "bgp_prefixes")] or on_node
+        state = ([r for r in on_node if r.check.type in ("bgp_session", "bgp_prefixes")]
+                 or [r for r in on_node if r.check.type in ("route", "bgp_route")] or on_node)
         if all(r.attempts and r.samples_unready == r.attempts for r in state):
             never_ready[node] = state[0].detail
     return never_ready
@@ -415,8 +419,8 @@ def inconclusive_reason(results: list[Result]) -> str | None:
        proves a working control plane);
     4. every failed check is on a node that never gave usable state: every sample of every bgp_session
        and bgp_prefixes check on it was unready (the state command failed or its output was unreadable,
-       or BGP had no neighbors at all), or, for a node without such checks, every sample of every check
-       on it was unready.
+       or BGP had no neighbors at all); for a node without such checks, every sample of every route and
+       bgp_route check on it; for a ping-only node, every sample of every check on it.
     """
     failed = [r for r in results if not r.passed]
     if not failed:

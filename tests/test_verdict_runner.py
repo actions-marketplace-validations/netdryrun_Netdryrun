@@ -1708,3 +1708,29 @@ def test_scenarios_on_nodes_that_gave_state_still_run_after_an_unready_main_phas
     rep = e.run(main, [sc], settle=0, hold=0)
     assert rep.status == "failed" and rep.exit_code == 1
     assert ("r2", "eth2", False) in e.lab.link_events()
+
+
+def test_agent_eval_t10_bgpd_off_everywhere_is_inconclusive_not_an_error(monkeypatch):
+    """Agent eval T10 (examples/agent-eval): FRR with bgpd=no on every router. The main checks never read any
+    routing state (pings read cleanly: 0 replies), and the scenario faults and checks r1. 0.3.1 stopped at the
+    scenario snapshot with status error, which an agent read as a verdict on the change."""
+    def dead(t):
+        return Observation((3, 0), [{"stderr": ""}])
+    e = make(monkeypatch, **{n: {"neighbors_error": DriverError("bgpd is not running"), "routes": {},
+                                 "ping": dead} for n in ("r1", "r2", "r3")})
+    checks = [route("TICKET r2", node="r2", prefix="192.168.11.0/24", timeout=9, protocol="bgp"),
+              route("TICKET r3", node="r3", prefix="192.168.11.0/24", timeout=9, protocol="bgp"),
+              chk("ping", "TICKET ping", node="r2", target="192.168.11.1", timeout=9),
+              chk("bgp_session", "s1", neighbor="10.0.12.2", timeout=9),
+              chk("bgp_prefixes", "p1", neighbor="10.0.12.2", min=1, max=10, timeout=9),
+              route("r1 route", prefix="192.168.3.0/24", timeout=9, protocol="bgp"),
+              chk("ping", "r1 ping", target="192.168.3.1", timeout=9),
+              leak("no default", prefix="0.0.0.0/0", timeout=9)]
+    sc = Scenario("r1-r2 link fails", [Fault("link_down", "r1", "eth1")],
+                  [route("[s] r1 route", prefix="192.168.2.0/24", timeout=9),
+                   chk("bgp_session", "[s] down", neighbor="10.0.12.2", state="down", timeout=9)])
+    rep = e.run(checks, [sc], settle=0, hold=0)
+    assert rep.status == "inconclusive" and rep.exit_code == 3 and not rep.error
+    assert e.lab.link_events() == []
+    from netdryrun.mcp_server import INCONCLUSIVE, _summary
+    assert _summary(rep, None)["verdict"] == INCONCLUSIVE
