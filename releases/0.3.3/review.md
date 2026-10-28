@@ -17,3 +17,70 @@ Class: **false-pass** means the finding, if real, could make Netdryrun (or a sur
 | 9 | Docs and CHANGELOG disagreed with the code: the 50-route cap is per address family; `--min-prefixes` with a count of 0; the your-lab guide still described exact counts; the async result on an internal error; a header `passed` with 0 checks | other (docs) | Fixed, and the header now refuses a pass with no check (`test_a_pass_with_no_check_is_not_a_pass`) | `35a2089`, `c44a7af` |
 
 Each fix was test-first: the tests named above failed on the branch before the fix.
+
+## Multi-vendor AI audit (verdict path)
+
+Three model families got the same brief (`research/briefs/ndr-0.3.3-verdict-audit.md` in HQ). It holds the v0.3.2 diff of src/, `action.yml` and the GitLab component, and none of our conclusions. It asks how this code can:
+
+- report a pass, CHECKS PASSED or a passing PR/MR header without testing what the file or the agent asked;
+- escape `NETDRYRUN_MCP_ROOT`;
+- turn a failure into a non-failure;
+- make a PR/MR's header or outputs lie, or leak the token.
+
+Grok and ChatGPT ran through `research/tools/ask_models.py`. To pass its privacy gate, diff lines are marked `>`/`<`, `index` lines are dropped, and one home path reads `<HOME>`. The open model ran locally (Ollama, qwen3:30b-a3b, 45 minutes). Answers are in HQ `research/model-reviews/release-0.3.3/`. Both API reviews read the code before the cold-review fixes; findings those fixes had already closed are marked so.
+
+| # | Finding | Found by | Class | Decision | Commit |
+|---|---|---|---|---|---|
+| M1 | Device output in a failed check's evidence can carry a look-alike `<!-- netdryrun-verdict ... passed -->` in the summary | Grok | **false-pass** (agent-facing) | Fixed: the summary can't open an HTML comment (`test_a_lookalike_header_in_the_summary_is_neutralised`) | `36e959b` |
+| M2 | Header plus a full summary goes over GitHub's 65,536-character limit, so GitHub rejects the whole comment, header included | Grok | other (verdict lost) | Fixed: the summary is cut so the header stays (`test_the_body_fits_github_with_the_header_first`) | `36e959b` |
+| M3 | `start_run`: the lab boots files swapped after the hash, or a topology rewritten to point outside the root | Grok, ChatGPT | **false-pass** | Already fixed by cold review 4: a changed file makes the result an error | `35a2089` |
+| M4 | A worker that ends on a `BaseException` leaves the run `running` forever | ChatGPT, Grok | other | Fixed: any end of the worker is a result (`test_a_worker_that_dies_on_a_base_exception_ends_as_error`) | `36e959b` |
+| M5 | Truncated run IDs can collide, and every `start_run` shared one evidence file | ChatGPT, Grok | other | Fixed: unique IDs, `netdryrun-report-<run_id>.json` (`test_run_ids_never_collide`, `test_each_async_run_has_its_own_evidence_file`) | `36e959b` |
+| M6 | `_tested` listed and walked an outside folder before the root check | ChatGPT | other (confinement) | Fixed: the root check comes first (`test_tested_does_not_list_or_walk_a_folder_outside_the_root`) | `36e959b` |
+| M7 | A PR that commits a directory at a report path makes the write fail, so a failed run is published as `error` | Grok | other (exit label) | Fixed: that directory is removed before the run, never the workspace (`test_a_committed_directory_at_a_report_path_is_removed_but_never_the_workspace`). Test-first was not followed: the fix (the removal had to become a loop) was written before its test | `36e959b` |
+| M8 | Ranges are now the default, so one leaked default route fits inside a recorded prefix range | Grok | **false-pass** (recorded baselines) | Fixed (coordination decision): `record` writes the guards by default (`--no-guards` to opt out). It writes only guards the recording lab passes, each run with the real check first (`test_guards_are_on_by_default_and_can_be_turned_off`, `test_never_a_guard_the_recording_lab_already_fails`) | `36e959b`, `440f6be` |
+| M9 | A failed route read silently dropped that family's link guards, and the link-guard cap was silent | ChatGPT, Grok | other (coverage) | Fixed: each is now an `INCOMPLETE BASELINE` line | `36e959b` |
+| M10 | A privileged lab can read the checkout token in `.git/config` | Grok | other (security docs) | Documented: check out with `persist-credentials: false` | `36e959b` |
+| M11 | GitLab: the note token is in the job while a privileged lab runs, and the YAML can override `CI_API_V4_URL` | Grok, ChatGPT | other (security scope) | Documented limit (the component is unlisted): anyone who can edit the CI config can read the variable anyway; use `mr-comment` only where MR authors are trusted | `36e959b` |
+| M12 | A tampered or stale verdict file with the run's status and plausible counts (GitHub and GitLab), or a forged JSON report for the dotenv | ChatGPT, Qwen | false-pass (claimed) | Rejected: the run deletes these files before it starts and then writes them. Replacing them takes code running in the job after that. A status that disagrees with the checked exit code reads `error` (`test_a_verdict_file_that_disagrees_with_the_run_reads_as_error`) | — |
+| M13 | Topology files outside the root (absolute paths, symlinks) are deployed | Grok, ChatGPT | other | Rejected: a documented limit since 0.3.2 (a topology inside the root can still mount host paths) | — |
+| M14 | `complete: false` results can still pass; a colon in a bind's host path | ChatGPT | other | Rejected: `complete` is the signal by design, and containerlab's bind syntax splits on the colon too | — |
+| M15 | The 50-route cap, and `record`'s headroom lets counts grow | ChatGPT, Grok | other | By design, and both are stated (`INCOMPLETE BASELINE`). The ranges are the documented trade-off; the guards cover the default route | — |
+| Q1 | `pr_comment_header` would show a pass with `failed: 1` | Qwen3 30B-A3B | false-pass (claimed) | Rejected, not real: a pass with any failure, or with no check run, reads `error` (`test_the_comment_header_never_carries_lab_text_or_a_pass_it_did_not_get`) | — |
+| Q2 | Without a root, files anywhere are hashed | Qwen3 30B-A3B | other | Rejected: an unset root means no confinement, by design and documented; the run deploys those files anyway | — |
+| Q3 | A config error with `--verdict` exits 0 | Qwen3 30B-A3B | other (claimed) | Rejected, not real: it exits 2 (`test_a_config_error_writes_the_setup_error`) | — |
+
+## Adversarial review (Layer 6 role 2): the mutant arguments in verdict-deciding functions
+
+ChatGPT reviewed in three rounds (briefs `research/briefs/ndr-0.3.3-adversarial-mutants-{1,2}.md`, `-round2.md`, `-round3.md`). It covered the 184 survivors in `VERDICT_FUNCTIONS` (scripts/release_gate.py), each with its diff and a written argument that it can't turn a failure into a pass.
+
+- **Round 1** checked all 184. Every survivor not listed below was agreed. Several lines marked "REJECT" in fact said the argument holds. The others asked how detail text is used, or gave a counterexample.
+- **Round 2** rechecked 93, with the code it asked for: a check's verdict is its `ok` flag, and "unready" is `isinstance(detail, Unready)`, never text. Of the 93, 55 were confirmed and 14 were marked REJECT. Of those 14, 10 said in their own words that only a message changes and no verdict. The other four came with counterexamples.
+- **Round 3** traced those four through the code, and all four were confirmed:
+  - `_ping_37`: the unreachable pattern needs a literal space, so no match spans two entries (shown by running the regex).
+  - `_bgp_convergence_gate_92`: `empty` is always set before it is read.
+  - `run_round_robin_72/73`: the branch is unreachable, because a passing sample never ends a check below `confirm`. It is dead code, to remove in 0.4.
+- **Killed instead of argued:** `_wait_fault_visible_20` (`continue` to `break` after an unreadable node), by `test_the_fault_wait_names_every_session_still_up_even_after_an_unreadable_node`.
+
+Result: 183 survivors are accepted with a reviewed argument (`reviewed` on each entry in `accepted.json`) and 1 is killed. The review found none that can turn a failure into a pass.
+
+## Cross-platform review (Layer 6 role 3): driver and NOS assumptions
+
+Grok reviewed from `research/briefs/ndr-0.3.3-cross-platform.md`: the four drivers in full, `record`, the `next_diagnostic` commands, and how the lab reads interface addresses.
+
+| # | Finding | Class | Decision | Commit |
+|---|---|---|---|---|
+| X1 | SONiC keeps a link's address on `EthernetN`, not the topology's `ethN`, so no link guard and no warning | **false-pass** (recorded baselines) | Fixed: a link end with no global address where Netdryrun reads it is an `INCOMPLETE BASELINE` line (`test_a_link_with_no_global_address_where_it_is_read_is_loud`) | `1f2cfb9` |
+| X2 | SR Linux keeps it on `e1-Y.0` in `srbase-default` | **false-pass** (recorded baselines) | Fixed by the same rule | `1f2cfb9` |
+| X3 | `record` snapshots the default VRF only | other (coverage) | Documented in the `record` reference; a VRF-aware `record` is a 0.4 item | `1f2cfb9` |
+| X4 | Scoped link-local neighbors (`fe80::1%eth1`, `fe80::1%eth2`) collapse to one key, so an up session can hide a down one | **false-pass** | Fixed: the one that isn't established is kept (FRR, SR Linux, EOS; `test_*_link_local_neighbors_that_collapse_keep_the_down_one`) | `1f2cfb9` |
+| X5 | Graceful-restart stale paths count as present and best until the stale timer ends | **false-pass**, accepted as a documented limit | Stated publicly in the advisory's limits and the config reference. Mitigation: no GR in labs, or a timeout above the stale timer. Fix target 0.4: read the stale flag (needs a live capture) | `1f2cfb9` |
+| X6 | The SR Linux prefix count (received minus rejected) may include routes rejected for an AS-path loop | **false-pass**, accepted as a documented limit | Stated publicly, as X5. Mitigation: pair `min` with `route` checks. Fix target 0.4: verify the counter on a live SR Linux | `1f2cfb9` |
+| X7 | SR Linux `bgp-evpn` routes didn't match `protocol: bgp`, so a no-default guard passed on an EVPN-learned default | **false-pass** | Fixed: mapped to `bgp` (`test_srl_bgp_evpn_route_type_is_bgp`) | `1f2cfb9` |
+| X8 | The routing table doesn't list every BGP route, so a guard could fail on the recording lab | other (false fail) | Fixed by the baseline-guard rule: each guard is run on the lab first | `440f6be` |
+| X9 | EOS `Idle(Admin)` was read as `idle(admin)`, so `state: idle` failed | other (false fail) | Fixed (`test_eos_admin_idle_reads_as_idle`) | `1f2cfb9` |
+| X10 | A missing MED is read as 0 | other | Rejected: BGP's default treats a missing MED as 0 (`missing-as-worst` is opt-in) | — |
+| X11 | The EOS `BGP Aggregate` route type wouldn't match `protocol: bgp` | other | Rejected: an aggregate is originated locally, not learned, and appears in no capture | — |
+| X12 | FRR's local-pref probe errors on an IPv6-only box | other (false fail) | Backlog (0.4): it errors, never passes | — |
+
+Open false-pass findings after Layer 6: none. X5 and X6 are accepted as documented limits with 0.4 fix targets.
