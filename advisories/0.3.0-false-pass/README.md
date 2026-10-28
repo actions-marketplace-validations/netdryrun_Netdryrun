@@ -38,7 +38,7 @@ These need a running lab to show, so the proof is in the test suite, which runs 
 
 ## Limits that remain in 0.3.1
 - **A node that never reports BGP neighbors.** Its negative and attribute checks wait up to their timeout, then still run, and can pass. The check result says BGP convergence was not seen. Treat such a pass as unconfirmed.
-- **A slow peer.** A neighbor with a long advertisement interval can deliver a route after the gate released a negative check. Raise `--settle` and `--hold` above your slowest advertisement interval.
+- **A slow peer.** A neighbor with a long advertisement interval can deliver a route after the gate released a negative check. Raise `--settle` and `--hold` above your slowest advertisement interval. *From 0.4:* the windows stretch automatically to the longest interval the drivers read (FRR, SONiC, SR Linux), **except on Arista EOS, where the advertisement delay (`out-delay`) is not read yet: raise `--settle` and `--hold` above it there** (fix planned for 0.4.1). A route that crosses several slow peers can still take one interval per hop.
 - **`afi: evpn`** is refused on Arista EOS and Nokia SR Linux (their drivers can't read an EVPN count). On FRR and SONiC the count is read from the router's BGP summary; a family the neighbor doesn't carry counts as 0 received prefixes.
 
 ## What we changed in how we release

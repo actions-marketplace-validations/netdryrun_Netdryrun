@@ -23,7 +23,7 @@
 
 ### Changed
 
-- **Advertisement intervals stretch the windows.** Each BGP session's advertisement interval (MRAI) is read where the driver reports it (FRR and SONiC: per neighbor; SR Linux: `minimum-advertisement-interval`, default 5 s; EOS: its default of 0), and `--settle` and `--hold` of `run`, and `verify`'s `--settle`, stretch to the longest one plus 2 s, so a leak sent after the default windows can't let a negative check pass on a prefix count still at 0 (0.3.2 multi-vendor audit). The log says when they were stretched.
+- **Advertisement intervals stretch the windows.** Each BGP session's advertisement interval (MRAI) is read where the driver reports it (FRR and SONiC: per neighbor; SR Linux: `minimum-advertisement-interval`, default 5 s; EOS: its default of 0, because a configured `out-delay` is not read yet: on EOS raise `--settle` and `--hold` above it, fix planned for 0.4.1), and `--settle` and `--hold` of `run`, and `verify`'s `--settle`, stretch to the longest one plus 2 s, so a leak sent after the default windows can't let a negative check pass on a prefix count still at 0 (0.3.2 multi-vendor audit). The log says when they were stretched.
 
 ### Release gate
 
