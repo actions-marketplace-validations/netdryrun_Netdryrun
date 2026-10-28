@@ -380,6 +380,16 @@ def layer_static(args) -> Layer:
            if not n.startswith(OUR_LAB_PREFIX.removeprefix("clab-"))]
     layer.add("lab-names", "every topology we ship is named ndr-*", BLOCKER, not off,
               "; ".join(off) or f"{len(topos)} topologies")
+    tracked = run(["git", "ls-files"]).out.split()
+    texts = []
+    for f in tracked:
+        try:
+            texts.append((f, (ROOT / f).read_text(encoding="utf-8")))
+        except (UnicodeDecodeError, OSError):
+            pass   # binary or unreadable: no public text in it
+    retired = retired_string_problems(texts)
+    layer.add("retired-strings", "no retired public string outside the history (CHANGELOG, advisories, records)",
+              BLOCKER, not retired, "; ".join(retired[:10]) or "none")
 
     if args.candidate:
         candidate_checks(layer, args.version)
@@ -418,6 +428,28 @@ def version_sources(version: str) -> tuple[list[tuple[str, str]], list[str]]:
                 found.append((f"{rel}:{text.count(chr(10), 0, m.start()) + 1} {m.group(0)}", m.group(1)))
     problems = [f"{where} says {v}" for where, v in found if v != version]
     return found, problems
+
+
+# Public strings the project retired, with the release that retired them. An agent or a user copies these
+# exactly, so a doc that still shows one is a wrong instruction. The old text stays only where history is
+# recorded: the paths below, and a line that says it is history.
+RETIRED = {"SAFE" + " TO PROCEED": "the MCP pass verdict until 0.3.1 (0.3.2: CHECKS PASSED (only what the checks cover))"}
+RETIRED_HISTORY_PATHS = ("CHANGELOG.md", "advisories/", "releases/", "examples/agent-eval/results/",
+                         "examples/agent-eval/RESULTS.md", "examples/agent-demo/AGENT-RUN.md")
+RETIRED_HISTORY_LINE = re.compile(r"\b\d+\.\d+\.\d+ (said|returned)\b|\bbefore \d+\.\d+\.\d+\b|\brenamed\b", re.I)
+
+
+def retired_string_problems(texts) -> list[str]:
+    """`path:line: retired "..." (why)` for each retired string found outside the recorded history."""
+    problems = []
+    for path, text in texts:
+        if path.startswith(RETIRED_HISTORY_PATHS):
+            continue
+        for n, line in enumerate(text.splitlines(), 1):
+            for old, why in RETIRED.items():
+                if old in line and not RETIRED_HISTORY_LINE.search(line):
+                    problems.append(f"{path}:{n}: retired {old!r} ({why})")
+    return problems
 
 
 def python_support_problems() -> list[str]:
