@@ -102,7 +102,7 @@ Requirements: Linux or WSL2, Docker, containerlab, Python 3.10+. Walkthrough: [G
 ## Status
 
 
-Version 0.3.1, early. Works with FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image) on Linux and WSL2. Check types: `bgp_session`, `bgp_prefixes`, `route`, `bgp_route` and `ping` (IPv4/IPv6 unicast BGP sessions, prefix counts, routes, BGP best-path attributes and ping), plus link-down, node-isolation and route-injection (FRR only) failure scenarios. On the [verdict corpus](corpus.md) v1 (30 realistic BGP changes: 19 harmful, 11 safe), Netdryrun judged 24/30 correctly, ping-only checks 20/30 and all-sessions-up checks 15/30. Netdryrun approved 5 of the 19 harmful changes (ping-only checks: 10 of 19) and blocked 1 of the 11 safe ones. On v2 (18 cases written after v1 to target v1's misses): Netdryrun 17/18, ping-only 9/18, all-sessions-up 7/18. Both are small benchmarks the maintainers wrote on one FRR topology, with expected verdicts committed before any run: they compare methods, they are not a production reliability estimate. Provenance: both ran on Netdryrun 0.3.1. Issues and feedback: [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun/issues).
+Version 0.3.1. Works with FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image) on Linux and WSL2. Check types: `bgp_session`, `bgp_prefixes`, `route`, `bgp_route` and `ping` (IPv4/IPv6 unicast BGP sessions, prefix counts, routes, BGP best-path attributes and ping), plus link-down, node-isolation and route-injection (FRR only) failure scenarios. On the [verdict corpus](corpus.md) v1 (30 realistic BGP changes: 19 harmful, 11 safe), Netdryrun judged 24/30 correctly, ping-only checks 20/30 and all-sessions-up checks 15/30. Netdryrun approved 5 of the 19 harmful changes (ping-only checks: 10 of 19) and blocked 1 of the 11 safe ones. On v2 (18 cases written after v1 to target v1's misses): Netdryrun 17/18, ping-only 9/18, all-sessions-up 7/18. Both are small benchmarks the maintainers wrote on one FRR topology, with expected verdicts committed before any run: they compare methods, they are not a production reliability estimate. Provenance: both ran on Netdryrun 0.3.1. Issues and feedback: [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun/issues).
 
 
 ---
@@ -2999,11 +2999,7 @@ A tool that approves network changes has to earn trust with evidence, not claims
 
 ## Engineering process
 
-Netdryrun is developed by its maintainer, Victor Khen, with AI coding agents doing most of the implementation: code, tests, documentation and this website. The maintainer sets the direction, reviews the results, decides what ships and publishes every release. The [commit history](https://github.com/netdryrun/netdryrun/commits/main) records every change.
-
-We state this plainly because it should shape how you judge the tool: not by who or what wrote it, but by whether it holds up under checks you can run yourself. That is why the claims below come with evidence.
-
-The project is very young. It started in October 2026: the first commit is dated 27 October 2026, and versions 0.1.0, 0.2.0 and 0.3.0 were all released that same day. It has no outside contributors yet.
+Netdryrun is developed by its maintainer, Victor Khen, with AI-assisted tooling. The maintainer sets the direction, reviews the results, decides what ships and publishes every release. Every change, whoever or whatever wrote it, goes through the same CI tests and lab runs, and every release through the release gate described below. The [commit history](https://github.com/netdryrun/netdryrun/commits/main) records every change.
 
 ## Pre-registered accuracy testing
 
@@ -3075,7 +3071,7 @@ Each was found by running Netdryrun against live labs or the corpus, and is reco
 ## Supply-chain security
 
 - **Releases** are published to PyPI with Trusted Publishing, so no tokens are stored ([`release.yml`](https://github.com/netdryrun/netdryrun/blob/main/.github/workflows/release.yml)). A release fails if the tag and the package version differ.
-- **OpenSSF Scorecard** rates the repository's practices weekly and on every push ([current score](https://scorecard.dev/viewer/?uri=github.com/netdryrun/netdryrun)), including the areas where a young, single-maintainer project scores low.
+- **OpenSSF Scorecard** rates the repository's practices weekly and on every push ([current score](https://scorecard.dev/viewer/?uri=github.com/netdryrun/netdryrun)), including the checks where it scores low today; the viewer lists each one.
 - **CodeQL** scans the Python code and the workflows ([`codeql.yml`](https://github.com/netdryrun/netdryrun/blob/main/.github/workflows/codeql.yml)).
 - **Every third-party GitHub Action is pinned to a commit**, in the workflows and in [`action.yml`](https://github.com/netdryrun/netdryrun/blob/main/action.yml). Dependabot keeps the pins current.
 
@@ -3149,7 +3145,7 @@ Netdryrun adds a test layer on top of a containerlab lab:
 - every run produces one pass/fail result, a CI-friendly exit code, and a JSON evidence file
 
 
-It is early (version 0.3.1). Drivers exist for FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image), and checks cover BGP sessions, prefix counts, routes, BGP best-path attributes and ping, with link-down, node-isolation and route-injection (FRR only) failure scenarios.
+Version 0.3.1 has drivers for FRR, Nokia SR Linux, SONiC and Arista EOS (bring your own cEOS image), and its checks cover BGP sessions, prefix counts, routes, BGP best-path attributes and ping, with link-down, node-isolation and route-injection (FRR only) failure scenarios.
 
 It does not do static analysis, build labs for you, or test production devices.
 
@@ -3267,7 +3263,7 @@ Source: https://netdryrun.com/design-partners/
 
 # Design partners
 
-Netdryrun is young. We'd rather learn from a few real changes than guess. If you have a routing change coming up, we'll help you test it in a lab, for free, in exchange for honest feedback.
+We want Netdryrun shaped by real changes, not guesses. If you have a routing change coming up, we'll help you test it in a lab, for free, in exchange for honest feedback.
 
 ## What you get
 

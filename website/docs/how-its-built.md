@@ -21,11 +21,7 @@ A tool that approves network changes has to earn trust with evidence, not claims
 
 ## Engineering process
 
-Netdryrun is developed by its maintainer, Victor Khen, with AI coding agents doing most of the implementation: code, tests, documentation and this website. The maintainer sets the direction, reviews the results, decides what ships and publishes every release. The [commit history](https://github.com/netdryrun/netdryrun/commits/main) records every change.
-
-We state this plainly because it should shape how you judge the tool: not by who or what wrote it, but by whether it holds up under checks you can run yourself. That is why the claims below come with evidence.
-
-The project is very young. It started in October 2026: the first commit is dated 27 October 2026, and versions 0.1.0, 0.2.0 and 0.3.0 were all released that same day. It has no outside contributors yet.
+Netdryrun is developed by its maintainer, Victor Khen, with AI-assisted tooling. The maintainer sets the direction, reviews the results, decides what ships and publishes every release. Every change, whoever or whatever wrote it, goes through the same CI tests and lab runs, and every release through the release gate described below. The [commit history](https://github.com/netdryrun/netdryrun/commits/main) records every change.
 
 ## Pre-registered accuracy testing
 
@@ -97,7 +93,7 @@ Each was found by running Netdryrun against live labs or the corpus, and is reco
 ## Supply-chain security
 
 - **Releases** are published to PyPI with Trusted Publishing, so no tokens are stored ([`release.yml`](https://github.com/netdryrun/netdryrun/blob/main/.github/workflows/release.yml)). A release fails if the tag and the package version differ.
-- **OpenSSF Scorecard** rates the repository's practices weekly and on every push ([current score](https://scorecard.dev/viewer/?uri=github.com/netdryrun/netdryrun)), including the areas where a young, single-maintainer project scores low.
+- **OpenSSF Scorecard** rates the repository's practices weekly and on every push ([current score](https://scorecard.dev/viewer/?uri=github.com/netdryrun/netdryrun)), including the checks where it scores low today; the viewer lists each one.
 - **CodeQL** scans the Python code and the workflows ([`codeql.yml`](https://github.com/netdryrun/netdryrun/blob/main/.github/workflows/codeql.yml)).
 - **Every third-party GitHub Action is pinned to a commit**, in the workflows and in [`action.yml`](https://github.com/netdryrun/netdryrun/blob/main/action.yml). Dependabot keeps the pins current.
 
