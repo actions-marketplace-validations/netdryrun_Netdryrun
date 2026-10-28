@@ -144,3 +144,25 @@ def test_relative_paths_without_a_single_root_ask_for_an_absolute_path(tmp_path,
         assert "relative path" in err and "absolute path" in err and "such as /" in err
         assert "outside NETDRYRUN_MCP_ROOT" not in err
     assert mcp_server.last_report(".") == "{}"
+
+
+def test_relative_path_that_names_two_files_is_refused(tmp_path, monkeypatch):
+    # 0.3.2 cold review, finding 1: the agent works in a worktree inside the root; the same relative path also
+    # names the main checkout's copy under the root. Picking either one silently could test the unedited file.
+    from netdryrun import mcp_server
+    for d in (tmp_path / "a", tmp_path / "wt" / "a"):
+        d.mkdir(parents=True)
+        (d / "topology.clab.yml").write_text("name: t\ntopology:\n  nodes:\n    r1: {kind: linux, image: frr}\n")
+        (d / "netdryrun.yml").write_text("lab: topology.clab.yml\nchecks:\n  - {type: route, node: r1, prefix: 10.0.0.0/24}\n")
+    monkeypatch.setenv("NETDRYRUN_MCP_ROOT", str(tmp_path))
+    monkeypatch.chdir(tmp_path / "wt")
+    monkeypatch.setattr(mcp_server, "run", lambda *a, **k: (_ for _ in ()).throw(_Ran()))   # never a real lab
+    for err in (json.loads(mcp_server.validate("a/netdryrun.yml"))["error"],
+                json.loads(mcp_server.dry_run("a"))["error"],
+                json.loads(mcp_server.record_baseline("a/topology.clab.yml", deploy=False))["error"]):
+        assert "absolute path" in err and str(tmp_path / "wt" / "a") in err
+    assert mcp_server.last_report("a") == "{}"
+    # only the working-directory copy exists inside the root: that one, as before 0.3.2
+    import shutil
+    shutil.rmtree(tmp_path / "a")
+    assert json.loads(mcp_server.validate("a"))["lab"] == str((tmp_path / "wt" / "a" / "topology.clab.yml").resolve())

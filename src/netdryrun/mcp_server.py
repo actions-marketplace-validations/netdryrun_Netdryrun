@@ -224,14 +224,29 @@ def _outside_root(*paths) -> str | None:
 def _tool_path(path: str) -> Path:
     """A path an agent passed, as this server should open it. The server's working directory is not the agent's,
     so a relative path is resolved against NETDRYRUN_MCP_ROOT when it names exactly one folder, and refused
-    otherwise (with no root or several there is no one folder it can mean). The root check comes after."""
+    otherwise (with no root or several there is no one folder it can mean). It is also refused when the working
+    directory holds a different file at that path, and read from there when only it does. The root check
+    comes after."""
     host = _host_path(path)
     p = Path(host).expanduser()
     if p.is_absolute() or _WINDOWS_PATH.match(host):
         return p
     roots = _roots()
     if len(roots) == 1:
-        return roots[0] / p
+        # The working directory may be the agent's own (a worktree inside the root): when the same relative
+        # path names a different file there too, either guess could test a file the agent didn't edit.
+        at_root = roots[0] / p
+        try:
+            here = Path.cwd() / p
+        except OSError:
+            return at_root
+        there = here.is_file() or (here / "netdryrun.yml").is_file()   # a folder counts when it holds a config
+        if there and here.resolve() != at_root.resolve():
+            if at_root.exists():
+                raise ConfigError(f"{path} is a relative path that names two files, {here} and {at_root}; "
+                                  f"pass an absolute path, such as {here}")
+            return here
+        return at_root
     example = roots[0] / "netdryrun.yml" if roots else "/home/you/lab/netdryrun.yml"
     why = "is set to several folders" if roots else "is not set"
     raise ConfigError(f"{path} is a relative path, and the server can't tell what it is relative to "
@@ -269,8 +284,8 @@ def _execute(path: str, deploy: bool, keep: bool) -> str:
 
 @mcp.tool(description=_describe("""
     The primary tool: dry-run a network change. Deploys the containerlab lab of netdryrun.yml at `path`
-    (folder or file; C:\\... or /mnt/c/...; a relative path is read from NETDRYRUN_MCP_ROOT when that is one
-    folder, else pass an absolute one) with the changed configs, waits for routing to converge, runs
+    (folder or file; C:\\... or /mnt/c/...; an absolute path is safest: a relative one is read from
+    NETDRYRUN_MCP_ROOT only when that is one folder) with the changed configs, waits for routing to converge, runs
     every check, then destroys the lab. `verdict` is exactly one of SAFE TO PROCEED, DO NOT APPLY THIS
     CHANGE, or a string starting INCONCLUSIVE: propose or apply the change only on SAFE TO PROCEED, and paste
     the verdict into your answer. `failures` lists each failed check with a one-line reason, an evidence
