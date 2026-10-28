@@ -9,6 +9,8 @@
 
 **Test network changes before they touch production.**
 
+**Already have a containerlab lab? [Add Netdryrun to it in 10 minutes](https://netdryrun.com/guides/your-lab/)**: record its steady state, add one guard, run it on every pull request.
+
 Netdryrun™ boots your topology as a real virtual network ([containerlab](https://containerlab.dev)), applies your configs, and checks how the network actually *behaves*: BGP sessions, prefix counts, routes, reachability. It catches the mistakes your checks describe, such as a route leak, before the change reaches production, and leaves the commands and raw output for a reviewer to inspect.
 
 <p align="center"><img alt="Netdryrun catching a leaked default route that ping and session checks miss" src="https://raw.githubusercontent.com/netdryrun/netdryrun/main/.github/assets/netdryrun-demo.gif" width="820"></p>
