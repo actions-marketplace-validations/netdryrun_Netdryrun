@@ -6,7 +6,12 @@ Commands (per node):
   show ip route vrf all json                       show ipv6 route vrf all json
   show bgp vrf all ipv4 unicast detail json        show bgp vrf all ipv6 unicast detail json
   show bgp [vrf V] <afi> unicast neighbors N advertised-routes detail json   (every established session)
-  show bgp [vrf V] <afi> unicast neighbors N received-routes detail json     (sessions with soft-reconfiguration inbound)
+  show bgp [vrf V] <afi> unicast neighbors N received-routes json            (sessions with soft-reconfiguration inbound)
+
+Received routes come from the plain listing: FRR 10.4.1's `received-routes detail json` prints the path in the BGP
+table, after inbound policy, for every prefix the table has (found on the first live capture), so it is not what
+the neighbor sent. The plain listing is, but it carries no communities: a received route's communities before
+inbound policy are not in the snapshot, and a `with:` pin on them never matches a received-only route.
 
 Validation is strict, and stricter than the check drivers: each JSON object the parser reads has an
 allowlist of keys. A key it doesn't know is an error, because it may be an attribute the diff would
@@ -20,7 +25,9 @@ flags, so only their required fields and their address-family map are validated.
 """
 from __future__ import annotations
 
+import ipaddress
 import json
+from dataclasses import replace
 
 from ..drivers.base import DriverError, check_vrf_name, load_json
 from ..drivers.frr import parse_vrfs
@@ -61,16 +68,49 @@ DEST_KEYS = {"prefix", "version", "advertisedTo", "pathCount", "multiPathCount",
 PATH_KEYS = {"aspath", "origin", "metric", "locPrf", "weight", "valid", "version", "bestpath", "multipath",
              "community", "extendedCommunity", "largeCommunity", "lastUpdate", "nexthops", "peer", "sourced", "local",
              "atomicAggregate", "aggregatorAs", "aggregatorId", "originatorId", "clusterList", "addpathRxId",
-             "addpathTxId", "otc", "aigpMetric", "remoteLabel", "remoteSid", "rpkiValidationState", *PATH_FLAGS}
+             "addpathTxId", "otc", "aigpMetric", "remoteLabel", "remoteSid", "rpkiValidationState", *PATH_FLAGS,
+             "processScheduled"}   # transient: the destination is queued for best-path selection (not compared)
 PATH_EXTRA = ("aigpMetric", "otc", "remoteLabel", "remoteSid", "rpkiValidationState")
 PATH_NEXTHOP_KEYS = {"ip", "hostname", "afi", "scope", "linkLocalOnly", "length", "metric", "accessible", "used",
-                     "interface"}
+                     "interface",
+                     "importCheckEnabled"}   # how bgpd tracks the next hop; its outcome is `accessible` (compared)
 PEER_KEYS = {"peerId", "routerId", "hostname", "domainname", "type", "interface"}
 BESTPATH_KEYS = {"overall", "bestpathFromAs", "selectionReason"}
 ADJ_KEYS = {"bgpTableVersion", "bgpLocalRouterId", "defaultLocPrf", "localAS", "advertisedRoutes", "receivedRoutes",
-            "totalPrefixCounter", "filteredPrefixCounter"}
+            "totalPrefixCounter", "filteredPrefixCounter", "bgpOriginatingDefaultNetwork"}
+# A default route sent by `neighbor X default-originate`: FRR names it beside the advertised routes
+# (bgpOriginatingDefaultNetwork), without its attributes, so it is one adj_out item with these fixed values: its
+# appearance and disappearance are differences, a change made by its route-map is not seen.
+DEFAULT_ORIGINATE = BgpAttrs(origin="igp", as_path=AsPath(()), next_hops=(), local_pref=None, med=None, weight=None,
+                             communities=(), ext_communities=(), large_communities=(), cluster_list=(),
+                             originator_id=None, atomic_aggregate=False, aggregator=None,
+                             extra=(("default-originate", "true"),))
+# one route of the plain received-routes listing (FRR's route_vty_out_tmp); IPv6 prints its next hop as nextHopGlobal
+RECEIVED_KEYS = {"addrPrefix", "prefixLen", "network", "nextHop", "nextHopGlobal", "metric", "locPrf", "weight", "path",
+                 "origin", "valid", "best"}
 ORIGIN_NAMES = {"igp": "igp", "i": "igp", "egp": "egp", "e": "egp", "incomplete": "incomplete", "?": "incomplete"}
 PEER_TYPES = {"external", "internal", "confed-external", "confed-internal"}
+
+
+# Facts of the boot, not of the configs (two boots of one lab with the same configs differed in both, live):
+# - Docker gives each node its management address on eth0 per boot, so the `local` (host) routes of eth0 in the
+#   default VRF are not part of the snapshot; the management subnet and kernel routes still are.
+# - containerlab gives interfaces random MAC addresses, so an IPv6 link-local next hop is compared as `fe80::`
+#   with its interface (RIB) or its path's source (BGP), never by address. The raw output keeps the address.
+# - Every interface has a connected fe80::/64, and which one zebra marks selected follows interface creation order:
+#   those entries are compared by interface and FIB state, not by the selected flag.
+MGMT_INTERFACE = "eth0"
+LINK_LOCAL = "fe80::"
+LINK_LOCAL_SUBNET = "fe80::/64"
+
+
+def _boot_free(ip: str) -> str:
+    return LINK_LOCAL if ipaddress.ip_address(ip).version == 6 and ipaddress.ip_address(ip).is_link_local else ip
+
+
+def _mgmt_address(vrf: str, entry: RibEntry) -> bool:
+    return (vrf == "default" and entry.protocol == "local" and bool(entry.nexthops)
+            and all(h.interface == MGMT_INTERFACE and h.ip is None for h in entry.nexthops))
 
 
 class CommandFailed(SnapshotError):
@@ -190,6 +230,9 @@ def parse_neighbors(text: str) -> dict[str, dict[str, Session]]:
                 counts.append((name, _int(cmd, info["acceptedPrefixCounter"], f"{where} {af}.acceptedPrefixCounter")))
                 if _flag(cmd, info, "inboundSoftConfigPermit", f"{where} {af}"):
                     soft.append(name)
+                    if _add_path_rx(nb, af):
+                        raise _bad(cmd, f"{where} {af}: the neighbor may send several paths per prefix (add-path), and "
+                                        "verify 0.4 reads received routes from a listing with one path per prefix")
             local = None
             if state == "established":
                 if "hostLocal" not in nb:
@@ -199,6 +242,14 @@ def parse_neighbors(text: str) -> dict[str, dict[str, Session]]:
                                      tuple(sorted(counts)), tuple(sorted(soft)))
         out[vrf] = sessions
     return out
+
+
+def _add_path_rx(nb: dict, af: str) -> bool:
+    """The neighbor said it may send this node several paths per prefix (its add-path TX capability)."""
+    caps = nb.get("neighborCapabilities", {})
+    ap = caps.get("addPath", {}) if isinstance(caps, dict) else {}
+    info = ap.get(af, {}) if isinstance(ap, dict) else {}
+    return isinstance(info, dict) and any(info.get(k) for k in ("txReceived", "txAdvertisedAndReceived"))
 
 
 # ---------------------------------------------------------------------------------------------------------
@@ -224,7 +275,7 @@ def _nexthop(cmd: str, nh, where: str, resolvers: tuple = ()) -> NextHop:
         raise _bad(cmd, f"{where}.labels: not a list")
     src = nh.get("src", nh.get("rmapSource"))
     return NextHop(
-        ip=canon_ip(nh["ip"], f"{where}.ip") if "ip" in nh else None,
+        ip=_boot_free(canon_ip(nh["ip"], f"{where}.ip")) if "ip" in nh else None,
         interface=_str(cmd, nh["interfaceName"], f"{where}.interfaceName") if "interfaceName" in nh else None,
         vrf=_str(cmd, nh["vrf"], f"{where}.vrf") if "vrf" in nh else None,
         active=_flag(cmd, nh, "active", where), fib=_flag(cmd, nh, "fib", where),
@@ -292,6 +343,10 @@ def parse_routes(text: str, afi: str) -> dict[str, dict[tuple[str, str], tuple[R
                                  metric=_int(cmd, e["metric"], f"{where}.metric"),
                                  tag=_opt_int(cmd, e, "tag", where), table=_opt_int(cmd, e, "table", where),
                                  failed=_flag(cmd, e, "failed", where), nexthops=_nexthops(cmd, e["nexthops"], where))
+                if _mgmt_address(vrf, entry):
+                    continue
+                if prefix == LINK_LOCAL_SUBNET and proto == "connected":
+                    entry = replace(entry, selected=False)
                 grouped.setdefault((prefix, proto), []).append(entry)
         out[vrf] = {k: canon_set(v) for k, v in grouped.items()}
     return out
@@ -333,7 +388,7 @@ def parse_attrs(cmd: str, p, where: str) -> tuple[str, int, BgpAttrs, dict]:
         scope = nh.get("scope", "global")
         if scope not in ("global", "link-local"):
             raise _bad(cmd, f"{w}.scope: unknown scope {scope!r}")
-        hops.append(PathNextHop(ip=canon_ip(nh["ip"], f"{w}.ip"), scope=scope,
+        hops.append(PathNextHop(ip=_boot_free(canon_ip(nh["ip"], f"{w}.ip")), scope=scope,
                                 accessible=_flag(cmd, nh, "accessible", w), used=_flag(cmd, nh, "used", w),
                                 igp_metric=_opt_int(cmd, nh, "metric", w),
                                 interface=_str(cmd, nh["interface"], f"{w}.interface") if "interface" in nh else None))
@@ -446,8 +501,8 @@ def parse_bgp_table(text: str, afi: str) -> dict[str, dict[tuple[str, str, int],
 
 def adj_command(vrf: str, afi: str, neighbor: str, direction: str) -> str:
     in_vrf = "" if vrf == "default" else f" vrf {check_vrf_name(vrf)}"
-    which = "advertised-routes" if direction == "out" else "received-routes"
-    return f"show bgp{in_vrf} {afi} unicast neighbors {canon_ip(neighbor)} {which} detail json"
+    which = "advertised-routes detail" if direction == "out" else "received-routes"
+    return f"show bgp{in_vrf} {afi} unicast neighbors {canon_ip(neighbor)} {which} json"
 
 
 def parse_adj(text: str, cmd: str, afi: str, direction: str) -> dict[tuple[str, int], BgpAttrs]:
@@ -458,7 +513,9 @@ def parse_adj(text: str, cmd: str, afi: str, direction: str) -> dict[tuple[str, 
         raise _bad(cmd, text)
     if not data:
         return {}
-    key = "advertisedRoutes" if direction == "out" else "receivedRoutes"
+    if direction == "in":
+        return _parse_received(data, cmd, afi)
+    key = "advertisedRoutes"
     _obj(cmd, data, "listing", ADJ_KEYS, {key})
     if ("receivedRoutes" if direction == "out" else "advertisedRoutes") in data:
         raise _bad(cmd, "listing of the other direction")
@@ -473,7 +530,7 @@ def parse_adj(text: str, cmd: str, afi: str, direction: str) -> dict[tuple[str, 
         plist = _dest_paths(cmd, prefix, dest, prefix)
         if not plist:
             raise _bad(cmd, f"{prefix}: no path")
-        id_key = "addpathTxId" if direction == "out" else "addpathRxId"
+        id_key = "addpathTxId"
         for i, p in enumerate(plist):
             _src, _rx, attrs, raw = parse_attrs(cmd, p, f"{prefix} path {i}")
             if len(plist) > 1 and id_key not in raw:
@@ -482,8 +539,58 @@ def parse_adj(text: str, cmd: str, afi: str, direction: str) -> dict[tuple[str, 
             if (prefix, pid) in out:
                 raise _bad(cmd, f"{prefix}: two paths with {id_key} {pid}")
             out[(prefix, pid)] = attrs
-    if "totalPrefixCounter" in data and _int(cmd, data["totalPrefixCounter"], "totalPrefixCounter") != len(routes):
-        raise _bad(cmd, f"totalPrefixCounter {data['totalPrefixCounter']} but {len(routes)} prefixes listed")
+    listed = len(routes)
+    if "bgpOriginatingDefaultNetwork" in data:
+        default = "0.0.0.0/0" if afi == "ipv4" else "::/0"
+        if data["bgpOriginatingDefaultNetwork"] != default or (default, 0) in out:
+            raise _bad(cmd, f"bgpOriginatingDefaultNetwork: {str(data['bgpOriginatingDefaultNetwork'])[:60]!r}")
+        out[(default, 0)] = DEFAULT_ORIGINATE
+        listed += 1
+    _check_total(cmd, data, listed)
+    return out
+
+
+def _check_total(cmd: str, data: dict, listed: int) -> None:
+    if "totalPrefixCounter" in data and _int(cmd, data["totalPrefixCounter"], "totalPrefixCounter") != listed:
+        raise _bad(cmd, f"totalPrefixCounter {data['totalPrefixCounter']} but {listed} prefixes listed")
+
+
+def _parse_received(data: dict, cmd: str, afi: str) -> dict[tuple[str, int], BgpAttrs]:
+    """The plain received-routes listing: per prefix, what the neighbor sent (one path; add-path sessions are
+    refused when the neighbors are read). Communities aren't listed, so they stay empty here."""
+    _obj(cmd, data, "listing", ADJ_KEYS - {"advertisedRoutes", "bgpOriginatingDefaultNetwork"}, {"receivedRoutes"})
+    routes = data["receivedRoutes"]
+    if not isinstance(routes, dict):
+        raise _bad(cmd, "receivedRoutes: not an object")
+    out: dict[tuple[str, int], BgpAttrs] = {}
+    for k, r in routes.items():
+        prefix = canon_prefix(k, cmd)
+        if prefix_afi(prefix) != afi:
+            raise _bad(cmd, f"{prefix} in an {afi} listing")
+        _obj(cmd, r, prefix, RECEIVED_KEYS, {"network", "path", "origin"})
+        if canon_prefix(r["network"], prefix) != prefix:
+            raise _bad(cmd, f"{prefix}: entry for {r['network']}")
+        hops = [r[h] for h in ("nextHop", "nextHopGlobal") if h in r]
+        if len(hops) != 1:
+            raise _bad(cmd, f"{prefix}: expected one next hop, got {len(hops)}")
+        ip = canon_ip(hops[0], f"{prefix} next hop")
+        scope = "link-local" if ipaddress.ip_address(ip).is_link_local else "global"
+        origin = ORIGIN_NAMES.get(str(r["origin"]).strip().lower()) if isinstance(r["origin"], str) else None
+        if origin is None:
+            raise _bad(cmd, f"{prefix}.origin: unknown origin {str(r['origin'])[:30]!r}")
+        if not isinstance(r["path"], str):
+            raise _bad(cmd, f"{prefix}.path: not a string")
+        try:
+            as_path = AsPath.parse(r["path"])
+        except SnapshotError as e:
+            raise _bad(cmd, f"{prefix}: {e}") from None
+        out[(prefix, 0)] = BgpAttrs(origin=origin, as_path=as_path,
+                                    next_hops=(PathNextHop(_boot_free(ip), scope, False, False, None, None),),
+                                    local_pref=_opt_int(cmd, r, "locPrf", prefix), med=_opt_int(cmd, r, "metric", prefix),
+                                    weight=_opt_int(cmd, r, "weight", prefix), communities=(), ext_communities=(),
+                                    large_communities=(), cluster_list=(), originator_id=None, atomic_aggregate=False,
+                                    aggregator=None)
+    _check_total(cmd, data, len(routes))
     return out
 
 

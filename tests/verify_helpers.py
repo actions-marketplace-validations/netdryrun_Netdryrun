@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import copy
+import re
 from pathlib import Path
 
 from netdryrun.verify.intent import parse_intent
@@ -15,14 +16,27 @@ from netdryrun.verify.snapshot import (AsPath, BgpAttrs, BgpPath, ItemKey, NextH
                                        RibEntry, Session, Snapshot, canon_community, canon_set)
 
 FIX = Path(__file__).parent / "fixtures" / "verify"
-SYNTHETIC = "# synthetic, to be replaced by live capture"
+# Every FRR fixture is a live capture (scripts/capture_verify_fixtures.py on tests/fixtures/verify-lab): its first
+# line names the FRR version, the node, the command and the date.
+LIVE = re.compile(r"# live capture: (FRRouting \S+), node (\S+) of tests/fixtures/verify-lab, `vtysh -c '(.+)'`, "
+                  r"(\d{4}-\d\d-\d\d)")
+
+
+def fixture_header(name: str) -> re.Match:
+    m = LIVE.fullmatch((FIX / name).read_text(encoding="utf-8").split("\n", 1)[0])
+    assert m, f"{name}: not marked as a live capture"
+    return m
 
 
 def fixture(name: str) -> str:
-    """A verify fixture without its marker line."""
-    lines = (FIX / name).read_text(encoding="utf-8").splitlines(keepends=True)
-    assert lines[0].strip() == SYNTHETIC
-    return "".join(lines[1:])
+    """A verify fixture without its header line."""
+    fixture_header(name)
+    return (FIX / name).read_text(encoding="utf-8").split("\n", 1)[1]
+
+
+def fixture_commands() -> dict[str, str]:
+    """command -> fixture file name, for every fixture."""
+    return {fixture_header(f.name).group(3): f.name for f in sorted(FIX.iterdir())}
 
 
 def nh(ip: str, interface: str = "eth1", fib: bool = True) -> NextHop:

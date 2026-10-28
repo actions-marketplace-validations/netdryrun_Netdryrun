@@ -38,7 +38,7 @@ SAFIS = ("unicast",)
 AFI_SAFIS = ("ipv4-unicast", "ipv6-unicast")      # the session address families verify 0.4 snapshots
 ORIGINS = ("igp", "egp", "incomplete")
 SEGMENT_TYPES = ("seq", "set", "confed-seq", "confed-set")
-PATH_FLAGS = ("damped", "history", "removed", "stale", "suppressed")
+PATH_FLAGS = ("aggregated", "damped", "history", "removed", "rxedFromRrClient", "stale", "suppressed")
 
 
 class SnapshotError(DriverError):
@@ -365,7 +365,7 @@ class BgpPath:
     valid: bool
     peer_type: str                  # "external", "internal", "confed-external", "confed-internal", "local"
     peer_router_id: str | None
-    flags: tuple[str, ...] = ()     # damped, history, removed, stale, suppressed
+    flags: tuple[str, ...] = ()     # aggregated, damped, history, removed, rxedFromRrClient, stale, suppressed
 
     def __post_init__(self):
         _require(isinstance(self.attrs, BgpAttrs), "BGP path: attrs is not BgpAttrs")
