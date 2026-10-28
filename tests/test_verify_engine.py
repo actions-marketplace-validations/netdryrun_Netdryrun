@@ -5,9 +5,10 @@ from dataclasses import replace
 
 import pytest
 
-from netdryrun.verify.engine import VerifyError, baseline_problems, diff, match
+from netdryrun.verify.engine import VerifyError, baseline_problems, diff, far_ends, match
 from netdryrun.verify.intent import IntentError
-from verify_helpers import add_new_customer_block, attrs, base, intent, path, rib, session
+from netdryrun.verify.snapshot import ItemKey, NodeSnapshot, PathNextHop, Snapshot, canon_set
+from verify_helpers import add_new_customer_block, attrs, base, intent, nh, path, rib, session
 
 
 def undeclared(m):
@@ -98,6 +99,27 @@ def test_appears_on_as_received_only():
     assert run(base(), after, lines).status == "matched"
     lines[0]["with"] = {"as_path": "65000 65999"}
     assert run(base(), after, lines).status == "failed"
+
+
+def _received_only_on_up1(lab):
+    lab.adj_in("up1", "10.0.2.1", "10.101.0.0/24", attrs(as_path="65000 65101", next_hop="10.0.2.1", med=0))
+    lab.adj_out("edge1", "10.0.2.2", "10.101.0.0/24", attrs(as_path="65101", next_hop="10.0.1.2"))
+
+
+@pytest.mark.parametrize("pins,ok", [
+    ({"from": "10.0.2.1", "as_path": "65000 65101", "next_hop": "10.0.2.1", "origin": "igp", "med": 0}, True),
+    ({"from": "10.0.2.2"}, False),
+    ({"communities": []}, False),            # not in the plain received listing: never matched against it
+    ({"large_communities": []}, False),
+    ({"ext_communities": []}, False),
+    ({"cluster_list": []}, False),
+    ({"originator_id": None}, False),
+])
+def test_a_received_route_matches_only_the_attributes_the_received_listing_shows(pins, ok):
+    """A route received before inbound policy is read from FRR's plain listing (AS path, origin, MED, local
+    preference, weight, next hop): a pin on anything else can't be checked against it, so it never matches."""
+    line = {"prefix": "10.101.0.0/24", "appears_on": "up1", "state": "received", "with": pins}
+    assert (run(base(), _edit(_received_only_on_up1)(), [line]).status == "matched") is ok
 
 
 @pytest.mark.parametrize("pins,ok", [
@@ -648,6 +670,9 @@ DID_NOT_HAPPEN = [
     # advertisement
     ("advertisement added that didn't appear", base, base, {**CUST, "advertisement": OUT, "goes": "added"}),
     ("advertisement added that already existed", base, base, {**OWN, "goes": "added"}),
+    ("advertisement added without a best path to compare it with", base,
+     _edit(lambda lab: lab.adj_out("edge1", "198.51.100.9", "10.101.0.0/24", attrs(as_path="65101", next_hop="198.51.100.8"))),
+     {**NEW, "advertisement": OUT, "goes": "added"}),
     ("advertisement added with a rewritten attribute", base, _edit(lambda lab: _adv_out(lab, med=50)),
      {**CUST, "advertisement": OUT, "goes": "added"}),
     ("advertisement removed that is still there", base, base, {**OWN, "goes": "removed"}),
@@ -875,3 +900,320 @@ def test_the_report_shows_what_each_declared_line_explained(before, after, line,
     (declared,) = to_dict(res)["declared"]
     assert declared["intent"] == 0 and declared["line"] == lr.line.text and declared["items"]
     assert declared["details"] and all(keys <= set(d) for d in declared["details"]), declared["details"]
+
+
+# --- the rest of the engine's mutation survivors (mutation run of 2026-10-28) ---------------------------------
+# Each test names what a mutant got wrong; most are explanations a line must not give (a false pass), the rest
+# explanations it must give (a false fail) and what the report shows.
+
+def test_appears_on_an_ipv6_prefix_and_its_primary_next_hop():
+    """IPv6 lines key on AFI ipv6; a path's next hop is its global address when it has one (the link-local one
+    is resolution), else the link-local one."""
+    v6 = "2001:db8:101::/48"
+
+    def learned(lab, hops):
+        p = path(as_path="65000 65101")
+        lab.path("up1", v6, "10.0.2.1", replace(p, attrs=replace(p.attrs, next_hops=canon_set(hops))))
+        lab.rib("up1", v6, rib("bgp", hops=("2001:db8:2::1",)))
+
+    glob, ll = (PathNextHop("2001:db8:2::1", "global", True, True, 0, None),
+                PathNextHop("fe80::1", "link-local", True, True, 0, "eth1"))
+    line = {"prefix": v6, "appears_on": ["up1"]}
+    assert run(base(), _edit(lambda lab: learned(lab, [glob, ll]))(), [line]).status == "matched"
+    for hops, pin, ok in (([glob, ll], ["2001:db8:2::1"], True), ([glob, ll], ["2001:db8:2::1", "fe80::1"], False),
+                          ([ll], ["fe80::1"], True)):
+        m = run(base(), _edit(lambda lab: learned(lab, hops))(), [{**line, "with": {"next_hop": pin}}])
+        assert (m.status == "matched") is ok, (hops, pin)
+
+
+def test_advertisement_with_add_path_ids():
+    def two(lab):
+        for pid in (1, 2):
+            lab._put(ItemKey("adj_out", "edge1", "default", "ipv4", "unicast", "10.100.0.0/24", neighbor="198.51.100.9",
+                             path_id=pid), attrs(as_path="65101", next_hop="198.51.100.8"))
+    m = run(_edit(two)(), base(), [{**CUST, "advertisement": OUT, "goes": "removed"}])
+    assert m.status == "matched", undeclared(m)
+
+
+def test_advertisement_added_without_local_pref_where_the_best_path_has_one():
+    """eBGP doesn't send LOCAL_PREF: an advertisement without it still carries the best path (whose local
+    preference is 100) unless the line pins it."""
+    def adv(lab):
+        lab.adj_out("edge1", "198.51.100.9", "203.0.113.0/24", attrs(as_path="65002", next_hop="10.0.2.2"))
+    line = {"prefix": "203.0.113.0/24", "advertisement": OUT, "goes": "added"}
+    assert run(base(), _edit(adv)(), [line]).status == "matched"
+    assert run(base(), _edit(adv)(), [{**line, "with": {"local_pref": 100}}]).status == "failed"
+
+
+def test_best_path_on_explains_only_changed_items_of_its_own_prefix_vrf_and_afi():
+    line = {**UP, "to": {"local_pref": 200}}
+
+    def backup(lab):          # a new backup path for the prefix: added, not changed
+        lab.path("edge1", "203.0.113.0/24", "10.0.3.2", path(best=False, as_path="65003 65002", next_hop="10.0.3.2"))
+    m = run(base(), _edit(lambda lab: _lp(lab, 200), backup)(), [line])
+    assert {d.key.neighbor for d in m.undeclared} == {"10.0.3.2"}
+
+    def other(lp):            # another prefix from the same neighbor changes the same attribute
+        return lambda lab: lab.learn("edge1", "198.51.100.0/24", "10.0.2.2", "65002", local_pref=lp)
+    m = run(_edit(other(100))(), _edit(other(200), lambda lab: _lp(lab, 200))(), [line])
+    assert undeclared(m) == {("path", "edge1", "198.51.100.0/24")}
+
+    def in_vrf(lp):           # the same prefix in another VRF
+        return lambda lab: lab.path("edge1", "203.0.113.0/24", "10.0.2.2",
+                                    path(as_path="65002", next_hop="10.0.2.2", local_pref=lp), vrf="cust")
+    before, after = _edit(in_vrf(100))(), _edit(in_vrf(200), lambda lab: _lp(lab, 200))()
+    m = match(_with_vrf(before), _with_vrf(after), intent([line]))
+    assert {(d.key.vrf, d.key.kind) for d in m.undeclared} == {("cust", "path")}
+
+
+def _with_vrf(lab, vrf="cust"):
+    return Snapshot({n: NodeSnapshot(n, "frr", tuple(sorted({"default", vrf})), dict(items)) for n, items in lab.items.items()})
+
+
+def test_best_path_on_beside_a_line_whose_items_sort_first():
+    after = add_new_customer_block(_edit(lambda lab: _lp(lab, 200))())
+    m = run(base(), after, [{**NEW, "appears_on": ["edge1", "up1", "peer1"]}, {**UP, "to": {"local_pref": 200}}])
+    assert m.status == "matched", undeclared(m)
+
+
+def test_best_path_on_med_does_not_explain_another_nodes_rib():
+    def med(lab):
+        lab.learn("edge1", "203.0.113.0/24", "10.0.2.2", "65002", local_pref=100, med=50)
+        lab.rib("edge1", "203.0.113.0/24", rib("bgp", hops=("10.0.2.2",), metric=50))
+        lab.rib("cust1", "203.0.113.0/24", rib("bgp", hops=("10.0.1.1",), metric=50))
+    assert undeclared(run(base(), _edit(med)(), [{**UP, "to": {"med": 50}}])) == {("rib", "cust1", "203.0.113.0/24")}
+
+
+def test_best_path_on_without_next_hop_does_not_explain_a_fib_next_hop_change():
+    def lp_and_fib(lab):
+        _lp(lab, 200)
+        lab.rib("edge1", "203.0.113.0/24", rib("bgp", hops=("10.0.6.2",)))
+    m = run(base(), _edit(lp_and_fib)(), [{**UP, "to": {"local_pref": 200}}])
+    assert undeclared(m) == {("rib", "edge1", "203.0.113.0/24")}
+
+
+def test_best_path_on_explains_an_advertisement_changed_in_exactly_the_listed_attribute():
+    def comm(lab):
+        lab.learn("edge1", "203.0.113.0/24", "10.0.2.2", "65002", local_pref=100, communities=["65000:9"])
+        lab.adj_out("edge1", "10.0.1.2", "203.0.113.0/24", attrs(as_path="65002", next_hop="10.0.2.2", communities=["65000:9"]))
+    m = run(base(), _edit(comm)(), [{**UP, "to": {"communities": ["65000:9"]}}])
+    assert m.status == "matched", undeclared(m)
+
+
+def test_best_path_on_details_show_the_listed_values_before_and_after():
+    def change(lab):
+        lab.learn("edge1", "203.0.113.0/24", "10.0.2.2", "65002 65002", local_pref=200,
+                  communities=["65000:9", "65000:10"])
+        lab.adj_out("edge1", "10.0.1.2", "203.0.113.0/24", attrs(as_path="65002 65002", next_hop="10.0.2.2",
+                                                                 communities=["65000:9", "65000:10"]))
+    line = {**UP, "to": {"local_pref": 200, "as_path": "65002 65002", "communities": ["65000:9", "65000:10"], "med": None}}
+    m = run(base(), _edit(change)(), [line])
+    (detail,) = m.lines[0].details
+    assert detail == {"node": "edge1",
+                      "before": {"from": "10.0.2.2", "local_pref": "100", "as_path": "'65002'", "communities": "[]",
+                                 "med": "null"},
+                      "after": {"from": "10.0.2.2", "local_pref": "200", "as_path": "'65002 65002'",
+                                "communities": "[65000:10, 65000:9]", "med": "null"}}
+
+
+def test_best_path_on_from_another_neighbor_may_change_the_peers_own_facts():
+    """Listing `from` lets the peer type and router ID change with it (a new best path from another peer)."""
+    def both(lab):
+        old = lab.get("edge1", "path", "203.0.113.0/24", neighbor="10.0.2.2")
+        lab.path("edge1", "203.0.113.0/24", "10.0.3.2", replace(old, best=False, peer_type="internal",
+                                                                peer_router_id="10.255.0.4"))
+
+    def swap(lab):
+        both(lab)
+        old = lab.get("edge1", "path", "203.0.113.0/24", neighbor="10.0.2.2")
+        lab.path("edge1", "203.0.113.0/24", "10.0.2.2", replace(old, best=False))
+        lab.path("edge1", "203.0.113.0/24", "10.0.3.2", replace(old, peer_type="internal", peer_router_id="10.255.0.4"))
+    m = run(_edit(both)(), _edit(swap)(), [{**UP, "to": {"from": "10.0.3.2"}}])
+    assert m.lines[0].happened, m.lines[0].reason
+
+
+def test_appears_on_details_name_the_selected_routes_protocol_and_next_hops():
+    after = add_new_customer_block(base())
+    m = run(base(), after, [{**NEW, "appears_on": ["edge1", "up1", "peer1"]}])
+    up1 = next(d for d in m.lines[0].details if d["node"] == "up1")
+    assert (up1["state"], up1["protocol"], up1["next_hops"]) == ("selected and in the FIB", "bgp", ["10.0.2.1"])
+    by_interface = replace(nh("10.0.0.1"), ip=None, interface="eth9", kind="interface")
+    blackhole = replace(nh("10.0.0.1"), ip=None, interface=None, kind="blackhole")
+    after.rib("up1", "10.77.0.0/24", (replace(rib("static", hops=())[0], nexthops=canon_set([by_interface, blackhole])),))
+    m = run(base(), after, [{**NEW, "appears_on": ["edge1", "up1", "peer1"]}, {"prefix": "10.77.0.0/24", "appears_on": ["up1"]}])
+    (static,) = m.lines[1].details
+    assert static == {"node": "up1", "state": "selected and in the FIB", "protocol": "static",
+                      "next_hops": ["blackhole", "eth9"]}
+
+
+def test_pins_on_the_selected_route():
+    after = add_new_customer_block(base())
+    lines = [{**NEW, "appears_on": ["edge1"]}, {**NEW, "appears_on": ["peer1"]}]
+    for pins, ok in (({"metric": 0}, True), ({"metric": 5}, False), ({"distance": 20}, True), ({"distance": 99}, False),
+                     ({"protocol": "bgp", "metric": 0, "as_path": "65000 65101"}, True)):
+        m = run(base(), after, [*lines, {**NEW, "appears_on": ["up1"], "with": pins}])
+        assert (m.status == "matched") is ok, pins
+
+
+def test_a_received_only_route_pinned_on_a_backup_path():
+    """state: received, pinned on a path that isn't the best (or not selected): its source counts."""
+    after = base()
+    after.path("up1", "10.101.0.0/24", "10.0.2.1", path(best=False, as_path="65000 65101", next_hop="10.0.2.1"))
+    after.adj_out("edge1", "10.0.2.2", "10.101.0.0/24", attrs(as_path="65101", next_hop="10.0.1.2"))
+    line = {"prefix": "10.101.0.0/24", "appears_on": "up1", "state": "received"}
+    assert run(base(), after, [{**line, "with": {"from": "10.0.2.1"}}]).status == "matched"
+    assert run(base(), after, [{**line, "with": {"from": "10.0.3.1"}}]).status == "failed"
+
+
+def _sender_and_cust1(adj, cust1, hops=None):
+    def make(lab):
+        lab.adj_out("edge1", "10.0.1.2", "203.0.113.0/24", attrs(as_path=adj, next_hop="10.0.2.2"))
+        p = path(as_path=cust1, next_hop="10.0.1.1")
+        if hops:
+            p = replace(p, attrs=replace(p.attrs, next_hops=hops))
+        lab.path("cust1", "203.0.113.0/24", "10.0.1.1", p)
+    return make
+
+
+def test_best_path_on_the_receiver_as_path_is_matched_on_its_end():
+    line = {"prefix": "203.0.113.0/24", "best_path_on": "cust1"}
+    # an iBGP-like receiver: the path received equals the one advertised, before and after
+    before = _edit(_sender_and_cust1("65002", "65002"))()
+    m = run(before, _edit(_sender_and_cust1("65002 65002", "65002 65002"))(), [{**line, "to": {"as_path": "65002 65002"}}])
+    assert m.status == "matched", undeclared(m)
+    # the receiver's path doesn't end with the advertised one: not what it received
+    m = run(base(), _edit(_sender_and_cust1("65009 65002", "65000 65002 65002"))(),
+            [{**line, "to": {"as_path": "65000 65002 65002"}}])
+    assert ("adj_out", "edge1", "203.0.113.0/24") in undeclared(m)
+
+
+def test_best_path_on_the_receiver_next_hop_is_compared_by_address():
+    """The advertisement's next hop changed and the receiver's best path now has it: explained by the
+    receiver's next_hop line, whatever the receiver's IGP metric to it."""
+    hop = (PathNextHop("10.0.1.9", "global", True, True, 20, None),)
+
+    def change(lab):
+        _sender_and_cust1("65002", "65000 65002", hop)(lab)
+        lab.adj_out("edge1", "10.0.1.2", "203.0.113.0/24", attrs(as_path="65002", next_hop="10.0.1.9"))
+        lab.rib("cust1", "203.0.113.0/24", rib("bgp", hops=("10.0.1.9",)))
+    line = {"prefix": "203.0.113.0/24", "best_path_on": "cust1", "to": {"next_hop": ["10.0.1.9"]}}
+    m = run(base(), _edit(change)(), [line])
+    assert m.status == "matched", (m.lines[0].reason, undeclared(m))
+
+    def other(lab):           # an advertised next hop the receiver doesn't use is not explained
+        change(lab)
+        lab.adj_out("edge1", "10.0.1.2", "203.0.113.0/24", attrs(as_path="65002", next_hop="10.0.1.8"))
+    assert ("adj_out", "edge1", "203.0.113.0/24") in undeclared(run(base(), _edit(other)(), [line]))
+
+
+def _outside(best, adv):
+    def make(lab):
+        lab.learn("edge1", "203.0.113.0/24", "10.0.2.2", best, local_pref=100)
+        lab.adj_out("edge1", "198.51.100.9", "203.0.113.0/24", attrs(as_path=adv, next_hop="10.0.2.2"))
+    return make
+
+
+@pytest.mark.parametrize("before,after,ok", [
+    # an outbound prepend of 65000 65000, the same before and after: the new best path propagates
+    (("65002", "65000 65000 65002"), ("65002 65002", "65000 65000 65002 65002"), True),
+    # an AS_SET at the end of the path (the segment and the flat forms of the same outbound prepend)
+    (("{65010,65011}", "65000 {65010,65011}"), ("65002 {65010,65011}", "65000 65002 {65010,65011}"), True),
+    # locally originated before (an empty best path): the advertisement was the prepend alone
+    (("", "65000"), ("65002", "65000 65002"), True),
+    # the outbound prepend grew: not the new best path propagated
+    (("65002", "65000 65002"), ("65002 65002", "65000 65000 65002 65002"), False),
+    # the advertisement no longer carries the best path at all (an outbound rewrite)
+    (("65002", "65000 65002"), ("65002 65002", "65000 65009"), False),
+    # neither carries its best path
+    (("65002", "65009"), ("65002 65002", "65008"), False),
+])
+def test_best_path_on_the_sender_propagates_its_as_path_with_the_same_outbound_prepend(before, after, ok):
+    line = {**UP, "to": {"as_path": after[0]}}
+    m = run(_edit(_outside(*before))(), _edit(_outside(*after))(), [line])
+    assert (("adj_out", "edge1", "203.0.113.0/24") not in undeclared(m)) is ok, (m.lines[0].reason, undeclared(m))
+
+
+# session ... goes: down explains what was learned over that one session, in its address family and VRF
+
+DOWN = {"session": {"node": "edge1", "neighbor": "10.0.3.2", "afi": "ipv4-unicast"}, "goes": "down"}
+
+
+def test_session_goes_down_does_not_explain_a_static_route_for_a_prefix_learned_over_it():
+    before = _edit(lambda lab: lab.rib("edge1", "198.18.0.0/24", rib("static", hops=("10.0.3.2",), selected=False,
+                                                                        fib=False, distance=250), protocol="static"))()
+    after = _peer1_down(base())
+    m = run(before, after, [DOWN, {"prefix": "198.18.0.0/24", "disappears_from": ["cust1"]}])
+    assert {(d.key.kind, d.key.protocol) for d in m.undeclared} == {("rib", "static")}
+
+
+def test_session_goes_down_keeps_a_rib_entry_whose_prefix_still_has_a_path():
+    after = _peer1_down(base())
+    after.path("edge1", "198.18.0.0/24", "10.0.2.2", path(best=False, as_path="65002 65003", next_hop="10.0.2.2"))
+    m = run(base(), after, [DOWN, {"prefix": "198.18.0.0/24", "disappears_from": ["cust1"]}])
+    assert ("rib", "edge1", "198.18.0.0/24") in undeclared(m)
+
+
+def test_session_goes_down_explains_only_removed_items_of_its_vrf_and_afi():
+    def extra(lab):
+        lab.path("edge1", "2001:db8:30::/48", "10.0.3.2", path(as_path="65003", next_hop="2001:db8:3::2"))
+        lab.path("edge1", "198.18.0.0/24", "10.0.3.2", path(as_path="65003", next_hop="10.0.3.2"), vrf="cust")
+    before = _with_vrf(_edit(extra)())
+    m = match(before, _with_vrf(_peer1_down(base())),
+              intent([DOWN, {"prefix": "198.18.0.0/24", "disappears_from": ["cust1"]}]))
+    assert {(d.key.vrf, d.key.afi, d.key.prefix) for d in m.undeclared} == {("default", "ipv6", "2001:db8:30::/48"),
+                                                                            ("cust", "ipv4", "198.18.0.0/24")}
+    # a path from that neighbor that changed (here: kept as stale) is not "learned over it and now gone"
+    after = _peer1_down(base())
+    after.path("edge1", "198.18.0.0/24", "10.0.3.2", replace(base().get("edge1", "path", "198.18.0.0/24"), flags=("stale",)))
+    assert ("path", "edge1", "198.18.0.0/24") in undeclared(run(base(), after, [DOWN]))
+
+
+def test_session_goes_down_to_a_neighbor_outside_the_lab_lists_what_was_learned_over_it():
+    after = base()
+    after.session("edge1", "198.51.100.9", session(None, state="active", remote_as=64999))
+    after.drop("edge1", "adj_out", neighbor="198.51.100.9")
+    line = {"session": {"node": "edge1", "neighbor": "198.51.100.9", "afi": "ipv4-unicast"}, "goes": "down"}
+    m = run(base(), after, [line])
+    assert m.status == "matched", undeclared(m)
+    assert m.lines[0].details == [{"node": "edge1", "neighbor": "198.51.100.9", "routes_learned_over_it": []}]
+
+
+def test_far_ends_pair_the_two_ends_of_one_session_only():
+    lab = base()
+    # peer1 also peers with edge1's up1-facing address, from another address of its own
+    lab.session("peer1", "10.0.2.1", session("10.0.7.1"))
+    far = far_ends(lab.snap())
+    assert far[("edge1", "default", "10.0.2.2")] == ("up1", "default", "10.0.2.1")
+    assert ("peer1", "default", "10.0.2.1") not in far
+
+
+def test_a_session_up_only_after_the_change_still_pairs_its_ends():
+    """appears_on explains the advertisement to the node over a session that came up with the change."""
+    def up1_down(lab):
+        lab.session("edge1", "10.0.2.2", session(None, state="active", remote_as=65002))
+        lab.session("up1", "10.0.2.1", session(None, state="active"))
+        lab.drop("edge1", "adj_out", neighbor="10.0.2.2")
+        lab.drop("up1", "adj_out", neighbor="10.0.2.1")
+    after = add_new_customer_block(_edit(up1_down)(), nodes=("edge1", "peer1"))
+    after.session("edge1", "10.0.2.2", session("10.0.2.1", remote_as=65002))
+    after.session("up1", "10.0.2.1", session("10.0.2.2"))
+    after.adj_out("edge1", "10.0.2.2", "10.101.0.0/24", attrs(as_path="65101", next_hop="10.0.1.2"))
+    after.learn("up1", "10.101.0.0/24", "10.0.2.1", "65000 65101")
+    m = run(_edit(up1_down)(), after, [{**NEW, "appears_on": ["edge1", "up1", "peer1"]}])
+    assert ("adj_out", "edge1", "10.101.0.0/24") not in undeclared(m)
+
+
+def test_the_report_shows_each_undeclared_routes_state_before_and_after():
+    from netdryrun.verify.report import VerifyResult, to_dict
+
+    after = add_new_customer_block(base(), nodes=("edge1",))
+    after.rib("edge1", "192.0.2.0/24", rib("static", hops=(), distance=1) + rib("static", hops=("10.0.2.2",), distance=250,
+                                                                               selected=False, fib=False))
+    m = run(base(), after)
+    res = VerifyResult(status=m.status, match=m, before=base().snap(), after=after.snap(), intent=intent([]))
+    items = {(i["kind"], i["prefix"]): i for i in to_dict(res)["undeclared"]}
+    new = items[("rib", "10.101.0.0/24")]
+    assert (new["route_before"], new["route_after"]) == ("absent", "selected and in the FIB")
+    static = items[("rib", "192.0.2.0/24")]
+    assert static["fields"] == ["entries"] and (static["route_before"], static["route_after"]) == \
+        ("selected and in the FIB", "selected and in the FIB")

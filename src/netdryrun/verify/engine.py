@@ -48,6 +48,10 @@ COUPLED = {"next_hop": ("next_hop_resolution",), "from": ("peer_type", "peer_rou
 # What a new advertisement must carry from the node's best path (outbound policy can rewrite these; the next
 # hop, weight and, on eBGP, local preference follow protocol rules). local_pref only where it is sent.
 ADV_ATTRS = ("as_path", "origin", "med", "local_pref", "communities", "ext_communities", "large_communities")
+# What a route received before inbound policy shows (adj_in: FRR's plain received listing). A `with:` pin on any
+# other attribute is never matched against it: unread is not "none".
+ADJ_IN_VIEW = ("from", "next_hop", "as_path", "origin", "local_pref", "med", "weight")
+UNSEEN = object()
 
 
 class VerifyError(RuntimeError):
@@ -290,19 +294,21 @@ def _pins_ok(pins: dict, view: RouteView, state: str) -> str:
         return ""
     if state == "received":
         cands = [path_view(src, p) for (src, _), p in view.paths.items() if not p.best]
-        cands += [{**attrs_view(a), "from": nbr} for (nbr, _), a in view.adj_in.items()]
+        cands += [{**{k: v for k, v in attrs_view(a).items() if k in ADJ_IN_VIEW}, "from": nbr}
+                  for (nbr, _), a in view.adj_in.items()]
     else:
         best = view.best()
         if best is None:
             return "the selected route is not a BGP route, so BGP attributes can't match"
         cands = [path_view(*best)]
     for c in cands:
-        bad = [k for k, v in bgp.items() if c.get(k) != v]
+        bad = [k for k, v in bgp.items() if c.get(k, UNSEEN) != v]
         if not bad:
             return ""
     if len(cands) == 1:
         c = cands[0]
-        return "; ".join(f"{k} is {show(c.get(k))}, pinned {show(v)}" for k, v in bgp.items() if c.get(k) != v)
+        return "; ".join(f"{k} is {show(c.get(k, 'not shown'))}, pinned {show(v)}" for k, v in bgp.items()
+                         if c.get(k, UNSEEN) != v)
     return "no received path matches every pinned attribute"
 
 
@@ -357,16 +363,12 @@ def _propagated(field_name: str, before_adj: BgpAttrs, after_adj: BgpAttrs, befo
         return True
     if field_name == "as_path":
         def head(adj, best):
-            a, b = adj.as_path.segments, best.as_path.segments
-            if not b:
-                return a
-            if len(a) < len(b) or a[len(a) - len(b):] != b:
-                # merged sequences: compare the flat ASN lists of a trailing sequence
-                fa, fb = adj.as_path.render().split(), best.as_path.render().split()
-                if len(fa) >= len(fb) and fa[len(fa) - len(fb):] == fb:
-                    return tuple(fa[:len(fa) - len(fb)])
-                return None
-            return a[:len(a) - len(b)]
+            # compared as flat ASN lists (an AS_SET is one token): sequences merge, so comparing segments
+            # would see the same prepend in two forms
+            fa, fb = adj.as_path.render().split(), best.as_path.render().split()
+            if len(fa) >= len(fb) and fa[len(fa) - len(fb):] == fb:
+                return tuple(fa[:len(fa) - len(fb)])
+            return None
         h1, h2 = head(before_adj, before_best), head(after_adj, after_best)
         return h1 is not None and h1 == h2
     return False
