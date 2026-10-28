@@ -31,9 +31,36 @@ jobs:
             sleep 30
           done
           echo "::error::netdryrun $v never appeared on PyPI"; exit 1
+      # A release publishes on its tag; merging the release into main changes server.json again. Publishing a
+      # version the registry already lists fails, so that second run checks and stops.
+      - name: Skip if the registry already lists this version
+        id: listed
+        run: |
+          python3 - <<'EOF' >> "$GITHUB_OUTPUT"
+          import json, urllib.request
+          s = json.load(open("server.json"))
+          url = "https://registry.modelcontextprotocol.io/v0/servers?search=" + s["name"]
+          data = json.load(urllib.request.urlopen(url, timeout=30))
+          found = set()
+          def walk(x):
+              if isinstance(x, dict):
+                  if x.get("name") == s["name"] and "version" in x:
+                      found.add(x["version"])
+                  for v in x.values():
+                      walk(v)
+              elif isinstance(x, list):
+                  for v in x:
+                      walk(v)
+          walk(data)
+          print("listed=" + ("true" if s["version"] in found else "false"))
+          EOF
+          cat "$GITHUB_OUTPUT"
       - name: Install mcp-publisher
+        if: steps.listed.outputs.listed != 'true'
         run: curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
       - name: Log in with GitHub Actions OIDC
+        if: steps.listed.outputs.listed != 'true'
         run: ./mcp-publisher login github-oidc
       - name: Publish
+        if: steps.listed.outputs.listed != 'true'
         run: ./mcp-publisher publish
