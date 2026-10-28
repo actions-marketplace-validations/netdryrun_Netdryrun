@@ -342,7 +342,16 @@ def run(config: Config, *, deploy: bool = True, keep: bool = False, keep_on_fail
         order = {id(c): i for i, c in enumerate(config.checks)}
         report.results.sort(key=lambda r: order[id(r.check)])
 
-        for sc in config.scenarios:
+        # The main checks already show the lab never reached a testable state (no node gave usable state, no
+        # check passed on any sample): a scenario on a lab that never converged has no baseline to fault or
+        # recover to, so skip them and report inconclusive (exit 3), as the same lab without scenarios does.
+        # The results hold failed checks, so this is never a pass; only a lab that never gave state skips them,
+        # so a scenario snapshot that can't be read after a readable main phase still stops the run (exit 2).
+        scenarios = config.scenarios
+        if scenarios and inconclusive_reason(report.results):
+            log(f"The lab never reached a testable state; {len(scenarios)} scenario(s) skipped")
+            scenarios = []
+        for sc in scenarios:
             for check in sc.checks:
                 driver_for(check.node)
             report.results += run_scenario(lab, sc, drivers, settle=settle, hold=hold, on_result=on_result, log=log,

@@ -1654,3 +1654,39 @@ def test_run_scenario_gate_warning_is_added_to_each_check(monkeypatch):
     assert r.passed and ref.passed
     assert r.detail != ref.detail and r.detail.startswith(ref.detail)
     assert e.results[0].detail == r.detail
+
+
+# ----------------------------------------------------------------------------------------------- never testable
+
+def _bgpd_off_everywhere(monkeypatch):
+    nodes = ("r1", "r2", "r3")
+    return make(monkeypatch, **{n: {"neighbors_error": DriverError("bgpd is not running"),
+                                    "routes": {"default": never}} for n in nodes})
+
+
+def test_a_lab_that_never_reached_a_testable_state_is_inconclusive_with_scenarios_too(monkeypatch):
+    """bgpd off on every node: the main checks already show the lab never gave usable state, so the run is
+    inconclusive (exit 3) whether or not the file has scenarios; no fault is applied to a lab that never
+    converged, and the scenario's snapshot never gets to stop it with exit 2."""
+    checks = [chk("bgp_session", "s", neighbor="10.0.12.2", timeout=9), route("r", timeout=9)]
+    plain = _bgpd_off_everywhere(monkeypatch).run(checks, settle=0, hold=0)
+    assert plain.status == "inconclusive" and plain.exit_code == 3
+    e = _bgpd_off_everywhere(monkeypatch)
+    sc = Scenario("s", [Fault("link_down", "r1", "eth1")], [route("[s] x", node="r3")])
+    rep = e.run(checks, [sc], settle=0, hold=0)
+    assert rep.status == "inconclusive" and rep.exit_code == 3 and not rep.error
+    assert rep.inconclusive_reason == plain.inconclusive_reason
+    assert e.lab.link_events() == [] and e.injections == []
+    assert [r.check.name for r in rep.results] == ["s", "r"]
+    assert any("scenario" in line and "skipped" in line for line in e.logs)
+
+
+def test_unreadable_snapshot_after_a_readable_failure_is_still_an_error(monkeypatch):
+    """Only a lab that never gave usable state skips its scenarios. A main phase that failed on readable
+    state is a finding, and the scenario's unreadable snapshot still stops the run with exit 2 naming the node."""
+    e = make(monkeypatch, r1={"neighbors": up("10.0.12.2"), "routes": {"default": never}},
+             r2={"neighbors_error": DriverError("bgpd is not running"), "routes": {"default": never}})
+    sc = Scenario("s", [Fault("link_down", "r1", "eth1")], [route("[s] x", node="r3")])
+    rep = e.run([route("r", timeout=9)], [sc], settle=0, hold=0)
+    assert rep.status == "error" and rep.exit_code == 2 and "r2" in rep.error
+    assert e.lab.link_events() == []
