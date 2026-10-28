@@ -42,3 +42,7 @@ Three open models on one laptop, one run per ticket, ten tickets on two small FR
 ## Amendment 1 (2026-10-28, before any graded run)
 
 The first attempt was stopped during T01: `qwen3:4b` with a 32,768-token context ran 47% on CPU on this laptop and took about 8 minutes per turn, so ten tickets would have taken more than a day and measured the machine, not the agent. Changed before any ticket was graded: context **16,384** tokens and tool results cut at **8,000** characters (both still note the cut to the model). The stopped attempts are kept as `results/aborted-*`, not counted. `qwen3:30b-a3b` and `gpt-oss:20b` don't fit this GPU at any useful context; they run overnight, one model per night, when nothing else uses the machine.
+
+## Amendment 2 (2026-10-28, during the qwen3:4b run, from T04 on)
+
+Ollama unloaded the model after its default 5-minute idle time while the agent waited on a lab run, then reloaded it on the next turn. From T04 on, requests ask Ollama to keep the model loaded for 30 minutes (`keep_alive`). This changes load time only, not the model, its settings or its outputs; T01–T03 ran without it.

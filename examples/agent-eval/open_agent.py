@@ -144,7 +144,7 @@ class Agent:
         """One model turn: {"content", "thinking", "tool_calls": [{"id", "name", "arguments"}]}."""
         a = self.a
         if a.backend == "ollama":
-            body = {"model": a.model, "messages": messages, "tools": tools, "stream": False,
+            body = {"model": a.model, "messages": messages, "tools": tools, "stream": False, "keep_alive": "30m",
                     "options": {"num_ctx": a.num_ctx, "temperature": a.temperature}}
             if a.think is not None:
                 body["think"] = a.think
