@@ -235,6 +235,14 @@ def main() -> int:
         text = (ROOT / "server.json").read_text(encoding="utf-8")
         changed["server.json"] = re.sub(r'("version": ")[^"]*(")', rf'\g<1>{f["version"]}\g<2>', text)
 
+    # The site's structured data (schema.org SoftwareApplication) names the version for search engines and AI
+    # crawlers; it sat at 0.1.0 through two releases because nothing synced it.
+    site = "website/overrides/main.html"
+    text = (ROOT / site).read_text(encoding="utf-8")
+    new = re.sub(r'("softwareVersion": ")[^"]*(")', rf'\g<1>{f["version"]}\g<2>', text)
+    if new != text:
+        changed[site] = new
+
     # llms-full.txt is built from the docs, so build it after the docs are synced.
     for rel, text in changed.items():
         if not args.check:
