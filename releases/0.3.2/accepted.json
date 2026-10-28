@@ -312,6 +312,14 @@
    "reason": "equivalent: the sum of two durations already rounded to 0.1 s rounds the same to 0.01 s",
    "diff": "cf966c70d92a4995"
   },
+  "netdryrun.checks.x_inconclusive_reason__mutmut_21": {
+   "reason": "message text only: the text of a detail or error message",
+   "diff": "5de5f52b5490290e"
+  },
+  "netdryrun.checks.x_inconclusive_reason__mutmut_23": {
+   "reason": "message text only: the node list in the inconclusive reason",
+   "diff": "098155857408edf8"
+  },
   "netdryrun.checks.x_inconclusive_reason__mutmut_35": {
    "reason": "message text only: the text of a detail or error message",
    "diff": "e3e8c96aefb78d5d"
@@ -816,9 +824,17 @@
    "reason": "equivalent: ipaddress.ip_network only tests strict for truth; None and False both normalize host bits",
    "diff": "6615cf6257c361bc"
   },
+  "netdryrun.config.x__validate_check__mutmut_130": {
+   "reason": "equivalent: ipaddress.ip_network only tests strict for truth; None and False both normalize host bits",
+   "diff": "a7115318e66a6274"
+  },
   "netdryrun.config.x__validate_check__mutmut_150": {
    "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
    "diff": "bf73ccfcee8436ae"
+  },
+  "netdryrun.config.x__validate_check__mutmut_174": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "e300853a762c5e1a"
   },
   "netdryrun.config.x__validate_check__mutmut_178": {
    "reason": "equivalent: float('INF') == float('inf'); float() parses infinity case-insensitively",
@@ -827,6 +843,14 @@
   "netdryrun.config.x__validate_check__mutmut_199": {
    "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
    "diff": "672fd97bac0d10a2"
+  },
+  "netdryrun.config.x__validate_check__mutmut_202": {
+   "reason": "equivalent: float('INF') == float('inf'); float() parses infinity case-insensitively",
+   "diff": "10773183737cf3d9"
+  },
+  "netdryrun.config.x__validate_check__mutmut_223": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "86918fd658c4e48e"
   },
   "netdryrun.config.x__validate_check__mutmut_229": {
    "reason": "equivalent: the default state is lowercased before it is checked and stored, so 'ESTABLISHED' gives 'established'",
@@ -840,13 +864,25 @@
    "reason": "message text only: the 'did you mean' hint of a ConfigError raised either way (_suggest(None) gives no hint; exit 2 either way)",
    "diff": "37704837a0505218"
   },
+  "netdryrun.config.x__validate_check__mutmut_253": {
+   "reason": "equivalent: the default state is lowercased before it is checked and stored, so 'ESTABLISHED' gives 'established'",
+   "diff": "b22b639b7357792c"
+  },
+  "netdryrun.config.x__validate_check__mutmut_260": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "ced364def12748c4"
+  },
+  "netdryrun.config.x__validate_check__mutmut_261": {
+   "reason": "message text only: the 'did you mean' hint of a ConfigError raised either way (_suggest(None) gives no hint; exit 2 either way)",
+   "diff": "7ec23ccac44c7b25"
+  },
   "netdryrun.config.x__validate_check__mutmut_280": {
    "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
    "diff": "24019fe3d55ffdc4"
   },
   "netdryrun.config.x__validate_check__mutmut_304": {
    "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
-   "diff": "9585a9a1e9f57e77"
+   "diff": "870c4cb575800a28"
   },
   "netdryrun.config.x__validate_check__mutmut_305": {
    "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
@@ -900,13 +936,57 @@
    "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
    "diff": "103d6c14617ce79a"
   },
+  "netdryrun.config.x__validate_check__mutmut_328": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "4f13f08e5497ba13"
+  },
+  "netdryrun.config.x__validate_check__mutmut_329": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "b563248398debbf9"
+  },
+  "netdryrun.config.x__validate_check__mutmut_330": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "c4fbac6e9cfd4a72"
+  },
+  "netdryrun.config.x__validate_check__mutmut_331": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "b9148cd7e3cd5940"
+  },
+  "netdryrun.config.x__validate_check__mutmut_332": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "fe0cb5b46f27d977"
+  },
   "netdryrun.config.x__validate_check__mutmut_333": {
-   "reason": "equivalent: only present `is False` matters; a missing key gives None or True, neither is False",
-   "diff": "6ba4235bcf6b6894"
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "6e9b86f69a1339f7"
   },
   "netdryrun.config.x__validate_check__mutmut_335": {
-   "reason": "equivalent: only present `is False` matters; a missing key gives None or True, neither is False",
-   "diff": "c56449fb91a9bfc2"
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "8923343826f8c872"
+  },
+  "netdryrun.config.x__validate_check__mutmut_336": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "07f36e8e373998ef"
+  },
+  "netdryrun.config.x__validate_check__mutmut_337": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "63b854cc50270016"
+  },
+  "netdryrun.config.x__validate_check__mutmut_338": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "e7b4d6318f610349"
+  },
+  "netdryrun.config.x__validate_check__mutmut_339": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "21315d899948ecd4"
+  },
+  "netdryrun.config.x__validate_check__mutmut_340": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "3db1b1a4a712f66b"
+  },
+  "netdryrun.config.x__validate_check__mutmut_341": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "6e6bf8b8ef5e2c43"
   },
   "netdryrun.config.x__validate_check__mutmut_345": {
    "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
@@ -916,13 +996,33 @@
    "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
    "diff": "f2c9d0d041c5f0a1"
   },
+  "netdryrun.config.x__validate_check__mutmut_350": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "49bcc4dc8aef8967"
+  },
+  "netdryrun.config.x__validate_check__mutmut_357": {
+   "reason": "equivalent: only present `is False` matters; a missing key gives None or True, neither is False",
+   "diff": "9f3efe333aa83631"
+  },
   "netdryrun.config.x__validate_check__mutmut_358": {
    "reason": "equivalent: the default expect is lowercased before it is checked and stored, so 'SUCCESS' gives 'success'",
    "diff": "7c23e9d52344704c"
   },
+  "netdryrun.config.x__validate_check__mutmut_359": {
+   "reason": "equivalent: only present `is False` matters; a missing key gives None or True, neither is False",
+   "diff": "c3bd2a547e2d0062"
+  },
   "netdryrun.config.x__validate_check__mutmut_368": {
    "reason": "message text only: the 'did you mean' hint of a ConfigError raised either way (_suggest(None) gives no hint; exit 2 either way)",
    "diff": "fa1377878125d36d"
+  },
+  "netdryrun.config.x__validate_check__mutmut_369": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "f3fea94dc92d6c95"
+  },
+  "netdryrun.config.x__validate_check__mutmut_370": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "57ff9c48877b537e"
   },
   "netdryrun.config.x__validate_check__mutmut_372": {
    "reason": "message text only: the 'did you mean' hint of a ConfigError raised either way (_suggest(None) gives no hint; exit 2 either way)",
@@ -940,6 +1040,30 @@
    "reason": "message text only: the 'did you mean' hint of a ConfigError raised either way (_suggest(None) gives no hint; exit 2 either way)",
    "diff": "fe561eb2d34bde6d"
   },
+  "netdryrun.config.x__validate_check__mutmut_382": {
+   "reason": "equivalent: the default expect is lowercased before it is checked and stored, so 'SUCCESS' gives 'success'",
+   "diff": "85fb62542a92af22"
+  },
+  "netdryrun.config.x__validate_check__mutmut_392": {
+   "reason": "message text only: the 'did you mean' hint of a ConfigError raised either way (_suggest(None) gives no hint; exit 2 either way)",
+   "diff": "c68309a1bd9b2f57"
+  },
+  "netdryrun.config.x__validate_check__mutmut_396": {
+   "reason": "message text only: the 'did you mean' hint of a ConfigError raised either way (_suggest(None) gives no hint; exit 2 either way)",
+   "diff": "e3d7bea210f18f74"
+  },
+  "netdryrun.config.x__validate_check__mutmut_397": {
+   "reason": "message text only: the 'did you mean' hint of a ConfigError raised either way (_suggest(None) gives no hint; exit 2 either way)",
+   "diff": "967578218867c46e"
+  },
+  "netdryrun.config.x__validate_check__mutmut_398": {
+   "reason": "message text only: the 'did you mean' hint of a ConfigError raised either way (_suggest(None) gives no hint; exit 2 either way)",
+   "diff": "632550642ff03fd4"
+  },
+  "netdryrun.config.x__validate_check__mutmut_399": {
+   "reason": "message text only: the 'did you mean' hint of a ConfigError raised either way (_suggest(None) gives no hint; exit 2 either way)",
+   "diff": "9b938664199ca380"
+  },
   "netdryrun.config.x__validate_check__mutmut_407": {
    "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
    "diff": "10f44b7b026ca8fb"
@@ -947,6 +1071,14 @@
   "netdryrun.config.x__validate_check__mutmut_408": {
    "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
    "diff": "daf681f40ef221ad"
+  },
+  "netdryrun.config.x__validate_check__mutmut_431": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "ee2695f7459c5209"
+  },
+  "netdryrun.config.x__validate_check__mutmut_432": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "bd5647ae085ad4ca"
   },
   "netdryrun.config.x__validate_check__mutmut_434": {
    "reason": "message text only: `where` appears only inside ConfigError texts; the same inputs are accepted or refused",
@@ -959,6 +1091,18 @@
   "netdryrun.config.x__validate_check__mutmut_457": {
    "reason": "message text only: `where` appears only inside ConfigError texts; the same inputs are accepted or refused",
    "diff": "175139cdd54cdae3"
+  },
+  "netdryrun.config.x__validate_check__mutmut_458": {
+   "reason": "message text only: `where` appears only inside ConfigError texts; the same inputs are accepted or refused",
+   "diff": "98b24b5cd2f7aee5"
+  },
+  "netdryrun.config.x__validate_check__mutmut_465": {
+   "reason": "message text only: `where` appears only inside ConfigError texts; the same inputs are accepted or refused",
+   "diff": "3000bc72d17ca1b7"
+  },
+  "netdryrun.config.x__validate_check__mutmut_481": {
+   "reason": "message text only: `where` appears only inside ConfigError texts; the same inputs are accepted or refused",
+   "diff": "d96d2a39d9d08e9b"
   },
   "netdryrun.config.x__validate_check__mutmut_493": {
    "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
@@ -988,21 +1132,45 @@
    "reason": "message text only: `where` appears only inside ConfigError texts; the same inputs are accepted or refused",
    "diff": "a96f52be2b7147c7"
   },
+  "netdryrun.config.x__validate_check__mutmut_517": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "ccc302f8f8fe3b60"
+  },
+  "netdryrun.config.x__validate_check__mutmut_518": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "49eef19a981ff5e1"
+  },
+  "netdryrun.config.x__validate_check__mutmut_519": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "7415e63892b93d2d"
+  },
+  "netdryrun.config.x__validate_check__mutmut_520": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "ee19eea233aeb84d"
+  },
+  "netdryrun.config.x__validate_check__mutmut_521": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "02acfae60f898b9a"
+  },
+  "netdryrun.config.x__validate_check__mutmut_522": {
+   "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
+   "diff": "46e8d3dddb16ae29"
+  },
   "netdryrun.config.x__validate_check__mutmut_63": {
    "reason": "message text only: `where` appears only inside ConfigError texts; the same inputs are accepted or refused",
    "diff": "5c2f58e78e5774cb"
   },
   "netdryrun.config.x__validate_check__mutmut_88": {
    "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
-   "diff": "df4547d4b91a9314"
+   "diff": "60c3d66d569099d4"
   },
   "netdryrun.config.x__validate_check__mutmut_94": {
    "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
-   "diff": "bfb6d8785a720814"
+   "diff": "db95230dd7889787"
   },
   "netdryrun.config.x__validate_check__mutmut_95": {
    "reason": "message text only: the text of a ConfigError raised either way (exit 2)",
-   "diff": "19bc7dafaeb51914"
+   "diff": "19a217a2c975fcd6"
   },
   "netdryrun.config.x__validate_nodes__mutmut_17": {
    "reason": "message text only: the same exception is still raised, only its message changes",
@@ -2649,9 +2817,13 @@
    "reason": "message text only: the signal name in report.error of an interrupted run; status stays error and the exit code comes from the exception's signum",
    "diff": "a219c80c647aad6e"
   },
+  "netdryrun.runner.x_run__mutmut_203": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "dbc905e6c9f08df9"
+  },
   "netdryrun.runner.x_run__mutmut_206": {
-   "reason": "message text only: the signal name in report.error of an interrupted run; status stays error and the exit code comes from the exception's signum",
-   "diff": "05f296894939312f"
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "33379a97adeba284"
   },
   "netdryrun.runner.x_run__mutmut_207": {
    "reason": "message text only: the signal name in report.error of an interrupted run; status stays error and the exit code comes from the exception's signum",
@@ -2661,9 +2833,17 @@
    "reason": "message text only: the option name in the RunError text for a bad --settle/--hold (RunError, exit 2, either way)",
    "diff": "d823544d1da34df3"
   },
+  "netdryrun.runner.x_run__mutmut_210": {
+   "reason": "message text only: the signal name in report.error of an interrupted run; status stays error and the exit code comes from the exception's signum",
+   "diff": "280491cc1f58dfd7"
+  },
+  "netdryrun.runner.x_run__mutmut_211": {
+   "reason": "message text only: the signal name in report.error of an interrupted run; status stays error and the exit code comes from the exception's signum",
+   "diff": "9db72275d0258b18"
+  },
   "netdryrun.runner.x_run__mutmut_213": {
-   "reason": "message text only: the internal-error text in report.error; status error, exit 2, either way",
-   "diff": "20d0e5517f9e61bc"
+   "reason": "message text only: the signal name in report.error of an interrupted run; status stays error and the exit code comes from the exception's signum",
+   "diff": "abb7edfa7298b5fe"
   },
   "netdryrun.runner.x_run__mutmut_214": {
    "reason": "message text only: the internal-error text in report.error; status error, exit 2, either way",
@@ -2672,6 +2852,26 @@
   "netdryrun.runner.x_run__mutmut_216": {
    "reason": "equivalent: traceback.print_exc(file=None) prints to sys.stderr, as file=sys.stderr does",
    "diff": "4680df0532227e21"
+  },
+  "netdryrun.runner.x_run__mutmut_217": {
+   "reason": "message text only: the signal name in report.error of an interrupted run; status stays error and the exit code comes from the exception's signum",
+   "diff": "4842d52260dd9d56"
+  },
+  "netdryrun.runner.x_run__mutmut_218": {
+   "reason": "message text only: the signal name in report.error of an interrupted run; status stays error and the exit code comes from the exception's signum",
+   "diff": "3dd62ba50f166e18"
+  },
+  "netdryrun.runner.x_run__mutmut_224": {
+   "reason": "message text only: the internal-error text in report.error; status error, exit 2, either way",
+   "diff": "dba549cb69799678"
+  },
+  "netdryrun.runner.x_run__mutmut_225": {
+   "reason": "message text only: the internal-error text in report.error; status error, exit 2, either way",
+   "diff": "d4d9a9c1f2088aa5"
+  },
+  "netdryrun.runner.x_run__mutmut_227": {
+   "reason": "equivalent: traceback.print_exc(file=None) prints to sys.stderr, as file=sys.stderr does",
+   "diff": "990874f1e65b3ab6"
   },
   "netdryrun.runner.x_run__mutmut_229": {
    "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
@@ -2715,27 +2915,67 @@
   },
   "netdryrun.runner.x_run__mutmut_240": {
    "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
-   "diff": "2cbd0fe5b504e5e9"
+   "diff": "f7da92035549d78f"
+  },
+  "netdryrun.runner.x_run__mutmut_241": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "f90f7ee3f8a88aae"
   },
   "netdryrun.runner.x_run__mutmut_242": {
-   "reason": "message text only: deployed implies lab is set, so the changed branch can never run and only the 'left running' log line is lost",
-   "diff": "1227cc7263b74a0a"
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "0e3c873cb83dd9ba"
   },
   "netdryrun.runner.x_run__mutmut_243": {
    "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
-   "diff": "4a0ea563b82d0fb9"
+   "diff": "9da20b4eedf99514"
+  },
+  "netdryrun.runner.x_run__mutmut_245": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "3a19cd3c56ce566a"
+  },
+  "netdryrun.runner.x_run__mutmut_246": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "362bc294447674db"
+  },
+  "netdryrun.runner.x_run__mutmut_247": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "e8245aa47f0bf66f"
+  },
+  "netdryrun.runner.x_run__mutmut_248": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "fa2d9652a869517a"
+  },
+  "netdryrun.runner.x_run__mutmut_249": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "7acdfe3f8d7d0bf9"
   },
   "netdryrun.runner.x_run__mutmut_25": {
    "reason": "message text only: the option name in the RunError text for a bad --settle/--hold (RunError, exit 2, either way)",
    "diff": "c044d2b24be061b5"
   },
+  "netdryrun.runner.x_run__mutmut_250": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "0c5524f7cf126321"
+  },
   "netdryrun.runner.x_run__mutmut_251": {
-   "reason": "message text only: the signal name in report.error of an interrupted run; status stays error and the exit code comes from the exception's signum",
-   "diff": "ee0e80535db56e93"
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "f2cd716d7f14e33f"
+  },
+  "netdryrun.runner.x_run__mutmut_253": {
+   "reason": "message text only: deployed implies lab is set, so the changed branch can never run and only the 'left running' log line is lost",
+   "diff": "331d4ba2bd7e5466"
+  },
+  "netdryrun.runner.x_run__mutmut_254": {
+   "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
+   "diff": "1fa90f4a6cae8176"
   },
   "netdryrun.runner.x_run__mutmut_26": {
    "reason": "message text only: the option name in the RunError text for a bad --settle/--hold (RunError, exit 2, either way)",
    "diff": "79c4a3fbc9facb87"
+  },
+  "netdryrun.runner.x_run__mutmut_262": {
+   "reason": "message text only: the signal name in report.error of an interrupted run; status stays error and the exit code comes from the exception's signum",
+   "diff": "4a14c4017048331f"
   },
   "netdryrun.runner.x_run__mutmut_53": {
    "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",

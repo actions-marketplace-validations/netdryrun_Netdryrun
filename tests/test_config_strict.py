@@ -392,3 +392,17 @@ def test_ipv6_scope_id_must_be_an_interface_name(tmp_path, target):
 def test_ipv6_scope_id_with_an_interface_name_still_loads(tmp_path):
     cfg = load(one_check(tmp_path, '{type: ping, node: r1, target: "fe80::1%eth1.100"}'))
     assert cfg.checks[0].params["target"] == "fe80::1%eth1.100"
+
+
+@pytest.mark.parametrize("check", [
+    '{{type: bgp_session, node: r1, neighbor: "{a}"}}',
+    '{{type: ping, node: r1, target: "{a}"}}',
+    '{{type: ping, node: r1, target: "fe80::2", source: "{a}"}}',
+    '{{type: bgp_route, node: r1, prefix: 10.0.0.0/24, next_hop: "{a}"}}',
+])
+@pytest.mark.parametrize("address", ["fe80::1%x\nconfigure",      # the scope is everything after the first %:
+                                     "fe80::1%eth1%x\nconfigure",  # an interface name, then more text,
+                                     "fe80::1%x\ny%eth1"])         # or text ending in an interface name
+def test_every_address_key_refuses_a_scope_that_is_not_an_interface_name(tmp_path, check, address):
+    with pytest.raises(ConfigError, match=r"checks\[0\].*scope"):
+        load(one_check(tmp_path, check.format(a=address)))
