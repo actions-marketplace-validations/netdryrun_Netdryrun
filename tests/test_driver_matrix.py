@@ -309,6 +309,9 @@ def _cells() -> list[Cell]:
     add("junos", "fail", "leaked bgp path", {**br, "present": False}, paths(fx("junos_route_paths.txt")))
     add("junos", "fail", "wrong as_path", {**br, "as_path": "65999"}, paths(fx("junos_route_paths.txt")))
     add("junos", "fail", "wrong local_pref", {**br, "local_pref": 999}, paths(fx("junos_route_paths.txt")))
+    add("junos", "fail", "wrong med", {**br, "med": 0}, paths(fx("junos_route_paths.txt")))   # best path's MED is 50
+    add("junos", "fail", "as_path_regex matches only the backup path", {**br, "as_path_regex": "^65003"},
+        paths(fx("junos_route_paths.txt")))
     add("junos", "fail", "community missing", {**br, "communities": ["65000:999"]}, paths(fx("junos_route_paths.txt")))
     add("junos", "fail", "no-export present", {"type": "bgp_route", "prefix": "10.51.0.0/24",
                                                "without_communities": ["no-export"]}, paths(fx("junos_route_ibgp_noexport.txt")))
