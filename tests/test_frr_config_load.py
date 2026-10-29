@@ -470,3 +470,11 @@ def test_line_n_is_counted_the_way_vtysh_counts_it(sep):
 def test_a_command_that_starts_like_end_is_still_a_header():
     text = "endpoint-group A\n member 1\n"
     assert frr.config_sections(text)[1] == (("endpoint-group A",), "member 1")
+
+
+def test_a_line_longer_than_vtysh_reads_at_once_clears_nothing():
+    # delta review round 8: vtysh's 4096-byte line buffer would count it as several lines
+    conf = "! " + "x" * 5000 + "\n" + GR_CONF.split("\n", 1)[1]
+    assert frr.parse_config_load_errors(GR_LOG, running={"bgpd": GR_RUNNING}, config=GR_CONF) == []
+    assert frr.parse_config_load_errors(GR_LOG, running={"bgpd": GR_RUNNING}, config=conf) == [
+        "line 64: bgp graceful-restart (rejected by bgpd)"]

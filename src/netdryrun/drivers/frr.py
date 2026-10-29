@@ -161,7 +161,9 @@ def parse_config_load_errors(text: str, running: dict[str, str] | None = None, c
     left-margin block must be in that daemon's running config as written: vtysh places a line by the commands
     before it, not by its indentation, so the section check alone could match a misindented line elsewhere."""
     applied = {d: Counter(config_sections(t)) for d, t in (running or {}).items()}
-    file = config_sections(config) if config is not None else []
+    # vtysh reads a line into a 4096-byte buffer: a longer one counts as several lines, shifting every later N
+    file = (config_sections(config) if config is not None
+            and all(len(ln.encode()) < 4095 for ln in _lines(config)) else [])
     in_file = Counter(file)
     lines: dict[tuple[int, str], tuple[bool, str, str]] = {}   # (line, source) -> (applied, daemon, message)
     failures: list[tuple[str, str]] = []

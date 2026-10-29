@@ -237,8 +237,14 @@ Anything else keeps the run an error.
 | # | Finding | Class | Decision |
 |---|---|---|---|
 | R7-1 | vtysh numbers `frr.conf` by `
-` only (fgets), while `str.splitlines()` also splits on ``, ``, U+2028 and a lone ``. One such character in a comment moved line N onto an applied line in another block, and the reviewer cleared a refused line that way | **false-pass** | Fixed: the file and the running config are cut only at `
+` only (fgets), while `str.splitlines()` also splits on ``, ``, U+2028 and a lone `
+`. One such character in a comment moved line N onto an applied line in another block, and the reviewer cleared a refused line that way | **false-pass** | Fixed: the file and the running config are cut only at `
 `, as vtysh does (`test_line_n_is_counted_the_way_vtysh_counts_it`, four separators) |
 | R7-2 | A command starting with "end" was treated as a block end | other | Fixed: only `!`, `exit`, `end` and `exit-...` close a block (`test_a_command_that_starts_like_end_is_still_a_header`) |
 
 Checked clean: duplicate lines in a block, lines FRR prints by default, the same first line twice in the running config, index edges, CRLF, comments and `exit` after the line.
+
+## Delta review, round 8 (fresh Opus agent, 2026-10-30): `git diff cd7831d..eb9b8b0`
+
+The reviewer checked line numbering against vtysh's fgets loop on an empty file, a file with no final newline, `
+` endings and a trailing blank line. It found no way to clear a refused line through this diff. One contrived residue: vtysh reads into a 4096-byte buffer, so a longer line would count as several lines and shift N. Closed: if any line of `frr.conf` is that long, nothing is cleared (`test_a_line_longer_than_vtysh_reads_at_once_clears_nothing`).
