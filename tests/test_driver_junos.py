@@ -508,3 +508,10 @@ def test_ibgp_next_hop_is_the_protocol_next_hop():
     assert q.local_pref == 200 and q.next_hop == "10.0.1.2" and q.communities == ["65001:51", "65535:65281"]  # no-export, canonical
     n = junos.parse_bgp_neighbors(read("junos_bgp_neighbor_ibgp.txt"), "master")
     assert n["10.0.1.2"].state == "established" and n["10.0.1.2"].prefixes == {"ipv4-unicast": 2}
+
+
+def test_vrf_captures_from_the_live_check_run():
+    """The VRF session the live `netdryrun check` read as down, and ping inside the VRF (3/3)."""
+    n = junos.parse_bgp_neighbors(read("junos_bgp_neighbor_vrf_idle.txt"), "CUST")
+    assert n["10.0.199.2"].state != "established" and n["10.0.199.2"].prefixes == {}
+    assert junos.parse_ping(read("junos_ping_vrf_local.txt")) == (3, 3)

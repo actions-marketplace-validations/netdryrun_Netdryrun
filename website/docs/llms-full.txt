@@ -2688,7 +2688,7 @@ Netdryrun reads each network OS through a driver. A driver is only as good as th
 | Nokia SR Linux | `ghcr.io/nokia/srlinux:26.7.2` | Public image (ghcr.io). | 2026-10-27 | released |
 | SONiC | `docker-sonic-vs:master.1258173-c10162df4` | From the SONiC project's CI build server; contains FRR 10.7.1. Pinned by build id. | 2026-10-28 | released |
 | Arista EOS (bring your own cEOS image) | `ceos:4.36.3M` | Bring your own image (free from arista.com, cannot be redistributed). | 2026-10-28 | released |
-| Juniper cJunosEvolved (beta) | `cjunosevolved:26.2R1.7-EVO` | Bring your own image (free from Juniper for non-production labs, cannot be redistributed). Runs a VM: needs KVM and about 8 GB per node. | 2026-10-28 | beta |
+| Juniper cJunosEvolved (beta) | `cjunosevolved:26.2R1.7-EVO` | Bring your own image (free from Juniper for non-production labs, cannot be redistributed). Runs a VM: needs KVM and about 8 GB per node. | 2026-10-29 | beta |
 
 Every shipped example pins its image, so a new NOS release shows up as a deliberate change with re-captured test data, never as a silent change under the tests. `scripts/capture_fixtures.sh` captures the test data again from the pinned images, and `scripts/fixture_shape.py` reports any change in shape. A different image or version may work; it is not verified until it appears here.
 
