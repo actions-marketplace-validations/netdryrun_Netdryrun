@@ -53,7 +53,12 @@
             "config": {"type": "string", "minLength": 1, "description": "Absolute path of the netdryrun.yml that ran (the server's view of the path the agent passed)"},
             "lab_deployed_by_this_run": {"type": "boolean", "description": "true for dry_run. false for run_checks: the lab was already running, so the files on disk may not be what it runs"},
             "files": {"type": "object", "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{64}$"}},
-            "complete": {"type": "boolean", "description": "false when a file could not be read, was outside NETDRYRUN_MCP_ROOT, was named with ~, ${VAR} or a URL (resolved by containerlab, not read here), or there were more than 200"}
+            "complete": {"type": "boolean", "description": "false when a file could not be read, was outside NETDRYRUN_MCP_ROOT, was named with ~, ${VAR} or a URL (resolved by containerlab, not read here), or there were more than 200"},
+            "nodes": {"type": "object", "description": "Each lab node: its image, the image's digest and the NOS version it reported (null where not read), and its config load (clean, the lines the NOS rejected, not verified on <driver>, or not checked when the run stopped first). A run whose config didn't load cleanly is status error, never passed.",
+                      "additionalProperties": {"type": "object", "required": ["image", "image_digest", "nos_version", "config_load"],
+                                               "properties": {"image": {"type": "string"}, "image_digest": {"type": ["string", "null"]},
+                                                              "nos_version": {"type": ["string", "null"]},
+                                                              "config_load": {"oneOf": [{"type": "string"}, {"type": "array", "items": {"type": "string"}}]}}}}
           }
         },
         "verdict": {"$ref": "#/$defs/verdict"}

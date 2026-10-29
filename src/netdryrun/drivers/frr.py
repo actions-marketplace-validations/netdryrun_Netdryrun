@@ -51,6 +51,12 @@ def _bgp_json(command: str, text: str) -> dict:
 _LOAD_ERROR = re.compile(r"^line (\d+): (%[^:\[\n]*?)(?:\[\d+\])?:\s*(.*?)\s*$", re.M)
 
 
+def parse_version(text: str) -> str | None:
+    """`show version`: "FRRouting 10.4.1_git (r1) on Linux(...)" -> "FRRouting 10.4.1_git"."""
+    m = re.search(r"^(FRRouting \S+)", text, re.M)
+    return m.group(1) if m else None
+
+
 def parse_config_load_errors(log: str) -> list[str]:
     """Each config line FRR rejected at boot, once, in file order."""
     out: list[str] = []
@@ -239,6 +245,12 @@ class FrrDriver(Driver):
 
     def config_load_errors(self) -> list[str] | None:
         return parse_config_load_errors(self.lab.logs(self.node))
+
+    def nos_version(self) -> str | None:
+        try:
+            return parse_version(self._vtysh("show version", []))
+        except DriverError:
+            return None
 
     def bgp_neighbors(self, vrf: str = "default") -> Observation:
         vrf = check_vrf_name(vrf)

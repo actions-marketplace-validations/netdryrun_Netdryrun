@@ -78,6 +78,9 @@ class FakeLab:
     def existing_containers(self):
         return self.existing
 
+    def image_digest(self, image):
+        return {"quay.io/frrouting/frr:10.4.1": "quay.io/frrouting/frr@sha256:" + "a" * 64}.get(image)
+
     def deploy(self):
         self.deployed += 1
         self.events.append(("deploy",))
@@ -143,6 +146,9 @@ class Drv:
 
     def config_load_errors(self):
         return self.load_errors
+
+    def nos_version(self):
+        return "FRRouting 10.4.1_git"
 
     def bgp_neighbors(self, vrf="default"):
         self.calls.append(("bgp_neighbors", vrf, self.clock.now))
@@ -426,7 +432,8 @@ def test_report_started(monkeypatch):
     rep = e.run([route("a")])
     assert iso(rep.started) and rep.lab_name == "t"
     assert rep.environment["nodes"]["r1"] == {"kind": "linux", "image": "quay.io/frrouting/frr:10.4.1",
-                                              "config_load": "clean"}
+                                              "config_load": "clean", "nos_version": "FRRouting 10.4.1_git",
+                                              "image_digest": "quay.io/frrouting/frr@sha256:" + "a" * 64}
     assert set(rep.environment) == {"netdryrun", "containerlab", "python", "host", "nodes"}
 
 
@@ -1837,3 +1844,15 @@ def test_a_driver_that_cannot_verify_the_load_says_so(monkeypatch):
     rep = e.run([leak("neg")], settle=10, hold=10)
     assert rep.status == "passed"
     assert rep.environment["nodes"]["r3"]["config_load"] == "not verified on eos"
+
+
+def test_the_report_names_each_nodes_image_digest_and_nos_version(monkeypatch):
+    """A verdict is tied to what ran: the image by digest (a tag can move) and the version the NOS reports. Not
+    readable is null, never a guess."""
+    e = make(monkeypatch, r1={"neighbors": up("10.0.12.2"), "routes": {"default": always}})
+    e.drivers["r3"].nos_version = lambda: None
+    e.lab.image_digest = lambda image: None
+    rep = e.run([route("pos")])
+    nodes = rep.environment["nodes"]
+    assert nodes["r1"]["nos_version"] == "FRRouting 10.4.1_git" and nodes["r3"]["nos_version"] is None
+    assert all(n["image_digest"] is None for n in nodes.values())

@@ -459,7 +459,8 @@ def _with_warnings(warnings: dict[int, str], on_result=None):
 
 def _config_load(lab, driver_for, report: RunReport) -> list[str]:
     """Each node's config-load result in the report (environment.nodes.<node>.config_load: "clean", the rejected
-    lines, or "not verified on <driver>"); returns the rejections, as "node: line", that make the run an error.
+    lines, or "not verified on <driver>"), with its image digest and NOS version; returns the rejections, as
+    "node: line", that make the run an error.
     A NOS that skips a line it rejects (FRR does, line by line) runs a config other than the file: checks that
     pass there say nothing about the file (live repro, FRR 10.4.1: a misspelled change line, every check passed)."""
     rejected: list[str] = []
@@ -471,6 +472,9 @@ def _config_load(lab, driver_for, report: RunReport) -> list[str]:
             continue   # a node without a routing driver (a host)
         errors = drv.config_load_errors()
         entry = nodes.setdefault(node, {})
+        # what ran, so the verdict is tied to it: the image by digest and the version the NOS reports
+        entry["nos_version"] = drv.nos_version()
+        entry["image_digest"] = lab.image_digest(lab.nodes[node].image)
         if errors is None:
             entry["config_load"] = f"not verified on {drv.name}"
         elif errors:

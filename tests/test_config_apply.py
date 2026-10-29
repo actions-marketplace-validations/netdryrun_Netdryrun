@@ -56,3 +56,11 @@ def test_verify_stops_on_a_side_whose_config_did_not_load():
         vrun.check_config_loaded(Lab(), {"r1": "frr", "r2": "frr", "h1": ""}, "after")
     assert "after" in str(e.value) and "r2" in str(e.value) and "default-orignate" in str(e.value)
     vrun.check_config_loaded(Lab(), {"r1": "frr", "h1": ""}, "before")      # clean: no error
+
+
+def test_frr_reports_its_version():
+    from netdryrun.drivers.frr import parse_version
+
+    text = "FRRouting 10.4.1_git (edge1) on Linux(6.18.54.1-microsoft-standard-WSL2).\nCopyright 1996-2005 ...\n"
+    assert parse_version(text) == "FRRouting 10.4.1_git"
+    assert parse_version("% Unknown command\n") is None

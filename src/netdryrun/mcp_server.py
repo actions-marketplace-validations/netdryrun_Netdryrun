@@ -194,8 +194,18 @@ def _summary(rep, evidence_path: str | None, tested: dict | None = None) -> dict
         "failures": _failures(rep),
         "evidence_file": evidence_path,
         "verdict": VERDICTS.get(rep.status, DO_NOT_APPLY),
-        "tested": tested if tested is not None else _tested(rep.config, deployed=False),
+        "tested": _with_nodes(tested if tested is not None else _tested(rep.config, deployed=False), rep),
     }
+
+
+def _with_nodes(tested: dict, rep) -> dict:
+    """`tested.nodes`: each node's image, its digest and the NOS version it reported (null where not read), and
+    its config load, so a verdict is tied to what ran, not only to the files."""
+    nodes = {}
+    for name, n in sorted((rep.environment.get("nodes") or {}).items()):
+        nodes[name] = {"image": n.get("image", ""), "image_digest": n.get("image_digest"),
+                       "nos_version": n.get("nos_version"), "config_load": n.get("config_load", "not checked")}
+    return {**tested, "nodes": nodes}
 
 
 WSL_MOUNTS = Path("/mnt")  # where WSL mounts the Windows drives

@@ -199,6 +199,10 @@ class Driver:
         """Every route in the table (used by `netdryrun record`)."""
         raise NotImplementedError
 
+    def nos_version(self) -> str | None:
+        """The NOS version the node reports, or None where this driver doesn't read it (yet)."""
+        return None
+
     def config_load_errors(self) -> list[str] | None:
         """The config lines the NOS rejected when it loaded its startup config ([] when none), or None when this
         driver can't tell. A run never passes on a node whose config didn't load cleanly."""

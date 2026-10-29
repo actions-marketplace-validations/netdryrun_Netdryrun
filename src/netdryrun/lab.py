@@ -275,6 +275,18 @@ class Lab:
                 time.sleep(5)
         log(f"setup done on {node} ({len(commands)} commands)")
 
+    def image_digest(self, image: str) -> str | None:
+        """The image by digest (`repo@sha256:...`), as Docker has it locally: a tag can move, a digest can't.
+        None when Docker has no digest for it (an image built locally, never pushed)."""
+        r = _run(["docker", "image", "inspect", "--format", "{{json .RepoDigests}}", image], timeout=60)
+        if r.rc != 0:
+            return None
+        try:
+            digests = json.loads(r.stdout.strip() or "[]")
+        except ValueError:
+            return None
+        return digests[0] if isinstance(digests, list) and digests and isinstance(digests[0], str) else None
+
     def logs(self, node: str, tail: int = 5000) -> str:
         """The node container's log (stdout and stderr): where a NOS reports the config lines it rejected at boot."""
         r = _run(["docker", "logs", "--tail", str(tail), self.nodes[node].container], timeout=60)

@@ -354,6 +354,8 @@ FAIL_SAFE = [
     ("frr.parse_vrfs", lambda t: frr.parse_vrfs(t), ["frr_route.txt"],
      lambda r: isinstance(r, dict) and all(isinstance(k, str) and isinstance(v, bool) for k, v in r.items())),
     ("frr.parse_ping", frr.parse_ping, ["frr_ping.txt", "srl_ping.txt", "eos_ping.txt"], _ping_ok),
+    ("frr.parse_version", frr.parse_version, ["frr_route.txt", "frr_ping.txt"],
+     lambda r: r is None or (isinstance(r, str) and r.startswith("FRRouting "))),
     ("frr.parse_config_load_errors", frr.parse_config_load_errors, ["frr_route.txt", "frr_ping.txt"],
      lambda r: isinstance(r, list) and all(isinstance(x, str) and x.startswith("line ") for x in r)),
     ("frr.parse_default_local_pref", lambda t: frr.parse_default_local_pref(t), ["frr_bgp_table_header.txt"],

@@ -203,7 +203,8 @@ def test_the_result_names_the_files_it_tested(tmp_path, monkeypatch):
         "netdryrun.yml": _hash(lab / "netdryrun.yml"), "topology.clab.yml": _hash(lab / "topology.clab.yml"),
         "configs/daemons": _hash(lab / "configs" / "daemons"), "configs/r1.conf": _hash(lab / "configs" / "r1.conf"),
         "startup/r2.cfg": _hash(lab / "startup" / "r2.cfg"),
-        "../elsewhere.conf": _hash(outside)}, "complete": True}   # a file outside the folder is used too (a shared config)
+        "../elsewhere.conf": _hash(outside)}, "complete": True,   # a file outside the folder is used too (a shared config)
+        "nodes": {}}   # the fake run reports no nodes (tests/test_mcp_result_schema.py covers tested.nodes)
     # NETDRYRUN_MCP_ROOT still confines what is read: a file outside it is not hashed, and the list says it is partial
     monkeypatch.setenv("NETDRYRUN_MCP_ROOT", str(lab))
     confined = json.loads(mcp_server.dry_run(str(lab)))["tested"]

@@ -237,3 +237,22 @@ def test_tested_is_in_the_result_schema():
         _validate({k: v for k, v in s.items() if k != "tested"}, "run_result")
     with pytest.raises(jsonschema.ValidationError):
         _validate({**s, "tested": {"lab_deployed_by_this_run": True, "files": {"netdryrun.yml": "not-a-hash"}}})
+
+
+def test_tested_names_each_nodes_image_digest_and_nos_version():
+    """The verdict is tied to what ran: `tested.nodes` has each node's image, its digest and the NOS version
+    (null where not read), and what its config load gave."""
+    nodes = {"r1": {"kind": "linux", "image": "quay.io/frrouting/frr:10.4.1", "config_load": "clean",
+                    "nos_version": "FRRouting 10.4.1_git", "image_digest": "quay.io/frrouting/frr@sha256:" + "a" * 64},
+             "s1": {"kind": "nokia_srlinux", "image": "ghcr.io/nokia/srlinux:26.7.2", "config_load": "not verified on srlinux",
+                    "nos_version": None, "image_digest": None}}
+    s = mcp_server._summary(_rep([_res(True)], nodes=nodes), None,
+                            {"config": "/lab/netdryrun.yml", "lab_deployed_by_this_run": True, "files": {}, "complete": True})
+    assert s["tested"]["nodes"] == {
+        "r1": {"image": "quay.io/frrouting/frr:10.4.1", "image_digest": "quay.io/frrouting/frr@sha256:" + "a" * 64,
+               "nos_version": "FRRouting 10.4.1_git", "config_load": "clean"},
+        "s1": {"image": "ghcr.io/nokia/srlinux:26.7.2", "image_digest": None, "nos_version": None,
+               "config_load": "not verified on srlinux"}}
+    _validate(s, "run_result")
+    with pytest.raises(jsonschema.ValidationError):
+        _validate({**s, "tested": {**s["tested"], "nodes": {"r1": {"image": 3}}}}, "run_result")

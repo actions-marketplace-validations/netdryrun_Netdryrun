@@ -59,6 +59,7 @@ class FakeLab:
     def __init__(self, world, nodes=("r1", "r2", "r3"), existing=(), deploy_error=None):
         self.world, self.name, self.topology = world, "t", Path("t.clab.yml")
         self.nodes = {n: Node(n, f"clab-t-{n}", "linux", "quay.io/frrouting/frr:10.4.1") for n in nodes}
+        self.image_digest = lambda image: None
         self.links = [(("r1", "eth1"), ("r2", "eth1")), (("r2", "eth2"), ("r3", "eth1"))]
         self.existing, self.deploy_error = set(existing), deploy_error
         self.deployed = self.destroyed = 0
@@ -127,6 +128,9 @@ class FakeDriver:
 
     def config_load_errors(self):
         return []   # the config loaded cleanly (tests/test_config_apply.py covers a rejected line)
+
+    def nos_version(self):
+        return None
 
     def bgp_neighbors(self, vrf="default"):
         if self.neighbors_error:
