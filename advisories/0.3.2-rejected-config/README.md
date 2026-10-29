@@ -19,7 +19,7 @@ maximum-prefix (Command incomplete); line 23: neighbor 10.9.9.9 route-map ALLOW-
 config and run again.
 ```
 
-A daemon can complain about a line and still apply it (bgpd answers `bgp graceful-restart` with "Failure to communicate" on FRR 10.4.1). So such a line doesn't count when line N of the node's `frr.conf` is that line and that daemon's own running config (`vtysh -d <daemon>`) has it in the same section (the same `router bgp`, VRF and address family), at least as many times as the file does. Every other kind of rejection always counts, and so does any line when the running config or `frr.conf` can't be read. (Without that, 0.3.3's own release gate saw a false error on Verdict Corpus case 29.) A boot log that can't be read is an error too. Config applied with `setup:` commands already failed the run in 0.3.2, because `vtysh -c` exits 1 on a rejected line.
+A daemon can complain about a line and still apply it (bgpd answers `bgp graceful-restart` with "Failure to communicate" on FRR 10.4.1). So such a line doesn't count when line N of the node's `frr.conf` is that line and that daemon's own running config (`vtysh -d <daemon>`) has it under the same headers at every depth (`router bgp`, VRF, address family, `vni`), at least as many times as the file does. Every other kind of rejection always counts, and so does any line when the running config or `frr.conf` can't be read. (Without that, 0.3.3's own release gate saw a false error on Verdict Corpus case 29.) A boot log that can't be read is an error too. Config applied with `setup:` commands already failed the run in 0.3.2, because `vtysh -c` exits 1 on a rejected line.
 
 ## Proof
 

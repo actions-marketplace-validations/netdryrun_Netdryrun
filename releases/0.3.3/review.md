@@ -196,3 +196,19 @@ The first fix for L1 compared each reported line's text with any line of the run
 | R4-4 | The case-18 exemption had no limits: an error on the case, a missing case, or a case added to the yml went unnoticed | other (gate) | Fixed: a BLOCKER holds the exemption. The list is pinned in the gate (`NONDETERMINISTIC_PINNED`), the repeats must have run, and any run that ends in error blocks (`test_the_nondeterministic_exemption_holds_only_as_pinned`). The distribution itself stays INFO, as decided. A change that makes Netdryrun always approve case 18 shows only there, in the recorded verdicts |
 | R4-5 | `--keep` kept run 1's lab, and run 2 deployed over it | other | Fixed: only the last run keeps its lab (`test_keep_reaches_only_the_last_run_of_a_nondeterministic_case`) |
 | minor | `run.py`'s own RESULTS.md marked case 18; a yml key naming no case changed the v2 count | other | Fixed |
+
+## Delta review, round 5 (fresh Opus agent, 2026-10-30): `git diff 2d63399..02ee953`
+
+| # | Finding | Class | Decision |
+|---|---|---|---|
+| R5-1 | Sections stopped at the address family, so a line FRR prints in a sibling block cleared a refused one: `route-target both` in `vni 20` prints as `route-target import`, matching the line refused in `vni 10` | **false-pass** | Fixed: a section is every header above the line, from indentation, at any depth. A file indented differently from FRR's output never matches, which gives a false error, never a false pass (`test_every_depth_is_a_section`, `test_a_line_another_block_prints_the_same_does_not_clear_it`, `test_a_flat_file_never_matches_an_indented_running_config`) |
+| R5-2 | A change that made Netdryrun approve case 18 in every run passes the gate silently | other (gate) | Shown, not blocking, as decided (it happens by chance, about 1 run in 8 from the history): the INFO line fails and names the case (`test_a_harmful_nondeterministic_case_approved_in_every_run_is_shown`). The deterministic replacement case is the real fix, in a later corpus version |
+| — | Static on `02ee953`: ruff B905 (`zip` without `strict=`) in a new test | other | Fixed |
+
+The reviewer checked clean:
+- per-daemon reads: one unreadable daemon keeps only its own lines;
+- partial or empty output fails closed;
+- duplicate lines;
+- mgmtd;
+- the gate's exemption BLOCKER wiring, including v1 with an empty pin;
+- `--keep`.

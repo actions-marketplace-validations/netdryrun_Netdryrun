@@ -1003,6 +1003,12 @@ def nondeterministic_problems(version: str, nd: dict, new: dict) -> list[str]:
     return out
 
 
+def nd_always_approved(published: dict, rerun: dict) -> bool:
+    """A harmful nondeterministic case that Netdryrun approved in every run of this release."""
+    runs = rerun.get("runs") or []
+    return published.get("expected") == "unsafe" and bool(runs) and all(r.get("netdryrun") == "safe" for r in runs)
+
+
 def nondeterministic_cases(corpus: Path) -> dict:
     """corpus/[v2/]NONDETERMINISTIC.yml: cases whose verdict follows a race in the lab, recorded and never a blocker."""
     import yaml   # the gate's Python has Netdryrun's dependencies (Layer 5 installs the package)
@@ -1059,9 +1065,13 @@ def live_corpora(live: Live, args) -> None:
                       BLOCKER, not problems, "; ".join(problems) or ", ".join(sorted(nd)))
             seen = "; ".join(f"{cid}: " + ", ".join(str(r.get("netdryrun")) for r in new.get(cid, {}).get("runs", []))
                              for cid in nd)
+            # every run approving a harmful case is shown as a failed INFO line: not a blocker (it happens by chance),
+            # but in plain sight
+            approved = [cid for cid in nd if nd_always_approved(old.get(cid, {}), new.get(cid, {}))]
             layer.add(f"corpus-{version}-nondeterministic",
                       f"Verdict Corpus {version}: nondeterministic cases recorded (known, not scored, never a blocker)",
-                      INFO, True, f"Netdryrun verdicts per run: {seen}")
+                      INFO, not approved, f"Netdryrun verdicts per run: {seen}"
+                      + (f"; every run approved the harmful change: {', '.join(approved)}" if approved else ""))
         if p.code == 0 and fresh.exists():
             ok, summary = harmful_approved_check(list(old.values()), list(new.values()), nd)
             layer.add(f"corpus-{version}-harmful-approved",

@@ -152,7 +152,7 @@ def test_v2_marks_case_18_nondeterministic_without_editing_the_case():
 # error in any run is a blocker (an error is never part of the race).
 
 def _nd_row(*runs):
-    return {"runs": [dict(zip(("ping", "sessions", "netdryrun"), r)) for r in runs]}
+    return {"runs": [dict(zip(("ping", "sessions", "netdryrun"), r, strict=True)) for r in runs]}
 
 
 def test_the_nondeterministic_exemption_holds_only_as_pinned():
@@ -191,3 +191,10 @@ def test_keep_reaches_only_the_last_run_of_a_nondeterministic_case(monkeypatch, 
     monkeypatch.setattr(sys, "argv", ["run.py", "--corpus", "v2", "--case", "18-", "--keep", "--workdir", str(tmp_path)])
     assert run_py.main() == 0
     assert calls == [False, False, True]
+
+
+def test_a_harmful_nondeterministic_case_approved_in_every_run_is_shown():
+    assert gate.nd_always_approved({"expected": "unsafe"}, _nd_row(("safe", "safe", "safe"), ("safe", "safe", "safe")))
+    assert not gate.nd_always_approved({"expected": "unsafe"}, _nd_row(("safe", "safe", "safe"), ("safe", "safe", "unsafe")))
+    assert not gate.nd_always_approved({"expected": "safe"}, _nd_row(("safe", "safe", "safe"),))
+    assert not gate.nd_always_approved({"expected": "unsafe"}, {})

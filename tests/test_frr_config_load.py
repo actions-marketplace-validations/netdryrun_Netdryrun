@@ -326,8 +326,33 @@ def test_the_sections_of_a_config():
         ((), "router bgp 65000 vrf RED"), (("router bgp 65000 vrf RED",), "neighbor 1.1.1.1 remote-as 1"),
         (("router bgp 65000 vrf RED",), "address-family ipv4 unicast"),
         (("router bgp 65000 vrf RED", "address-family ipv4 unicast"), "network 10.0.0.0/8"),
-        (("router bgp 65000 vrf RED", "address-family ipv4 unicast"), "exit-address-family"),
+        (("router bgp 65000 vrf RED",), "exit-address-family"),
         ((), "exit"), ((), "!"), ((), "ip route 1.0.0.0/8 Null0")]
+
+
+def test_every_depth_is_a_section():
+    text = ("router bgp 65000\n address-family l2vpn evpn\n  vni 10\n   route-target import 65000:99\n  exit-vni\n"
+            "  vni 20\n   route-target import 65000:99\n")
+    evpn = ("router bgp 65000", "address-family l2vpn evpn")
+    assert frr.config_sections(text)[3] == ((*evpn, "vni 10"), "route-target import 65000:99")
+    assert frr.config_sections(text)[6] == ((*evpn, "vni 20"), "route-target import 65000:99")
+
+
+def test_a_line_another_block_prints_the_same_does_not_clear_it():
+    # delta review round 5: `route-target both` in vni 20 prints as import + export; vni 10's refused import must count
+    conf = ("router bgp 65000\n address-family l2vpn evpn\n  vni 10\n   route-target import 65000:99\n  exit-vni\n"
+            "  vni 20\n   route-target both 65000:99\n  exit-vni\n exit-address-family\nexit\n")   # line 4
+    log = "line 4: Failure to communicate[13] to bgpd, line:    route-target import 65000:99\n"
+    running = ("router bgp 65000\n address-family l2vpn evpn\n  vni 10\n  exit-vni\n  vni 20\n"
+               "   route-target import 65000:99\n   route-target export 65000:99\n  exit-vni\n exit-address-family\nexit\n")
+    assert frr.parse_config_load_errors(log, running={"bgpd": running}, config=conf) == [
+        "line 4: route-target import 65000:99 (rejected by bgpd)"]
+
+
+def test_a_flat_file_never_matches_an_indented_running_config():
+    conf = "\n".join(["!"] * 62 + ["router bgp 65000", "bgp graceful-restart"]) + "\n"   # no indentation
+    assert frr.parse_config_load_errors(GR_LOG, running={"bgpd": GR_RUNNING}, config=conf) == [
+        "line 64: bgp graceful-restart (rejected by bgpd)"]
 
 
 def test_a_line_missing_from_the_running_config_is_still_rejected():

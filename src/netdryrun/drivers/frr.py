@@ -60,24 +60,21 @@ LOAD_RAN = re.compile(r"^\[\d+\|\S+\] (?:sending configuration|done$|Configurati
 
 
 def config_sections(text: str) -> list[tuple[tuple[str, ...], str]]:
-    """Each line of an FRR config as (the section it is in, the line), both stripped: `router bgp 65000 vrf RED` >
-    `address-family ipv4 unicast` > `neighbor 10.0.12.2 route-map X in`. A line at the left margin opens a section
-    (or is a one-line command); `exit`, `!` and `end` there close it."""
-    out, top, af = [], "", ""
+    """Each line of an FRR config as (every header above it, the line), all stripped: `router bgp 65000` >
+    `address-family l2vpn evpn` > `vni 10` > `route-target import 65000:99`. The headers come from indentation, at
+    every depth (two `vni` blocks are two sections). FRR prints its running config indented this way; a file
+    indented otherwise gets other sections, so its lines never match (a false error, never a false pass)."""
+    out, stack = [], []   # stack: (indent, line) of the headers open above the current line
     for raw in text.splitlines():
         line = raw.strip()
-        if raw[:1] not in (" ", "\t"):
-            top = "" if line in ("exit", "!", "end", "") or line.startswith("!") else line
-            af = ""
-            out.append(((), line))
-        elif line.startswith("address-family "):
-            af = line
-            out.append(((top,), line))
-        elif line == "exit-address-family":
-            out.append(((top, af), line))
-            af = ""
-        else:
-            out.append((tuple(x for x in (top, af) if x), line))
+        if not line:
+            out.append((tuple(h for _, h in stack), line))
+            continue
+        indent = len(raw.expandtabs(8)) - len(raw.expandtabs(8).lstrip())
+        while stack and stack[-1][0] >= indent:
+            stack.pop()
+        out.append((tuple(h for _, h in stack), line))
+        stack.append((indent, line))
     return out
 
 
