@@ -150,7 +150,7 @@ Attributes of the BGP **best path** for a prefix: communities, AS path, local pr
 | `as_path` | no | | Exact AS path, ASNs separated by spaces: `"65002 65003"`. `""` is the empty path of a locally originated route. AS sets are written `{65004,65005}` |
 | `as_path_regex` | no | | Python regular expression searched in the AS path string, for example `"^65002 "` (learned from 65002) or `"(^| )65666( |$)"` (passes through 65666). It runs with no time limit, so avoid nested repeats such as `(\d+ ?)+$` that can backtrack for minutes |
 | `local_pref` | no | | Exact local preference |
-| `med` | no | | Exact MED. A path without MED counts as `0`, as best-path selection treats it by default |
+| `med` | no | | Exact MED. A path with no MED attribute fails the check, even `med: 0`: with `bgp bestpath med missing-as-worst` a missing MED is the worst, not 0 |
 | `next_hop` | no | | Exact next hop address |
 | `present` | no | `true` | `false` means no path at all for the prefix in the BGP table, best or not, valid or not. Unquoted `true` or `false` only |
 | `vrf` | no | `default` | VRF or network-instance |

@@ -115,3 +115,130 @@ def test_a_route_check_never_passes_on_a_stale_frr_path_present_or_absent():
         assert not ok and isinstance(detail, Unready) and "stale" in detail, params
     ok, detail, _ = _evaluate(Check("bgp_route", {"node": "r1", "prefix": prefix, "local_pref": 200}, "c", 30), Drv())
     assert not ok and "stale" in detail
+
+
+def test_eos_two_down_link_locals_keep_the_first_like_frr():
+    # two sessions that aren't established share a key: the first state read stays, as FRR and SR Linux do
+    out = eos.parse_bgp_summary(_eos_summary({"fe80::1%Et1": "Idle", "fe80::1%Et2": "Active"}))
+    assert out["fe80::1"].state == "idle"
+    assert frr.parse_bgp_neighbors(_frr_neighbors({"fe80::1%eth1": "Idle", "fe80::1%eth2": "Active"}))["fe80::1"].state == "idle"
+
+
+# --- Grok 2026-10-29 (a): a path with no MED field has no known MED; it is not MED 0 -----------------------------------
+# With `bgp bestpath med missing-as-worst` a missing MED is the worst, not 0, so `med: 0` must not pass on one.
+
+def test_a_missing_med_is_unknown_on_every_driver():
+    data = json.loads(read("frr_bgp_paths.txt"))
+    for p in data["paths"]:
+        p.pop("metric", None)
+    assert all(p.med is None for p in frr.parse_bgp_paths(json.dumps(data), "192.168.20.0/24"))
+
+    data = json.loads(read("eos_bgp_paths.txt"))
+    for p in data["vrfs"]["default"]["bgpRouteEntries"]["192.168.20.0/24"]["bgpRoutePaths"]:
+        p.pop("med", None)
+    assert all(p.med is None for p in eos.parse_bgp_paths(json.dumps(data), "192.168.20.0/24"))
+
+    rows = srlinux.parse_rib_paths(read("srl_bgp_rib_paths.txt"), "192.168.20.0/24")
+    attr = json.loads(read("srl_attr_set_best.txt"))
+    attr.pop("med")
+    assert srlinux.parse_attr_set(json.dumps(attr), rows[0]).med is None
+
+
+def test_med_zero_never_passes_on_a_path_without_med():
+    from netdryrun.checks import _evaluate
+    from netdryrun.config import Check
+    from netdryrun.drivers.base import Observation
+    data = json.loads(read("frr_bgp_paths.txt"))
+    for p in data["paths"]:
+        p.pop("metric", None)
+
+    class Drv:
+        name = "frr"
+
+        def bgp_paths(self, prefix, vrf="default"):
+            return Observation(frr.parse_bgp_paths(json.dumps(data), prefix), [])
+
+    ok, detail, _ = _evaluate(Check("bgp_route", {"node": "r1", "prefix": "192.168.20.0/24", "med": 0}, "c", 30), Drv())
+    assert not ok and "MED is not set" in detail
+
+
+# --- Grok 2026-10-29 (b): truncated output, or error text returned with exit 0, is never an empty RIB ---------------
+
+import pytest  # noqa: E402
+
+from netdryrun.drivers.base import DriverError  # noqa: E402
+
+_EMPTY_BGP_EOS = read("eos_bgp_paths_empty.txt")
+_READERS = [   # every parser a route, prefix or session verdict reads, with a real capture it parses
+    ("frr-route", lambda t: frr.parse_routes(t, "192.168.3.0/24"), "frr_route.txt"),
+    ("frr-route-bgp-side", lambda t: frr.parse_routes("{}", "192.168.20.0/24", t), "frr_bgp_paths.txt"),
+    ("frr-all-routes", frr.parse_all_routes, "frr_route.txt"),
+    ("frr-bgp-paths", lambda t: frr.parse_bgp_paths(t, "192.168.20.0/24"), "frr_bgp_paths.txt"),
+    ("frr-neighbors", frr.parse_bgp_neighbors, "frr_bgp_neighbors.txt"),
+    ("eos-route", lambda t: eos.parse_routes(t, _EMPTY_BGP_EOS, "192.168.20.0/24"), "eos_route.txt"),
+    ("eos-route-bgp-side", lambda t: eos.parse_routes(read("eos_leak_route.txt"), t, "0.0.0.0/0"), "eos_leak_bgp.txt"),
+    ("eos-bgp-paths", lambda t: eos.parse_bgp_paths(t, "192.168.20.0/24"), "eos_bgp_paths.txt"),
+    ("eos-summary", eos.parse_bgp_summary, "eos_bgp_summary.txt"),
+    ("srl-route", lambda t: srlinux.parse_routes(t, "192.168.20.0/24", "{}"), "srl_route.txt"),
+    ("srl-route-rib-side", lambda t: srlinux.parse_routes("{}", "0.0.0.0/0", t), "srl_leak_rib.txt"),
+    ("srl-rib-paths", lambda t: srlinux.parse_rib_paths(t, "0.0.0.0/0"), "srl_leak_rib.txt"),
+    ("srl-neighbors", srlinux.parse_bgp_neighbors, "srl_bgp_neighbors.txt"),
+]
+_EXIT0_ERRORS = ["% Unknown command: show bgp", "Error: Path not found", "bgpd is not running",
+                 "% BGP instance not found", "connect: Connection refused", "\n", "% Command incomplete"]
+
+
+@pytest.mark.parametrize("parse, fixture", [(p, f) for _, p, f in _READERS], ids=[i for i, _, _ in _READERS])
+def test_cut_off_or_error_output_is_never_an_empty_answer(parse, fixture):
+    full = read(fixture)
+    assert parse(full) is not None   # the capture itself parses
+    cuts = sorted({len(full) * k // 16 for k in range(1, 16)} | {1, len(full.rstrip()) - 1})
+    for cut in cuts:
+        with pytest.raises(DriverError):
+            parse(full[:cut])
+    for text in _EXIT0_ERRORS + [full + "\n% Warning: output truncated"]:
+        with pytest.raises(DriverError):
+            parse(text)
+
+
+# --- Grok 2026-10-29 (c): a covering, default or more-specific route never answers for the exact prefix ------------
+
+_WANT = "192.168.20.0/24"
+_OTHERS = ["0.0.0.0/0", "192.168.0.0/16", "192.168.20.0/25"]
+
+
+def _as(fixture: str, other: str) -> str:
+    text = read(fixture)
+    assert _WANT in text
+    return text.replace(_WANT, other)
+
+
+@pytest.mark.parametrize("other", _OTHERS)
+def test_only_the_exact_prefix_counts_on_every_driver(other):
+    frr_table = json.dumps({other: [dict(json.loads(read("frr_route.txt"))["192.168.3.0/24"][0], prefix=other)]})
+    assert frr.parse_routes(frr_table, _WANT, _as("frr_bgp_paths.txt", other)) == []
+    assert frr.parse_bgp_paths(_as("frr_bgp_paths.txt", other), _WANT) == []
+    assert eos.parse_routes(_as("eos_route.txt", other), _as("eos_bgp_route.txt", other), _WANT) == []
+    assert eos.parse_bgp_paths(_as("eos_bgp_paths.txt", other), _WANT) == []
+    assert srlinux.parse_routes(_as("srl_route.txt", other), _WANT, _as("srl_bgp_rib_paths.txt", other)) == []
+    assert srlinux.parse_rib_paths(_as("srl_bgp_rib_paths.txt", other), _WANT) == []
+    # the same captures with the exact prefix do answer (so the rewrite, not the capture, makes them empty)
+    assert eos.parse_routes(read("eos_route.txt"), read("eos_bgp_route.txt"), _WANT)
+    assert srlinux.parse_routes(read("srl_route.txt"), _WANT, read("srl_bgp_rib_paths.txt"))
+    assert frr.parse_bgp_paths(read("frr_bgp_paths.txt"), _WANT)
+
+
+def test_a_route_check_fails_when_only_a_covering_route_exists():
+    from netdryrun.checks import _evaluate
+    from netdryrun.config import Check
+    from netdryrun.drivers.base import Observation
+
+    class Drv:
+        name = "eos"
+
+        def routes(self, prefix, vrf="default"):
+            return Observation(eos.parse_routes(_as("eos_route.txt", "0.0.0.0/0"),
+                                                _as("eos_bgp_route.txt", "0.0.0.0/0"), prefix), [])
+
+    ok, detail, _ = _evaluate(Check("route", {"node": "r1", "prefix": _WANT, "protocol": "bgp"}, "c", 30), Drv())
+    assert not ok and "not active" in detail

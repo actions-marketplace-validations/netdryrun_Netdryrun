@@ -6,6 +6,7 @@ The agent runtime: an agent with no local Docker gets a verdict through a pull r
 
 ### Changed
 
+- **The MCP Registry description and the PyPI summary** now start with the same searchable sentence: "Validate BGP and routing changes in a real containerlab lab: pass/fail verdict with evidence."
 - **A run that deployed from files edited while it was in progress is an error.** The agent result (MCP `dry_run`, `start_run`, `run --verdict`) hashes the files again at the end; if any changed, the lab may have run either version, so the result is `status: error`, `DO NOT APPLY THIS CHANGE`, with the files in `tested.changed_during_run`: run again. Found by the 0.3.3 cold review.
 - **The PR comment and MR note: one per lab, with the commit, from the expected author.** The marker names the lab's `path`, so two labs on one PR don't overwrite each other's header. The header names the head commit, so a header from an older push can be told apart, and a run that wrote no report rewrites it as `error`. Only a comment by `comment-author` (default `github-actions[bot]`; on GitLab, the token's own user) is updated, so a look-alike comment posted by someone else is ignored. Found by the 0.3.3 cold review.
 - **The MCP server destroys the labs it started when the client disconnects** during a `start_run`, and a run whose worker stops on anything at all ends as `status: error`, never stuck at `running`.
@@ -16,6 +17,7 @@ The agent runtime: an agent with no local Docker gets a verdict through a pull r
 
 ### Fixes
 
+- **A path with no MED attribute no longer passes `med: 0`** (FRR, EOS, SR Linux). Its MED was read as 0, but with `bgp bestpath med missing-as-worst` a missing MED is the worst, not 0. The MED of such a path is now unknown, so any `med` check fails on it and says `MED is not set`. Found by a Grok review.
 - **A down BGP session can no longer hide behind an up one with the same link-local address** (FRR, SR Linux, EOS). Neighbors such as `fe80::1%eth1` and `fe80::1%eth2` share one key; the one that isn't established is now kept, so a session check or the convergence gate never reads the up one for both. Found by the 0.3.3 cross-platform review.
 - **SR Linux routes learned through EVPN count as BGP** (`route-type: bgp-evpn`), so a `protocol: bgp` check, and a `present: false` guard, see an EVPN-imported default route.
 - **EOS `Idle(Admin)` reads as `idle`** (EOS prints no space before the reason), so `state: idle` matches an admin-down peer.

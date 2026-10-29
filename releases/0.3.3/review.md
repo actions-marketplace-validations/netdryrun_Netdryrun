@@ -79,8 +79,20 @@ Grok reviewed from `research/briefs/ndr-0.3.3-cross-platform.md`: the four drive
 | X7 | SR Linux `bgp-evpn` routes didn't match `protocol: bgp`, so a no-default guard passed on an EVPN-learned default | **false-pass** | Fixed: mapped to `bgp` (`test_srl_bgp_evpn_route_type_is_bgp`) | `1f2cfb9` |
 | X8 | The routing table doesn't list every BGP route, so a guard could fail on the recording lab | other (false fail) | Fixed by the baseline-guard rule: each guard is run on the lab first | `440f6be` |
 | X9 | EOS `Idle(Admin)` was read as `idle(admin)`, so `state: idle` failed | other (false fail) | Fixed (`test_eos_admin_idle_reads_as_idle`) | `1f2cfb9` |
-| X10 | A missing MED is read as 0 | other | Rejected: BGP's default treats a missing MED as 0 (`missing-as-worst` is opt-in) | — |
+| X10 | A missing MED is read as 0 | **false-pass** | First rejected (BGP's default treats a missing MED as 0); reversed after the 2026-10-29 Grok review (G1 below): with `missing-as-worst` a missing MED is the worst, so `med: 0` passing on it is a false pass. Fixed | see G1 |
 | X11 | The EOS `BGP Aggregate` route type wouldn't match `protocol: bgp` | other | Rejected: an aggregate is originated locally, not learned, and appears in no capture | — |
 | X12 | FRR's local-pref probe errors on an IPv6-only box | other (false fail) | Backlog (0.4): it errors, never passes | — |
 
 Open false-pass findings after Layer 6: none. X5 is fixed on FRR and, with X6, accepted as a documented limit with the mitigation stated and a fix scheduled for 0.4.
+
+## Follow-up review (Grok, 2026-10-29): three items checked test-first before the freeze
+
+| # | Item | Class | Decision | Tests |
+|---|---|---|---|---|
+| G1 | An omitted MED must be unknown, not 0 | **false-pass** | Fixed on FRR, EOS and SR Linux: their per-prefix output omits the MED field when the path has no MED attribute (seen in the EOS capture of a locally originated path), and the drivers read that as 0. Now `None`: any `med` check fails on it, `MED is not set`. Three older tests that pinned 0 updated | `test_a_missing_med_is_unknown_on_every_driver`, `test_med_zero_never_passes_on_a_path_without_med` (both failed before the fix) |
+| G2 | Truncated or exit-0 error output must never become an empty RIB | **false-pass** (claimed) | Holds, now pinned: parsing is strict `json.loads` (a cut-off document, trailing text or error text raises), empty output raises, a non-zero exit or a timeout raises. Pinned for every route, path and session parser of every driver: each real capture cut at 17 points, and 8 exit-0 error texts | `test_cut_off_or_error_output_is_never_an_empty_answer` (13 parsers) |
+| G3 | A covering or default route must never satisfy an exact-prefix check | **false-pass** (claimed) | Holds, now pinned: every driver compares the output's prefix with `==` (zebra's longest-match answer included). Pinned with each capture rewritten to `0.0.0.0/0`, a covering /16 and a more-specific /25 | `test_only_the_exact_prefix_counts_on_every_driver`, `test_a_route_check_fails_when_only_a_covering_route_exists` |
+
+## Mutation follow-up after the cross-platform fixes
+
+The driver fixes moved or added 37 surviving mutants in `frr._bgp_paths_raw` and `eos._summary`. One changed behaviour: `eos._summary_69` kept the *last* of two down sessions sharing a link-local key, where FRR and SR Linux keep the first. Killed by `test_eos_two_down_link_locals_keep_the_first_like_frr`. The other 36 are accepted with arguments in `accepted.json`: 27 change only an error message or the command label in one (a one-argument `unexpected` raises a TypeError, which the parser wrapper turns into the same DriverError), and 9 are equivalent (`maxsplit` when only field 0 is used; `established` written over `established`). Five acceptances that no longer survive were removed.

@@ -132,13 +132,6 @@
    "diff": "a28fe64593a65fc7",
    "class": "message-text"
   },
-  "netdryrun.checks.x__evaluate__mutmut_6": {
-   "reason": "message text only: the detail stays an Unready instance, only its text changes",
-   "diff": "adadbe7e5f278204",
-   "class": "message-text",
-   "argument": "Changes only text: the detail stays an Unready instance, only its text changes. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.",
-   "reviewed": "adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2)"
-  },
   "netdryrun.checks.x__evaluate_all__mutmut_1": {
    "reason": "equivalent: thread pool size; every check is still evaluated once and results keep input order",
    "diff": "30e1f75d61ee9e5f",
@@ -2182,11 +2175,6 @@
    "diff": "7ccb41104c55ab9e",
    "class": "message-text"
   },
-  "netdryrun.drivers.eos.x__summary__mutmut_29": {
-   "reason": "equivalent: an empty or non-string peerState still raises (AttributeError or IndexError, turned into a DriverError by the parser wrapper)",
-   "diff": "553c0b783dfed0d9",
-   "class": "equivalent"
-  },
   "netdryrun.drivers.eos.x__summary__mutmut_3": {
    "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
    "diff": "235d4c5d1d2a1e87",
@@ -2194,22 +2182,22 @@
   },
   "netdryrun.drivers.eos.x__summary__mutmut_30": {
    "reason": "equivalent: a non-mapping peer or a missing peerState still raises (AttributeError or KeyError, turned into a DriverError by the parser wrapper)",
-   "diff": "749d2e3a039c278d",
+   "diff": "e37c8c806f69bc18",
    "class": "equivalent"
   },
   "netdryrun.drivers.eos.x__summary__mutmut_37": {
-   "reason": "message text only: the same exception is still raised, only its message changes",
-   "diff": "2d00124a93d5dec1",
+   "reason": "message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes",
+   "diff": "52e2c0163e315774",
    "class": "message-text"
   },
   "netdryrun.drivers.eos.x__summary__mutmut_38": {
-   "reason": "message text only: the same exception is still raised, only its message changes",
-   "diff": "ef9e20ff43f04bd4",
+   "reason": "message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes",
+   "diff": "2cde62b02df322ac",
    "class": "message-text"
   },
   "netdryrun.drivers.eos.x__summary__mutmut_39": {
-   "reason": "message text only: the same exception is still raised, only its message changes",
-   "diff": "719d177e3a5fcd5f",
+   "reason": "message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes",
+   "diff": "cdbc8f2550034043",
    "class": "message-text"
   },
   "netdryrun.drivers.eos.x__summary__mutmut_4": {
@@ -2218,18 +2206,18 @@
    "class": "message-text"
   },
   "netdryrun.drivers.eos.x__summary__mutmut_40": {
-   "reason": "message text only: the same exception is still raised, only its message changes",
-   "diff": "0c389d343a298289",
+   "reason": "message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes",
+   "diff": "8efa6e11789db57e",
    "class": "message-text"
   },
   "netdryrun.drivers.eos.x__summary__mutmut_41": {
-   "reason": "message text only: the same exception is still raised, only its message changes",
-   "diff": "a4d2489648416e59",
+   "reason": "message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes",
+   "diff": "5b8329665b4c361c",
    "class": "message-text"
   },
   "netdryrun.drivers.eos.x__summary__mutmut_42": {
-   "reason": "message text only: the same exception is still raised, only its message changes",
-   "diff": "1537320094517987",
+   "reason": "message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes",
+   "diff": "5972f5b063b58bbd",
    "class": "message-text"
   },
   "netdryrun.drivers.eos.x__summary__mutmut_5": {
@@ -2237,30 +2225,15 @@
    "diff": "0a27c1f003d41579",
    "class": "message-text"
   },
-  "netdryrun.drivers.eos.x__summary__mutmut_64": {
-   "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-   "diff": "f3b73a7ace687792",
-   "class": "message-text"
-  },
   "netdryrun.drivers.eos.x__summary__mutmut_74": {
-   "reason": "message text only: the same exception is still raised, only its message changes",
-   "diff": "979a7c06d3a73a07",
-   "class": "message-text"
+   "reason": "equivalent: the mutated test only adds the case where the new state is established too, and then the assignment writes `established` over `established`",
+   "diff": "55a8a0b5bf5438ba",
+   "class": "equivalent"
   },
   "netdryrun.drivers.eos.x__summary__mutmut_75": {
-   "reason": "message text only: the same exception is still raised, only its message changes",
-   "diff": "a897fc91ada18a93",
-   "class": "message-text"
-  },
-  "netdryrun.drivers.eos.x__summary__mutmut_76": {
-   "reason": "message text only: the same exception is still raised, only its message changes",
-   "diff": "84bc279eabf487f2",
-   "class": "message-text"
-  },
-  "netdryrun.drivers.eos.x__summary__mutmut_77": {
-   "reason": "message text only: the same exception is still raised, only its message changes",
-   "diff": "9ebdcdf481af27cb",
-   "class": "message-text"
+   "reason": "equivalent: the mutated test only adds the case where the new state is established too, and then the assignment writes `established` over `established`",
+   "diff": "1ac7a932db40a9a5",
+   "class": "equivalent"
   },
   "netdryrun.drivers.eos.x__table__mutmut_4": {
    "reason": "message text only: the same exception is still raised, only its message changes",
@@ -2423,33 +2396,33 @@
    "class": "message-text"
   },
   "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_27": {
-   "reason": "message text only: the same exception is still raised, only its message changes",
-   "diff": "1f6db5de23502432",
+   "reason": "message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes",
+   "diff": "77a30ef77715b1b3",
    "class": "message-text"
   },
   "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_28": {
-   "reason": "message text only: the same exception is still raised, only its message changes",
-   "diff": "26ca4a769130bf1a",
+   "reason": "message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes",
+   "diff": "072b8ea9b9443e6e",
    "class": "message-text"
   },
   "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_29": {
-   "reason": "message text only: the same exception is still raised, only its message changes",
-   "diff": "a0d42ff735e6d570",
+   "reason": "message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes",
+   "diff": "2aade544b8a35086",
    "class": "message-text"
   },
   "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_30": {
-   "reason": "message text only: the same exception is still raised, only its message changes",
-   "diff": "d75652ef4a85efd7",
+   "reason": "message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes",
+   "diff": "521e4cc68d03b68f",
    "class": "message-text"
   },
   "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_31": {
-   "reason": "message text only: the same exception is still raised, only its message changes",
-   "diff": "4a384ce1fc03334d",
+   "reason": "message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes",
+   "diff": "10ff992640aa3969",
    "class": "message-text"
   },
   "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_32": {
-   "reason": "message text only: the same exception is still raised, only its message changes",
-   "diff": "b35135ef585afc7e",
+   "reason": "message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes",
+   "diff": "2fe1a09324ab3b5d",
    "class": "message-text"
   },
   "netdryrun.drivers.frr.x__learned__mutmut_10": {
@@ -3950,6 +3923,111 @@
    "class": "logging",
    "argument": "Changes only a line passed to log(): a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it. log() output reaches no result field, status or exit code, so it can't turn a failure into a pass.",
    "reviewed": "adversarial (ChatGPT), round 1: checked and agreed (research/model-reviews/release-0.3.3/ndr-0.3.3-adversarial-mutants-*)"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_37": {
+   "reason": "message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes",
+   "diff": "c3c7ea8c6eb4a117",
+   "class": "message-text"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_38": {
+   "reason": "message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes",
+   "diff": "e8db09c2d37ec7e6",
+   "class": "message-text"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_39": {
+   "reason": "message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes",
+   "diff": "6ef6591857897e9c",
+   "class": "message-text"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_40": {
+   "reason": "message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes",
+   "diff": "1e19a061e416a7ee",
+   "class": "message-text"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_41": {
+   "reason": "message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes",
+   "diff": "3b46027635eab567",
+   "class": "message-text"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_42": {
+   "reason": "message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes",
+   "diff": "51804f2b3fb44be2",
+   "class": "message-text"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_43": {
+   "reason": "message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes",
+   "diff": "93a41f7e41f53994",
+   "class": "message-text"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_44": {
+   "reason": "message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes",
+   "diff": "b0f1e9a2e984c3b0",
+   "class": "message-text"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_45": {
+   "reason": "message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes",
+   "diff": "eb62ae5ba3866ec3",
+   "class": "message-text"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_46": {
+   "reason": "message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes",
+   "diff": "0b7c38a29cd64c17",
+   "class": "message-text"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_47": {
+   "reason": "message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes",
+   "diff": "494b7d575551cf86",
+   "class": "message-text"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_48": {
+   "reason": "message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes",
+   "diff": "e85c692ed30c6d3a",
+   "class": "message-text"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_49": {
+   "reason": "message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes",
+   "diff": "6a55dc277cf7a70d",
+   "class": "message-text"
+  },
+  "netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_50": {
+   "reason": "message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes",
+   "diff": "9cadc12335cd40c4",
+   "class": "message-text"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_92": {
+   "reason": "message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes",
+   "diff": "6e3011347f95305d",
+   "class": "message-text"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_93": {
+   "reason": "message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes",
+   "diff": "78c8801fddefb37e",
+   "class": "message-text"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_94": {
+   "reason": "message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes",
+   "diff": "034b1aba1e1e82b3",
+   "class": "message-text"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_95": {
+   "reason": "message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes",
+   "diff": "bb90b4fa64b11572",
+   "class": "message-text"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_82": {
+   "reason": "message text only: the command is used only in as_int's error message; a non-integer count still raises",
+   "diff": "c50e37da422a910c",
+   "class": "message-text"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_53": {
+   "reason": "equivalent: only the first field of the split is used, and it is the same with any maxsplit",
+   "diff": "530402c6115bdeab",
+   "class": "equivalent"
+  },
+  "netdryrun.drivers.eos.x__summary__mutmut_59": {
+   "reason": "equivalent: only the first field of the split is used, and it is the same with any maxsplit",
+   "diff": "978f961a5ccabaa6",
+   "class": "equivalent"
   }
  },
  "checks": {
