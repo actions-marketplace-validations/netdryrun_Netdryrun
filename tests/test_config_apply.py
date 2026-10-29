@@ -64,3 +64,26 @@ def test_frr_reports_its_version():
     text = "FRRouting 10.4.1_git (edge1) on Linux(6.18.54.1-microsoft-standard-WSL2).\nCopyright 1996-2005 ...\n"
     assert parse_version(text) == "FRRouting 10.4.1_git"
     assert parse_version("% Unknown command\n") is None
+
+
+def test_driver_defaults_never_claim_what_they_do_not_read():
+    import pytest
+
+    from netdryrun.drivers.base import Driver, DriverError
+    d = Driver(None, "x1")
+    assert d.nos_version() is None and d.config_load_errors() is None
+    with pytest.raises(DriverError):
+        d.vrfs()
+
+
+def test_frr_reads_its_version_from_the_node_and_none_when_it_cannot():
+    from netdryrun.lab import ExecResult
+
+    class Lab:
+        def __init__(self, rc, out):
+            self.rc, self.out = rc, out
+
+        def exec(self, node, cmd, timeout=60, input=None):
+            return ExecResult(cmd, self.rc, self.out, "")
+    assert FrrDriver(Lab(0, "FRRouting 10.4.1_git (r1) on Linux.\n"), "r1").nos_version() == "FRRouting 10.4.1_git"
+    assert FrrDriver(Lab(1, ""), "r1").nos_version() is None
