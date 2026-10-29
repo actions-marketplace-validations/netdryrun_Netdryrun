@@ -34,7 +34,7 @@ A verdict document is one JSON object:
 
 ## Status
 
-| `status` | Meaning | Safe to apply? |
+| `status` | Meaning | May be applied? |
 |---|---|---|
 | `passed` | Every check passed. It proves only the checks that exist, in this environment | Only this value |
 | `failed` | At least one check failed with usable state from the network | No |
@@ -49,7 +49,7 @@ Rules for producers:
 
 Rules for consumers:
 
-- A consumer MUST treat any `status` other than `passed` as not safe to apply, including values added in a later revision of v1.
+- A consumer MUST treat any `status` other than `passed` as not to be applied, including values added in a later revision of v1.
 
 ## Verdict strings
 
@@ -57,11 +57,13 @@ Readers that present a decision, such as AI agents, SHOULD map `status` to exact
 
 | `status` | Verdict |
 |---|---|
-| `passed` | `SAFE TO PROCEED` |
+| `passed` | `CHECKS PASSED (only what the checks cover)` |
 | `inconclusive` | `INCONCLUSIVE: the lab did not reach a testable state; this says nothing about your change. Do not apply it until a run passes.` |
 | anything else | `DO NOT APPLY THIS CHANGE` |
 
-`SAFE TO PROCEED` means only that every check in the document passed. It says nothing about behavior no check covers.
+`CHECKS PASSED (only what the checks cover)` means only that every check in the document passed. It says nothing about behavior no check covers, so it never claims the change is safe. Wording such as "safe to proceed" is reserved for a planned comparison verdict that passes only when the change shows no undeclared differences between the lab before and after it; it is not part of v1.
+
+Consumers SHOULD decide on `status`, not on the verdict text. Netdryrun 0.3.1 returned `SAFE TO PROCEED` for `passed`; from 0.3.2, where these strings are frozen, it returns the string above.
 
 ## Check result
 
@@ -80,10 +82,23 @@ Readers that present a decision, such as AI agents, SHOULD map `status` to exact
 
 Every result carries the commands and their raw output, so a pass can be audited: a reviewer can see what the network said, not only what the tool concluded.
 
+## Tying a verdict to the files it tested
+
+A verdict is about the exact files the run used, not about a folder name. A producer MAY add a `tested` object to the document (an added field, allowed within v1); Netdryrun's MCP results carry it from 0.3.2:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `tested.config` | string | Path of the check definition that ran, as the producer resolved it |
+| `tested.files` | object | Path (relative to the folder of the check definition, `/`-separated) to the lowercase hex sha256 of that file, read before the run: the check definition, the topology and every file the topology uses (bound files and folders, startup configs, licences, env files) |
+| `tested.lab_deployed_by_this_run` | boolean | `true` when the run deployed the environment from these files; `false` when it tested one that was already running, which may not run these files |
+| `tested.complete` | boolean | `false` when some file could not be read (for example, outside the folders the producer may read, or named by a URL or an environment variable the producer does not resolve) or the list was cut short |
+
+A consumer that presents a verdict SHOULD present it together with these hashes, and SHOULD treat any change to a listed file as needing a new run.
+
 ## Versioning
 
 - Within v1, fields are only added, never removed, renamed or retyped. Objects therefore allow extra properties, and consumers MUST ignore fields they don't know.
-- New `status` values and check `type` values MAY be added within v1. The safe-to-apply rule above keeps old consumers safe.
+- New `status` values and check `type` values MAY be added within v1. The apply-only-on-`passed` rule above keeps old consumers fail-closed.
 - A change that breaks these rules gets a new identifier (`netdryrun.report/v2`) and a new schema file; v1 stays published.
 
 ## Security

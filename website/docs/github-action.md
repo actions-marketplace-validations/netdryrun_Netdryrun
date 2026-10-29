@@ -1,6 +1,6 @@
 ---
 title: GitHub Action
-description: Run Netdryrun in GitHub Actions with netdryrun/netdryrun@v0.3.1. Inputs, outputs, example workflows, and security notes for running privileged containerlab labs in CI.
+description: Run Netdryrun in GitHub Actions with netdryrun/netdryrun@v0.3.2. Inputs, outputs, example workflows, and security notes for running privileged containerlab labs in CI.
 ---
 
 # GitHub Action
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.3.1
+      - uses: netdryrun/netdryrun@v0.3.2
         with:
           path: network/        # folder containing netdryrun.yml
 ```
@@ -48,7 +48,7 @@ It needs a Linux runner with Docker. GitHub-hosted `ubuntu-latest` runners work.
 | Output | Meaning |
 |---|---|
 | `status` | `passed`, `failed`, `error` or `inconclusive` (the lab never reached a testable state, so the run says nothing about the change; the job still fails). With `mode: verify`: `matched`, `no_change`, `failed`, `error`, `inconclusive` or `unhealthy_baseline` |
-| `verdict` | `SAFE TO PROCEED`, `DO NOT APPLY THIS CHANGE` or `INCONCLUSIVE`. With `mode: verify`: `INTENT MATCHED`, `NO BEHAVIOR CHANGE`, `UNDECLARED CHANGES: DO NOT APPLY`, `INCONCLUSIVE`, `INCONCLUSIVE: UNHEALTHY BASELINE` or `ERROR: NO VERDICT` (never `SAFE TO PROCEED`) |
+| `verdict` | `CHECKS PASSED (only what the checks cover)`, `DO NOT APPLY THIS CHANGE` or `INCONCLUSIVE` (decide on `status`, not on the text). With `mode: verify`: `INTENT MATCHED`, `NO BEHAVIOR CHANGE`, `UNDECLARED CHANGES: DO NOT APPLY`, `INCONCLUSIVE`, `INCONCLUSIVE: UNHEALTHY BASELINE` or `ERROR: NO VERDICT` (never `SAFE TO PROCEED`) |
 | `inconclusive-reason` | Why the run was inconclusive; empty otherwise |
 | `passed` | Number of passed checks (`mode: verify`: declared intent lines observed, plus standing guards passed) |
 | `failed` | Number of failed checks (`mode: verify`: undeclared differences, declared lines that didn't happen, plus standing guards failed) |
@@ -69,7 +69,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.3.1
+      - uses: netdryrun/netdryrun@v0.3.2
         with:
           path: network/
 ```
@@ -77,7 +77,7 @@ jobs:
 ### Use the outputs in a later step
 
 ```yaml
-      - uses: netdryrun/netdryrun@v0.3.1
+      - uses: netdryrun/netdryrun@v0.3.2
         id: ndr
         with:
           path: network/
@@ -101,7 +101,7 @@ jobs:
         lab: [network/core, network/edge]
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.3.1
+      - uses: netdryrun/netdryrun@v0.3.2
         with:
           path: ${{ matrix.lab }}
           artifact-name: netdryrun-${{ strategy.job-index }}
@@ -122,7 +122,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.3.1
+      - uses: netdryrun/netdryrun@v0.3.2
         with:
           path: network/
           pr-comment: true
@@ -145,7 +145,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0          # verify reads the base and head commits
-      - uses: netdryrun/netdryrun@v0.3.1
+      - uses: netdryrun/netdryrun@v0.3.2
         with:
           mode: verify
           topology: network/topology.clab.yml

@@ -3,7 +3,7 @@
 Each surface has its own code between the runner's RunReport and what the user acts on: the CLI's exit
 code and JSON, the MCP tool's status and "verdict" line, the Action's result script (inline Python in
 action.yml) and the `if:` of its failing step. A false pass can hide in any of them while the runner is
-right. One report per case goes through all of them, and only `passed` may ever read as safe.
+right. One report per case goes through all of them, and only `passed` may ever read as a pass.
 
 Also: the knobs that change a verdict (`--settle`, `--hold`) have the same defaults on every surface.
 """
@@ -29,6 +29,10 @@ ROOT = Path(__file__).resolve().parents[1]
 ACTION = yaml.safe_load((ROOT / "action.yml").read_text(encoding="utf-8"))
 STEPS = {s.get("id") or s.get("name"): s for s in ACTION["runs"]["steps"]}
 EXIT = {"passed": 0, "failed": 1, "error": 2, "inconclusive": 3}
+VERDICT = {"passed": "CHECKS PASSED (only what the checks cover)", "failed": "DO NOT APPLY THIS CHANGE",
+           "error": "DO NOT APPLY THIS CHANGE",
+           "inconclusive": "INCONCLUSIVE: the lab did not reach a testable state; this says nothing about your "
+                           "change. Do not apply it until a run passes."}
 
 TOPO = "name: t\ntopology:\n  nodes:\n    r1: {kind: linux, image: quay.io/frrouting/frr:10.4.1}\n"
 CONFIG = ("lab: topology.clab.yml\nchecks:\n"
@@ -131,7 +135,8 @@ def test_every_surface_gives_the_same_verdict(case, lab_dir, tmp_path, monkeypat
 
     mcp = via_mcp(lab_dir, rep, monkeypatch)
     assert mcp["status"] == want
-    assert (mcp["verdict"] == "SAFE TO PROCEED") == (want == "passed")
+    assert mcp["verdict"] == VERDICT[want]   # the frozen v1 strings; only passed reads as a pass
+    assert len(mcp["failures"]) == mcp["failed"] and (want != "passed" or not mcp["failures"])
     assert json.loads((lab_dir / "netdryrun-report.json").read_text())["status"] == want
 
     action = via_action(tmp_path, lab_dir / "cli-report.json", str(code))

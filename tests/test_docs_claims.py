@@ -237,3 +237,17 @@ def test_every_shipped_topology_pins_its_image(topo):
 
 def test_there_are_topologies_to_check():
     assert len(_topologies()) >= 8
+
+
+def test_the_verdict_strings_the_docs_quote_are_the_ones_the_mcp_server_returns():
+    """0.3.2 agent contract: agents copy these strings, so a doc that quotes an old or edited verdict is a wrong
+    instruction. The spec and the AI agents page list all three; the shorter surfaces quote the pass and fail."""
+    mcp_server = pytest.importorskip("netdryrun.mcp_server")
+    full = [ROOT / "website" / "docs" / "spec" / "verdict-v1.md", ROOT / "website" / "docs" / "ai-agents.md",
+            ROOT / "website" / "docs" / "schemas" / "mcp-result-v1.json"]
+    short = [ROOT / "README.md", ROOT / "AGENTS.md", ROOT / "skills" / "netdryrun" / "SKILL.md"]
+    for path in full + short:
+        text = path.read_text(encoding="utf-8")
+        wanted = mcp_server.VERDICT_ENUM if path in full else mcp_server.VERDICT_ENUM[:2]
+        for verdict in wanted:
+            assert verdict in text, f"{path.relative_to(ROOT)} doesn't quote the verdict {verdict!r}"

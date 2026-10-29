@@ -230,7 +230,7 @@ def test_verify_outputs_cannot_be_spoofed(tmp_path):
     assert (out["status"], out["verdict"]) == ("error", "ERROR: NO VERDICT")
     # and the other way round: a verify report read in run mode
     assert read_result(tmp_path, rep, "0", mode="run")["status"] == "error"
-    assert read_result(tmp_path, run_rep, "0", mode="run") == {"status": "passed", "verdict": "SAFE TO PROCEED",
+    assert read_result(tmp_path, run_rep, "0", mode="run") == {"status": "passed", "verdict": "CHECKS PASSED (only what the checks cover)",
                                                                "passed": "3", "failed": "0", "inconclusive_reason": "", "ok": "true"}
 
 
@@ -254,7 +254,7 @@ def test_markdown_comment(tmp_path):
     assert f"**Undeclared changes ({len(res.match.undeclared)})**" in md
     assert md.count("next: `") == min(40, len(res.match.undeclared)) and "docker exec clab-vlab-" in md
     assert "no standing guards ran" in md and "Standing guards:** none ran" in md
-    assert "SAFE TO PROCEED" not in md.replace("never prints SAFE TO PROCEED", "")
+    assert "SAFE TO PROCEED" not in md and "CHECKS PASSED" not in md
 
 
 def test_markdown_comment_is_inert(tmp_path):

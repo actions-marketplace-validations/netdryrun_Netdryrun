@@ -1,5 +1,5 @@
 name: Netdryrun
-description: Test network changes in a real virtual lab (containerlab) before they reach production.
+description: Find the route leaks that ping and 'BGP up' miss. Test network changes in a real containerlab lab before production.
 author: Netdryrun
 branding:
   icon: shield
@@ -60,7 +60,7 @@ outputs:
     description: "mode: run: passed, failed, error or inconclusive (the lab never reached a testable state: says nothing about the change). mode: verify: matched, no_change, failed, error, inconclusive or unhealthy_baseline"
     value: ${{ steps.result.outputs.status }}
   verdict:
-    description: "mode: run: SAFE TO PROCEED, DO NOT APPLY THIS CHANGE or INCONCLUSIVE. mode: verify: INTENT MATCHED, NO BEHAVIOR CHANGE, UNDECLARED CHANGES: DO NOT APPLY, INCONCLUSIVE, INCONCLUSIVE: UNHEALTHY BASELINE or ERROR: NO VERDICT (never SAFE TO PROCEED)"
+    description: "mode: run: CHECKS PASSED (only what the checks cover), DO NOT APPLY THIS CHANGE or INCONCLUSIVE. mode: verify: INTENT MATCHED, NO BEHAVIOR CHANGE, UNDECLARED CHANGES: DO NOT APPLY, INCONCLUSIVE, INCONCLUSIVE: UNHEALTHY BASELINE or ERROR: NO VERDICT. Decide on status, not on the text"
     value: ${{ steps.result.outputs.verdict }}
   inconclusive-reason:
     description: Why the run was inconclusive (empty otherwise)
@@ -244,7 +244,7 @@ runs:
                        "unhealthy_baseline": "INCONCLUSIVE: UNHEALTHY BASELINE", "error": "ERROR: NO VERDICT"}
         else:
             EXIT = {"passed": "0", "failed": "1", "error": "2", "inconclusive": "3"}
-            VERDICT = {"passed": "SAFE TO PROCEED", "failed": "DO NOT APPLY THIS CHANGE", "error": "DO NOT APPLY THIS CHANGE",
+            VERDICT = {"passed": "CHECKS PASSED (only what the checks cover)", "failed": "DO NOT APPLY THIS CHANGE", "error": "DO NOT APPLY THIS CHANGE",
                        "inconclusive": "INCONCLUSIVE"}
         try:
             rep = json.load(open(os.environ["NDR_JSON"]))

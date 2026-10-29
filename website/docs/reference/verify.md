@@ -29,7 +29,7 @@ The same engine runs in three places: this command, the MCP tool [`verify_change
 | `inconclusive` | `INCONCLUSIVE` | `3` | A lab's state never stopped moving within `--timeout`. Retry at most once, then escalate: this says nothing about the change. |
 | `unhealthy_baseline` | `INCONCLUSIVE: UNHEALTHY BASELINE` | `3` | BGP sessions are down in the *before* lab. Fix the baseline, or pass `--allow-unhealthy-baseline` to compare anyway. |
 
-**Explained is not the same as safe.** The report echoes the declared intent at the top, for a human to review: an intent that declares a leak explains the leak. `verify` never prints `SAFE TO PROCEED`. A verdict covers the observed control-plane state of this lab (sessions, RIB, BGP paths and advertisements), nothing else.
+**Explained is not the same as safe.** The report echoes the declared intent at the top, for a human to review: an intent that declares a leak explains the leak. None of its verdicts is a pass of checks. A verdict covers the observed control-plane state of this lab (sessions, RIB, BGP paths and advertisements), nothing else.
 
 **The intent must come from outside the change**: the ticket, the operator, or the base branch. A pass is never earned by copying the undeclared items into the intent. The report says who supplied it (`intent.supplied_by`: `cli` from the command line, `mcp` from an MCP caller, `action` from the GitHub Action). When the intent file itself differs between `--before` and `--after` (the change edits its own intent), every report carries the warning "intent edited in the same change: needs a code-owner review".
 

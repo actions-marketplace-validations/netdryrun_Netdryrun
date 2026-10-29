@@ -52,7 +52,7 @@ def call(monkeypatch, lab, before_snap, after_snap, intent, guards=None, **kw):
     data = json.loads(mcp_server.verify_change(lab["topology"], lab["before"], lab["after"], intent, **kw))
     validate(data)
     assert data["intent_source"] == "mcp" and data["tool"] == "verify_change"
-    assert "SAFE TO PROCEED" not in json.dumps(data).replace("never prints SAFE TO PROCEED", "")
+    assert "SAFE TO PROCEED" not in json.dumps(data) and "CHECKS PASSED" not in json.dumps(data)
     return data, seen
 
 
@@ -192,7 +192,7 @@ def test_stdio_lists_verify_change_with_its_rules():
     tools = asyncio.run(_tools())
     desc, schema = tools["verify_change"]
     assert set(schema["required"]) == {"topology", "before", "after", "intent"} and "guards" in schema["properties"]
-    for phrase in ("INTENT MATCHED", "UNDECLARED CHANGES: DO NOT APPLY", "INCONCLUSIVE", "never prints SAFE TO PROCEED",
+    for phrase in ("INTENT MATCHED", "UNDECLARED CHANGES: DO NOT APPLY", "INCONCLUSIVE", "is a pass of checks",
                    "from the ticket or the operator", "never widen it", "two lab boots", "four", "2–8 minutes",
                    # the shared rules, as on every tool
                    "Ping is not a test", "INCONCLUSIVE means stop", "Never invent or weaken checks"):

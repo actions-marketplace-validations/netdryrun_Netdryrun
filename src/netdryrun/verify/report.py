@@ -22,8 +22,7 @@ VERDICTS = {
 }
 EXIT_CODES = {"matched": 0, "no_change": 0, "failed": 1, "error": 2, "inconclusive": 3, "unhealthy_baseline": 3}
 NOTICE = ("Explained is not the same as safe: review the declared intent above. This verdict covers the observed "
-          "control-plane state of this lab (sessions, RIB, BGP paths, advertisements), nothing else. "
-          "verify never prints SAFE TO PROCEED.")
+          "control-plane state of this lab (sessions, RIB, BGP paths, advertisements), nothing else.")
 ALLOW_WARNING = ("allow_anywhere weakens the verdict: every change to the listed prefixes is accepted on every node. "
                  "A change that adds or widens it needs a second approver (CODEOWNERS); the CLI can't enforce that.")
 NO_GUARDS_WARNING = ("no standing guards ran: nothing checked the after lab against the base branch's netdryrun.yml, "
