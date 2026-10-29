@@ -38,6 +38,7 @@ It needs a Linux runner with Docker. GitHub-hosted `ubuntu-latest` runners work.
 | `artifact-name` | `netdryrun-report` | Name of the uploaded artifact |
 | `settle` | `10` | Seconds to wait before post-convergence checks |
 | `hold` | `10` | Seconds a post-convergence check must hold |
+| `timeout` | `300` | `mode: verify` only: seconds each lab may take to reach a stable snapshot. Raise it for a lab with a slow-booting node (see [verify](reference/verify.md#nodes-verify-does-not-snapshot-and-slow-boots)), and set the job's `timeout-minutes` to match |
 | `pr-comment` | `false` | On pull requests, post one comment with the verdict, failures first, and the evidence for each failed check. Updated in place on every push. Needs `permissions: pull-requests: write` |
 | `github-token` | `${{ github.token }}` | Token used for the PR comment |
 | `cloud` | `false` | Reserved for Netdryrun Cloud, which is **not available yet**. With `true`, the action tries to POST the JSON report to `cloud-url` with a GitHub OIDC token; that address doesn't resolve today, so nothing is uploaded and you only get a warning ("evidence upload failed", or "needs 'permissions: id-token: write'" without that permission). Leave it off |

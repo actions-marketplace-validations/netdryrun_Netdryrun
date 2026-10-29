@@ -39,6 +39,9 @@ inputs:
   settle:
     description: Seconds to wait before negative checks
     default: "10"
+  timeout:
+    description: "mode: verify only. Seconds each lab may take to reach a stable snapshot (default 300). Raise it for a lab with a slow-booting node: cJunosEvolved took 4 to 19 minutes to boot, and an approval boots each side twice, so also set the job's timeout-minutes"
+    default: "300"
   hold:
     description: Seconds a negative check must hold
     default: "10"
@@ -183,6 +186,7 @@ runs:
         NDR_JSON: ${{ inputs.json-report }}
         NDR_JUNIT: ${{ inputs.junit-report }}
         NDR_SETTLE: ${{ inputs.settle }}
+        NDR_TIMEOUT: ${{ inputs.timeout }}
         NDR_HOLD: ${{ inputs.hold }}
         NDR_TOPOLOGY: ${{ inputs.topology }}
         NDR_INTENT: ${{ inputs.intent-file }}
@@ -211,7 +215,8 @@ runs:
             sudo env -i "PATH=$PATH" "HOME=/root" \
               "GIT_CONFIG_COUNT=1" "GIT_CONFIG_KEY_0=safe.directory" "GIT_CONFIG_VALUE_0=$top" \
               netdryrun verify "$NDR_TOPOLOGY" --before "$NDR_BASE" --after "$NDR_HEAD" --intent "$NDR_INTENT" \
-              --intent-source action --json "$NDR_JSON" --markdown netdryrun-summary.md --hold "$NDR_HOLD"
+              --intent-source action --json "$NDR_JSON" --markdown netdryrun-summary.md --hold "$NDR_HOLD" \
+              --timeout "$NDR_TIMEOUT"
             code=$?
             if [ -f netdryrun-summary.md ] && [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
               cat netdryrun-summary.md >> "$GITHUB_STEP_SUMMARY"

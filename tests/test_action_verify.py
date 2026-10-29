@@ -103,8 +103,15 @@ def commit(r: Path, files: dict[str, str]) -> str:
 
 
 def merged(r: Path, base: str, head: str) -> str:
-    """GitHub's merge commit for a PR: the head's tree (here the base is an ancestor), parents base and head."""
-    return git(r, "commit-tree", f"{head}^{{tree}}", "-p", base, "-p", head, "-m", "merge").strip()
+    """GitHub's merge commit for a PR: the head's tree (here the base is an ancestor), parents base and head.
+    Fixed dates, so the same merge is the same commit however many times a test asks for it."""
+    env = {**os.environ, "GIT_AUTHOR_DATE": "2026-10-28T00:00:00Z", "GIT_COMMITTER_DATE": "2026-10-28T00:00:00Z",
+           "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@example.com", "GIT_COMMITTER_NAME": "t",
+           "GIT_COMMITTER_EMAIL": "t@example.com"}
+    p = subprocess.run(["git", "commit-tree", f"{head}^{{tree}}", "-p", base, "-p", head, "-m", "merge"], cwd=r,
+                       env=env, capture_output=True, text=True)
+    assert p.returncode == 0, p.stderr
+    return p.stdout.strip()
 
 
 def check_intent(r: Path, base: str, head: str, allow="false", intent="netdryrun-intent.yml", topology="lab/topology.clab.yml",
@@ -347,3 +354,14 @@ def test_cold_4_after_is_the_pr_merged_into_the_base_branch_as_it_is_now(repo):
     # a github.sha that is not this PR's merge commit is refused
     code, log, _, _ = check_intent(repo, fork, h, merge=tip)
     assert code == 1 and "is not this pull request's merge commit" in log
+
+
+def test_verify_passes_its_timeout_and_the_default_is_the_clis():
+    """A lab with a slow-booting node (Junos: 4 to 19 minutes) needs a longer --timeout; the Action passes its
+    `timeout` input in verify mode, with the CLI's default."""
+    import inspect
+
+    assert float(ACTION["inputs"]["timeout"]["default"]) == inspect.signature(vrun.verify).parameters["timeout"].default
+    run = step("Run Netdryrun")
+    assert run["env"]["NDR_TIMEOUT"] == "${{ inputs.timeout }}"
+    assert '--timeout "$NDR_TIMEOUT"' in run["run"].split("netdryrun verify", 1)[1].split("code=$?", 1)[0]

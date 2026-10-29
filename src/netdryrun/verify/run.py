@@ -389,8 +389,29 @@ def classify_nodes(lab: Lab, overrides: dict[str, str], unobserved: list[str]) -
         if drv not in DRIVERS:
             raise VerifyInputError(f"node {name}: unknown driver {drv!r}")
         if drv != "frr":
-            raise VerifyInputError(f"node {name} runs {drv}; verify 0.4 snapshots FRR nodes only (other drivers follow)")
+            raise VerifyInputError(f"node {name} runs {drv}; verify 0.4 snapshots FRR nodes only (other platforms follow). "
+                                   f"Pass --unobserved {name} to run without it: changes on {name} are then not "
+                                   "compared, and the report says so")
         out[name] = drv
+    return out
+
+
+def unobserved_reasons(lab: Lab, nodes: dict[str, str]) -> dict[str, str]:
+    """Why each node verify doesn't snapshot is left out, for every output (an unobserved node is never silent)."""
+    out = {}
+    for name in sorted(n for n, drv in nodes.items() if not drv):
+        node = lab.nodes[name]
+        if node.kind in BRIDGE_KINDS:
+            out[name] = f"a {node.kind} (no routing stack)"
+            continue
+        try:
+            drv = detect(node)
+        except DriverError:
+            drv = None
+        if drv and drv != "frr":
+            out[name] = f"runs {drv}: verify 0.4 snapshots FRR only; changes on {name} are not compared"
+        else:
+            out[name] = f"named --unobserved (kind {node.kind}): changes on {name} are not compared"
     return out
 
 
@@ -400,8 +421,7 @@ def collect(lab: Lab, nodes: dict[str, str], cmd_timeout: float = 60) -> Snapsho
         r = lab.exec(node, argv, timeout=cmd_timeout)
         return r.rc, r.stdout, r.stderr
     snaps = {n: FrrCollector(n, exec_fn).collect() for n, drv in sorted(nodes.items()) if drv == "frr"}
-    reasons = {n: ("named --unobserved or a host/bridge kind: no routing driver") for n, d in nodes.items() if not d}
-    return Snapshot(snaps, reasons)
+    return Snapshot(snaps, unobserved_reasons(lab, nodes))
 
 
 @contextmanager
@@ -584,6 +604,9 @@ def verify(topology: str, before: str, after: str, intent_path: str, *, guards: 
         if gcfg is None:
             res.warnings.append(NO_GUARDS_WARNING)
         nodes = classify_nodes(lab, gcfg.drivers if gcfg else {}, list(unobserved))
+        for name, why in unobserved_reasons(lab, nodes).items():
+            if lab.nodes[name].kind not in BRIDGE_KINDS:
+                res.warnings.append(f"node {name} is not observed ({why})")
         check_nodes(res.intent, nodes)
         side = side_fn or real_side(nodes=nodes, setup=gcfg.setup if gcfg else {}, settle=settle, timeout=timeout,
                                     keep_after=keep, log=log)

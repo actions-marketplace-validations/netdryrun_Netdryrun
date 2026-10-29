@@ -246,6 +246,12 @@ The intent should come from the ticket or the operator. An agent must never writ
 
 On a pull request, [the Action](../github-action.md#verify-a-change-against-its-intent-mode-verify) with `mode: verify` runs `verify` with the base branch as *before* and the PR merged into it (GitHub's merge commit, `github.sha`) as *after*, the intent file from the PR (`intent-file`, default `netdryrun-intent.yml`), and the base commit's `netdryrun.yml` as standing guards. **A PR that adds or edits the intent file fails** ("intent edited in this PR: requires a code-owner approval") unless the workflow sets `allow-intent-edit: true`, which it should do only where branch protection requires a code-owner review of that file. The PR comment shows the verdict, the echoed intent, the undeclared items and their next diagnostics.
 
+## Nodes verify does not snapshot, and slow boots
+
+verify 0.4 snapshots FRR nodes only. A node on any other platform (SR Linux, SONiC, Arista EOS, Juniper cJunosEvolved) is refused before a lab boots (exit code `2`), naming it. Pass `--unobserved NODE` to run without it: the lab still boots it, but **changes on that node are not compared**, and every output says so (a warning in the console, the Markdown summary, the JSON report and the MCP result). A Juniper collector for verify is planned for 0.4.1.
+
+**Slow boots.** `--timeout` (default 300 s) is per lab, from the deploy to a stable snapshot. cJunosEvolved took 4 to 19 minutes to boot in our runs, and an approval boots each side twice, so a lab with a Junos node needs about `--timeout 1500` (the Action's `timeout` input) and a job timeout of about two hours; the MCP tool is a poor fit for such labs (client timeouts), so use the CLI or the Action. With the default, a node still booting never yields an approval: the sessions to it are down, which is an unhealthy baseline (exit code `3`) on the *before* side or a difference on the *after* side, and a lab that never settles is INCONCLUSIVE (exit code `3`). Don't pass `--allow-unhealthy-baseline` to get past a node that hasn't booted: with its sessions down on both sides, its routes are compared absent against absent.
+
 ## Not in 0.4
 
-Topology changes; SR Linux, SONiC and Arista EOS nodes; EVPN, VPN and labeled-unicast address families; unnumbered BGP sessions; the data plane beyond the standing guards' ping checks.
+Topology changes; SR Linux, SONiC, Arista EOS and Juniper nodes (refused, or run as `--unobserved`); EVPN, VPN and labeled-unicast address families; unnumbered BGP sessions; the data plane beyond the standing guards' ping checks.

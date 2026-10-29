@@ -12,7 +12,7 @@ from netdryrun.verify import report as vreport
 from netdryrun.verify import run as vrun
 from netdryrun.verify.converge import Inconclusive
 from netdryrun.verify.snapshot import SnapshotError
-from verify_helpers import add_new_customer_block, attrs, base, rib
+from verify_helpers import add_new_customer_block, attrs, base, rib, session
 
 jsonschema = pytest.importorskip("jsonschema")
 ROOT = Path(__file__).parents[1]
@@ -725,6 +725,60 @@ def test_host_kinds_are_refused_unless_unobserved(tmp_path):
     with pytest.raises(vrun.VerifyInputError, match="x1"):
         vrun.classify_nodes(lab, {}, [])
     assert vrun.classify_nodes(lab, {}, ["x1"]) == {"r1": "frr", "x1": "", "br": ""}
+
+
+@pytest.mark.parametrize("driver", ["srlinux", "eos", "sonic", "junos"])
+def test_a_node_verify_cannot_snapshot_is_refused_and_named_with_the_way_out(tmp_path, monkeypatch, driver):
+    """verify 0.4 snapshots FRR only. Any other platform (Junos included: its collector is 0.4.1) is refused
+    before a lab boots, naming --unobserved and what it costs; it is never snapshotted by a guess."""
+    from netdryrun.lab import Lab
+    monkeypatch.setattr(vrun, "DRIVERS", {**vrun.DRIVERS, driver: object})
+    monkeypatch.setattr(vrun, "detect", lambda node: driver if node.name == "x1" else "frr")
+    topo = tmp_path / "t.clab.yml"
+    topo.write_text("name: t\ntopology:\n  nodes:\n    r1: {kind: linux, image: quay.io/frrouting/frr:10.4.1}\n"
+                    "    x1: {kind: linux, image: some/nos:1}\n")
+    lab = Lab(topo)
+    with pytest.raises(vrun.VerifyInputError) as e:
+        vrun.classify_nodes(lab, {}, [])
+    assert "x1" in str(e.value) and driver in str(e.value) and "--unobserved x1" in str(e.value)
+    assert "not compared" in str(e.value)
+    assert vrun.classify_nodes(lab, {}, ["x1"]) == {"r1": "frr", "x1": ""}
+    assert vrun.unobserved_reasons(lab, {"r1": "frr", "x1": ""})["x1"].startswith(f"runs {driver}")
+
+
+def test_an_unobserved_node_is_stated_in_every_output(tmp_path, monkeypatch):
+    """A node run as --unobserved: the console, the Markdown and the JSON report all say that changes on it
+    are not compared (never silently a smaller snapshot)."""
+    lab = make_lab(tmp_path)
+    b, a = side_dir(tmp_path, lab, "before"), side_dir(tmp_path, lab, "after", edit="! edge1 after\n")
+    snap_b, snap_a = base().snap(), base().snap()
+    side = fake_side(snap_b, snap_a)
+    res = vrun.verify(str(lab / "topology.clab.yml"), str(b), str(a), str(intent_file(tmp_path, "intent: []\n")),
+                      side_fn=side, unobserved=["peer1"])
+    assert res.status == "no_change", res.error
+    line = next(w for w in res.warnings if "peer1" in w)
+    assert "not compared" in line
+    assert line in vreport.console(res) and "peer1" in vreport.markdown(res)
+    assert any("peer1" in w for w in validate(res)["warnings"])
+
+
+def test_a_peer_still_booting_at_the_timeout_never_approves(tmp_path):
+    """A slow node (cJunosEvolved booted in 4 to 19 minutes in the Juniper session's runs) can still be booting
+    when the snapshot settles: the FRR sessions to it are down. With the default timeout that is an unhealthy
+    baseline (exit 3), a lab that never settles is INCONCLUSIVE (exit 3): never an approval."""
+    booting = base()
+    booting.session("edge1", "10.0.3.2", session(None, state="active", remote_as=65003))
+    booting.session("peer1", "10.0.3.1", session(None, state="active"))
+    res, _ = run_verify(tmp_path / "a", booting.snap(), booting.snap(), intent_text="intent: []\n")
+    assert (res.status, res.exit_code) == ("unhealthy_baseline", 3)
+    # booted by the after side: the sessions that came up are differences, not an approval
+    res, _ = run_verify(tmp_path / "b", booting.snap(), base().snap(), intent_text="intent: []\n",
+                        allow_unhealthy_baseline=True)
+    assert res.status == "failed" and res.exit_code == 1
+    # still moving at the timeout
+    stuck = Inconclusive("the lab's state kept moving within 300s", ["edge1 session 10.0.3.2 changed"])
+    res, _ = run_verify(tmp_path / "c", base().snap(), stuck, intent_text="intent: []\n")
+    assert (res.status, res.exit_code) == ("inconclusive", 3)
 
 
 # --- cold review of 0.4 (layer 6, 2026-10-28) ------------------------------------------------------------------
