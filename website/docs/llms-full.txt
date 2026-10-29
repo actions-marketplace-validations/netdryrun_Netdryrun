@@ -2881,6 +2881,8 @@ Configure a stdio server with command `netdryrun` and argument `mcp`. Most clien
 }
 ```
 
+This repository already carries the server config for the clients that read a project file, so an agent that opens a clone, or the [Codespace](getting-started.md), finds the tools without setup: `.mcp.json` (Claude Code, and the portable file VS Code reads), `.vscode/mcp.json` (VS Code and GitHub Copilot, which use `servers` as the top-level key) and `.cursor/mcp.json` (Cursor). Copy the one your client reads into your own repository. The Codespace installs `netdryrun` from the checkout, so the command resolves; clients ask for approval before they start a project server.
+
 Without installing, use `"command": "uvx", "args": ["netdryrun", "mcp"]`. On Windows, use the `wsl.exe` command and arguments shown above. Set the client's tool-call timeout to at least 5 minutes.
 
 ### Not supported: Docker MCP Toolkit and other containerized gateways
@@ -3067,7 +3069,16 @@ git clone --depth 1 https://github.com/netdryrun/netdryrun /tmp/netdryrun
 mkdir -p ~/.claude/skills && cp -r /tmp/netdryrun/skills/netdryrun ~/.claude/skills/   # Claude Code, every project
 ```
 
-To give it to everyone working in one repository, copy the folder to `.claude/skills/netdryrun/` there and commit it. Other clients that read Agent Skills (a folder with a `SKILL.md`) take the same folder.
+To give it to everyone working in one repository, copy the folder to `.claude/skills/netdryrun/` there and commit it.
+
+Clients that follow the [agentskills.io](https://agentskills.io/specification) layout read `.agents/skills/` instead. Copy the same folder there, in the repository (committed, shared with everyone) or in your home folder (every project):
+
+```bash
+mkdir -p .agents/skills && cp -r /tmp/netdryrun/skills/netdryrun .agents/skills/    # this repository
+mkdir -p ~/.agents/skills && cp -r /tmp/netdryrun/skills/netdryrun ~/.agents/skills/   # every project
+```
+
+Each client's own docs name these locations: Codex reads `.agents/skills/` in the repository and `~/.agents/skills/`; Gemini CLI reads `.gemini/skills/` and its `.agents/skills/` alias (which wins when both exist), in the workspace and in the home folder; VS Code with GitHub Copilot reads `.github/skills/`, `.claude/skills/` and `.agents/skills/`. For other clients, check the folder they scan. The folder name must stay `netdryrun`, the `name` in `SKILL.md`. The skill's `compatibility` field says what it needs: Linux, Docker and containerlab with root-equivalent rights.
 
 ## Paste this into your network repository's AGENTS.md
 
