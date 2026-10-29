@@ -227,6 +227,8 @@ How results are checked and released, with evidence for each claim: [How it's bu
 - More failure scenarios, more check types (OSPF/IS-IS, traceroute) and drivers
 - PR comments with diffs, and signed evidence for change tickets
 
+If Netdryrun caught something for you, a ⭐ helps other engineers and agents find it.
+
 ## License
 
 Apache-2.0. "Netdryrun" and the Netdryrun logo are trademarks; see [TRADEMARKS.md](https://github.com/netdryrun/netdryrun/blob/main/TRADEMARKS.md).
