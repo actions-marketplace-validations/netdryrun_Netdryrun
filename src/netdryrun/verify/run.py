@@ -465,6 +465,18 @@ def deployed(topology: Path, setup: dict[str, list[str]], keep: bool, log: Calla
 FRR_CONFIGS = ("/etc/frr/frr.conf", "/etc/frr/bgpd.conf")
 
 
+def check_config_loaded(lab, nodes: dict[str, str], label: str) -> None:
+    """Every snapshotted node loaded its config without a rejected line, or LabError (exit 2). FRR skips a line it
+    rejects and loads the rest: a changed line it rejected on the after side would read as no change at all."""
+    from ..drivers.frr import parse_config_load_errors
+
+    rejected = [f"{n}: {e}" for n, drv in sorted(nodes.items()) if drv == "frr"
+                for e in parse_config_load_errors(lab.logs(n))]
+    if rejected:
+        raise LabError(f"[{label}] the config did not load cleanly, so the lab didn't run the {label} side as written: "
+                       f"{'; '.join(rejected)}. No verdict: fix the lines the device rejected, then run again")
+
+
 def expects_bgp(exec_fn, node: str) -> bool:
     """Whether an FRR node is configured to run BGP: `router bgp` in its config file, read inside the
     container (the bound file is there before FRR has loaded it). Unreadable: assume it does."""
@@ -492,6 +504,8 @@ def real_side(*, nodes: dict[str, str], setup: dict, settle: float, timeout: flo
             log(f"[{label}] waiting for a stable snapshot (settle {settle:g}s, timeout {timeout:g}s)...")
             snap = stable_snapshot(lambda: collect(lab, nodes, max(60.0, timeout)), settle=settle, timeout=timeout, log=log,
                                    bgp_nodes=bgp_nodes)
+            if isinstance(snap, Snapshot):
+                check_config_loaded(lab, nodes, label)
             extra = on_up(lab, topology) if on_up is not None and isinstance(snap, Snapshot) else None
         return snap, round(time.monotonic() - t0, 1), extra
     return side

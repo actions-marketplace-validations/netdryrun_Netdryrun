@@ -376,6 +376,10 @@ def run(config: Config, *, deploy: bool = True, keep: bool = False, keep_on_fail
                 if sc is not config.scenarios[-1]:
                     log(f"The network did not recover after scenario '{sc.name}'; later scenarios skipped")
                 break
+        rejected = _config_load(lab, driver_for, report)
+        if rejected:
+            report.error = (f"the config did not load cleanly, so the lab didn't run the config as written: "
+                            f"{'; '.join(rejected)}. No verdict: fix the lines the device rejected, then run again")
     except KeyboardInterrupt as e:
         interrupted = e
         report.error = f"interrupted by {signal_name(getattr(e, 'signum', signal.SIGINT))}: no verdict"
@@ -451,6 +455,30 @@ def _with_warnings(warnings: dict[int, str], on_result=None):
         if on_result:
             on_result(r)
     return add
+
+
+def _config_load(lab, driver_for, report: RunReport) -> list[str]:
+    """Each node's config-load result in the report (environment.nodes.<node>.config_load: "clean", the rejected
+    lines, or "not verified on <driver>"); returns the rejections, as "node: line", that make the run an error.
+    A NOS that skips a line it rejects (FRR does, line by line) runs a config other than the file: checks that
+    pass there say nothing about the file (live repro, FRR 10.4.1: a misspelled change line, every check passed)."""
+    rejected: list[str] = []
+    nodes = report.environment.setdefault("nodes", {})
+    for node in sorted(lab.nodes):
+        try:
+            drv = driver_for(node)
+        except DriverError:
+            continue   # a node without a routing driver (a host)
+        errors = drv.config_load_errors()
+        entry = nodes.setdefault(node, {})
+        if errors is None:
+            entry["config_load"] = f"not verified on {drv.name}"
+        elif errors:
+            entry["config_load"] = list(errors)
+            rejected += [f"{node}: {e}" for e in errors]
+        else:
+            entry["config_load"] = "clean"
+    return rejected
 
 
 ADV_MARGIN = 2.0   # seconds beyond the longest advertisement interval

@@ -123,6 +123,10 @@ class FakeDriver:
                  ping=None):
         self.world, self._neighbors, self._routes = world, neighbors, routes
         self.neighbors_error, self._ping = neighbors_error, ping
+        self.name = "frr"
+
+    def config_load_errors(self):
+        return []   # the config loaded cleanly (tests/test_config_apply.py covers a rejected line)
 
     def bgp_neighbors(self, vrf="default"):
         if self.neighbors_error:

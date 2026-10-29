@@ -138,6 +138,11 @@ class Drv:
         self.paths_ = paths or {}
         self.ping_, self.neighbors_error, self.on_call = ping, neighbors_error, on_call
         self.calls: list[tuple] = []
+        self.load_errors: list[str] | None = []   # what the NOS rejected at load; None: the driver can't tell
+        self.name = "frr"
+
+    def config_load_errors(self):
+        return self.load_errors
 
     def bgp_neighbors(self, vrf="default"):
         self.calls.append(("bgp_neighbors", vrf, self.clock.now))
@@ -420,7 +425,8 @@ def test_report_started(monkeypatch):
     e = make(monkeypatch)
     rep = e.run([route("a")])
     assert iso(rep.started) and rep.lab_name == "t"
-    assert rep.environment["nodes"]["r1"] == {"kind": "linux", "image": "quay.io/frrouting/frr:10.4.1"}
+    assert rep.environment["nodes"]["r1"] == {"kind": "linux", "image": "quay.io/frrouting/frr:10.4.1",
+                                              "config_load": "clean"}
     assert set(rep.environment) == {"netdryrun", "containerlab", "python", "host", "nodes"}
 
 
@@ -1806,3 +1812,28 @@ def test_the_no_neighbors_result_is_a_complete_failed_result(monkeypatch):
     assert iso(r.started)
     assert len(r.history) == 50 and r.attempts > 50 and r.samples_unready == r.attempts   # last 50 kept, all counted
     assert all(h.get("unready") for h in r.history)
+
+
+# ------------------------------------------------------------------- a config the NOS rejected is never a pass
+
+def test_a_rejected_config_line_makes_the_run_an_error_never_a_pass(monkeypatch):
+    """Live repro (FRR 10.4.1): a misspelled change line was skipped at boot and every check passed. Every
+    check passing on a node whose config didn't load cleanly is status error (exit 2), naming the node and
+    the line."""
+    e = make(monkeypatch, r1={"neighbors": up("10.0.12.2"), "routes": {"default": never}})
+    e.drivers["r2"].load_errors = ["line 18: % Unknown command: neighbor 10.0.12.1 default-orignate"]
+    rep = e.run([leak("neg")], settle=10, hold=10)
+    assert rep.status == "error" and rep.exit_code == 2
+    assert "r2" in rep.error and "default-orignate" in rep.error
+    assert by_name(rep)["neg"].passed                       # the results are kept as evidence
+    assert rep.environment["nodes"]["r2"]["config_load"] == ["line 18: % Unknown command: neighbor 10.0.12.1 default-orignate"]
+    assert rep.environment["nodes"]["r1"]["config_load"] == "clean"
+
+
+def test_a_driver_that_cannot_verify_the_load_says_so(monkeypatch):
+    e = make(monkeypatch, r1={"neighbors": up("10.0.12.2"), "routes": {"default": never}})
+    e.drivers["r3"].load_errors = None
+    e.drivers["r3"].name = "eos"
+    rep = e.run([leak("neg")], settle=10, hold=10)
+    assert rep.status == "passed"
+    assert rep.environment["nodes"]["r3"]["config_load"] == "not verified on eos"

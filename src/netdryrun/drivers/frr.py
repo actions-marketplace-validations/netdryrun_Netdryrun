@@ -46,6 +46,21 @@ def _bgp_json(command: str, text: str) -> dict:
     return data
 
 
+# FRR's boot apply (vtysh -b) prints each config line it rejects, once per daemon, and goes on with the next line:
+#   line 18: % Unknown command[31]:   neighbor 10.0.12.1 default-orignate
+_LOAD_ERROR = re.compile(r"^line (\d+): (%[^:\[\n]*?)(?:\[\d+\])?:\s*(.*?)\s*$", re.M)
+
+
+def parse_config_load_errors(log: str) -> list[str]:
+    """Each config line FRR rejected at boot, once, in file order."""
+    out: list[str] = []
+    for m in _LOAD_ERROR.finditer(log):
+        line = f"line {m.group(1)}: {m.group(2).strip()}: {m.group(3)}"
+        if line not in out:
+            out.append(line)
+    return out
+
+
 @parser(NEIGHBORS_CMD)
 def parse_bgp_neighbors(text: str) -> dict[str, BgpNeighbor]:
     """`show bgp [vrf X] neighbors json`: one object per neighbor, keyed by address (or interface)."""
@@ -221,6 +236,9 @@ class FrrDriver(Driver):
                               f"(`show vrf` lists: {', '.join(sorted(vrfs)) or 'none'})")
         if not vrfs[vrf]:
             raise NoSuchInstance(f"VRF {vrf!r} is configured on {self.node} but inactive (no kernel VRF device)")
+
+    def config_load_errors(self) -> list[str] | None:
+        return parse_config_load_errors(self.lab.logs(self.node))
 
     def bgp_neighbors(self, vrf: str = "default") -> Observation:
         vrf = check_vrf_name(vrf)
