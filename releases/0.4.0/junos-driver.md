@@ -2,7 +2,7 @@
 
 Branch `ndr/junos`, `main` (0.3.2) merged in. For the 0.4 cold review (layer 6) and the gate. Everything here is checkable from the branch: the fixtures and the commands that produced them are in `tests/fixtures/junos_*` and `tests/fixtures/junos_CAPTURES.md`.
 
-Image: `cjunosevolved:26.2R1.7-EVO` (containerlab kind `juniper_cjunosevolved`), never committed or redistributed. Captured live on 2026-10-28 from three labs: `ndr-junos-cap` (VRF, IPv6, an idle peer, hidden routes), `ndr-junos-ibgp` (iBGP, no-export), `ndr-junos-frr` (the example, and the error while rpd starts).
+Image: `cjunosevolved:26.2R1.7-EVO` (containerlab kind `juniper_cjunosevolved`), never committed or redistributed. Captured live on 2026-10-28 and 2026-10-29 from four labs: `ndr-junos-cap` (VRF, IPv6, an idle peer, hidden routes), `ndr-junos-ibgp` (iBGP, no-export), `ndr-junos-frr` (the example, and the error while rpd starts), `ndr-cap-junos` (the capture script's lab: out-delay, a routing instance).
 
 ## Must-fail coverage, every check type
 
@@ -31,17 +31,24 @@ Also on the driver: fuzz (layer 3: empty, truncated, garbage, wrong-type JSON, r
 | Through those runs: `bgp_session` (v4, v6), `bgp_prefixes` (v6 `max`), `route` (BGP v4, v6, static), `bgp_route` (communities incl. large, as_path, local_pref, MED, next hop, `present: false` both ways), `ping` with a source | all read correctly on the live device |
 | Not-ready shapes: SSH hop refused while the VM boots (rc 255), `xnm:error` "routing subsystem is not running" (invalid JSON) | captured; both are errors on that sample, never "nothing" |
 
-## Not yet live-verified (parsers tested on captures only, or not at all)
+## Verified live on 2026-10-29 (lab window 23:12–23:25, `netdryrun check` on the kept capture lab)
 
-1. **Checks in a VRF (routing instance)** through a full `netdryrun run`: the parsers and the instance confirmation are tested on live captures (RED), but no example run used `vrf:`.
-2. **`ping` in a routing instance** and IPv6 ping: captured live (3/3), never run as a check.
-3. **`netdryrun record`** (`all_routes`) on Junos: parser tested on a live capture, never run end to end.
-4. **Advertisement interval:** the 0.3.2 audit's `adv_interval` (on `ndr/verify-change`, not yet on main) isn't read on Junos; it stays `None` (unknown, no settle stretch). Junos prints no out-delay element when none is configured. Needed: a capture with `out-delay` configured (next lab window), then read it, default 0.
-5. **The capture script** `scripts/capture_fixtures.sh junos` (added in the merge) has never run: it needs a lab window.
-6. **verify_change** doesn't snapshot Junos in 0.4 (FRR only by design); a Junos node must be `--unobserved`. Not run with a Junos node in the lab.
-7. **Hosted CI:** never run on a GitHub runner. cJunosEvolved needs KVM, 4 vCPUs and about 8 GB per node; a standard 4-vCPU, 16 GB Linux runner is at the minimum, and boot took 4 to 19 minutes here.
-8. **Other images:** only 26.2R1.7-EVO. vJunos, other cJunosEvolved releases and real Junos devices are untested.
-9. **Multipath / ECMP, add-path, AS sets and confederations from a live device:** the AS-path parser handles `{}` and `()` from documented forms only; a bracketed local AS (`[65001]`) is refused as unknown.
+| What | Result |
+|---|---|
+| `scripts/capture_fixtures.sh junos` on `examples/junos-frr` | ran end to end in 5 min, `fixture_shape.py`: 0 drift (the IPv6 route was captured before its session was up; the script now waits for it) |
+| Checks in a routing instance (`vrf: CUST`): static and connected route present, a master-only route absent (`route` and `bgp_route`), an idle VRF session `state: down`, ping inside the VRF with a source | all passed |
+| IPv6 ping with a source | passed (3/3) |
+| Must-fail on the same lab: a VRF route `present: false`, a route and a BGP path in an unknown instance, an idle VRF session expected established, ping to a prefix the VRF has no route to | 5/5 failed (unknown instance: "routing-instance 'NOPE' does not exist") |
+| `netdryrun record` on a lab with a Junos node | recorded 12 checks (sessions, exact prefix counts per family, routes) |
+| `out-delay 10` configured: Junos adds `outbound-timer` (seconds) to the peer's options | captured; read as `adv_interval` in the commit that goes on the 0.4 release branch (it needs that branch's `base.py`), with `vrfs()` from a live `show route instance` |
+
+## Not yet live-verified
+
+1. **verify_change** doesn't snapshot Junos in 0.4 (FRR only by design; coordinator decision): a Junos node is refused or `--unobserved`, and the verify reference says so with the boot times.
+2. **Hosted CI:** never run on a GitHub runner. cJunosEvolved needs KVM, 4 vCPUs and about 8 GB per node; boot took 4 to 19 minutes here.
+3. **Other images:** only 26.2R1.7-EVO. vJunos, other cJunosEvolved releases and real Junos devices are untested.
+4. **Multipath / ECMP, add-path, AS sets and confederations from a live device:** the AS-path parser handles `{}` and `()` from documented forms only; a bracketed local AS (`[65001]`) is refused as unknown.
+5. **The settle stretch with a Junos `out-delay`** in a full run: the parser reads it from a live capture; the runner's stretch is tested on FRR.
 
 ## Decisions for the reviewer
 
