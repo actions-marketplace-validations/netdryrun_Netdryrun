@@ -70,7 +70,7 @@ A BGP session reaches a state.
 
 | Key | Required | Default | Meaning |
 |---|---|---|---|
-| `neighbor` | yes | | Neighbor IP address as configured on `node` |
+| `neighbor` | yes | | Neighbor IP address as configured on `node`. A link-local address that several sessions share (`fe80::1` on two interfaces) is ambiguous: the check is not evaluated, so use a global address |
 | `state` | no | `established` | One of `idle`, `connect`, `active`, `opensent`, `openconfirm`, `established`, or `down` (any state except established). Case-insensitive |
 
 The check fails if the neighbor is not configured. A `state` other than `established` makes it a post-convergence check.
@@ -87,7 +87,7 @@ The number of prefixes accepted from a neighbor is within a range. Accepted mean
 
 | Key | Required | Default | Meaning |
 |---|---|---|---|
-| `neighbor` | yes | | Neighbor IP address |
+| `neighbor` | yes | | Neighbor IP address (a link-local address several sessions share is ambiguous, as for `bgp_session`) |
 | `min` | one of `min`, `max`, `exact` | | Lower bound, inclusive |
 | `max` | one of `min`, `max`, `exact` | | Upper bound, inclusive |
 | `exact` | one of `min`, `max`, `exact` | | Exact count |

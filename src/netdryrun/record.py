@@ -8,19 +8,21 @@ from __future__ import annotations
 
 import ipaddress
 import math
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
 
 from . import __version__
-from .checks import _evaluate
+from .checks import Unready, _evaluate
 from .config import Check, community_name
 from .drivers import DriverError, detect, for_node
 from .lab import Lab, LabError
 
 MAX_ROUTES_PER_NODE = 50
 MAX_LINK_GUARDS_PER_NODE = 20
+GUARD_SAMPLES = 3   # a guard sample that errors is retried; only a real failing sample means "the lab fails it"
 
 
 def prefix_range(count: int) -> dict:
@@ -33,7 +35,7 @@ def prefix_range(count: int) -> dict:
 
 
 def record(topology: Path, include_routes: bool = True, prefix_mode: str = "range", attributes: bool = False,
-           guards: bool = True, log=lambda _: None) -> tuple[dict, list[str]]:
+           guards: bool = True, log=lambda _: None, sleep=time.sleep) -> tuple[dict, list[str]]:
     """Return (netdryrun.yml data, warnings) for the running lab described by `topology`.
     prefix_mode: "range" (default: prefix_range), "exact", or "min".
     With `attributes`, each recorded BGP route also gets a bgp_route check pinning its best path's
@@ -64,25 +66,7 @@ def record(topology: Path, include_routes: bool = True, prefix_mode: str = "rang
         except DriverError as e:
             warnings.append(f"{name}: could not read BGP state ({e}); skipped")
             continue
-        for addr, n in sorted(neighbors.items()):
-            try:
-                ipaddress.ip_address(addr)
-            except ValueError:
-                warnings.append(f"{name}: BGP neighbor {addr!r} is not an IP address (unnumbered?); not recorded")
-                continue
-            if n.state != "established":
-                warnings.append(f"{name}: BGP neighbor {addr} is {n.state}; not recorded (fix it or add a check by hand)")
-                continue
-            checks.append({"type": "bgp_session", "node": name, "neighbor": addr})
-            for afi, count in sorted(n.prefixes.items()):
-                c = {"type": "bgp_prefixes", "node": name, "neighbor": addr, "afi": afi}
-                if prefix_mode == "exact":
-                    c["exact"] = count
-                elif prefix_mode == "min" and count > 0:
-                    c["min"] = count
-                else:
-                    c.update(prefix_range(count))
-                checks.append(c)
+        checks += _session_checks(name, neighbors, prefix_mode, warnings)
         bgp_now: dict[int, set[str]] = {}   # every BGP route the node has today, received selected or not
         if include_routes or guards:
             for fam in (4, 6):
@@ -110,9 +94,38 @@ def record(topology: Path, include_routes: bool = True, prefix_mode: str = "rang
                         if c:
                             checks.append(c)
         if guards and neighbors:
-            checks += _guards(name, drv, neighbors, bgp_now, link_subnets, warnings)
+            checks += _guards(name, drv, neighbors, bgp_now, link_subnets, warnings, sleep=sleep)
     data = {"lab": topology.name, "timeout": 120, "checks": checks}
     return data, warnings
+
+
+def _session_checks(name: str, neighbors: dict, prefix_mode: str, warnings: list[str]) -> list[dict]:
+    checks: list[dict] = []
+    for addr, n in sorted(neighbors.items()):
+        try:
+            ipaddress.ip_address(addr)
+        except ValueError:
+            warnings.append(f"{name}: BGP neighbor {addr!r} is not an IP address (unnumbered?); not recorded")
+            continue
+        if n.ambiguous:
+            warnings.append(f"INCOMPLETE BASELINE: {name}: BGP neighbor {addr} is {len(n.ambiguous)} sessions "
+                            f"({', '.join(n.ambiguous)}) that can't be told apart; not recorded: add checks on "
+                            "global addresses")
+            continue
+        if n.state != "established":
+            warnings.append(f"{name}: BGP neighbor {addr} is {n.state}; not recorded (fix it or add a check by hand)")
+            continue
+        checks.append({"type": "bgp_session", "node": name, "neighbor": addr})
+        for afi, count in sorted(n.prefixes.items()):
+            c = {"type": "bgp_prefixes", "node": name, "neighbor": addr, "afi": afi}
+            if prefix_mode == "exact":
+                c["exact"] = count
+            elif prefix_mode == "min" and count > 0:
+                c["min"] = count
+            else:
+                c.update(prefix_range(count))
+            checks.append(c)
+    return checks
 
 
 def _link_subnets(lab, warnings: list[str]) -> list[str]:
@@ -139,11 +152,12 @@ def _link_subnets(lab, warnings: list[str]) -> list[str]:
 
 
 def _guards(name: str, drv, neighbors: dict, bgp_now: dict[int, set[str]], link_subnets: list[str],
-            warnings: list[str]) -> list[dict]:
+            warnings: list[str], sleep=time.sleep) -> list[dict]:
     """The standard guards for one BGP node: checks that must hold on what the network does today. Each one
     is evaluated on the recording lab with the real check before it is written: a guard the baseline itself
     fails (a default received from upstream but not selected, which the routing table doesn't list) is left
-    out, and a warning, a comment in the file, says why."""
+    out, and a warning, a comment in the file, says why. A sample that errors is no answer: it is retried, and
+    a guard that never gets a real answer is left out with an INCOMPLETE BASELINE line."""
     v6 = (any(":" in a for a in neighbors) or bool(bgp_now.get(6))   # IPv6 neighbors or routes, or IPv6
           or any("ipv6" in afi for n in neighbors.values() for afi in n.prefixes))   # carried over IPv4
     out = []
@@ -168,12 +182,21 @@ def _guards(name: str, drv, neighbors: dict, bgp_now: dict[int, set[str]], link_
             for n in links[:MAX_LINK_GUARDS_PER_NODE]]
     kept = []
     for g in out:
-        ok, detail, _ = _evaluate(Check("route", {k: v for k, v in g.items() if k != "type"}, "guard", 30), drv)
+        check = Check("route", {k: v for k, v in g.items() if k != "type"}, "guard", 30)
+        for attempt in range(GUARD_SAMPLES):
+            ok, detail, _ = _evaluate(check, drv)
+            if ok or not isinstance(detail, Unready):
+                break
+            if attempt + 1 < GUARD_SAMPLES:
+                sleep(2)
+        why = " ".join(str(detail).split())
         if ok:
             kept.append(g)
+        elif isinstance(detail, Unready):
+            warnings.append(f"INCOMPLETE BASELINE: {name}: the guard against {g['prefix']} via BGP could not be "
+                            f"evaluated on the lab ({why}); not recorded: add it by hand once the node answers")
         else:
-            warnings.append(f"{name}: no guard against {g['prefix']} via BGP: the baseline lab already fails it "
-                            f"({' '.join(str(detail).split())})")
+            warnings.append(f"{name}: no guard against {g['prefix']} via BGP: the baseline lab already fails it ({why})")
     return kept
 
 

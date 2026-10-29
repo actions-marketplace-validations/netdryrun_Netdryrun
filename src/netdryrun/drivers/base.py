@@ -92,6 +92,10 @@ class BgpNeighbor:
     address: str
     state: str                                          # lower-case, e.g. "established"
     prefixes: dict[str, int] = field(default_factory=dict)  # afi -> accepted/received prefixes
+    # Scoped link-locals (fe80::1%eth1, fe80::1%eth2) share one key. When several sessions do, they are all listed
+    # here and no session or prefix check is evaluated on the key: either session's state or count would answer
+    # for the other one.
+    ambiguous: list[str] = field(default_factory=list)
 
 
 @dataclass

@@ -73,8 +73,13 @@ def _summary(text: str, vrf: str, afi: str, into: dict[str, BgpNeighbor] | None)
         # "Idle(Admin)" (EOS prints no space) -> "idle": the first word is the FSM state
         state = re.split(r"[\s(]", p["peerState"].strip(), maxsplit=1)[0].lower()
         n = out.get(key) or BgpNeighbor(str(addr), state)
-        if n.state == "established" and state != "established":
-            n.state = state   # scoped link-locals sharing a key: a down session is never hidden by an up one
+        if n.address != str(addr):
+            # scoped link-locals sharing a key (one peer is also listed once per address family): ambiguous, and a
+            # down session is never hidden by an up one
+            if str(addr) not in n.ambiguous:
+                n.ambiguous = (n.ambiguous or [n.address]) + [str(addr)]
+            if n.state == "established" and state != "established":
+                n.state = state
         if "prefixAccepted" in p:
             n.prefixes[afi] = as_int(command, p["prefixAccepted"])
         elif n.state == "established":  # a missing count would read as 0 prefixes, passing `max`

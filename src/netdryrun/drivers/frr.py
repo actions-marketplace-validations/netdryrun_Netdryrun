@@ -35,10 +35,15 @@ def _canon_addr(addr: str) -> str:
 
 def _keep_down(out: dict, key: str, n: BgpNeighbor) -> None:
     """Add a neighbor under its canonical key. Scoped link-locals (fe80::1%eth1, fe80::1%eth2) differ only by
-    zone and share a key: keep the one that isn't established, so a down session is never hidden by an up one."""
+    zone and share a key: the key is then ambiguous (every session listed, so no check is evaluated on it), and
+    the one that isn't established is kept, so the convergence gate never reads a down session as up."""
     old = out.get(key)
-    if old is None or old.state == "established":
+    if old is None:
         out[key] = n
+        return
+    keep = n if old.state == "established" else old
+    keep.ambiguous = (old.ambiguous or [old.address]) + [n.address]
+    out[key] = keep
 
 
 def _bgp_json(command: str, text: str) -> dict:

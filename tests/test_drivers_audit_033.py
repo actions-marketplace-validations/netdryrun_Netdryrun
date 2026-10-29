@@ -242,3 +242,118 @@ def test_a_route_check_fails_when_only_a_covering_route_exists():
 
     ok, detail, _ = _evaluate(Check("route", {"node": "r1", "prefix": _WANT, "protocol": "bgp"}, "c", 30), Drv())
     assert not ok and "not active" in detail
+
+
+# --- Layer 6 delta review (2026-10-29) ------------------------------------------------------------------------------
+# D1/D2: scoped link-locals that share a key are ambiguous. Keeping either session makes some check pass on the other
+# one (a `max` count read from the wrong session; `state: down` while one is up), so no session or prefix check
+# passes on such a key.
+
+def _session_check(drv_neighbors, params):
+    from netdryrun.checks import Unready, _evaluate
+    from netdryrun.config import Check
+    from netdryrun.drivers.base import Observation
+
+    class Drv:
+        name = "x"
+
+        def bgp_neighbors(self, vrf="default"):
+            return Observation(drv_neighbors, [])
+
+    ctype = "bgp_prefixes" if any(k in params for k in ("min", "max", "exact")) else "bgp_session"
+    ok, detail, _ = _evaluate(Check(ctype, {"node": "r1", "neighbor": "fe80::1", **params}, "c", 30), Drv())
+    return ok, detail, isinstance(detail, Unready)
+
+
+def _ambiguous_on_every_driver(first: tuple, second: tuple):
+    """(state, count) for fe80::1 on two interfaces, parsed by each driver."""
+    def frr_state(s):
+        return {"up": "Established", "down": "Idle"}[s]
+    f = json.dumps({f"fe80::1%eth{i}": {"bgpState": frr_state(s),
+                                         "addressFamilyInfo": {"ipv6Unicast": {"acceptedPrefixCounter": c}} if s == "up" else {}}
+                    for i, (s, c) in ((1, first), (2, second))})
+    srl = json.dumps({"neighbor": [
+        {"peer-address": f"fe80::1%e1-{i}.0", "session-state": "established" if s == "up" else "idle",
+         "afi-safi": [{"afi-safi-name": "ipv6-unicast", "received-routes": c}] if s == "up" else []}
+        for i, (s, c) in ((1, first), (2, second))]})
+    e = json.dumps({"vrfs": {"default": {"peers": {
+        f"fe80::1%Et{i}": {"peerState": "Established" if s == "up" else "Idle", **({"prefixAccepted": c} if s == "up" else {})}
+        for i, (s, c) in ((1, first), (2, second))}}}})
+    return {"frr": frr.parse_bgp_neighbors(f), "srlinux": srlinux.parse_bgp_neighbors(srl),
+            "eos": eos.parse_bgp_summary(e)}
+
+
+def test_two_up_link_locals_on_one_key_never_pass_a_prefix_check():
+    for drv, nbrs in _ambiguous_on_every_driver(("up", 5000), ("up", 10)).items():
+        for afi_check in ({"afi": "ipv6-unicast", "max": 100}, {"afi": "ipv6-unicast", "min": 1}):
+            ok, detail, unready = _session_check(nbrs, afi_check)
+            assert not ok and unready and "ambiguous" in detail, (drv, afi_check, detail)
+
+
+def test_one_up_one_down_on_one_key_never_pass_a_session_check():
+    for order in ((("up", 5), ("down", 0)), (("down", 0), ("up", 5))):
+        for drv, nbrs in _ambiguous_on_every_driver(*order).items():
+            for state in ("down", "idle", "established"):
+                ok, detail, unready = _session_check(nbrs, {"state": state})
+                assert not ok and unready and "ambiguous" in detail, (drv, order, state, detail)
+
+
+def test_one_peer_in_several_eos_summaries_is_not_ambiguous():
+    into = eos.parse_bgp_summary(_eos_summary({"fe80::1%Et1": "Established"}))
+    eos._summary(_eos_summary({"fe80::1%Et1": "Established"}), "default", "ipv6-unicast", into)
+    ok, detail, _ = _session_check(into, {"state": "established"})
+    assert ok, detail
+
+
+# D3: a guard whose sample errors is not "already failing": it is retried, then reported as an INCOMPLETE BASELINE.
+
+def test_a_guard_sample_that_errors_is_retried_then_loud():
+    from netdryrun import record
+    from netdryrun.drivers.base import BgpNeighbor, Observation
+
+    class Drv:
+        name = "frr"
+        calls = 0
+
+        def routes(self, prefix, vrf="default"):
+            Drv.calls += 1
+            raise DriverError("vtysh: timed out")
+
+    warnings: list[str] = []
+    out = record._guards("r1", Drv(), {"10.0.0.2": BgpNeighbor("10.0.0.2", "established", {"ipv4-unicast": 1})},
+                         {4: set()}, ["10.0.12.0/30"], warnings, sleep=lambda s: None)
+    assert out == [] and Drv.calls == 2 * record.GUARD_SAMPLES
+    loud = [w for w in warnings if w.startswith("INCOMPLETE BASELINE")]
+    assert len(loud) == 2 and all("could not be evaluated" in w for w in loud), warnings
+
+    class Flaky:   # one error, then a real passing sample: the guard is written
+        name = "frr"
+        n = 0
+
+        def routes(self, prefix, vrf="default"):
+            Flaky.n += 1
+            if Flaky.n == 1:
+                raise DriverError("vtysh: timed out")
+            return Observation([], [])
+
+    warnings = []
+    out = record._guards("r1", Flaky(), {"10.0.0.2": BgpNeighbor("10.0.0.2", "established", {"ipv4-unicast": 1})},
+                         {4: set()}, [], warnings, sleep=lambda s: None)
+    assert [g["prefix"] for g in out] == ["0.0.0.0/0"] and not warnings
+
+
+def test_an_ambiguous_neighbor_is_not_recorded_and_says_so():
+    from netdryrun import record
+    nbrs = _ambiguous_on_every_driver(("up", 3), ("up", 4))["frr"]
+    warnings: list[str] = []
+    checks = record._session_checks("r1", nbrs, "range", warnings)
+    assert checks == [] and any(w.startswith("INCOMPLETE BASELINE") and "fe80::1" in w for w in warnings), warnings
+
+
+# D4: every SR Linux BGP route type is a BGP route for `protocol: bgp`.
+
+def test_srl_every_bgp_route_type_is_bgp():
+    row = json.loads(read("srl_leak_route.txt"))
+    for rtype in ("bgp", "bgp-evpn", "bgp-vpn", "bgp-label"):
+        row["route"][0]["route-type"] = rtype
+        assert srlinux.parse_routes(json.dumps(row), "0.0.0.0/0")[0].protocol == "bgp", rtype

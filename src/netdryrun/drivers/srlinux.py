@@ -14,8 +14,13 @@ from .base import (BgpNeighbor, BgpPath, Driver, DriverError, NoSuchInstance, Ob
 from .frr import _canon_addr, _keep_down, parse_ping
 
 # SR Linux route-type names -> the shared vocabulary used in netdryrun.yml (FRR's names)
-# bgp-evpn: a route imported through EVPN was learned via BGP, so `protocol: bgp` (and its guards) match it
-PROTOCOLS = {"local": "connected", "host": "local", "ospfv2": "ospf", "ospfv3": "ospf6", "bgp-evpn": "bgp"}
+PROTOCOLS = {"local": "connected", "host": "local", "ospfv2": "ospf", "ospfv3": "ospf6"}
+
+
+def _protocol(rtype: str) -> str:
+    """Every BGP route type (bgp, bgp-evpn, bgp-vpn, bgp-label, ...) was learned via BGP, so `protocol: bgp`
+    (and its guards) match it."""
+    return "bgp" if rtype.startswith("bgp") else PROTOCOLS.get(rtype, rtype)
 
 NEIGHBORS_CMD = "info from state /network-instance <vrf> protocols bgp neighbor *"
 ROUTE_CMD = "info from state /network-instance <vrf> route-table <afi> route <prefix>"
@@ -98,7 +103,7 @@ def parse_routes(text: str, prefix: str, bgp_rib_text: str | None = None) -> lis
         if network(ROUTE_CMD, r[key]) != want:
             continue
         rtype = str(r.get("route-type", "")).lower()
-        out.append(Route(prefix, PROTOCOLS.get(rtype, rtype), bool(r.get("active"))))
+        out.append(Route(prefix, _protocol(rtype), bool(r.get("active"))))
     if bgp_rib_text is not None and not any(r.protocol == "bgp" and r.active for r in out):
         if any(_bgp_learned(r) for r in _rib_rows(bgp_rib_text, prefix)):
             out.append(Route(prefix, "bgp", False))
@@ -287,5 +292,5 @@ def parse_all_routes(text: str, key: str = "ipv4-prefix") -> list[Route]:
         if key not in r:
             raise unexpected(cmd, str(r)[:150])
         rtype = str(r.get("route-type", "")).lower()
-        out.append(Route(str(network(cmd, r[key])), PROTOCOLS.get(rtype, rtype), bool(r.get("active"))))
+        out.append(Route(str(network(cmd, r[key])), _protocol(rtype), bool(r.get("active"))))
     return out
