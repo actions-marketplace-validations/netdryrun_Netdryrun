@@ -17,6 +17,7 @@ Facts (generated from the source): version 0.3.2; check types `bgp_session`, `bg
 - [FAQ](https://netdryrun.com/faq/): one-paragraph answers: how to test a BGP change before production, containerlab in CI, the MCP server, Batfish compared, what a pass proves, supported platforms, Windows, memory, CI cost, license
 - [Tutorial: test a change on your own lab](https://netdryrun.com/tutorial/): record a baseline, prune it, add negative checks, test a change, read the evidence, run it in GitHub Actions
 - [Examples](https://netdryrun.com/examples/): every bundled example lab, its checks, expected result, exit code and run time
+- [How to validate a BGP change before production](https://netdryrun.com/guides/validate-bgp-change/): the short answer for engineers and AI agents; checks that catch the route leak ping misses, the CLI, the Action and the MCP tools
 - [Add Netdryrun to the lab you already have](https://netdryrun.com/guides/your-lab/): an existing containerlab topology to a recorded baseline, one negative check and the GitHub Action in 10 minutes
 - [Guard recipes and scenarios](https://netdryrun.com/recipes/): copy-paste netdryrun.yml fragments for frequent BGP mistakes, and link-down, node-isolated and route-injection scenarios
 - [netdryrun.yml reference](https://netdryrun.com/reference/config/): every check type and key, convergence semantics
