@@ -51,6 +51,11 @@ def _keep_down(out: dict, key: str, n: BgpNeighbor) -> None:
 _LOAD_ERROR = re.compile(r"^line (\d+): (?:% (Unknown command|Ambiguous command|Command incomplete)(?:\[\d+\])?: "
                          r"|(Warning)(?:\[\d+\])?\.\.\.: |Failure to communicate\[\d+\] to (\S+), line: )(.*)$")
 _LOAD_FAILURE = re.compile(r"^\[\d+\|(\S+)\] Configuration file\[.*\] processing failure: (\d+)$")
+# a daemon reading its own file (bgpd.conf, no integrated frr.conf) logs "<reason> on config line N: <line>"
+_DAEMON_LINE = re.compile(r"^\S+ \S+ (\w+): (?:\[[^\]]*\])*\s*(.*?) on config line (\d+): (.*)$")
+# vtysh -b's own output at boot: there was a config load to report on
+LOAD_RAN = re.compile(r"^\[\d+\|\S+\] (?:sending configuration|done$|Configuration file\[)|on config line \d+: ",
+                      re.M)
 
 
 def parse_config_load_errors(text: str) -> list[str]:
@@ -64,6 +69,11 @@ def parse_config_load_errors(text: str) -> list[str]:
             n, kind, warning, daemon, cmd = m.groups()
             why = kind or (f"rejected by {daemon}" if daemon else "warning")
             lines.setdefault(int(n), f"line {n}: {cmd.strip()} ({why.replace('Warning', 'warning')})")
+            continue
+        d = _DAEMON_LINE.match(raw.strip())
+        if d:
+            daemon, why, n, cmd = d.groups()
+            lines.setdefault(int(n), f"line {n}: {cmd.strip()} ({why.strip()}, {daemon.lower()})")
             continue
         f = _LOAD_FAILURE.match(raw.strip())
         if f:

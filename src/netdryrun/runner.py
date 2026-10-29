@@ -23,7 +23,7 @@ from .checks import (Result, Unready, _sample, hold_together, inconclusive_reaso
                      never_ready_nodes, run_round_robin)
 from .config import Check, Config, ConfigError, Scenario, load
 from .drivers import DriverError, check_supported, detect, for_node
-from .drivers.frr import parse_config_load_errors
+from .drivers.frr import LOAD_RAN, parse_config_load_errors
 from .drivers.base import NoSuchInstance
 from .faults import RouteInjection
 from .lab import Lab, LabError
@@ -271,20 +271,27 @@ def rejected_config(lab, config: Config) -> str:
     can't be read is no proof either. (Other NOSes: see the config reference, "Config that fails to load".)"""
     found = []
     for name, node in lab.nodes.items():
+        if node.kind in ("bridge", "ovs-bridge"):   # no container, no config
+            continue
         try:
             driver = config.drivers.get(name) or detect(node)
         except DriverError:
-            continue
-        if driver != "frr":
+            driver = None   # FRR in an image not named for it is still FRR: its rejected lines still count
+        if driver not in ("frr", None):
             continue
         r = lab.boot_log(name)
         if r.rc != 0:
-            found.append(f"{name}: its boot log could not be read ({(r.stderr or r.stdout).strip()[-200:]}), so "
-                         "whether its config loaded is unknown")
+            if driver == "frr":
+                found.append(f"{name}: its boot log could not be read ({(r.stderr or r.stdout).strip()[-200:]}), "
+                             "so whether its config loaded is unknown")
             continue
         errors = parse_config_load_errors(r.stdout)
         if errors:
             found.append(f"{name}: {'; '.join(errors)}")
+        elif driver == "frr" and not LOAD_RAN.search(r.stdout):
+            found.append(f"{name}: its boot log shows no sign of a config load (no vtysh boot output, no daemon "
+                         "config line), so whether its config loaded is unknown. Netdryrun reads the config load "
+                         "FRR's image runs at boot (frr.conf, vtysh -b)")
     if not found:
         return ""
     return ("FRR rejected configuration lines at boot, so the lab ran without them and the checks did not test the "

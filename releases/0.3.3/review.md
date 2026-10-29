@@ -124,3 +124,21 @@ Found by the 0.4 session on a live lab, in released 0.3.2: FRR skips a config li
 | Arista cEOS, SR Linux, SONiC startup config | **Accepted documented limit**, fix scheduled for 0.4 (the 0.4 session builds apply verification): stated in the config reference, the compatibility matrix, the Trust page and both advisories, with the mitigation (a positive check for what each changed line creates) | — |
 
 Advisory: `advisories/0.3.2-rejected-config/README.md`. `runner.rejected_config` is added to the verdict-deciding functions for mutation review.
+
+## The two games (Layer 6, before the freeze)
+
+- **Expert gauntlet:** `research/expert-gauntlet-20261029.md` (HQ), played against this release's scope (Cisco, Juniper, a Batfish-style researcher, Forward/IP Fabric, NVIDIA, NTT Data/CDW, Starlink/Google Fiber, AWS/OpenAI/Anthropic). Its false-pass finding, a config line FRR rejected at boot, is the blocker above, fixed in this release.
+- **War game delta:** `research/games/0.3.3-wargame.md` (HQ), Grok and ChatGPT, two new personas: a bank's network team with a change advisory board, and an AI-agent startup building a network copilot. No false-pass finding. Both models: serve the startup first. Both name the question 0.3.3 answers only on FRR ("did every node load the config?"); proposed for 0.4, not this release (it would change the frozen result contract during the freeze): a per-node "config load verified" field in the agent result and the PR header, and the rejected-config check on SR Linux, cEOS and SONiC as 0.4's first slice.
+
+## Delta review, round 2 (fresh Opus agent, 2026-10-29): `git diff d9723aa..78d7649 -- src scripts/release_gate.py`
+
+| # | Finding | Class | Decision | Tests |
+|---|---|---|---|---|
+| R1 | An FRR node in an image not named "frr" (no driver detected) was skipped by the boot-log check | **false-pass** | Fixed: a node whose driver can't be detected is read too; FRR's own error lines count there (a plain host prints none) | `test_a_node_whose_driver_is_unknown_is_read_too`, `test_a_plain_host_with_an_unknown_driver_is_not_an_error`, `test_a_bridge_has_no_boot_log_to_read` |
+| R2 | A daemon reading its own file (bgpd.conf, no integrated frr.conf) reports a rejected line as `... on config line N: ...`, which wasn't read; and a log with no config load at all passed | **false-pass** | Fixed: the daemon form is read; an FRR node whose log shows no sign of a config load is an error ("whether its config loaded is unknown") | `test_a_daemon_that_reads_its_own_config_file_reports_rejected_lines_too`, `test_an_frr_log_with_no_sign_of_a_config_load_is_an_error` |
+| R3 | `bgp_route next_hop: fe80::1`: the zone is stripped, so a path through another session sharing the link-local matched | **false-pass** | Fixed: a link-local `next_hop` is refused before deploying (the scoped form could never match anyway) | `test_a_link_local_next_hop_is_refused` |
+| R4 | A line rejected before a restart, and fixed since, still made every later `check` an error | other | Fixed: only the log since the container's current start is read (`docker inspect` StartedAt, `docker logs --since`) | `test_the_boot_log_is_read_since_the_container_last_started` |
+| R5 | No cap on the log; a non-UTF-8 byte made an internal error | other | Fixed by R4 (current boot only), lenient decoding, a 120 s timeout | same test |
+| R6 | A host that can't read container logs (log driver `none`) always errors | other | Accepted: fail-closed, and the message carries Docker's reason | — |
+
+Every fix was test-first. Checked live on 2026-10-29 with real FRR 10.4.1 containers (`Lab.boot_log` itself): the three rejected lines are found, a clean boot gives none, and after `docker restart` the config load is still seen.

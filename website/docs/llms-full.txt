@@ -1921,7 +1921,7 @@ Attributes of the BGP **best path** for a prefix: communities, AS path, local pr
 | `as_path_regex` | no | | Python regular expression searched in the AS path string, for example `"^65002 "` (learned from 65002) or `"(^| )65666( |$)"` (passes through 65666). It runs with no time limit, so avoid nested repeats such as `(\d+ ?)+$` that can backtrack for minutes |
 | `local_pref` | no | | Exact local preference |
 | `med` | no | | Exact MED. A path with no MED attribute fails the check, even `med: 0`: with `bgp bestpath med missing-as-worst` a missing MED is the worst, not 0 |
-| `next_hop` | no | | Exact next hop address |
+| `next_hop` | no | | Exact next hop address. A link-local address is refused: devices report it without its interface, and two sessions can share one, so the check couldn't say which path it tests |
 | `present` | no | `true` | `false` means no path at all for the prefix in the BGP table, best or not, valid or not. Unquoted `true` or `false` only |
 | `vrf` | no | `default` | VRF or network-instance |
 
@@ -2069,7 +2069,7 @@ They run in this order:
 
 ### Config that fails to load
 
-A pass only means something if the lab ran the config you wrote. FRR loads its config line by line at boot and skips a line it rejects (a typo, an incomplete command, a command this release doesn't have), so after the checks Netdryrun reads the boot log of every FRR node in the lab: any rejected line makes the run an **error (exit 2)**, naming the node, the line and the reason. A boot log that can't be read is an error too. A `setup:` command that fails (`vtysh -c` exits 1 on a rejected line) stops the run on every platform.
+A pass only means something if the lab ran the config you wrote. FRR loads its config line by line at boot and skips a line it rejects (a typo, an incomplete command, a command this release doesn't have), so after the checks Netdryrun reads the boot log of every FRR node in the lab: any rejected line makes the run an **error (exit 2)**, naming the node, the line and the reason. A boot log that can't be read is an error too, and so is an FRR node whose log shows no sign of a config load (Netdryrun reads the load FRR's image runs at boot: `frr.conf` through `vtysh -b`, or a daemon reading its own file). Only the current boot counts, so a line fixed and reloaded with a restart no longer does. A node whose driver can't be detected (FRR in an image not named for it) is read too. A `setup:` command that fails (`vtysh -c` exits 1 on a rejected line) stops the run on every platform.
 
 Known limit: **Startup config on Arista cEOS, Nokia SR Linux and SONiC**: Netdryrun doesn't yet check that every line of a startup config loaded, so a line the NOS rejected leaves the lab running without it. Config applied with `setup:` commands is checked. Mitigation: for each changed line, add a positive check that holds only if the line loaded. Fix scheduled: 0.4. (FRR is checked from 0.3.3: see [the 0.3.2 advisory](https://github.com/netdryrun/netdryrun/blob/main/advisories/0.3.2-rejected-config/README.md).)
 

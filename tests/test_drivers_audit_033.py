@@ -357,3 +357,15 @@ def test_srl_every_bgp_route_type_is_bgp():
     for rtype in ("bgp", "bgp-evpn", "bgp-vpn", "bgp-label"):
         row["route"][0]["route-type"] = rtype
         assert srlinux.parse_routes(json.dumps(row), "0.0.0.0/0")[0].protocol == "bgp", rtype
+
+
+# R3 (delta review round 2): a link-local next hop names no interface, and two sessions can share it (fe80::1 on
+# eth1 and eth2): a path through either one would match. Refused before deploying, like an unscoped guess.
+
+def test_a_link_local_next_hop_is_refused():
+    import pytest
+    from netdryrun.config import ConfigError, _validate_check
+    for nh in ("fe80::1", "fe80::1%eth1", "FE80::1"):
+        with pytest.raises(ConfigError, match="link-local"):
+            _validate_check(0, {"type": "bgp_route", "node": "r1", "prefix": "10.9.0.0/24", "next_hop": nh}, 30)
+    _validate_check(0, {"type": "bgp_route", "node": "r1", "prefix": "10.9.0.0/24", "next_hop": "2001:db8::1"}, 30)

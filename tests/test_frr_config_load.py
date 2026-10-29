@@ -111,3 +111,66 @@ def test_a_setup_command_vtysh_rejects_stops_the_run():
     with pytest.raises(LabError, match="setup on r1 failed.*Unknown command: neighbor 10.0.12.2 default-orignate"):
         lab.run_setup("r1", ["vtysh -c 'conf t' -c 'router bgp 65001' -c 'neighbor 10.0.12.2 default-orignate'"],
                       budget=0)
+
+
+# --- Delta review round 2 (2026-10-29) --------------------------------------------------------------------------------
+
+def test_a_node_whose_driver_is_unknown_is_read_too(tmp_path, monkeypatch):
+    # R1: FRR in an image without "frr" in its name: its boot log still counts
+    lab = BootLogLab(World(), {"edge": REJECTED}, images={"edge": "registry.local/edge-router:10.4"})
+    lab.nodes["edge"] = Node("edge", "clab-t-edge", "linux", "registry.local/edge-router:10.4")
+    rep = _run(tmp_path, monkeypatch, lab)
+    assert rep.status == "error" and "edge" in lab.read and "default-orignate" in rep.error
+
+
+def test_a_plain_host_with_an_unknown_driver_is_not_an_error(tmp_path, monkeypatch):
+    lab = BootLogLab(World(), {"h1": "Starting nginx\nready\n"})
+    lab.nodes["h1"] = Node("h1", "clab-t-h1", "linux", "alpine:3.20")
+    rep = _run(tmp_path, monkeypatch, lab)
+    assert rep.status == "passed" and "h1" in lab.read
+
+
+def test_a_bridge_has_no_boot_log_to_read(tmp_path, monkeypatch):
+    lab = BootLogLab(World(), {})
+    lab.nodes["br1"] = Node("br1", "br1", "bridge", "")
+    rep = _run(tmp_path, monkeypatch, lab)
+    assert rep.status == "passed" and "br1" not in lab.read
+
+
+def test_a_daemon_that_reads_its_own_config_file_reports_rejected_lines_too():
+    # R2: per-daemon config (bgpd.conf, no integrated frr.conf): the daemon logs "... on config line N: ..."
+    text = ("2026/10/29 16:25:51 BGP: [ZWCSR-M7FG9][EC 100663304] No such command on config line 21: "
+            "neighbor 1.1.1.1 default-orignate\n")
+    assert frr.parse_config_load_errors(text) == [
+        "line 21: neighbor 1.1.1.1 default-orignate (No such command, bgp)"]
+
+
+def test_an_frr_log_with_no_sign_of_a_config_load_is_an_error(tmp_path, monkeypatch):
+    # R2: no vtysh boot output at all (a custom entrypoint, config read elsewhere): whether it loaded is unknown
+    started_only = "\n".join(line for line in CLEAN.splitlines()
+                             if "sending configuration" not in line and "] done" not in line)
+    lab = BootLogLab(World(), {"r3": started_only})
+    rep = _run(tmp_path, monkeypatch, lab)
+    assert rep.status == "error" and "r3" in rep.error and "no sign" in rep.error
+
+
+def test_the_boot_log_is_read_since_the_container_last_started(monkeypatch):
+    # R4/R5: a log from before a restart (a config fixed since) must not count; invalid bytes don't crash
+    from netdryrun import lab as lab_mod
+    from netdryrun.lab import Lab
+    calls = []
+
+    def fake_run(cmd, timeout=600, env=None, input=None, errors=None):
+        calls.append((cmd, errors))
+        if cmd[:2] == ["docker", "inspect"]:
+            return ExecResult(cmd, 0, "2026-10-29T16:25:51.123456789Z\n", "")
+        return ExecResult(cmd, 0, "[45|bgpd] done", "")
+
+    monkeypatch.setattr(lab_mod, "_run", fake_run)
+    lab = object.__new__(Lab)
+    lab.nodes = {"r1": Node("r1", "clab-t-r1", "linux", "quay.io/frrouting/frr:10.4.1")}
+    r = lab.boot_log("r1")
+    assert r.rc == 0 and "done" in r.stdout
+    logs = [c for c, _ in calls if c[:2] == ["docker", "logs"]][0]
+    assert logs == ["docker", "logs", "--since", "2026-10-29T16:25:51.123456789Z", "clab-t-r1"]
+    assert all(e == "replace" for _, e in calls)
