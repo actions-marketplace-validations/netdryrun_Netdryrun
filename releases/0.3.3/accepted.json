@@ -4029,6 +4029,11 @@
    "reason": "message text only: the signal name in report.error of an interrupted run (signal_name never raises; status error, exit 2, either way)",
    "diff": "08e53c4042005490",
    "class": "message-text"
+  },
+  "netdryrun.config.x__describe__mutmut_47": {
+   "reason": "message text only: the default check name shown in reports",
+   "diff": "1d552928e18db97f",
+   "class": "message-text"
   }
  },
  "checks": {

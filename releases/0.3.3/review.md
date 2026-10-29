@@ -155,3 +155,5 @@ The run left 129 survivors that `accepted.json` didn't accept. 63 were acceptanc
   - message or logging text in `runner.run`: the signal name and two log lines;
   - the command label in an `as_int` message.
 - **Removed:** acceptances whose mutant no longer survives, under any number.
+
+The rerun on `4ce4caa` left one survivor that wasn't accepted: `config._describe_47` (`'counted'` written as `'COUNTED'` in a default check name). The first run reported it caught, so its old acceptance had been removed with the others that no longer survived. That kill was not stable. The old entry pins this same diff, and it is back in `accepted.json` (message-text).
