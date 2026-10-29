@@ -102,6 +102,7 @@ nav:
       - netdryrun.yml: reference/config.md
       - CLI and reports: reference/cli.md
       - "verify (0.4, FRR only)": reference/verify.md
+      - Juniper driver (beta): reference/junos.md
       - Compatibility matrix: reference/compatibility.md
       - "Network Change Verdict v1 (spec)": spec/verdict-v1.md
   - GitHub Action: github-action.md

@@ -63,3 +63,16 @@ def test_it_is_referenced_where_agents_look_first():
         assert capabilities.URL in (ROOT / rel).read_text(encoding="utf-8"), rel
     mcp_server = pytest.importorskip("netdryrun.mcp_server")
     assert capabilities.URL in (mcp_server.mcp.instructions or "")
+
+
+def test_each_released_platforms_verified_limits_are_in_the_statement():
+    """The per-platform limits recorded with the compatibility matrix (tests/compat_verified.json) reach the
+    capability statement, named by platform, for every released platform (Juniper beta included from 0.4)."""
+    import sync_facts
+
+    verified = json.loads((ROOT / "tests" / "compat_verified.json").read_text(encoding="utf-8"))
+    limits = DOC["limits"]
+    for driver, names in sync_facts.PLATFORMS.items():
+        for limit in verified.get(driver, {}).get("limits", []):
+            assert f"{names[2]}: {limit}" in limits, (driver, limit)
+    assert any(x.startswith("Juniper (beta): ") for x in limits)

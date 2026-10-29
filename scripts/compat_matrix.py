@@ -33,6 +33,7 @@ EXAMPLES = {
     "srlinux": ("examples/srl-frr", "srl1"),
     "sonic": ("examples/sonic-frr", "sonic1"),
     "eos": ("examples/arista-frr", "ceos1"),
+    "junos": ("examples/junos-frr", "j1"),
 }
 # What the image tag does not say. Where the image comes from, and the software inside it.
 NOS = {
@@ -40,9 +41,10 @@ NOS = {
     "srlinux": ("Nokia SR Linux", "Public image (ghcr.io)."),
     "sonic": ("SONiC (docker-sonic-vs)", "From the SONiC project's CI build server; contains FRR 10.7.1. Pinned by build id."),
     "eos": ("Arista EOS (cEOS-lab)", "Bring your own image (free from arista.com, cannot be redistributed)."),
+    "junos": ("Juniper cJunosEvolved", "Bring your own image (free from Juniper for non-production labs, cannot be redistributed). Runs a VM: needs KVM and about 8 GB per node."),
 }
-# Drivers still in beta (the word is shown next to the platform). None of the four on this page is.
-BETA: frozenset[str] = frozenset()
+# Drivers still in beta (the word is shown next to the platform).
+BETA: frozenset[str] = frozenset({"junos"})
 
 REFUSED_AFI = {"evpn": "no per-family prefix counter: a count would read 0, which passes `max` and `exact: 0`"}
 ATTRIBUTES = ("present", "as_path", "as_path_regex", "local_pref", "med", "next_hop", "communities", "without_communities")
@@ -55,6 +57,7 @@ def _load():
 
     from netdryrun.config import AFIS, CHECK_TYPES
     from netdryrun.drivers import DRIVERS
+    # released platforms only (sync_facts PLATFORMS): a driver in no release yet is not on the public page
     return m.CELLS, DRIVERS, CHECK_TYPES, AFIS, PLATFORMS
 
 
@@ -87,7 +90,7 @@ def render() -> str:
     if set(names) != set(EXAMPLES) or set(names) != set(drivers) or set(names) != set(verified):
         raise SystemExit(f"compat_matrix: drivers {sorted(drivers)}, EXAMPLES {sorted(EXAMPLES)}, platforms {sorted(platforms)} "
                          f"and {VERIFIED.name} {sorted(verified)} must name the same drivers")
-    short = {d: platforms[d][2] + (" (beta)" if d in BETA else "") for d in names}
+    short = {d: platforms[d][2] + (" (beta)" if d in BETA and "(beta)" not in platforms[d][2] else "") for d in names}
     out: list[str] = []
     w = out.append
 

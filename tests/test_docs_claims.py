@@ -118,7 +118,7 @@ def test_value_lists():
     assert backticked(row(top, "nodes.<node>.driver")) & set(DRIVERS) == set(config.DRIVER_NAMES) == set(DRIVERS)
 
 
-DISPLAY = {"frr": "FRR", "sonic": "SONiC", "srlinux": "SR Linux", "eos": "Arista EOS"}
+DISPLAY = {"frr": "FRR", "sonic": "SONiC", "srlinux": "SR Linux", "eos": "Arista EOS", "junos": "Juniper"}
 
 
 def test_evpn_support_claim_matches_the_drivers():

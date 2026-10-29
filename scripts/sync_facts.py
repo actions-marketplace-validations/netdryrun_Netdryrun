@@ -34,7 +34,12 @@ PLATFORMS = {
     "srlinux": ("Nokia SR Linux", "Nokia SR Linux", "SR Linux"),
     "sonic": ("SONiC (docker-sonic-vs)", "SONiC", "SONiC"),
     "eos": ("Arista EOS (cEOS, bring your own image)", "Arista EOS (bring your own cEOS image)", "Arista EOS"),
+    # ships in 0.4 as beta (moved from UNRELEASED on the release branch); back to UNRELEASED if it fails the gate
+    "junos": ("Juniper cJunosEvolved (beta, bring your own image)", "Juniper cJunosEvolved (beta)", "Juniper (beta)"),
 }
+# Drivers in the code but in no release yet. Public facts follow releases, so these stay out of every status line
+# until the release that ships them moves them into PLATFORMS (names ready, beta label included).
+UNRELEASED: dict[str, tuple[str, str, str]] = {}
 
 
 def _rel(paths) -> list[str]:
@@ -83,8 +88,9 @@ def _join(items: list[str]) -> str:
 def facts() -> dict:
     version = ast.literal_eval(_assigned(_module(SRC / "__init__.py"), "__version__"))
     drivers = [k.value for k in _assigned(_module(SRC / "drivers" / "__init__.py"), "DRIVERS").keys]
-    if set(drivers) != set(PLATFORMS):
-        raise SystemExit(f"sync_facts: DRIVERS {sorted(drivers)} != PLATFORMS {sorted(PLATFORMS)}; name the new platform in PLATFORMS")
+    if set(drivers) != set(PLATFORMS) | set(UNRELEASED) or set(PLATFORMS) & set(UNRELEASED):
+        raise SystemExit(f"sync_facts: DRIVERS {sorted(drivers)} != PLATFORMS {sorted(PLATFORMS)} + UNRELEASED "
+                         f"{sorted(UNRELEASED)}; name the new platform in one of them")
     check_types = [k.value for k in _assigned(_module(SRC / "config.py"), "CHECK_TYPES").keys]
     mcp_tools = [n.name for n in _module(SRC / "mcp_server.py").body if isinstance(n, ast.FunctionDef)
                  and any(isinstance(d, ast.Call) and getattr(d.func, "attr", "") == "tool" for d in n.decorator_list)]

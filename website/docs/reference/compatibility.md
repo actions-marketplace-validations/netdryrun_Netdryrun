@@ -17,6 +17,7 @@ Netdryrun reads each network OS through a driver. A driver is only as good as th
 | Nokia SR Linux | `ghcr.io/nokia/srlinux:26.7.2` | Public image (ghcr.io). | 2026-10-27 | released |
 | SONiC | `docker-sonic-vs:master.1258173-c10162df4` | From the SONiC project's CI build server; contains FRR 10.7.1. Pinned by build id. | 2026-10-28 | released |
 | Arista EOS (bring your own cEOS image) | `ceos:4.36.3M` | Bring your own image (free from arista.com, cannot be redistributed). | 2026-10-28 | released |
+| Juniper cJunosEvolved (beta) | `cjunosevolved:26.2R1.7-EVO` | Bring your own image (free from Juniper for non-production labs, cannot be redistributed). Runs a VM: needs KVM and about 8 GB per node. | 2026-10-28 | beta |
 
 Every shipped example pins its image, so a new NOS release shows up as a deliberate change with re-captured test data, never as a silent change under the tests. `scripts/capture_fixtures.sh` captures the test data again from the pinned images, and `scripts/fixture_shape.py` reports any change in shape. A different image or version may work; it is not verified until it appears here.
 
@@ -24,40 +25,45 @@ Every shipped example pins its image, so a new NOS release shows up as a deliber
 
 Each cell counts the tests on that driver's own captured output: a *must-fail* test is a violation that has to end the check as failed, a *control* is the same output without the violation, which has to pass (so a must-fail test cannot pass only because a capture no longer parses).
 
-| Check type | FRR | SR Linux | SONiC | Arista EOS |
-|---|---|---|---|---|
-| `bgp_session` | verified (2 must-fail, 1 control) | verified (2 must-fail, 1 control) | verified (2 must-fail, 1 control) | verified (2 must-fail, 1 control) |
-| `bgp_prefixes` | verified (8 must-fail, 1 control) | verified (5 must-fail, 1 control) | verified (8 must-fail, 1 control) | verified (5 must-fail, 1 control) |
-| `route` | verified (4 must-fail, 1 control) | verified (3 must-fail, 1 control) | verified (4 must-fail, 1 control) | verified (3 must-fail, 1 control) |
-| `bgp_route` | verified (5 must-fail, 1 control) | verified (4 must-fail, 1 control) | verified (4 must-fail, 1 control) | verified (4 must-fail, 1 control) |
-| `ping` | verified (2 must-fail, 1 control) | verified (2 must-fail, 1 control) | verified (2 must-fail, 1 control) | verified (2 must-fail, 1 control) |
+| Check type | FRR | SR Linux | SONiC | Arista EOS | Juniper (beta) |
+|---|---|---|---|---|---|
+| `bgp_session` | verified (2 must-fail, 1 control) | verified (2 must-fail, 1 control) | verified (2 must-fail, 1 control) | verified (2 must-fail, 1 control) | verified (2 must-fail, 1 control) |
+| `bgp_prefixes` | verified (8 must-fail, 1 control) | verified (5 must-fail, 1 control) | verified (8 must-fail, 1 control) | verified (5 must-fail, 1 control) | verified (5 must-fail, 1 control) |
+| `route` | verified (4 must-fail, 1 control) | verified (3 must-fail, 1 control) | verified (4 must-fail, 1 control) | verified (3 must-fail, 1 control) | verified (4 must-fail, 1 control) |
+| `bgp_route` | verified (5 must-fail, 1 control) | verified (4 must-fail, 1 control) | verified (4 must-fail, 1 control) | verified (4 must-fail, 1 control) | verified (9 must-fail, 1 control) |
+| `ping` | verified (2 must-fail, 1 control) | verified (2 must-fail, 1 control) | verified (2 must-fail, 1 control) | verified (2 must-fail, 1 control) | verified (2 must-fail, 1 control) |
 
 ## BGP prefix counts by address family
 
-| Address family | FRR | SR Linux | SONiC | Arista EOS |
-|---|---|---|---|---|
-| `ipv4-unicast` | verified (4 must-fail) | verified (4 must-fail) | verified (4 must-fail) | verified (4 must-fail) |
-| `ipv6-unicast` | verified (2 must-fail) | verified (1 must-fail) | verified (2 must-fail) | verified (1 must-fail) |
-| `evpn` | verified (2 must-fail) | refused: no per-family prefix counter: a count would read 0, which passes `max` and `exact: 0` | verified (2 must-fail) | refused: no per-family prefix counter: a count would read 0, which passes `max` and `exact: 0` |
+| Address family | FRR | SR Linux | SONiC | Arista EOS | Juniper (beta) |
+|---|---|---|---|---|---|
+| `ipv4-unicast` | verified (4 must-fail) | verified (4 must-fail) | verified (4 must-fail) | verified (4 must-fail) | verified (4 must-fail) |
+| `ipv6-unicast` | verified (2 must-fail) | verified (1 must-fail) | verified (2 must-fail) | verified (1 must-fail) | verified (1 must-fail) |
+| `evpn` | verified (2 must-fail) | refused: no per-family prefix counter: a count would read 0, which passes `max` and `exact: 0` | verified (2 must-fail) | refused: no per-family prefix counter: a count would read 0, which passes `max` and `exact: 0` | refused: no per-family prefix counter: a count would read 0, which passes `max` and `exact: 0` |
 
 A check on a refused address family stops the run before the lab is deployed, with a message that names the driver. It is never run and never read as zero.
 
 ## `bgp_route` keys
 
-| Key | FRR | SR Linux | SONiC | Arista EOS |
-|---|---|---|---|---|
-| `present` | verified (1 must-fail) | verified (1 must-fail) | verified (1 must-fail) | verified (2 must-fail) |
-| `as_path` | verified (1 must-fail) | verified (1 must-fail) | verified (1 must-fail) | verified (1 must-fail) |
-| `as_path_regex` | no must-fail test | no must-fail test | no must-fail test | no must-fail test |
-| `local_pref` | verified (1 must-fail) | verified (1 must-fail) | verified (1 must-fail) | no must-fail test |
-| `med` | no must-fail test | no must-fail test | no must-fail test | no must-fail test |
-| `next_hop` | no must-fail test | no must-fail test | no must-fail test | no must-fail test |
-| `communities` | verified (1 must-fail) | no must-fail test | verified (1 must-fail) | no must-fail test |
-| `without_communities` | verified (1 must-fail) | verified (1 must-fail) | no must-fail test | verified (1 must-fail) |
+| Key | FRR | SR Linux | SONiC | Arista EOS | Juniper (beta) |
+|---|---|---|---|---|---|
+| `present` | verified (1 must-fail) | verified (1 must-fail) | verified (1 must-fail) | verified (2 must-fail) | verified (2 must-fail) |
+| `as_path` | verified (1 must-fail) | verified (1 must-fail) | verified (1 must-fail) | verified (1 must-fail) | verified (1 must-fail) |
+| `as_path_regex` | no must-fail test | no must-fail test | no must-fail test | no must-fail test | verified (1 must-fail) |
+| `local_pref` | verified (1 must-fail) | verified (1 must-fail) | verified (1 must-fail) | no must-fail test | verified (1 must-fail) |
+| `med` | no must-fail test | no must-fail test | no must-fail test | no must-fail test | verified (1 must-fail) |
+| `next_hop` | no must-fail test | no must-fail test | no must-fail test | no must-fail test | verified (1 must-fail) |
+| `communities` | verified (1 must-fail) | no must-fail test | verified (1 must-fail) | no must-fail test | verified (1 must-fail) |
+| `without_communities` | verified (1 must-fail) | verified (1 must-fail) | no must-fail test | verified (1 must-fail) | verified (1 must-fail) |
 
 ## Known limits
 
 - **SR Linux:** `bgp_prefixes` counts the neighbor's `received-routes`, which on SR Linux 26.7.2 includes routes that fail BGP loop detection and are not usable. On a live capture of `examples/srl-frr` on 2026-10-28 the counter read 3 where one prefix was usable and `rejected-routes` read 0. A `min` or `exact` prefix check on SR Linux can pass on a count that includes unusable routes. The test data above predates that capture; it has not yet been re-captured.
+- **Juniper (beta):** Hidden routes count as received, except routes Junos hid because the import policy rejected them (`hidden-reason` "Rejected by import policy"): those can never be used, and FRR and Arista EOS don't keep them at all.
+- **Juniper (beta):** `bgp_route` reads routes received over BGP only. Junos doesn't list its own static, direct or aggregate routes as BGP routes, even when an export policy advertises them.
+- **Juniper (beta):** `bgp_prefixes` reads Junos's `accepted-prefix-count`, which also leaves out received routes Junos can't use (an unusable next hop); FRR counts those.
+- **Juniper (beta):** Link and node faults on a cJunosEvolved node and `inject_routes` from it are refused before deploying.
+- **Juniper (beta):** Every deploy installs Junos in the VM: about 4 minutes to a CLI on a quiet 20-thread host, up to 19 minutes with a CPU-heavy job beside it. Set `CPTX_NUM_IF` (see the example) and a check `timeout` that covers the boot.
 
 ## How a platform gets on this page
 

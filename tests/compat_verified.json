@@ -1,11 +1,27 @@
 {
-  "frr": {"date": "2026-10-28"},
+  "frr": {
+    "date": "2026-10-28"
+  },
   "srlinux": {
     "date": "2026-10-27",
     "limits": [
       "`bgp_prefixes` counts the neighbor's `received-routes`, which on SR Linux 26.7.2 includes routes that fail BGP loop detection and are not usable. On a live capture of `examples/srl-frr` on 2026-10-28 the counter read 3 where one prefix was usable and `rejected-routes` read 0. A `min` or `exact` prefix check on SR Linux can pass on a count that includes unusable routes. The test data above predates that capture; it has not yet been re-captured."
     ]
   },
-  "sonic": {"date": "2026-10-28"},
-  "eos": {"date": "2026-10-28"}
+  "sonic": {
+    "date": "2026-10-28"
+  },
+  "eos": {
+    "date": "2026-10-28"
+  },
+  "junos": {
+    "date": "2026-10-28",
+    "limits": [
+      "Hidden routes count as received, except routes Junos hid because the import policy rejected them (`hidden-reason` \"Rejected by import policy\"): those can never be used, and FRR and Arista EOS don't keep them at all.",
+      "`bgp_route` reads routes received over BGP only. Junos doesn't list its own static, direct or aggregate routes as BGP routes, even when an export policy advertises them.",
+      "`bgp_prefixes` reads Junos's `accepted-prefix-count`, which also leaves out received routes Junos can't use (an unusable next hop); FRR counts those.",
+      "Link and node faults on a cJunosEvolved node and `inject_routes` from it are refused before deploying.",
+      "Every deploy installs Junos in the VM: about 4 minutes to a CLI on a quiet 20-thread host, up to 19 minutes with a CPU-heavy job beside it. Set `CPTX_NUM_IF` (see the example) and a check `timeout` that covers the boot."
+    ]
+  }
 }
