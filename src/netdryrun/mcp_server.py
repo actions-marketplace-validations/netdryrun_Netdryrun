@@ -23,7 +23,10 @@ from .lab import Lab, LabError, Node
 from .runner import check_topology, destroy_active_labs, load_config, run
 from .verify import report as vreport
 
-mcp = MCPServer("netdryrun", version=__version__, website_url="https://netdryrun.com")
+mcp = MCPServer("netdryrun", version=__version__, website_url="https://netdryrun.com",
+                instructions="Netdryrun tests a routing or policy change in a real containerlab lab before it is applied. "
+                             "What it can do, its prerequisites, limits and invocation examples, in one "
+                             "machine-readable file: https://netdryrun.com/capabilities.json")
 
 # The result contract, published as https://netdryrun.com/schemas/mcp-result-v1.json. The three verdict strings
 # are frozen: agents match on them, so they never change within v1.

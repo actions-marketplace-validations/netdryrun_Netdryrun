@@ -33,6 +33,8 @@ A configured session that is down always counts as `failed`, never `inconclusive
 
 `verify_change(topology, before, after, intent, guards=None)` (0.4, FRR only) needs no checks: it boots the topology with the *before* and the *after* configs (git refs or directories), and every difference in routing behavior that the intent doesn't declare fails. `intent` is YAML or JSON text, or a path; the result records `intent_source: "mcp"`. Its verdict is `INTENT MATCHED`, `UNDECLARED CHANGES: DO NOT APPLY` or `INCONCLUSIVE` (also `NO BEHAVIOR CHANGE`, `INCONCLUSIVE: UNHEALTHY BASELINE`, `ERROR: NO VERDICT`), and it never says `CHECKS PASSED` (nor 0.3.1's `SAFE TO PROCEED`): explained is not the same as safe, so show the echoed intent to the human. `undeclared` lists each difference nobody declared with a `next_diagnostic` command; fix the change, not the intent. Two lab boots, and four when the verdict approves (each side again: no approval from a single boot): about 2–8 minutes. Reference: https://netdryrun.com/reference/verify/
 
+**Capabilities in one machine-readable file** (use cases with invocation examples, prerequisites, limits, platforms, tools, verdicts, exit codes): https://netdryrun.com/capabilities.json
+
 The rules as an installable agent skill: `skills/netdryrun/SKILL.md`. Add it with `claude mcp add netdryrun -- netdryrun mcp`, or run it with `uvx netdryrun mcp`.
 
 Docs: https://netdryrun.com/ai-agents/ · Full docs in one file: https://netdryrun.com/llms-full.txt

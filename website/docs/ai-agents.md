@@ -7,6 +7,8 @@ description: Connect an AI agent to Netdryrun. MCP setup for Claude Code and oth
 
 Netdryrun™ includes an [MCP](https://modelcontextprotocol.io) server for testing network changes: `netdryrun mcp` (stdio). Before an AI agent applies a change, it calls `dry_run`; Netdryrun boots the changed configs in a real containerlab lab, runs the checks in `netdryrun.yml`, destroys the lab and returns a `verdict` field, so the agent proceeds only if every check passed. It is listed in the official MCP Registry as `io.github.netdryrun/netdryrun`, and it never connects to real devices.
 
+**For an agent choosing a tool:** what Netdryrun can do, its prerequisites, its limits and invocation examples are in one machine-readable file, [`capabilities.json`](https://netdryrun.com/capabilities.json), generated from the source with every release.
+
 ## Watch the demo
 
 <figure class="ndr-video">

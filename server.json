@@ -15,10 +15,20 @@
       "identifier": "netdryrun",
       "version": "0.3.2",
       "runtimeHint": "uvx",
-      "packageArguments": [{"type": "positional", "value": "mcp"}],
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp"
+        }
+      ],
       "transport": {
         "type": "stdio"
       }
     }
-  ]
+  ],
+  "_meta": {
+    "io.modelcontextprotocol.registry/publisher-provided": {
+      "capabilities": "https://netdryrun.com/capabilities.json"
+    }
+  }
 }
