@@ -452,3 +452,21 @@ def test_the_block_must_be_in_the_running_config_as_written():
     assert frr._block_applied(GR_CONF, 63, GR_RUNNING)
     assert not frr._block_applied(GR_CONF.replace("router bgp 65000", "router bgp 65001"), 63, GR_RUNNING)
     assert not frr._block_applied(GR_CONF, 63, GR_RUNNING.replace(" bgp graceful-restart\n", ""))
+
+
+
+# Delta review round 7: vtysh numbers frr.conf by \n only; splitlines() also splits on \f, U+2028 and others, which
+# moved line N onto an applied line elsewhere.
+
+@pytest.mark.parametrize("sep", ["\u2028", "\x0c", "\x0b", "\r"])
+def test_line_n_is_counted_the_way_vtysh_counts_it(sep):
+    conf = (f"! note{sep}{sep}{sep}\ninterface eth1\n ip ospf passive\nexit\ninterface eth2\n ip ospf passive\nexit\n")
+    log = "line 6: Failure to communicate[13] to ospfd, line:  ip ospf passive\n"
+    running = "interface eth1\n ip ospf passive\nexit\ninterface eth2\nexit\n"
+    assert frr.parse_config_load_errors(log, running={"ospfd": running}, config=conf) == [
+        "line 6: ip ospf passive (rejected by ospfd)"]
+
+
+def test_a_command_that_starts_like_end_is_still_a_header():
+    text = "endpoint-group A\n member 1\n"
+    assert frr.config_sections(text)[1] == (("endpoint-group A",), "member 1")

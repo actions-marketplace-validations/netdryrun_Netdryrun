@@ -59,13 +59,26 @@ LOAD_RAN = re.compile(r"^\[\d+\|\S+\] (?:sending configuration|done$|Configurati
                       re.M)
 
 
+def _lines(text: str) -> list[str]:
+    """Lines as vtysh numbers them (it reads with fgets: only \\n ends a line). str.splitlines() also splits on \\f,
+    \\x0b, U+2028 and more, which would shift every later line number onto another line."""
+    parts = text.split("\n")
+    if parts[-1] == "":   # the newline that ends the last line starts no line
+        parts.pop()
+    return [ln.removesuffix("\r") for ln in parts]
+
+
+def _closes(line: str) -> bool:
+    return line.startswith("!") or line in ("exit", "end") or line.startswith("exit-")
+
+
 def config_sections(text: str) -> list[tuple[tuple[str, ...], str]]:
     """Each line of an FRR config as (every header above it, the line), all stripped: `router bgp 65000` >
     `address-family l2vpn evpn` > `vni 10` > `route-target import 65000:99`. The headers come from indentation, at
     every depth (two `vni` blocks are two sections); a comment or `exit` line is never a header. vtysh itself places
     a line by the commands before it, not by indentation, so `parse_config_load_errors` doesn't rely on this alone."""
     out, stack = [], []   # stack: (indent, line) of the headers open above the current line
-    for raw in text.splitlines():
+    for raw in _lines(text):
         line = raw.strip()
         if not line:
             out.append((tuple(h for _, h in stack), line))
@@ -74,7 +87,7 @@ def config_sections(text: str) -> list[tuple[tuple[str, ...], str]]:
         while stack and stack[-1][0] >= indent:
             stack.pop()
         out.append((tuple(h for _, h in stack), line))
-        if not line.startswith(("!", "exit", "end")):
+        if not _closes(line):
             stack.append((indent, line))
     return out
 
@@ -86,7 +99,7 @@ def _significant(lines) -> list[str]:
 def _blocks(text: str) -> list[list[str]]:
     """A config cut at every line that starts at the left margin: each block is that line and the lines under it."""
     out: list[list[str]] = []
-    for raw in text.splitlines():
+    for raw in _lines(text):
         if raw.strip() and raw[:1] not in (" ", "\t"):
             out.append([])
         if out:
@@ -104,7 +117,7 @@ def _block_applied(config: str, i: int, running: str) -> bool:
     """Line i's whole left-margin block in the file is, line by line in order, inside a block of the daemon's running
     config that has the same first line. Any line FRR rewrote, dropped or moved in that block (`route-target both`
     printed as import and export, a line placed in another block) breaks it."""
-    raw = config.splitlines()
+    raw = _lines(config)
     start = i
     while start > 0 and not (raw[start].strip() and raw[start][:1] not in (" ", "\t")):
         start -= 1
@@ -119,7 +132,7 @@ def _block_applied(config: str, i: int, running: str) -> bool:
 def _is_header(config: str, i: int) -> bool:
     """The file has deeper-indented lines right under line i: a block's first line. A header the daemon refused can
     still show in the running config (the block exists) while the lines under it went elsewhere."""
-    raw = config.splitlines()
+    raw = _lines(config)
     depth = lambda ln: len(ln.expandtabs(8)) - len(ln.expandtabs(8).lstrip())   # noqa: E731
     nxt = next((ln for ln in raw[i + 1:] if ln.strip() and not ln.strip().startswith("!")), None)
     return nxt is not None and depth(nxt) > depth(raw[i])
