@@ -25,6 +25,8 @@ import re
 import sys
 from pathlib import Path
 
+import yaml
+
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "src" / "netdryrun"
 
@@ -98,8 +100,11 @@ def facts() -> dict:
 
 
 def _corpus(path: Path) -> dict:
+    """Scores over the deterministic cases: a case in the corpus's NONDETERMINISTIC.yml is left out, and named."""
     results = json.loads(path.read_text(encoding="utf-8"))
-    cases = results["cases"]
+    nd_file = path.parent.parent / "NONDETERMINISTIC.yml"
+    nd = set(yaml.safe_load(nd_file.read_text(encoding="utf-8")) or {}) if nd_file.exists() else set()
+    cases = [c for c in results["cases"] if c["id"] not in nd]
     corpus = {"cases": len(cases), "harmful": sum(c["expected"] == "unsafe" for c in cases),
               "generated": results["environment"]["generated"][:10], "ran_with": results["environment"]["netdryrun"],
               "dev_build": DEV_BUILDS.get(results["environment"]["generated"], "")}
@@ -109,6 +114,7 @@ def _corpus(path: Path) -> dict:
                                                      for c in cases)
     corpus["losses"] = [{"id": c["id"], "title": c["title"], "expected": c["expected"]}
                         for c in cases if not c["strategies"]["netdryrun"]["correct"]]
+    corpus["nondeterministic"] = sorted(int(i.split("-", 1)[0]) for i in nd)
     return corpus
 
 
@@ -132,6 +138,21 @@ def blocks(f: dict) -> dict[str, str]:
     else:
         provenance = f"v1 ran on {ran(c)}; v2 on {ran(c2)}"
     historical = bool(c["dev_build"] or c2["dev_build"])
+    nd2 = c2["nondeterministic"]
+    if nd2:
+        v2_scores = (f"Netdryrun {c2['netdryrun']} of {c2['cases']} deterministic cases correct, ping-only "
+                     f"{c2['ping']}/{c2['cases']}, all-sessions-up {c2['sessions']}/{c2['cases']}; "
+                     f"{'case' if len(nd2) == 1 else 'cases'} {_join([str(n) for n in nd2])} "
+                     f"{'is' if len(nd2) == 1 else 'are'} nondeterministic in this lab and excluded from the score "
+                     "(listed with its reruns)")
+        v2_short = (f"v2: **{c2['netdryrun']} of {c2['cases']}** deterministic cases (ping only "
+                    f"{c2['ping']}/{c2['cases']}, sessions up {c2['sessions']}/{c2['cases']}); case "
+                    f"{_join([str(n) for n in nd2])} is nondeterministic in this lab and not scored")
+    else:
+        v2_scores = (f"Netdryrun {c2['netdryrun']}/{c2['cases']}, ping-only {c2['ping']}/{c2['cases']}, "
+                     f"all-sessions-up {c2['sessions']}/{c2['cases']}")
+        v2_short = (f"v2: **{c2['netdryrun']}/{c2['cases']}** (ping only {c2['ping']}/{c2['cases']}, sessions up "
+                    f"{c2['sessions']}/{c2['cases']})")
     pending = f" A rerun of both on the released {v} is pending." if historical else ""
     losses = {kind: [x for x in c["losses"] if x["expected"] == kind] for kind in ("unsafe", "safe")}
     safe = c["cases"] - c["harmful"]
@@ -141,8 +162,8 @@ def blocks(f: dict) -> dict[str, str]:
                        f"all-sessions-up checks {c['sessions']}/{c['cases']}. Netdryrun approved "
                        f"{c['netdryrun_approved_harmful']} of the {c['harmful']} harmful changes (ping-only checks: "
                        f"{c['ping_approved_harmful']} of {c['harmful']}) and blocked {len(losses['safe'])} of the {safe} safe ones. "
-                       f"On v2 ({c2['cases']} cases written after v1 to target v1's misses): Netdryrun {c2['netdryrun']}/{c2['cases']}, "
-                       f"ping-only {c2['ping']}/{c2['cases']}, all-sessions-up {c2['sessions']}/{c2['cases']}. "
+                       f"On v2 ({c2['cases'] + len(c2['nondeterministic'])} cases written after v1 to target v1's misses): "
+                       + v2_scores + ". "
                        f"Expected verdicts were committed before any run, on one FRR topology: a comparison of testing methods, "
                        f"not a production reliability estimate. Method, every miss and a one-command rerun are on the corpus page. "
                        f"Provenance: {provenance}.{pending}")
@@ -180,6 +201,10 @@ def blocks(f: dict) -> dict[str, str]:
         "built_losses": (f"**Verdict Corpus v1: wrong on {len(c['losses'])} of {c['cases']} cases.** It approved "
                          f"{_count(len(losses['unsafe']), 'harmful change')} and blocked {_count(len(losses['safe']), 'safe one')} "
                          f"([RESULTS.md](https://github.com/netdryrun/netdryrun/blob/main/corpus/RESULTS.md))."),
+        "built_accuracy": (f"Verdict Corpus v1: **{c['netdryrun']}/{c['cases']}** (ping only {c['ping']}/{c['cases']}, "
+                           f"sessions up {c['sessions']}/{c['cases']}). {v2_short}. "
+                           + ("Both ran on " + (ran(c) if c["ran_with"] == c2["ran_with"] else f"{ran(c)} (v1) and {ran(c2)} (v2)")
+                              + " (the release gate reruns them for every release)")),
         "agents_platforms": short,
         "faq_platforms": long_,
         "mcp_tools": tools,

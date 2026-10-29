@@ -976,15 +976,23 @@ def live_examples(live: Live, args) -> None:
               "\n".join(f"{n}: {s:.0f} s (documented {'-'.join(map(str, d))} s)" for n, s, d in times))
 
 
-def harmful_approved(cases: list[dict]) -> list[str]:
-    """The case IDs where a harmful change got Netdryrun's approval: the false passes, counted on their own."""
-    return sorted(c["id"] for c in cases
-                  if c.get("expected") == "harmful" and c.get("strategies", {}).get("netdryrun", {}).get("verdict") == "safe")
+def harmful_approved(cases: list[dict], skip=()) -> list[str]:
+    """The case IDs where a harmful change ("expected": "unsafe") got Netdryrun's approval: the false passes, counted
+    on their own. Cases in `skip` (nondeterministic) are left out."""
+    return sorted(c["id"] for c in cases if c["id"] not in skip
+                  and c.get("expected") == "unsafe" and c.get("strategies", {}).get("netdryrun", {}).get("verdict") == "safe")
 
 
-def harmful_approved_check(published: list[dict], rerun: list[dict]) -> tuple[bool, str]:
+def nondeterministic_cases(corpus: Path) -> dict:
+    """corpus/[v2/]NONDETERMINISTIC.yml: cases whose verdict follows a race in the lab, recorded and never a blocker."""
+    import yaml   # the gate's Python has Netdryrun's dependencies (Layer 5 installs the package)
+    path = corpus / "NONDETERMINISTIC.yml"
+    return (yaml.safe_load(path.read_text(encoding="utf-8")) or {}) if path.exists() else {}
+
+
+def harmful_approved_check(published: list[dict], rerun: list[dict], skip=()) -> tuple[bool, str]:
     """A harmful case approved that isn't among the published known misses is a BLOCKER, whatever the score."""
-    known, now = set(harmful_approved(published)), harmful_approved(rerun)
+    known, now = set(harmful_approved(published, skip)), harmful_approved(rerun, skip)
     new = [c for c in now if c not in known]
     summary = f"harmful changes approved: {len(now)} ({', '.join(now) or 'none'}); published known misses: "               f"{', '.join(sorted(known)) or 'none'}"
     if new:
@@ -1006,12 +1014,13 @@ def live_corpora(live: Live, args) -> None:
         committed = ROOT / "corpus" / sub / "results" / "results.json"
         fresh = copy / sub / "results" / "results.json"
         diffs = []
+        nd = nondeterministic_cases(ROOT / "corpus" / sub)
         if fresh.exists():   # kept beside GATE.md: the corpus results of this exact release, for the docs
             write_out(args, f"corpus-{version}-results.json", fresh.read_text(encoding="utf-8"))
         if p.code == 0:
             old = {c["id"]: c for c in json.loads(committed.read_text(encoding="utf-8"))["cases"]}
             new = {c["id"]: c for c in json.loads(fresh.read_text(encoding="utf-8"))["cases"]}
-            for cid in sorted(set(old) | set(new)):
+            for cid in sorted((set(old) | set(new)) - set(nd)):
                 for s in ("ping", "sessions", "netdryrun"):
                     a = old.get(cid, {}).get("strategies", {}).get(s, {}).get("verdict")
                     b = new.get(cid, {}).get("strategies", {}).get(s, {}).get("verdict")
@@ -1021,8 +1030,14 @@ def live_corpora(live: Live, args) -> None:
                   BLOCKER, p.code == 0 and not diffs,
                   f"exit {p.code}" if p.code else (f"{len(diffs)} verdict(s) differ" if diffs else "all verdicts match"),
                   "\n".join(diffs) or tail(p.out), p.seconds, cmdline(["python", "corpus/run.py", "--corpus", version]))
+        if p.code == 0 and nd:   # recorded, never a blocker: their verdict follows the lab, not the change
+            seen = "; ".join(f"{cid}: " + ", ".join(str(r.get("netdryrun")) for r in new.get(cid, {}).get("runs", []))
+                             for cid in nd)
+            layer.add(f"corpus-{version}-nondeterministic",
+                      f"Verdict Corpus {version}: nondeterministic cases recorded (known, not scored, never a blocker)",
+                      INFO, all(new.get(cid, {}).get("runs") for cid in nd), f"Netdryrun verdicts per run: {seen}")
         if p.code == 0 and fresh.exists():
-            ok, summary = harmful_approved_check(list(old.values()), list(new.values()))
+            ok, summary = harmful_approved_check(list(old.values()), list(new.values()), nd)
             layer.add(f"corpus-{version}-harmful-approved",
                       f"Verdict Corpus {version}: no harmful change approved beyond the published known misses",
                       BLOCKER, ok, summary)

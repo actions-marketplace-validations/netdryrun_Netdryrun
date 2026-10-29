@@ -58,34 +58,67 @@ LOAD_RAN = re.compile(r"^\[\d+\|\S+\] (?:sending configuration|done$|Configurati
                       re.M)
 
 
-def parse_config_load_errors(text: str, running: str | None = None) -> list[str]:
+def config_sections(text: str) -> list[tuple[tuple[str, ...], str]]:
+    """Each line of an FRR config as (the section it is in, the line), both stripped: `router bgp 65000 vrf RED` >
+    `address-family ipv4 unicast` > `neighbor 10.0.12.2 route-map X in`. A line at the left margin opens a section
+    (or is a one-line command); `exit`, `!` and `end` there close it."""
+    out, top, af = [], "", ""
+    for raw in text.splitlines():
+        line = raw.strip()
+        if raw[:1] not in (" ", "\t"):
+            top = "" if line in ("exit", "!", "end", "") or line.startswith("!") else line
+            af = ""
+            out.append(((), line))
+        elif line.startswith("address-family "):
+            af = line
+            out.append(((top,), line))
+        elif line == "exit-address-family":
+            out.append(((top, af), line))
+            af = ""
+        else:
+            out.append((tuple(x for x in (top, af) if x), line))
+    return out
+
+
+def parse_config_load_errors(text: str, running: str | None = None, config: str | None = None) -> list[str]:
     """The config lines FRR rejected at boot, from the container's log, each once, in line order. A daemon that
     reports a processing failure without any such line still counts.
 
-    With `running` (the node's `show running-config`), a reported line that is in it was applied after all and
-    doesn't count: a daemon can answer a line with "Failure to communicate[13]" (CMD_WARNING_CONFIG_FAILED) and
-    still apply it (`bgp graceful-restart`, FRR 10.4.1, Verdict Corpus case 29)."""
-    applied = {ln.strip() for ln in running.splitlines()} if running is not None else set()
-    lines: dict[int, str] = {}
-    failures: list[str] = []
+    A daemon can answer a line with "Failure to communicate[13]" (CMD_WARNING_CONFIG_FAILED) and still apply it
+    (`bgp graceful-restart`, FRR 10.4.1, Verdict Corpus case 29). With `running` (the node's `show running-config`)
+    and `config` (the frr.conf vtysh -b loaded), such a line doesn't count when line N of the file is that line and
+    the running config has it in the same section (the same `router bgp ... vrf`, the same address family). Every
+    other kind is never applied (a line vtysh couldn't parse never reaches a daemon) or can't be told apart, and
+    always counts; so do lines for mgmtd, whose stored config can show a line a daemon then failed to apply."""
+    applied = set(config_sections(running)) if running is not None else set()
+    file = config_sections(config) if config is not None else []
+    lines: dict[tuple[int, str], tuple[bool, str, str]] = {}   # (line, source) -> (applied, daemon, message)
+    failures: list[tuple[str, str]] = []
     for raw in text.splitlines():
         m = _LOAD_ERROR.match(raw.strip())
         if m:
             n, kind, warning, daemon, cmd = m.groups()
             why = kind or (f"rejected by {daemon}" if daemon else "warning")
-            lines.setdefault(int(n), (cmd.strip(), f"line {n}: {cmd.strip()} ({why.replace('Warning', 'warning')})"))
+            i = int(n) - 1
+            done = (daemon is not None and daemon != "mgmtd" and 0 <= i < len(file)
+                    and file[i][1] == cmd.strip() and file[i] in applied)
+            lines.setdefault((int(n), ""), (done, daemon or "", f"line {n}: {cmd.strip()} ({why})"))
             continue
         d = _DAEMON_LINE.match(raw.strip())
-        if d:
+        if d:   # the daemon's own file, numbered on its own: kept apart from frr.conf's line N
             daemon, why, n, cmd = d.groups()
-            lines.setdefault(int(n), (cmd.strip(), f"line {n}: {cmd.strip()} ({why.strip()}, {daemon.lower()})"))
+            lines.setdefault((int(n), daemon.lower()),
+                             (False, "", f"line {n}: {cmd.strip()} ({why.strip()}, {daemon.lower()})"))
             continue
         f = _LOAD_FAILURE.match(raw.strip())
         if f:
-            failures.append(f"{f.group(1)} reported a configuration file processing failure ({f.group(2)})")
-    if lines:   # the failure count is the lines' count: lines that were applied explain it too
-        return [msg for n, (cmd, msg) in sorted(lines.items()) if cmd not in applied]
-    return list(dict.fromkeys(failures))
+            failures.append((f.group(1), f"{f.group(1)} reported a configuration file processing failure ({f.group(2)})"))
+    kept = [msg for _, (done, _, msg) in sorted(lines.items()) if not done]
+    if kept:
+        return kept
+    # every reported line was applied: a processing failure only its daemons' lines explain
+    explained = {daemon for done, daemon, _ in lines.values()}
+    return list(dict.fromkeys(msg for daemon, msg in failures if daemon not in explained))
 
 
 def _bgp_json(command: str, text: str) -> dict:

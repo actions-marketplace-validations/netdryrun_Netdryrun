@@ -287,11 +287,15 @@ def rejected_config(lab, config: Config) -> str:
             continue
         errors = parse_config_load_errors(r.stdout)
         if errors:
-            # a line the daemon complained about can still have been applied: only one missing from the running
-            # config counts. If that can't be read, every reported line does (fail closed)
-            rc = lab.exec(name, ["vtysh", "-c", "show running-config"])
-            if rc.rc == 0:
-                errors = parse_config_load_errors(r.stdout, rc.stdout)
+            # a line a daemon complained about can still have been applied: one in the same section of the running
+            # config doesn't count. If either file can't be read, every reported line does (fail closed)
+            run_ = lab.exec(name, ["vtysh", "-c", "show running-config"])
+            conf = lab.exec(name, ["cat", "/etc/frr/frr.conf"])
+            if run_.rc == 0 and conf.rc == 0:
+                errors = parse_config_load_errors(r.stdout, run_.stdout, conf.stdout)
+            else:
+                why = ((run_ if run_.rc else conf).stderr or "").strip()[-200:]
+                errors = [*errors, f"(not checked against the running config: {why or 'it could not be read'})"]
         if errors:
             found.append(f"{name}: {'; '.join(errors)}")
         elif driver == "frr" and not LOAD_RAN.search(r.stdout):

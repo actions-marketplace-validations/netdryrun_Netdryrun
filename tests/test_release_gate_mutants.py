@@ -1,5 +1,6 @@
 """Accepted mutants are pinned to their diff, so a renumbered mutant ID can't inherit someone else's acceptance."""
 import importlib.util
+import json
 import sys
 from pathlib import Path
 
@@ -99,16 +100,49 @@ def _case(cid, expected, verdict):
 
 
 def test_harmful_changes_approved_are_listed_by_case():
-    cases = [_case("01", "safe", "safe"), _case("18", "harmful", "safe"), _case("23", "harmful", "safe"),
-             _case("05", "harmful", "harmful"), _case("06", "safe", "harmful")]
+    cases = [_case("01", "safe", "safe"), _case("18", "unsafe", "safe"), _case("23", "unsafe", "safe"),
+             _case("05", "unsafe", "unsafe"), _case("06", "safe", "unsafe")]
     assert gate.harmful_approved(cases) == ["18", "23"]
 
 
 def test_a_new_harmful_approval_blocks_even_when_the_score_rose():
-    published = [_case("18", "harmful", "safe"), _case("23", "harmful", "safe"), _case("06", "safe", "harmful")]
-    rerun = [_case("18", "harmful", "harmful"), _case("23", "harmful", "safe"), _case("06", "safe", "safe"),
-             _case("30", "harmful", "safe")]   # two more right, but 30 is a new false pass
+    published = [_case("18", "unsafe", "safe"), _case("23", "unsafe", "safe"), _case("06", "safe", "unsafe")]
+    rerun = [_case("18", "unsafe", "unsafe"), _case("23", "unsafe", "safe"), _case("06", "safe", "safe"),
+             _case("30", "unsafe", "safe")]   # two more right, but 30 is a new false pass
     ok, summary = gate.harmful_approved_check(published, rerun)
     assert not ok and "30" in summary and "new" in summary
     ok, summary = gate.harmful_approved_check(published, published)
     assert ok and "18, 23" in summary
+
+
+# The live gate on ada4dd0 (2026-10-29) found harmful_approved comparing "expected" with "harmful", a word no corpus
+# case uses ("unsafe"), so the line could never fail. Pinned on the committed results, not on made-up cases.
+
+def test_the_published_known_misses_are_found_in_the_real_results():
+    root = Path(gate.__file__).resolve().parent.parent / "corpus"
+    v1 = json.loads((root / "results" / "results.json").read_text(encoding="utf-8"))["cases"]
+    v2 = json.loads((root / "v2" / "results" / "results.json").read_text(encoding="utf-8"))["cases"]
+    want_v1 = sorted(c["id"] for c in v1 if c["expected"] == "unsafe" and c["strategies"]["netdryrun"]["verdict"] == "safe")
+    assert want_v1 and gate.harmful_approved(v1) == want_v1
+    assert gate.harmful_approved(v2) == ["04-redundant-aggregate-typo"]
+    flipped = [dict(c, strategies={"netdryrun": {"verdict": "safe"}}) if c["id"].startswith("05-") else c for c in v2]
+    ok, summary = gate.harmful_approved_check(v2, flipped)
+    assert not ok and "05-" in summary
+
+
+def test_a_nondeterministic_case_is_never_a_harmful_approval_or_a_blocker():
+    published = [_case("18", "unsafe", "unsafe"), _case("04", "unsafe", "safe")]
+    rerun = [_case("18", "unsafe", "safe"), _case("04", "unsafe", "safe")]
+    ok, _ = gate.harmful_approved_check(published, rerun, skip={"18"})
+    assert ok
+    ok, _ = gate.harmful_approved_check(published, rerun)
+    assert not ok
+
+
+def test_v2_marks_case_18_nondeterministic_without_editing_the_case():
+    root = Path(gate.__file__).resolve().parent.parent / "corpus" / "v2"
+    nd = gate.nondeterministic_cases(root)
+    assert list(nd) == ["18-aggregate-discard-route-removed"]
+    assert [v["verdict"] for v in nd["18-aggregate-discard-route-removed"]["netdryrun_verdicts"]][-3:] == ["unsafe", "unsafe", "safe"]
+    assert "nondeterministic" not in (root / "cases" / "18-aggregate-discard-route-removed.yml").read_text(encoding="utf-8")
+    assert gate.nondeterministic_cases(root.parent) == {}   # v1 has none
