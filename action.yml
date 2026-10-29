@@ -21,6 +21,9 @@ inputs:
   allow-intent-edit:
     description: "mode: verify: let a PR that adds or edits the intent file run. Set it only when branch protection requires a code-owner review on that file (CODEOWNERS lists the intent file and netdryrun.yml)"
     default: "false"
+  allow-check-edit:
+    description: "mode: run: let a PR that changes netdryrun.yml and the lab's configs together run. Set it only when branch protection requires a code-owner review on netdryrun.yml (CODEOWNERS lists it)"
+    default: "false"
   containerlab-version:
     description: containerlab version to install (pinned for reproducible runs; empty = latest)
     default: "0.81.1"
@@ -152,6 +155,62 @@ runs:
             fail("the intent file is not in the PR merged into its base: add it (from the ticket) in a reviewed change first")
         with open(os.environ["GITHUB_OUTPUT"], "a") as f:
             f.write(f"base={base}\nhead={head}\n")
+        EOF
+
+    - name: Check the checks file
+      # mode: run on a pull request: a PR that changes the checks and the configs together would grade its own
+      # change (it can weaken the check that would catch it). Refused before any lab boots, unless the
+      # workflow says a code owner must review netdryrun.yml.
+      if: inputs.mode == 'run' && github.event_name == 'pull_request'
+      shell: bash
+      env:
+        NDR_PATH: ${{ inputs.path }}
+        NDR_ALLOW_CHECK_EDIT: ${{ inputs.allow-check-edit }}
+        NDR_BASE: ${{ github.event.pull_request.base.sha }}
+        NDR_HEAD: ${{ github.event.pull_request.head.sha }}
+        NDR_MERGE: ${{ github.sha }}
+      run: |
+        python - <<'EOF'
+        import os, re, subprocess, sys
+
+        def git(*args):
+            return subprocess.run(["git", *args], capture_output=True, text=True)
+
+        def fail(msg):
+            print(f"::error title=Netdryrun::{msg}")
+            with open("netdryrun-summary.md", "w", encoding="utf-8") as f:
+                f.write(f"### ⚠️ Netdryrun: ERROR: NO VERDICT\n\n{msg}\n")
+            sys.exit(1)
+
+        base, head, merge = (os.environ.get(k, "") for k in ("NDR_BASE", "NDR_HEAD", "NDR_MERGE"))
+        sha = re.compile(r"[0-9a-f]{40}(?:[0-9a-f]{24})?")
+        if not (sha.fullmatch(base) and sha.fullmatch(head) and sha.fullmatch(merge)):
+            fail("cannot tell what this pull request changes (no base, head or merge commit)")
+        for c in (merge, base, head):   # a shallow checkout may hold only the merge commit
+            if git("cat-file", "-e", f"{c}^{{commit}}").returncode != 0:
+                git("fetch", "--no-tags", "--depth=2", "origin", c)
+                if git("cat-file", "-e", f"{c}^{{commit}}").returncode != 0:
+                    fail(f"cannot fetch commit {c} (use actions/checkout with fetch-depth: 0)")
+        parents = git("rev-list", "--parents", "-n", "1", merge).stdout.split()
+        if len(parents) != 3 or parents[2] != head:
+            fail("github.sha is not this pull request's merge commit (its parents must be the base branch and the PR head)")
+        path = os.path.normpath(os.environ.get("NDR_PATH", ".") or ".")
+        checks = path if path.endswith((".yml", ".yaml")) else os.path.join(path, "netdryrun.yml")
+        lab = os.path.dirname(checks) or "."
+        changed = git("diff", "--name-only", "--no-renames", parents[1], merge, "--", lab)
+        if changed.returncode != 0:
+            fail(f"cannot list what the PR changes: {' '.join(changed.stderr.split())[:300]}")
+        files = [os.path.normpath(f) for f in changed.stdout.split()]
+        checks_changed = os.path.normpath(checks) in files
+        configs_changed = [f for f in files if f != os.path.normpath(checks)]
+        if checks_changed and configs_changed:
+            msg = ("checks and configs changed in the same PR: the PR edits netdryrun.yml and the lab's configs "
+                   f"({', '.join(configs_changed[:5])}{' ...' if len(configs_changed) > 5 else ''}), so the change "
+                   "would grade itself. Change the checks in a separate reviewed PR, or set allow-check-edit: true "
+                   "only where branch protection requires a code-owner review of netdryrun.yml.")
+            if os.environ.get("NDR_ALLOW_CHECK_EDIT") != "true":
+                fail(msg)
+            print(f"::warning title=Netdryrun::{msg} Allowed by allow-check-edit.")
         EOF
 
     - name: Install containerlab

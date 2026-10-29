@@ -23,6 +23,12 @@
 - `AGENTS.md`, the agent skill and every MCP tool description now say: when no checks exist and a ticket states the intent, prefer `verify_change`.
 - **A machine-readable capability statement**, [`capabilities.json`](https://netdryrun.com/capabilities.json): the use cases with MCP, CLI and Action invocation examples, the prerequisites, the limits, the platforms, tools, check types, verdicts and exit codes, in one file generated from the source (`scripts/capabilities.py`; `sync_facts.py --check` fails when it is stale). It is referenced from `server.json` (`_meta`), `AGENTS.md`, `llms.txt`, the AI agents page and the MCP server's instructions.
 
+### Fixes
+
+- **A config the device rejected is never a pass.** FRR skips a config line it rejects and loads the rest, so up to 0.3.2 a run could pass on a change whose line never loaded (an expert war game found it; reproduced on FRR 10.4.1 with a misspelled `default-originate`: every check passed). Each driver now reports what the device rejected at load; any rejection is status error (exit code `2`), naming the node and the line, in `run` and on each side of `verify`. `environment.nodes.<node>.config_load` says `clean`, the rejected lines, or `not verified on <driver>` (SONiC, Arista EOS, Juniper for now; SR Linux syntax errors already fail containerlab's deploy).
+- **What ran is named:** each node's image digest and the NOS version it reports are in the report (`environment.nodes`) and in the MCP result's `tested.nodes` (FRR reads its version; other drivers say null until their output is captured).
+- **The Action refuses a PR that changes the checks and the configs together** in `mode: run` (it would grade its own change), before any lab boots, unless `allow-check-edit: true`, which a workflow sets only where branch protection requires a code-owner review of `netdryrun.yml`. Like `mode: verify`, it judges the PR merged into the base branch.
+
 ### Changed
 
 - **Advertisement intervals stretch the windows.** Each BGP session's advertisement interval (MRAI) is read where the driver reports it (FRR and SONiC: per neighbor; SR Linux: `minimum-advertisement-interval`, default 5 s; EOS: its default of 0, because a configured `out-delay` is not read yet: on EOS raise `--settle` and `--hold` above it, fix planned for 0.4.1), and `--settle` and `--hold` of `run`, and `verify`'s `--settle`, stretch to the longest one plus 2 s, so a leak sent after the default windows can't let a negative check pass on a prefix count still at 0 (0.3.2 multi-vendor audit). The log says when they were stretched.

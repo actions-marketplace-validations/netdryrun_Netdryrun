@@ -2930,6 +2930,7 @@ It needs a Linux runner with Docker. GitHub-hosted `ubuntu-latest` runners work.
 | `topology` | | The containerlab topology file (`mode: verify`); it must be the same in the base and the head |
 | `intent-file` | `netdryrun-intent.yml` | The intent file (`mode: verify`): what the change is meant to do |
 | `allow-intent-edit` | `false` | `mode: verify`: let a PR that adds or edits the intent file run. Set it only when branch protection requires a code-owner review of that file |
+| `allow-check-edit` | `false` | `mode: run` on a pull request: let a PR that changes `netdryrun.yml` and the lab's configs together run (with a warning). Without it such a PR fails before any lab boots: it would grade its own change. Set it only where branch protection requires a code-owner review of `netdryrun.yml` |
 | `containerlab-version` | `0.81.1` | containerlab version to install, pinned for reproducible runs. Empty means latest. If containerlab is already installed, it is used as is, with a warning if the version differs. |
 | `json-report` | `netdryrun-report.json` | Path for the JSON evidence report |
 | `junit-report` | `netdryrun-junit.xml` | Path for the JUnit XML report |
