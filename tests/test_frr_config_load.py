@@ -174,3 +174,54 @@ def test_the_boot_log_is_read_since_the_container_last_started(monkeypatch):
     logs = [c for c, _ in calls if c[:2] == ["docker", "logs"]][0]
     assert logs == ["docker", "logs", "--since", "2026-10-29T16:25:51.123456789Z", "clab-t-r1"]
     assert all(e == "replace" for _, e in calls)
+
+
+# --- Mutation follow-up (2026-10-30): every node is read in order, and the error says exactly what was found ------
+
+def test_a_bridge_a_ceos_node_or_an_unreadable_host_before_an_frr_node_never_ends_the_scan(tmp_path, monkeypatch):
+    # nodes that are skipped come first: the FRR node after them is still read
+    w = World()
+    lab = BootLogLab(w, {"h1": ExecResult([], 1, "", "no such container"), "r3": REJECTED})
+    frr_nodes = dict(lab.nodes)
+    lab.nodes = {"br1": Node("br1", "br1", "bridge", ""), "ovs1": Node("ovs1", "ovs1", "ovs-bridge", ""),
+                 "ce1": Node("ce1", "clab-t-ce1", "ceos", "ceos:4.32.0F"),
+                 "h1": Node("h1", "clab-t-h1", "linux", "alpine:3.20"), **frr_nodes}
+    rep = _run(tmp_path, monkeypatch, lab)
+    assert rep.status == "error" and "r3: line 21" in rep.error
+    assert lab.read == ["h1", "r1", "r2", "r3"]
+
+
+def test_a_driver_set_in_the_file_decides_that_a_node_is_frr(tmp_path, monkeypatch):
+    # an image Netdryrun can't name, declared FRR in `drivers:`: an unreadable boot log is an error, as for any FRR
+    lab = BootLogLab(World(), {"edge": ExecResult([], 1, "", "no such container")})
+    lab.nodes["edge"] = Node("edge", "clab-t-edge", "linux", "registry.local/edge-router:10.4")
+    install(monkeypatch, lab.world, lab, {n: FakeDriver(lab.world) for n in ("r1", "r2", "r3")})
+    c = cfg(tmp_path, [ALWAYS])
+    c.drivers = {"edge": "frr"}
+    rep = runner.run(c, deploy=False, settle=0, hold=3)
+    assert rep.status == "error" and "edge: its boot log could not be read" in rep.error
+
+
+def test_the_error_names_every_node_and_every_line_exactly(tmp_path, monkeypatch):
+    noise = "x" * 50 + "y" * 200
+    no_load = "\n".join(line for line in CLEAN.splitlines() if "sending configuration" not in line and "] done" not in line)
+    lab = BootLogLab(World(), {"r1": REJECTED, "r2": ExecResult([], 1, "", noise), "r3": no_load})
+    rep = _run(tmp_path, monkeypatch, lab)
+    assert rep.error == (
+        "FRR rejected configuration lines at boot, so the lab ran without them and the checks did not test the "
+        "change as written: r1: line 21: neighbor 10.0.12.2 default-orignate (Unknown command); line 22: neighbor "
+        "10.0.12.2 maximum-prefix (Command incomplete); line 23: neighbor 10.9.9.9 route-map ALLOW-ALL in (rejected "
+        f"by bgpd) | r2: its boot log could not be read ({'y' * 200}), so whether its config loaded is unknown | r3: "
+        "its boot log shows no sign of a config load (no vtysh boot output, no daemon config line), so whether its "
+        "config loaded is unknown. Netdryrun reads the config load FRR's image runs at boot (frr.conf, vtysh -b). "
+        "Fix the config and run again.")
+
+
+def test_every_daemon_rejected_line_is_reported_in_line_order():
+    text = ("2026/10/29 16:25:51 BGP: [ZWCSR-M7FG9] No such command on config line 30: neighbor 1.1.1.1 foo\n"
+            "2026/10/29 16:25:51 BGP: [ZWCSR-M7FG9] No such command on config line 21: neighbor 1.1.1.1 bar\n"
+            "line 25: % Unknown command[4]: baz\n")
+    assert frr.parse_config_load_errors(text) == [
+        "line 21: neighbor 1.1.1.1 bar (No such command, bgp)",
+        "line 25: baz (Unknown command)",
+        "line 30: neighbor 1.1.1.1 foo (No such command, bgp)"]

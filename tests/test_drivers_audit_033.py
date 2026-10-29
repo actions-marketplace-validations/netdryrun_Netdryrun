@@ -369,3 +369,47 @@ def test_a_link_local_next_hop_is_refused():
         with pytest.raises(ConfigError, match="link-local"):
             _validate_check(0, {"type": "bgp_route", "node": "r1", "prefix": "10.9.0.0/24", "next_hop": nh}, 30)
     _validate_check(0, {"type": "bgp_route", "node": "r1", "prefix": "10.9.0.0/24", "next_hop": "2001:db8::1"}, 30)
+
+
+# --- Mutation follow-up (2026-10-30): the ambiguity lists every session once, and the detail says which -------------
+
+def test_eos_lists_every_session_on_an_ambiguous_key_once():
+    peers = {"fe80::1%Et1": "Established", "fe80::1%Et2": "Established"}
+    into = eos.parse_bgp_summary(_eos_summary(peers))
+    eos._summary(_eos_summary(peers), "default", "ipv6-unicast", into)   # the same peers again, another family
+    assert into["fe80::1"].ambiguous == ["fe80::1%Et1", "fe80::1%Et2"]
+
+
+def test_frr_lists_every_session_on_an_ambiguous_key():
+    nbrs = _ambiguous_on_every_driver(("up", 3), ("up", 4))["frr"]
+    assert nbrs["fe80::1"].ambiguous == ["fe80::1%eth1", "fe80::1%eth2"]
+
+
+def test_the_session_and_prefix_checks_say_which_neighbor_and_sessions():
+    from netdryrun.checks import Unready, _bgp_prefixes, _bgp_session
+    from netdryrun.drivers.base import BgpNeighbor, Observation
+
+    nbrs = _ambiguous_on_every_driver(("up", 3), ("up", 4))["frr"]
+    nbrs["10.0.0.2"] = BgpNeighbor("10.0.0.2", "established", {"ipv4-unicast": 1})
+
+    class Drv:
+        def bgp_neighbors(self, vrf="default"):
+            return Observation(nbrs, [])
+
+    want = ("neighbor fe80::1 is ambiguous: 2 sessions share it (fe80::1%eth1, fe80::1%eth2), and either one's "
+            "state would answer for the other; check a global address instead")
+    for fn, p in ((_bgp_session, {"state": "established"}), (_bgp_prefixes, {"afi": "ipv6-unicast", "min": 1})):
+        ok, detail, _ = fn(Drv(), {"neighbor": "fe80::1", **p})
+        assert not ok and isinstance(detail, Unready) and detail == want, (fn, detail)
+        ok, detail, _ = fn(Drv(), {"neighbor": "10.0.0.9", **p})
+        assert not ok and detail == "neighbor 10.0.0.9 not configured (seen: fe80::1, 10.0.0.2)", (fn, detail)
+
+
+def test_the_link_local_next_hop_refusal_says_what_to_check_instead():
+    import pytest
+    from netdryrun.config import ConfigError, _validate_check
+    with pytest.raises(ConfigError) as e:
+        _validate_check(0, {"type": "bgp_route", "node": "r1", "prefix": "10.9.0.0/24", "next_hop": "fe80::1"}, 30)
+    assert str(e.value).endswith(
+        "next_hop 'fe80::1' is link-local: it names no interface, and two sessions can share it, so Netdryrun can't "
+        "tell which path it is. Check a global next hop, or the path's AS path or communities")

@@ -142,3 +142,16 @@ Advisory: `advisories/0.3.2-rejected-config/README.md`. `runner.rejected_config`
 | R6 | A host that can't read container logs (log driver `none`) always errors | other | Accepted: fail-closed, and the message carries Docker's reason | — |
 
 Every fix was test-first. Checked live on 2026-10-29 with real FRR 10.4.1 containers (`Lab.boot_log` itself): the three rejected lines are found, a clean boot gives none, and after `docker restart` the config load is still seen.
+
+## Mutation follow-up after the delta fixes (run on `4a4fbf0`, 2026-10-29)
+
+The run left 129 survivors that `accepted.json` didn't accept. 63 were acceptances made before and only renumbered: the new link-local check in `config._validate_check` and the new code in `runner.run` and `eos._summary` moved mutmut's numbering. Each was matched to its old entry by diff body, and only an exact match moved (the fingerprint includes the mutant's ID, so it always changes on a renumber). The other 66 were new.
+
+- **Three could hide a rejected config (false pass), now killed.** In `runner.rejected_config`, `continue` became `break` after a bridge, a non-FRR node or an unreadable non-FRR log, so an FRR node listed after one of them was never read. `test_a_bridge_a_ceos_node_or_an_unreadable_host_before_an_frr_node_never_ends_the_scan` kills all three, and the `ovs-bridge` spelling with them.
+- **Killed:** a driver set in the file being ignored (`test_a_driver_set_in_the_file_decides_that_a_node_is_frr`).
+- **Killed by exact-text tests:** every message mutant in `rejected_config`, `_ambiguous` and the `next_hop` refusal; the neighbor and node arguments in `_bgp_session` and `_bgp_prefixes`; the ambiguity lists in `eos._summary` and `frr._keep_down`; and a `break` and a lost line key in `parse_config_load_errors` (two daemon lines, out of order).
+- **Accepted (19), each with its reason in `accepted.json`:**
+  - equivalent: the `next_hop` split, since the address is already parsed with its scope; the FRR `Warning` replace, since the reason never holds that word; `maxsplit`; and `established` written over itself;
+  - message or logging text in `runner.run`: the signal name and two log lines;
+  - the command label in an `as_int` message.
+- **Removed:** acceptances whose mutant no longer survives, under any number.
