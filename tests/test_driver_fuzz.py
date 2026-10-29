@@ -310,6 +310,9 @@ FAIL_SAFE = [
      lambda r: r is None or isinstance(r, int)),
     ("srlinux.parse_instance_state", lambda t: srlinux.parse_instance_state(t), ["srl_neighbor_local_pref.txt"],
      lambda r: r is None or isinstance(r, str)),
+    # reads a whole boot log: it finds vtysh's error lines or nothing, and never crashes
+    ("frr.parse_config_load_errors", frr.parse_config_load_errors,
+     ["frr_boot_log_rejected.txt", "frr_boot_log_clean.txt"], lambda r: isinstance(r, list) and all(isinstance(x, str) for x in r)),
 ]
 FS_IDS = [c[0] for c in FAIL_SAFE]
 

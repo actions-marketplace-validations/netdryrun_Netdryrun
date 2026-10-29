@@ -112,3 +112,15 @@ Every change since the cold review, read by a fresh agent with no context, focus
 Areas checked with nothing found: the PR comment and MR note header (escaping, cut, status held to the exit code), the report-path removal loops (workspace and parents refused, symlinks unlinked), MED, FRR stale paths, `_tested`, run IDs and evidence files, exit codes, `run_id` in file names.
 
 All four fixes were test-first: each test failed before its fix.
+
+## Blocker from the 0.4 work (2026-10-29): FRR runs without a config line it rejected
+
+Found by the 0.4 session on a live lab, in released 0.3.2: FRR skips a config line it rejects at boot (`default-orignate`), the lab runs without it, and the checks can pass on a change that never loaded. Class: **false-pass**. Coordination rule: a cheap fail-closed fix ships instead of a documented limit.
+
+| Platform | Decision | Tests |
+|---|---|---|
+| FRR | Fixed: after the checks, every FRR node's boot log (`docker logs`) is read; any `line N: % Unknown command / Ambiguous command / Command incomplete / Warning / Failure to communicate` line, or a daemon's `Configuration file[...] processing failure`, makes the run `error` (exit 2), naming node, line and reason. An unreadable boot log is an error too. Fixtures are real `docker logs` of `quay.io/frrouting/frr:10.4.1` started privileged, with three bad lines (captured 2026-10-29); the running config confirmed none of the three loaded | `tests/test_frr_config_load.py` (all failed before the fix) |
+| `setup:` commands (SONiC, FRR configured after boot) | Already fail-closed: `vtysh -c` exits 1 on each rejected form (verified on FRR 10.4.1: Unknown command, Command incomplete, "Specify remote-as"), and a setup command that never succeeds stops the run. Pinned | `test_a_setup_command_vtysh_rejects_stops_the_run` |
+| Arista cEOS, SR Linux, SONiC startup config | **Accepted documented limit**, fix scheduled for 0.4 (the 0.4 session builds apply verification): stated in the config reference, the compatibility matrix, the Trust page and both advisories, with the mitigation (a positive check for what each changed line creates) | — |
+
+Advisory: `advisories/0.3.2-rejected-config/README.md`. `runner.rejected_config` is added to the verdict-deciding functions for mutation review.

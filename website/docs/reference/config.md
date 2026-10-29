@@ -297,6 +297,12 @@ They run in this order:
 3. A settle delay (`--settle`, default 10 seconds; at least 30 seconds if the file has no positive checks, because nothing else has shown that the network converged).
 4. Each one must then hold for the hold window (`--hold` or the check's `hold`, default 10 seconds), sampled every 3 seconds. A violation at any sample fails the check immediately.
 
+### Config that fails to load
+
+A pass only means something if the lab ran the config you wrote. FRR loads its config line by line at boot and skips a line it rejects (a typo, an incomplete command, a command this release doesn't have), so after the checks Netdryrun reads the boot log of every FRR node in the lab: any rejected line makes the run an **error (exit 2)**, naming the node, the line and the reason. A boot log that can't be read is an error too. A `setup:` command that fails (`vtysh -c` exits 1 on a rejected line) stops the run on every platform.
+
+Known limit: **Startup config on Arista cEOS, Nokia SR Linux and SONiC**: Netdryrun doesn't yet check that every line of a startup config loaded, so a line the NOS rejected leaves the lab running without it. Config applied with `setup:` commands is checked. Mitigation: for each changed line, add a positive check that holds only if the line loaded. Fix scheduled: 0.4. (FRR is checked from 0.3.3: see [the 0.3.2 advisory](https://github.com/netdryrun/netdryrun/blob/main/advisories/0.3.2-rejected-config/README.md).)
+
 Known limit: **Graceful restart on SR Linux, EOS and SONiC** (found by the 0.3.3 cross-platform review): while a peer restarts with graceful restart, its routes stay in the table marked stale until it re-sends them or the stale timer ends, and on these platforms the BGP checks count a stale path as present and best. A route check can pass on a route that is about to go. On FRR, Netdryrun reads the stale flag: a route or `bgp_route` check never passes on a stale path (0.3.3). Mitigation: leave graceful restart off in the lab, or give the checks a `timeout` above the stale timer. Fix scheduled: 0.4 (read the stale flag on the other platforms, from a live graceful-restart capture).
 
 Known limit: **SR Linux prefix counts** (found by the 0.3.3 cross-platform review, seen on a live SR Linux 26.7.2): a `bgp_prefixes` count on SR Linux includes routes dropped by BGP loop detection, which are not usable, so a `min` or `exact` check can pass with fewer usable prefixes. Mitigation: pair the count with `route` checks for the prefixes that matter. Fix scheduled: 0.4 (count usable routes only).

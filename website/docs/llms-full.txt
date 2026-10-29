@@ -2067,6 +2067,12 @@ They run in this order:
 3. A settle delay (`--settle`, default 10 seconds; at least 30 seconds if the file has no positive checks, because nothing else has shown that the network converged).
 4. Each one must then hold for the hold window (`--hold` or the check's `hold`, default 10 seconds), sampled every 3 seconds. A violation at any sample fails the check immediately.
 
+### Config that fails to load
+
+A pass only means something if the lab ran the config you wrote. FRR loads its config line by line at boot and skips a line it rejects (a typo, an incomplete command, a command this release doesn't have), so after the checks Netdryrun reads the boot log of every FRR node in the lab: any rejected line makes the run an **error (exit 2)**, naming the node, the line and the reason. A boot log that can't be read is an error too. A `setup:` command that fails (`vtysh -c` exits 1 on a rejected line) stops the run on every platform.
+
+Known limit: **Startup config on Arista cEOS, Nokia SR Linux and SONiC**: Netdryrun doesn't yet check that every line of a startup config loaded, so a line the NOS rejected leaves the lab running without it. Config applied with `setup:` commands is checked. Mitigation: for each changed line, add a positive check that holds only if the line loaded. Fix scheduled: 0.4. (FRR is checked from 0.3.3: see [the 0.3.2 advisory](https://github.com/netdryrun/netdryrun/blob/main/advisories/0.3.2-rejected-config/README.md).)
+
 Known limit: **Graceful restart on SR Linux, EOS and SONiC** (found by the 0.3.3 cross-platform review): while a peer restarts with graceful restart, its routes stay in the table marked stale until it re-sends them or the stale timer ends, and on these platforms the BGP checks count a stale path as present and best. A route check can pass on a route that is about to go. On FRR, Netdryrun reads the stale flag: a route or `bgp_route` check never passes on a stale path (0.3.3). Mitigation: leave graceful restart off in the lab, or give the checks a `timeout` above the stale timer. Fix scheduled: 0.4 (read the stale flag on the other platforms, from a live graceful-restart capture).
 
 Known limit: **SR Linux prefix counts** (found by the 0.3.3 cross-platform review, seen on a live SR Linux 26.7.2): a `bgp_prefixes` count on SR Linux includes routes dropped by BGP loop detection, which are not usable, so a `min` or `exact` check can pass with fewer usable prefixes. Mitigation: pair the count with `route` checks for the prefixes that matter. Fix scheduled: 0.4 (count usable routes only).
@@ -2406,8 +2412,11 @@ A check on a refused address family stops the run before the lab is deployed, wi
 
 - **SR Linux:** `bgp_prefixes` counts the neighbor's `received-routes`, which on SR Linux 26.7.2 includes routes that fail BGP loop detection and are not usable. On a live capture of `examples/srl-frr` on 2026-10-28 the counter read 3 where one prefix was usable and `rejected-routes` read 0. A `min` or `exact` prefix check on SR Linux can pass on a count that includes unusable routes. The test data above predates that capture; it has not yet been re-captured. Mitigation: pair the count with `route` checks for the prefixes that matter. Fix scheduled: 0.4.
 - **SR Linux:** graceful restart: a stale path (a restarting peer's route, kept until it re-sends it or the stale timer ends) counts as present and best; no stale marker is read yet. A route check can pass on a route that is about to go. Mitigation: leave graceful restart off in the lab, or use a `timeout` above the stale timer. Fix scheduled: 0.4.
+- **SR Linux:** startup config: a line the NOS rejects at boot isn't detected yet, so the lab can run without it. Config applied with `setup:` commands is checked. Mitigation: add a positive check for what each changed line creates. Fix scheduled: 0.4.
 - **SONiC:** graceful restart: a stale path (a restarting peer's route, kept until it re-sends it or the stale timer ends) counts as present and best; no stale marker is read yet. A route check can pass on a route that is about to go. Mitigation: leave graceful restart off in the lab, or use a `timeout` above the stale timer. Fix scheduled: 0.4.
+- **SONiC:** startup config: a line the NOS rejects at boot isn't detected yet, so the lab can run without it. Config applied with `setup:` commands is checked. Mitigation: add a positive check for what each changed line creates. Fix scheduled: 0.4.
 - **Arista EOS:** graceful restart: a stale path (a restarting peer's route, kept until it re-sends it or the stale timer ends) counts as present and best; no stale marker is read yet. A route check can pass on a route that is about to go. Mitigation: leave graceful restart off in the lab, or use a `timeout` above the stale timer. Fix scheduled: 0.4.
+- **Arista EOS:** startup config: a line the NOS rejects at boot isn't detected yet, so the lab can run without it. Config applied with `setup:` commands is checked. Mitigation: add a positive check for what each changed line creates. Fix scheduled: 0.4.
 
 ## How a platform gets on this page
 
@@ -4253,6 +4262,7 @@ A Netdryrun pass means the change behaved correctly in a lab. The lab runs real 
 - **Vendor-specific behavior.** Open-source and container routers (FRR, SR Linux, SONiC VS) are not your vendor's routers, and even Arista cEOS is not the same as EOS on hardware. Defaults, policy evaluation and bugs differ between implementations and versions. For Arista you can bring your own licensed cEOS image.
 - **Scale.** A lab has a handful of nodes and small tables, not full Internet tables or hundreds of peers.
 - **Hardware and ASIC behavior.** Containers have no forwarding hardware, so TCAM limits, hardware programming and line-rate effects are not tested.
+- **Config the NOS skipped, on some platforms.** On FRR, a config line rejected at boot makes the run an error. On Arista cEOS, SR Linux and SONiC, Netdryrun doesn't yet check that every startup-config line loaded (fix scheduled for 0.4): add a positive check for what each changed line creates.
 - **Timing at scale.** Convergence time in a small lab says little about convergence time in a large production network.
 
 

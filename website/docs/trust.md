@@ -29,6 +29,7 @@ A Netdryrun pass means the change behaved correctly in a lab. The lab runs real 
 - **Vendor-specific behavior.** Open-source and container routers (FRR, SR Linux, SONiC VS) are not your vendor's routers, and even Arista cEOS is not the same as EOS on hardware. Defaults, policy evaluation and bugs differ between implementations and versions. For Arista you can bring your own licensed cEOS image.
 - **Scale.** A lab has a handful of nodes and small tables, not full Internet tables or hundreds of peers.
 - **Hardware and ASIC behavior.** Containers have no forwarding hardware, so TCAM limits, hardware programming and line-rate effects are not tested.
+- **Config the NOS skipped, on some platforms.** On FRR, a config line rejected at boot makes the run an error. On Arista cEOS, SR Linux and SONiC, Netdryrun doesn't yet check that every startup-config line loaded (fix scheduled for 0.4): add a positive check for what each changed line creates.
 - **Timing at scale.** Convergence time in a small lab says little about convergence time in a large production network.
 
 <!-- facts:trust_scope -->

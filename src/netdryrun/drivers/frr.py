@@ -46,6 +46,31 @@ def _keep_down(out: dict, key: str, n: BgpNeighbor) -> None:
     out[key] = keep
 
 
+# vtysh -b, which loads frr.conf at boot, prints one of these for every line it couldn't apply, then goes on: the
+# router runs without the line (vtysh/vtysh.c, vtysh_config_from_file; FRR 10.4.1 boot logs in tests/fixtures)
+_LOAD_ERROR = re.compile(r"^line (\d+): (?:% (Unknown command|Ambiguous command|Command incomplete)(?:\[\d+\])?: "
+                         r"|(Warning)(?:\[\d+\])?\.\.\.: |Failure to communicate\[\d+\] to (\S+), line: )(.*)$")
+_LOAD_FAILURE = re.compile(r"^\[\d+\|(\S+)\] Configuration file\[.*\] processing failure: (\d+)$")
+
+
+def parse_config_load_errors(text: str) -> list[str]:
+    """The config lines FRR rejected at boot, from the container's log, each once, in line order. A daemon that
+    reports a processing failure without any such line still counts."""
+    lines: dict[int, str] = {}
+    failures: list[str] = []
+    for raw in text.splitlines():
+        m = _LOAD_ERROR.match(raw.strip())
+        if m:
+            n, kind, warning, daemon, cmd = m.groups()
+            why = kind or (f"rejected by {daemon}" if daemon else "warning")
+            lines.setdefault(int(n), f"line {n}: {cmd.strip()} ({why.replace('Warning', 'warning')})")
+            continue
+        f = _LOAD_FAILURE.match(raw.strip())
+        if f:
+            failures.append(f"{f.group(1)} reported a configuration file processing failure ({f.group(2)})")
+    return [lines[n] for n in sorted(lines)] or list(dict.fromkeys(failures))
+
+
 def _bgp_json(command: str, text: str) -> dict:
     data = load_json(command, text)
     if not isinstance(data, dict):

@@ -23,6 +23,7 @@ from .checks import (Result, Unready, _sample, hold_together, inconclusive_reaso
                      never_ready_nodes, run_round_robin)
 from .config import Check, Config, ConfigError, Scenario, load
 from .drivers import DriverError, check_supported, detect, for_node
+from .drivers.frr import parse_config_load_errors
 from .drivers.base import NoSuchInstance
 from .faults import RouteInjection
 from .lab import Lab, LabError
@@ -263,6 +264,33 @@ def check_topology(config: Config) -> Lab:
     return lab
 
 
+def rejected_config(lab, config: Config) -> str:
+    """Why the lab did not run the config as written, or "". FRR applies its config line by line at boot and skips
+    a line it rejects (a typo, a command this release doesn't have): the lab then runs without it, and the checks
+    test a network the change never reached. Read after the checks, when every node has booted; a boot log that
+    can't be read is no proof either. (Other NOSes: see the config reference, "Config that fails to load".)"""
+    found = []
+    for name, node in lab.nodes.items():
+        try:
+            driver = config.drivers.get(name) or detect(node)
+        except DriverError:
+            continue
+        if driver != "frr":
+            continue
+        r = lab.boot_log(name)
+        if r.rc != 0:
+            found.append(f"{name}: its boot log could not be read ({(r.stderr or r.stdout).strip()[-200:]}), so "
+                         "whether its config loaded is unknown")
+            continue
+        errors = parse_config_load_errors(r.stdout)
+        if errors:
+            found.append(f"{name}: {'; '.join(errors)}")
+    if not found:
+        return ""
+    return ("FRR rejected configuration lines at boot, so the lab ran without them and the checks did not test the "
+            f"change as written: {' | '.join(found)}. Fix the config and run again.")
+
+
 def run(config: Config, *, deploy: bool = True, keep: bool = False, keep_on_failure: bool = False,
         settle: float = 10.0, hold: float = 10.0,
         on_result: Callable[[Result], None] | None = None, log: Callable[[str], None] = lambda _: None) -> RunReport:
@@ -374,6 +402,9 @@ def run(config: Config, *, deploy: bool = True, keep: bool = False, keep_on_fail
                 if sc is not config.scenarios[-1]:
                     log(f"The network did not recover after scenario '{sc.name}'; later scenarios skipped")
                 break
+        rejected = rejected_config(lab, config)
+        if rejected:
+            report.error = rejected
     except KeyboardInterrupt as e:
         interrupted = e
         report.error = f"interrupted by {signal_name(getattr(e, 'signum', signal.SIGINT))}: no verdict"

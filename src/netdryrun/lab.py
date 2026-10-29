@@ -271,6 +271,11 @@ class Lab:
                 time.sleep(5)
         log(f"setup done on {node} ({len(commands)} commands)")
 
+    def boot_log(self, node: str) -> ExecResult:
+        """The container's log since it started (stdout and stderr), where the NOS reports config it rejected."""
+        r = _run(["docker", "logs", self.nodes[node].container], timeout=60)
+        return ExecResult(r.cmd, r.rc, f"{r.stdout}\n{r.stderr}", r.stderr)
+
     def exec(self, node: str, cmd: list[str], timeout: float = 60, input: str | None = None) -> ExecResult:
         flags = ["-i"] if input is not None else []
         return _run(["docker", "exec", *flags, self.nodes[node].container, *cmd], timeout=timeout, input=input)
