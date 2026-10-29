@@ -146,6 +146,8 @@ def write_results(rows: list[dict], out: Path, env: dict, corpus: Path = HERE) -
     mark = {"correct": "✅", "false pass": "❌ false pass", "false block": "⚠️ false block", "error": "💥 error"}
     for r in rows:
         cells = [mark[outcome(r["expected"], r["strategies"][s]["verdict"])] for s in names]
+        if r.get("nondeterministic"):
+            cells = ["🎲 not scored"] * len(names)
         flagged = "; ".join(r["strategies"]["netdryrun"]["failed_checks"]) or "nothing"
         lines.append(f"| `{r['id']}` {r['title']} | {r['category']} | {r['expected']} | {' | '.join(cells)} | {flagged} |")
     losses = [r for r in scored if outcome(r["expected"], r["strategies"]["netdryrun"]["verdict"]) != "correct"]
@@ -191,9 +193,11 @@ def main() -> int:
     for case in cases:
         print(f"== {case['id']}: {case['title']} (expected {case['expected']})", flush=True)
         try:
-            row = evaluate(case, root, args.keep, corpus)
-            if case["id"] in nd:   # the first run stays the row's verdict; every run is kept
-                runs = [row] + [evaluate(case, root, args.keep, corpus) for _ in range(NONDETERMINISTIC_RUNS - 1)]
+            n = NONDETERMINISTIC_RUNS if case["id"] in nd else 1
+            # --keep keeps only the last run's lab: an earlier one left running would collide with the next deploy
+            runs = [evaluate(case, root, args.keep and i == n - 1, corpus) for i in range(n)]
+            row = runs[0]
+            if n > 1:   # the first run stays the row's verdict; every run is kept
                 row["nondeterministic"] = True
                 row["runs"] = [{s: r["strategies"][s]["verdict"] for s in STRATEGIES} for r in runs]
         except CaseError as e:

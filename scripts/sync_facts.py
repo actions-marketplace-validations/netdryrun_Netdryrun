@@ -104,6 +104,7 @@ def _corpus(path: Path) -> dict:
     results = json.loads(path.read_text(encoding="utf-8"))
     nd_file = path.parent.parent / "NONDETERMINISTIC.yml"
     nd = set(yaml.safe_load(nd_file.read_text(encoding="utf-8")) or {}) if nd_file.exists() else set()
+    nd &= {c["id"] for c in results["cases"]}   # a key that names no case changes nothing
     cases = [c for c in results["cases"] if c["id"] not in nd]
     corpus = {"cases": len(cases), "harmful": sum(c["expected"] == "unsafe" for c in cases),
               "generated": results["environment"]["generated"][:10], "ran_with": results["environment"]["netdryrun"],

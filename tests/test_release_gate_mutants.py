@@ -146,3 +146,48 @@ def test_v2_marks_case_18_nondeterministic_without_editing_the_case():
     assert [v["verdict"] for v in nd["18-aggregate-discard-route-removed"]["netdryrun_verdicts"]][-3:] == ["unsafe", "unsafe", "safe"]
     assert "nondeterministic" not in (root / "cases" / "18-aggregate-discard-route-removed.yml").read_text(encoding="utf-8")
     assert gate.nondeterministic_cases(root.parent) == {}   # v1 has none
+
+
+# Delta review round 4: the exemption itself is held. The list is pinned in the gate, the repeats must run, and an
+# error in any run is a blocker (an error is never part of the race).
+
+def _nd_row(*runs):
+    return {"runs": [dict(zip(("ping", "sessions", "netdryrun"), r)) for r in runs]}
+
+
+def test_the_nondeterministic_exemption_holds_only_as_pinned():
+    cid = "18-aggregate-discard-route-removed"
+    nd = {cid: {}}
+    ok = {cid: _nd_row(("safe", "safe", "unsafe"), ("safe", "safe", "safe"), ("safe", "safe", "unsafe"))}
+    assert gate.nondeterministic_problems("v2", nd, ok) == []
+    assert "pins" in gate.nondeterministic_problems("v2", {**nd, "05-x": {}}, ok)[0]   # a case added to the yml only
+    assert "pins" in gate.nondeterministic_problems("v1", nd, ok)[0]
+    assert "runs recorded" in gate.nondeterministic_problems("v2", nd, {})[0]   # missing from the results
+    err = {cid: _nd_row(("safe", "safe", "unsafe"), ("safe", "safe", "error"), ("safe", "safe", "unsafe"))}
+    assert "error in run 2 netdryrun" in gate.nondeterministic_problems("v2", nd, err)[0]
+
+
+def test_keep_reaches_only_the_last_run_of_a_nondeterministic_case(monkeypatch, tmp_path, capsys):
+    spec = importlib.util.spec_from_file_location("corpus_run", ROOT / "corpus" / "run.py")
+    run_py = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(run_py)
+    calls = []
+
+    def evaluate(case, root, keep, corpus):
+        calls.append(keep)
+        return {"id": case["id"], "seconds": 1,
+                "strategies": {s: {"verdict": "unsafe", "correct": True, "failed_checks": [], "error": None}
+                               for s in run_py.STRATEGIES}}
+
+    class Lab:
+        def __init__(self, path):
+            self.nodes = {"pe1": type("N", (), {"image": "frr"})()}
+
+        def version(self):
+            return "test"
+
+    monkeypatch.setattr(run_py, "evaluate", evaluate)
+    monkeypatch.setattr(run_py, "Lab", Lab)
+    monkeypatch.setattr(sys, "argv", ["run.py", "--corpus", "v2", "--case", "18-", "--keep", "--workdir", str(tmp_path)])
+    assert run_py.main() == 0
+    assert calls == [False, False, True]

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import ipaddress
 import re
+from collections import Counter
 
 from .base import (BgpNeighbor, BgpPath, Driver, DriverError, NoSuchInstance, Observation, Route, as_int, canon_communities,
                    check_vrf_name, load_json, network, parser, render_as_path, unexpected)
@@ -80,18 +81,29 @@ def config_sections(text: str) -> list[tuple[tuple[str, ...], str]]:
     return out
 
 
-def parse_config_load_errors(text: str, running: str | None = None, config: str | None = None) -> list[str]:
+def communicate_daemons(text: str) -> list[str]:
+    """The daemons a boot log says answered a config line with "Failure to communicate" (mgmtd left out): the only
+    lines `parse_config_load_errors` can clear, each against that daemon's own running config."""
+    return sorted({m.group(4) for raw in text.splitlines() if (m := _LOAD_ERROR.match(raw.strip())) and m.group(4)
+                   and m.group(4) != "mgmtd"})
+
+
+def parse_config_load_errors(text: str, running: dict[str, str] | None = None, config: str | None = None) -> list[str]:
     """The config lines FRR rejected at boot, from the container's log, each once, in line order. A daemon that
     reports a processing failure without any such line still counts.
 
     A daemon can answer a line with "Failure to communicate[13]" (CMD_WARNING_CONFIG_FAILED) and still apply it
-    (`bgp graceful-restart`, FRR 10.4.1, Verdict Corpus case 29). With `running` (the node's `show running-config`)
+    (`bgp graceful-restart`, FRR 10.4.1, Verdict Corpus case 29). With `running` (each such daemon's own
+    `show running-config`, `vtysh -d <daemon>`: the merged view shows a route-map line zebra took and bgpd refused)
     and `config` (the frr.conf vtysh -b loaded), such a line doesn't count when line N of the file is that line and
-    the running config has it in the same section (the same `router bgp ... vrf`, the same address family). Every
-    other kind is never applied (a line vtysh couldn't parse never reaches a daemon) or can't be told apart, and
-    always counts; so do lines for mgmtd, whose stored config can show a line a daemon then failed to apply."""
-    applied = set(config_sections(running)) if running is not None else set()
+    that daemon's running config has it in the same section (the same `router bgp ... vrf`, the same address
+    family) at least as many times as the file does (two `vni` blocks share a section). Every other kind is never
+    applied (a line vtysh couldn't parse never reaches a daemon) or can't be told apart, and always counts; so do
+    lines for mgmtd, whose stored config can show a line a daemon then failed to apply, and lines for a daemon whose
+    running config wasn't read."""
+    applied = {d: Counter(config_sections(t)) for d, t in (running or {}).items()}
     file = config_sections(config) if config is not None else []
+    in_file = Counter(file)
     lines: dict[tuple[int, str], tuple[bool, str, str]] = {}   # (line, source) -> (applied, daemon, message)
     failures: list[tuple[str, str]] = []
     for raw in text.splitlines():
@@ -100,8 +112,8 @@ def parse_config_load_errors(text: str, running: str | None = None, config: str 
             n, kind, warning, daemon, cmd = m.groups()
             why = kind or (f"rejected by {daemon}" if daemon else "warning")
             i = int(n) - 1
-            done = (daemon is not None and daemon != "mgmtd" and 0 <= i < len(file)
-                    and file[i][1] == cmd.strip() and file[i] in applied)
+            done = (daemon in applied and daemon != "mgmtd" and 0 <= i < len(file) and file[i][1] == cmd.strip()
+                    and applied[daemon][file[i]] >= in_file[file[i]])
             lines.setdefault((int(n), ""), (done, daemon or "", f"line {n}: {cmd.strip()} ({why})"))
             continue
         d = _DAEMON_LINE.match(raw.strip())

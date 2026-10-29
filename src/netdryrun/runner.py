@@ -23,7 +23,7 @@ from .checks import (Result, Unready, _sample, hold_together, inconclusive_reaso
                      never_ready_nodes, run_round_robin)
 from .config import Check, Config, ConfigError, Scenario, load
 from .drivers import DriverError, check_supported, detect, for_node
-from .drivers.frr import LOAD_RAN, parse_config_load_errors
+from .drivers.frr import LOAD_RAN, communicate_daemons, parse_config_load_errors
 from .drivers.base import NoSuchInstance
 from .faults import RouteInjection
 from .lab import Lab, LabError
@@ -286,15 +286,18 @@ def rejected_config(lab, config: Config) -> str:
                              "so whether its config loaded is unknown")
             continue
         errors = parse_config_load_errors(r.stdout)
-        if errors:
-            # a line a daemon complained about can still have been applied: one in the same section of the running
-            # config doesn't count. If either file can't be read, every reported line does (fail closed)
-            run_ = lab.exec(name, ["vtysh", "-c", "show running-config"])
+        daemons = communicate_daemons(r.stdout)
+        if errors and daemons:
+            # a line a daemon answered with "Failure to communicate" can still have been applied: one in the same
+            # section of that daemon's own running config doesn't count. What can't be read counts (fail closed)
             conf = lab.exec(name, ["cat", "/etc/frr/frr.conf"])
-            if run_.rc == 0 and conf.rc == 0:
-                errors = parse_config_load_errors(r.stdout, run_.stdout, conf.stdout)
-            else:
-                why = ((run_ if run_.rc else conf).stderr or "").strip()[-200:]
+            reads = {d: lab.exec(name, ["vtysh", "-d", d, "-c", "show running-config"]) for d in daemons}
+            if conf.rc == 0:
+                errors = parse_config_load_errors(r.stdout, {d: x.stdout for d, x in reads.items() if x.rc == 0},
+                                                  conf.stdout)
+            bad = [x for x in (conf, *reads.values()) if x.rc != 0]
+            if bad and errors:
+                why = (bad[0].stderr or "").strip()[-200:]
                 errors = [*errors, f"(not checked against the running config: {why or 'it could not be read'})"]
         if errors:
             found.append(f"{name}: {'; '.join(errors)}")

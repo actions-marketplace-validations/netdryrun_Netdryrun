@@ -983,6 +983,26 @@ def harmful_approved(cases: list[dict], skip=()) -> list[str]:
                   and c.get("expected") == "unsafe" and c.get("strategies", {}).get("netdryrun", {}).get("verdict") == "safe")
 
 
+# The cases each corpus may exempt from the verdict diff: adding one to NONDETERMINISTIC.yml takes a change here too.
+NONDETERMINISTIC_PINNED = {"v1": [], "v2": ["18-aggregate-discard-route-removed"]}
+
+
+def nondeterministic_problems(version: str, nd: dict, new: dict) -> list[str]:
+    """Why the nondeterministic exemption doesn't hold this run: a list that differs from the pinned one, a case
+    that didn't run its repeats, or any run that ended in error (an error is never part of the race)."""
+    out = []
+    if sorted(nd) != sorted(NONDETERMINISTIC_PINNED.get(version, [])):
+        out.append(f"NONDETERMINISTIC.yml lists {sorted(nd)}, the gate pins {NONDETERMINISTIC_PINNED.get(version, [])}")
+    for cid in sorted(nd):
+        runs = new.get(cid, {}).get("runs") or []
+        if len(runs) < 2:
+            out.append(f"{cid}: {len(runs)} runs recorded, not the repeats")
+        bad = [f"run {i + 1} {s}" for i, r in enumerate(runs) for s, v in r.items() if v not in ("safe", "unsafe")]
+        if bad:
+            out.append(f"{cid}: error in {', '.join(bad)}")
+    return out
+
+
 def nondeterministic_cases(corpus: Path) -> dict:
     """corpus/[v2/]NONDETERMINISTIC.yml: cases whose verdict follows a race in the lab, recorded and never a blocker."""
     import yaml   # the gate's Python has Netdryrun's dependencies (Layer 5 installs the package)
@@ -1030,12 +1050,18 @@ def live_corpora(live: Live, args) -> None:
                   BLOCKER, p.code == 0 and not diffs,
                   f"exit {p.code}" if p.code else (f"{len(diffs)} verdict(s) differ" if diffs else "all verdicts match"),
                   "\n".join(diffs) or tail(p.out), p.seconds, cmdline(["python", "corpus/run.py", "--corpus", version]))
-        if p.code == 0 and nd:   # recorded, never a blocker: their verdict follows the lab, not the change
+        if p.code == 0 and (nd or NONDETERMINISTIC_PINNED.get(version)):
+            # the verdicts are recorded, never a blocker: they follow the lab, not the change. The exemption
+            # itself is held: the pinned list, the repeats ran, and no run ended in error
+            problems = nondeterministic_problems(version, nd, new)
+            layer.add(f"corpus-{version}-nondeterministic-held",
+                      f"Verdict Corpus {version}: the nondeterministic exemption holds (pinned list, repeats ran, no error)",
+                      BLOCKER, not problems, "; ".join(problems) or ", ".join(sorted(nd)))
             seen = "; ".join(f"{cid}: " + ", ".join(str(r.get("netdryrun")) for r in new.get(cid, {}).get("runs", []))
                              for cid in nd)
             layer.add(f"corpus-{version}-nondeterministic",
                       f"Verdict Corpus {version}: nondeterministic cases recorded (known, not scored, never a blocker)",
-                      INFO, all(new.get(cid, {}).get("runs") for cid in nd), f"Netdryrun verdicts per run: {seen}")
+                      INFO, True, f"Netdryrun verdicts per run: {seen}")
         if p.code == 0 and fresh.exists():
             ok, summary = harmful_approved_check(list(old.values()), list(new.values()), nd)
             layer.add(f"corpus-{version}-harmful-approved",
