@@ -562,3 +562,77 @@ def test_vrf_captures_from_the_live_check_run():
     n = junos.parse_bgp_neighbors(read("junos_bgp_neighbor_vrf_idle.txt"), "CUST")
     assert n["10.0.199.2"].state != "established" and n["10.0.199.2"].prefixes == {}
     assert junos.parse_ping(read("junos_ping_vrf_local.txt")) == (3, 3)
+
+
+# ---------------------------------------------------------------- the remaining error branches (coverage gate)
+
+@pytest.mark.parametrize("edit", [
+    lambda p: p.update({"peer-state": [{"data": 5}]}),          # a leaf whose text isn't text
+    lambda p: p.update({"peer-state": [{"data": "   "}]}),      # a blank state
+], ids=["leaf-not-text", "blank-state"])
+def test_neighbor_leaf_shapes(edit):
+    with pytest.raises(DriverError, match="unexpected output"):
+        junos.parse_bgp_neighbors(_peer_doc(edit), "master")
+
+
+def test_route_table_error_with_another_message_is_an_error_not_a_missing_table():
+    text = _obj({"route-table-error": [{"route-table-error-str": [{"data": "rpd is busy"}]}]})
+    with pytest.raises(DriverError, match="rpd is busy") as e:
+        junos.parse_routes(text, "10.0.0.0/24")
+    assert not isinstance(e.value, junos.NoSuchTable)
+
+
+def test_route_entry_with_an_empty_protocol_name():
+    d = json.loads(read("junos_route_paths.txt"))
+    d["route-information"][0]["route-table"][0]["rt"][0]["rt-entry"][0]["protocol-name"] = [{"data": ""}]
+    with pytest.raises(DriverError, match="without protocol-name"):
+        junos.parse_routes(_obj(d), "10.20.0.0/24")
+
+
+def test_community_that_isnt_text():
+    d = json.loads(read("junos_route_paths.txt"))
+    d["route-information"][0]["route-table"][0]["rt"][0]["rt-entry"][0]["communities"][0]["community"][0] = {"data": 7}
+    with pytest.raises(DriverError, match="community"):
+        junos.parse_bgp_paths(_obj(d), "10.20.0.0/24")
+
+
+def test_ibgp_next_hop_falls_back_to_the_forwarding_one():
+    """A protocol next hop without an address (never seen live): the selected forwarding next hop, never None."""
+    d = json.loads(read("junos_route_ibgp.txt"))
+    d["route-information"][0]["route-table"][0]["rt"][0]["rt-entry"][0]["protocol-nh"][0].pop("to")
+    (p,) = junos.parse_bgp_paths(_obj(d), "10.50.0.0/24")
+    assert p.next_hop == "10.0.1.2"
+
+
+def test_a_command_with_a_quote_never_reaches_the_vm():
+    """Every command is built from validated names and addresses; this is the last guard in front of the
+    single-quoted string the VM's shell reads."""
+    lab = Lab([("", "{}")])
+    with pytest.raises(DriverError, match="quote"):
+        JunosDriver(lab, "j1")._cli("show route 'x", [])
+    assert lab.calls == []
+
+
+def test_all_routes_through_the_driver():
+    lab = Lab([("show route table inet.0", read("junos_route_table.txt"))])
+    obs = JunosDriver(lab, "j1").all_routes()
+    assert ("0.0.0.0/0", "static", True) in {(r.prefix, r.protocol, r.active) for r in obs.value}
+    assert lab.calls == ["cli -c 'show route table inet.0 | display json | no-more'"]
+    # an empty table in a VRF is trusted only once the instance is confirmed
+    lab = Lab([("show route instance RED", read("junos_instance_red.txt")),
+               ("show route table RED.inet.0", read("junos_route_empty.txt"))])
+    assert JunosDriver(lab, "j1").all_routes("RED").value == [] and len(lab.calls) == 2
+    lab = Lab([("show route instance NOPE", read("junos_instance_none.txt")),
+               ("show route table NOPE.inet.0", read("junos_route_empty.txt"))])
+    with pytest.raises(NoSuchInstance):
+        JunosDriver(lab, "j1").all_routes("NOPE")
+
+
+def test_a_path_without_any_next_hop_reads_as_unknown():
+    """No nh and no protocol-nh: next_hop is None ("?"), which never equals an expected next hop."""
+    d = json.loads(read("junos_route_paths.txt"))
+    e = d["route-information"][0]["route-table"][0]["rt"][0]["rt-entry"][0]
+    e.pop("nh")
+    e.pop("protocol-nh", None)
+    best = junos.parse_bgp_paths(_obj(d), "10.20.0.0/24")[0]
+    assert best.best and best.next_hop is None
