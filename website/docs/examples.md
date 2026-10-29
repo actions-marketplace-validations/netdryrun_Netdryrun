@@ -24,6 +24,7 @@ Times are wall-clock for `netdryrun run` on WSL2 (20 cores, 16 GB) with images a
 | [srl-hidden-leak](#srl-hidden-leak) | Nokia SR Linux + FRR | A leaked default that ping, sessions and the routing table miss, on both NOSes | `PASSED: 9 passed, 0 failed`; each leak `FAILED: 8 passed, 1 failed` | `0`; `1` | 59 to 60 s |
 | [sonic-frr](#sonic-frr) | SONiC VS + FRR | Configuring a NOS after boot, a port-down scenario | `PASSED: 8 passed, 0 failed` | `0` | 92 s |
 | [arista-frr](#arista-frr) | Arista cEOS + FRR (your image) | A bring-your-own vendor image | `PASSED: 10 passed, 0 failed` | `0` | 97 s |
+| [junos-frr](#junos-frr) | Juniper cJunosEvolved (beta) + FRR (your image) | The hidden leak on Junos, with the beta driver | `PASSED: 13 passed, 0 failed`; each leak `FAILED: 12 passed, 1 failed` | `0`; `1` | 398 s |
 | [agent-demo](#agent-demo) `demo.sh` | FRR | An agent's leaky change rejected, the fix accepted | `Demo OK` | `0` | 70 s |
 | [batfish-pipeline](#batfish-pipeline) | FRR | Batfish first, then the lab; three bad changes | `PASSED: 10 passed, 0 failed` | `0` | 100 s |
 
@@ -92,6 +93,10 @@ The image comes from the SONiC build server, not a registry. To get it and run t
 **Shows:** a vendor image you bring yourself. cEOS-lab is free from arista.com with an account but can't be redistributed, so import it as `ceos:4.36.3M` first (the comment in `topology.clab.yml` shows how). Checks: both sessions, a prefix count, a route on each side, a ping, best-path attributes on `ceos1`, no default route at the Arista, and a scenario that takes the link down from the FRR side.
 
 **Expected:** `PASSED: 10 passed, 0 failed (10 checks)`, exit code `0`. Without the image, the run stops with exit code `2`; see [the cEOS image is missing](troubleshooting.md#the-ceos-image-is-missing).
+
+## junos-frr
+
+The [hidden-leak lab](#srl-hidden-leak) on **Juniper cJunosEvolved** (beta driver, your own image) instead of SR Linux: a peer starts sending a default route it shouldn't, the session stays up, ping works, and the leaked route sits in Junos's table as an inactive BGP route. The good configs pass all 13 checks; each of the two one-line leaks fails exactly the guard on the router that receives it. cJunosEvolved boots a VM that installs Junos on every deploy: about 4 minutes to a CLI on a quiet host (the 398 s above), up to 19 minutes with a CPU-heavy job beside it, so give its checks a `timeout` that covers the boot. It needs a host with KVM and about 10 GB of free memory. Everything else is in the example's [README](https://github.com/netdryrun/netdryrun/tree/main/examples/junos-frr) and the [driver reference](reference/junos.md).
 
 ## agent-demo
 

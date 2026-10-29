@@ -135,7 +135,7 @@ def platform_limits(f: dict) -> list[str]:
     """Each released platform's limits, as recorded with the compatibility matrix (tests/compat_verified.json),
     named by platform."""
     verified = json.loads((ROOT / "tests" / "compat_verified.json").read_text(encoding="utf-8"))
-    return [f"{names[2]}: {limit}" for driver, names in zip(f["drivers"], f["platforms"])
+    return [f"{names[2]}: {limit}" for driver, names in zip(f["drivers"], f["platforms"], strict=True)
             for limit in verified.get(driver, {}).get("limits", [])]
 
 
@@ -154,7 +154,7 @@ def render(f: dict | None = None) -> str:
         "use_cases": use_cases,
         "prerequisites": PREREQUISITES,
         "limits": LIMITS + platform_limits(f),
-        "platforms": [{"driver": d, "name": p[0]} for d, p in zip(f["drivers"], f["platforms"])],
+        "platforms": [{"driver": d, "name": p[0]} for d, p in zip(f["drivers"], f["platforms"], strict=True)],
         "mcp": {"install": ["uvx netdryrun mcp", "claude mcp add netdryrun -- netdryrun mcp"],
                 "transport": "stdio", "tools": f["mcp_tools"], "registry_name": "io.github.netdryrun/netdryrun"},
         "check_types": f["check_types"],

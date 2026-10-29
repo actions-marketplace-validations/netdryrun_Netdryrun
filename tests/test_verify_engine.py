@@ -922,7 +922,7 @@ def test_appears_on_an_ipv6_prefix_and_its_primary_next_hop():
     assert run(base(), _edit(lambda lab: learned(lab, [glob, ll]))(), [line]).status == "matched"
     for hops, pin, ok in (([glob, ll], ["2001:db8:2::1"], True), ([glob, ll], ["2001:db8:2::1", "fe80::1"], False),
                           ([ll], ["fe80::1"], True)):
-        m = run(base(), _edit(lambda lab: learned(lab, hops))(), [{**line, "with": {"next_hop": pin}}])
+        m = run(base(), _edit(lambda lab, hops=hops: learned(lab, hops))(), [{**line, "with": {"next_hop": pin}}])
         assert (m.status == "matched") is ok, (hops, pin)
 
 
