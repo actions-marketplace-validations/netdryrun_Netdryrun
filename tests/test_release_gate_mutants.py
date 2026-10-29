@@ -188,6 +188,7 @@ def test_keep_reaches_only_the_last_run_of_a_nondeterministic_case(monkeypatch, 
 
     monkeypatch.setattr(run_py, "evaluate", evaluate)
     monkeypatch.setattr(run_py, "Lab", Lab)
+    monkeypatch.setattr(run_py, "_git_commit", lambda: "test")   # no git in the plain-container unit run
     monkeypatch.setattr(sys, "argv", ["run.py", "--corpus", "v2", "--case", "18-", "--keep", "--workdir", str(tmp_path)])
     assert run_py.main() == 0
     assert calls == [False, False, True]
