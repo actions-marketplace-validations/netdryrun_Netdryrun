@@ -510,6 +510,53 @@ def test_ibgp_next_hop_is_the_protocol_next_hop():
     assert n["10.0.1.2"].state == "established" and n["10.0.1.2"].prefixes == {"ipv4-unicast": 2}
 
 
+# ---------------------------------------------------------------- advertisement interval and VRF list (0.4)
+
+def test_adv_interval_is_the_platform_default_when_no_delay_is_configured():
+    """Junos sends updates without delay unless `out-delay` is configured, and then prints no timer at all."""
+    for name, instance in (("junos_bgp_neighbor.txt", "master"), ("junos_bgp_neighbor_red.txt", "RED"),
+                           ("junos_bgp_neighbor_ibgp.txt", "master")):
+        assert {n.adv_interval for n in junos.parse_bgp_neighbors(read(name), instance).values()} == {0.0}, name
+
+
+def test_configured_out_delay_is_read():
+    """Captured live with `out-delay 10` on the IPv4 group only: Junos adds `outbound-timer` (seconds)."""
+    n = junos.parse_bgp_neighbors(read("junos_bgp_neighbor_outdelay.txt"), "master")
+    assert n["10.0.100.2"].adv_interval == 10.0 and n["2001:db8:100::2"].adv_interval == 0.0
+
+
+def _outdelay_doc(edit):
+    d = json.loads(read("junos_bgp_neighbor_outdelay.txt"))
+    edit(d["bgp-information"][0]["bgp-peer"][0]["bgp-option-information"][0])
+    return _obj(d)
+
+
+@pytest.mark.parametrize("edit", [
+    lambda o: o.update({"outbound-timer": [{"data": "ten"}]}),
+    lambda o: o.update({"outbound-timer": [{"data": "-1"}]}),
+    lambda o: o.update({"outbound-timer": [{"data": "10"}, {"data": "20"}]}),
+    lambda o: o.update({"out-delay": [{"data": "30"}]}),                     # a delay under another name
+    lambda o: o["bgp-options"][0].update({"data": "PeerAS Refresh OutDelay"}),
+], ids=["not-a-number", "negative", "twice", "other-name", "option-flag"])
+def test_an_unreadable_delay_is_never_read_as_none(edit):
+    """A delay Junos reports in a shape this driver doesn't know is an error, never 0: a 0 would keep settle
+    and hold short while a leak can still be on its way."""
+    with pytest.raises(DriverError, match="unexpected output|advertisement delay"):
+        junos.parse_bgp_neighbors(_outdelay_doc(edit), "master")
+
+
+def test_vrfs_lists_vrf_instances_only():
+    # captured live: master, CUST (vrf), mgmt_junos (virtual-router: the management instance), two private ones
+    assert junos.parse_vrfs(read("junos_instances.txt")) == ["CUST"]
+    assert junos.parse_vrfs(read("junos_instance_red.txt")) == ["RED"]
+    assert junos.parse_vrfs(read("junos_instance_master.txt")) == []
+    with pytest.raises(DriverError):
+        junos.parse_vrfs(read("junos_error_syntax.txt"))
+    lab = Lab([("show route instance", read("junos_instances.txt"))])
+    obs = JunosDriver(lab, "j1").vrfs()
+    assert obs.value == ["CUST"] and lab.calls == ["cli -c 'show route instance | display json | no-more'"]
+
+
 def test_vrf_captures_from_the_live_check_run():
     """The VRF session the live `netdryrun check` read as down, and ping inside the VRF (3/3)."""
     n = junos.parse_bgp_neighbors(read("junos_bgp_neighbor_vrf_idle.txt"), "CUST")

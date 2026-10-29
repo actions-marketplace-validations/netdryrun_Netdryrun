@@ -359,6 +359,9 @@ FAIL_SAFE = [
     ("srlinux.parse_instance_state", lambda t: srlinux.parse_instance_state(t), ["srl_neighbor_local_pref.txt"],
      lambda r: r is None or isinstance(r, str)),
     ("junos.parse_ping", junos.parse_ping, ["junos_ping.txt", "junos_ping_noreply.txt", "junos_ping6.txt"], _ping_ok),
+    # junos.parse_vrfs: [] only narrows what `netdryrun record` reads (it warns "only the default VRF")
+    ("junos.parse_vrfs", junos.parse_vrfs, ["junos_instance_red.txt", "junos_instance_master.txt"],
+     lambda r: isinstance(r, list) and all(isinstance(x, str) for x in r)),
     ("junos.parse_instance", lambda t: junos.parse_instance(t, "RED"), ["junos_instance_red.txt"],
      lambda r: r is None or (isinstance(r, list) and all(isinstance(x, str) for x in r))),
 ]
