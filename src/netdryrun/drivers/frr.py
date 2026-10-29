@@ -62,8 +62,8 @@ LOAD_RAN = re.compile(r"^\[\d+\|\S+\] (?:sending configuration|done$|Configurati
 def config_sections(text: str) -> list[tuple[tuple[str, ...], str]]:
     """Each line of an FRR config as (every header above it, the line), all stripped: `router bgp 65000` >
     `address-family l2vpn evpn` > `vni 10` > `route-target import 65000:99`. The headers come from indentation, at
-    every depth (two `vni` blocks are two sections). FRR prints its running config indented this way; a file
-    indented otherwise gets other sections, so its lines never match (a false error, never a false pass)."""
+    every depth (two `vni` blocks are two sections); a comment or `exit` line is never a header. vtysh itself places
+    a line by the commands before it, not by indentation, so `parse_config_load_errors` doesn't rely on this alone."""
     out, stack = [], []   # stack: (indent, line) of the headers open above the current line
     for raw in text.splitlines():
         line = raw.strip()
@@ -74,8 +74,55 @@ def config_sections(text: str) -> list[tuple[tuple[str, ...], str]]:
         while stack and stack[-1][0] >= indent:
             stack.pop()
         out.append((tuple(h for _, h in stack), line))
-        stack.append((indent, line))
+        if not line.startswith(("!", "exit", "end")):
+            stack.append((indent, line))
     return out
+
+
+def _significant(lines) -> list[str]:
+    return [ln.strip() for ln in lines if ln.strip() and not ln.strip().startswith("!")]
+
+
+def _blocks(text: str) -> list[list[str]]:
+    """A config cut at every line that starts at the left margin: each block is that line and the lines under it."""
+    out: list[list[str]] = []
+    for raw in text.splitlines():
+        if raw.strip() and raw[:1] not in (" ", "\t"):
+            out.append([])
+        if out:
+            out[-1].append(raw)
+    return out
+
+
+def _within(small: list[str], big: list[str]) -> bool:
+    """Every line of `small`, in order, among the lines of `big`."""
+    rest = iter(big)
+    return all(any(x == y for y in rest) for x in small)
+
+
+def _block_applied(config: str, i: int, running: str) -> bool:
+    """Line i's whole left-margin block in the file is, line by line in order, inside a block of the daemon's running
+    config that has the same first line. Any line FRR rewrote, dropped or moved in that block (`route-target both`
+    printed as import and export, a line placed in another block) breaks it."""
+    raw = config.splitlines()
+    start = i
+    while start > 0 and not (raw[start].strip() and raw[start][:1] not in (" ", "\t")):
+        start -= 1
+    end = i + 1
+    while end < len(raw) and not (raw[end].strip() and raw[end][:1] not in (" ", "\t")):
+        end += 1
+    mine = _significant(raw[start:end])
+    return bool(mine) and any(_significant(b)[:1] == mine[:1] and _within(mine, _significant(b))
+                              for b in _blocks(running))
+
+
+def _is_header(config: str, i: int) -> bool:
+    """The file has deeper-indented lines right under line i: a block's first line. A header the daemon refused can
+    still show in the running config (the block exists) while the lines under it went elsewhere."""
+    raw = config.splitlines()
+    depth = lambda ln: len(ln.expandtabs(8)) - len(ln.expandtabs(8).lstrip())   # noqa: E731
+    nxt = next((ln for ln in raw[i + 1:] if ln.strip() and not ln.strip().startswith("!")), None)
+    return nxt is not None and depth(nxt) > depth(raw[i])
 
 
 def communicate_daemons(text: str) -> list[str]:
@@ -97,7 +144,9 @@ def parse_config_load_errors(text: str, running: dict[str, str] | None = None, c
     family) at least as many times as the file does (two `vni` blocks share a section). Every other kind is never
     applied (a line vtysh couldn't parse never reaches a daemon) or can't be told apart, and always counts; so do
     lines for mgmtd, whose stored config can show a line a daemon then failed to apply, and lines for a daemon whose
-    running config wasn't read."""
+    running config wasn't read. A line under other lines in the file (a header) always counts, and the line's whole
+    left-margin block must be in that daemon's running config as written: vtysh places a line by the commands
+    before it, not by its indentation, so the section check alone could match a misindented line elsewhere."""
     applied = {d: Counter(config_sections(t)) for d, t in (running or {}).items()}
     file = config_sections(config) if config is not None else []
     in_file = Counter(file)
@@ -110,7 +159,8 @@ def parse_config_load_errors(text: str, running: dict[str, str] | None = None, c
             why = kind or (f"rejected by {daemon}" if daemon else "warning")
             i = int(n) - 1
             done = (daemon in applied and daemon != "mgmtd" and 0 <= i < len(file) and file[i][1] == cmd.strip()
-                    and applied[daemon][file[i]] >= in_file[file[i]])
+                    and applied[daemon][file[i]] >= in_file[file[i]] and not _is_header(config, i)
+                    and _block_applied(config, i, running[daemon]))
             lines.setdefault((int(n), ""), (done, daemon or "", f"line {n}: {cmd.strip()} ({why})"))
             continue
         d = _DAEMON_LINE.match(raw.strip())

@@ -1006,7 +1006,8 @@ def nondeterministic_problems(version: str, nd: dict, new: dict) -> list[str]:
 def nd_always_approved(published: dict, rerun: dict) -> bool:
     """A harmful nondeterministic case that Netdryrun approved in every run of this release."""
     runs = rerun.get("runs") or []
-    return published.get("expected") == "unsafe" and bool(runs) and all(r.get("netdryrun") == "safe" for r in runs)
+    expected = rerun.get("expected") or published.get("expected")   # a case new in this release has no published row
+    return expected == "unsafe" and bool(runs) and all(r.get("netdryrun") == "safe" for r in runs)
 
 
 def nondeterministic_cases(corpus: Path) -> dict:

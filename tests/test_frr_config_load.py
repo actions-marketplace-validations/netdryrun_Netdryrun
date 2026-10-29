@@ -418,3 +418,37 @@ def test_only_the_daemons_that_answered_failure_to_communicate_are_read(tmp_path
     assert lab.daemons_read == ["bgpd", "bgpd"] and frr.communicate_daemons(REJECTED) == ["bgpd"]
     assert frr.communicate_daemons("line 4: Failure to communicate[13] to mgmtd, line: ip route 1.0.0.0/8 Null0\n") == []
     assert rep_.status == "error" and "r1" not in rep_.error.split("change as written:")[1] and "r2: line 21" in rep_.error
+
+
+
+# Delta review round 6: vtysh places a line by the commands before it, not by indentation, so a misindented line can
+# share a section with an applied one; a refused header can leave its block in the running config. The line's whole
+# block must be in the daemon's running config as written, and a header always counts.
+
+def test_a_misindented_refused_line_does_not_borrow_another_lines_section():
+    conf = ("router bgp 65000 vrf RED\n address-family l2vpn evpn\n  route-target both 65000:99\n  vni 10\n"
+            "  route-target import 65000:99\n exit-address-family\nexit\n")   # line 5, at vni 10's depth
+    log = "line 5: Failure to communicate[13] to bgpd, line:   route-target import 65000:99\n"
+    running = ("router bgp 65000 vrf RED\n address-family l2vpn evpn\n  route-target import 65000:99\n"
+               "  route-target export 65000:99\n  vni 10\n  exit-vni\n exit-address-family\nexit\n")
+    assert frr.parse_config_load_errors(log, running={"bgpd": running}, config=conf) == [
+        "line 5: route-target import 65000:99 (rejected by bgpd)"]
+
+
+def test_a_refused_header_counts_even_if_its_block_shows():
+    conf = ("router bgp 65000\n address-family l2vpn evpn\n  vni 10\n   route-target import 65000:99\n  exit-vni\n"
+            " exit-address-family\nexit\n")   # line 3: vni 10
+    log = "line 3: Failure to communicate[13] to bgpd, line:   vni 10\n"
+    assert frr.parse_config_load_errors(log, running={"bgpd": conf}, config=conf) == ["line 3: vni 10 (rejected by bgpd)"]
+
+
+def test_a_line_under_a_comment_keeps_its_real_section():
+    text = "router bgp 65000\n ! a note\n  bgp graceful-restart\n"
+    assert frr.config_sections(text)[2] == (("router bgp 65000",), "bgp graceful-restart")
+
+
+def test_the_block_must_be_in_the_running_config_as_written():
+    # the GR case: the appended block is inside the running config's router bgp block, in order
+    assert frr._block_applied(GR_CONF, 63, GR_RUNNING)
+    assert not frr._block_applied(GR_CONF.replace("router bgp 65000", "router bgp 65001"), 63, GR_RUNNING)
+    assert not frr._block_applied(GR_CONF, 63, GR_RUNNING.replace(" bgp graceful-restart\n", ""))

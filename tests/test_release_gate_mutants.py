@@ -198,3 +198,4 @@ def test_a_harmful_nondeterministic_case_approved_in_every_run_is_shown():
     assert not gate.nd_always_approved({"expected": "unsafe"}, _nd_row(("safe", "safe", "safe"), ("safe", "safe", "unsafe")))
     assert not gate.nd_always_approved({"expected": "safe"}, _nd_row(("safe", "safe", "safe"),))
     assert not gate.nd_always_approved({"expected": "unsafe"}, {})
+    assert gate.nd_always_approved({}, {"expected": "unsafe", **_nd_row(("safe", "safe", "safe"))})   # new case

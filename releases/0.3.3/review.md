@@ -212,3 +212,22 @@ The reviewer checked clean:
 - mgmtd;
 - the gate's exemption BLOCKER wiring, including v1 with an empty pin;
 - `--keep`.
+
+## Delta review, round 6 (fresh Opus agent, 2026-10-30): `git diff 02ee953..fdc5754`
+
+| # | Finding | Class | Decision |
+|---|---|---|---|
+| R6-1 | vtysh places a line by the commands before it, not by its indentation. A misindented refused line therefore shares a section with an applied one; FRR printed the applied line's `route-target both` as `route-target import`, which matched the refused line | **false-pass** | Fixed: a second, independent condition. The line's whole left-margin block in `frr.conf` must be in that daemon's running config, line by line and in order, inside a block with the same first line. Any line FRR rewrote, dropped or moved breaks the match (`test_a_misindented_refused_line_does_not_borrow_another_lines_section`, `test_the_block_must_be_in_the_running_config_as_written`) |
+| R6-2 | A refused header (`vni 10`) could be cleared because its block shows in the running config, while the lines under it went elsewhere | **false-pass** (probable) | Fixed: a line with deeper lines under it in the file always counts (`test_a_refused_header_counts_even_if_its_block_shows`) |
+| R6-3 | Comment and `exit` lines became headers | other (false error) | Fixed (`test_a_line_under_a_comment_keeps_its_real_section`) |
+| R6-4 | The every-run-approved flag read `expected` only from the published row, missing a case new in the release | other (gate) | Fixed |
+
+What clearing a refused line now takes, all at once:
+- the "Failure to communicate" kind, from a daemon other than mgmtd;
+- that daemon's own running config was read;
+- line N of `frr.conf` is the line;
+- the line has no lines under it;
+- that daemon's running config has it under the same headers at least as often as the file does;
+- its whole block is there as written.
+
+Anything else keeps the run an error.
