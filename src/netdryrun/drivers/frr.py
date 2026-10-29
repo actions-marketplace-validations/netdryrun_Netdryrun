@@ -58,9 +58,14 @@ LOAD_RAN = re.compile(r"^\[\d+\|\S+\] (?:sending configuration|done$|Configurati
                       re.M)
 
 
-def parse_config_load_errors(text: str) -> list[str]:
+def parse_config_load_errors(text: str, running: str | None = None) -> list[str]:
     """The config lines FRR rejected at boot, from the container's log, each once, in line order. A daemon that
-    reports a processing failure without any such line still counts."""
+    reports a processing failure without any such line still counts.
+
+    With `running` (the node's `show running-config`), a reported line that is in it was applied after all and
+    doesn't count: a daemon can answer a line with "Failure to communicate[13]" (CMD_WARNING_CONFIG_FAILED) and
+    still apply it (`bgp graceful-restart`, FRR 10.4.1, Verdict Corpus case 29)."""
+    applied = {ln.strip() for ln in running.splitlines()} if running is not None else set()
     lines: dict[int, str] = {}
     failures: list[str] = []
     for raw in text.splitlines():
@@ -68,17 +73,19 @@ def parse_config_load_errors(text: str) -> list[str]:
         if m:
             n, kind, warning, daemon, cmd = m.groups()
             why = kind or (f"rejected by {daemon}" if daemon else "warning")
-            lines.setdefault(int(n), f"line {n}: {cmd.strip()} ({why.replace('Warning', 'warning')})")
+            lines.setdefault(int(n), (cmd.strip(), f"line {n}: {cmd.strip()} ({why.replace('Warning', 'warning')})"))
             continue
         d = _DAEMON_LINE.match(raw.strip())
         if d:
             daemon, why, n, cmd = d.groups()
-            lines.setdefault(int(n), f"line {n}: {cmd.strip()} ({why.strip()}, {daemon.lower()})")
+            lines.setdefault(int(n), (cmd.strip(), f"line {n}: {cmd.strip()} ({why.strip()}, {daemon.lower()})"))
             continue
         f = _LOAD_FAILURE.match(raw.strip())
         if f:
             failures.append(f"{f.group(1)} reported a configuration file processing failure ({f.group(2)})")
-    return [lines[n] for n in sorted(lines)] or list(dict.fromkeys(failures))
+    if lines:   # the failure count is the lines' count: lines that were applied explain it too
+        return [msg for n, (cmd, msg) in sorted(lines.items()) if cmd not in applied]
+    return list(dict.fromkeys(failures))
 
 
 def _bgp_json(command: str, text: str) -> dict:

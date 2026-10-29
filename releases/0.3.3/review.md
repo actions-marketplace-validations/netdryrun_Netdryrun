@@ -157,3 +157,12 @@ The run left 129 survivors that `accepted.json` didn't accept. 63 were acceptanc
 - **Removed:** acceptances whose mutant no longer survives, under any number.
 
 The rerun on `4ce4caa` left one survivor that wasn't accepted: `config._describe_47` (`'counted'` written as `'COUNTED'` in a default check name). The first run reported it caught, so its old acceptance had been removed with the others that no longer survived. That kill was not stable. The old entry pins this same diff, and it is back in `accepted.json` (message-text).
+
+## Live gate on `ada4dd0` (2026-10-29): two corpus verdicts changed
+
+Static, unit and mutation passed. Live failed on 4 corpus verdicts, both cases looked at again under the lab lock (`docker ps -a` empty before and after).
+
+| # | Finding | Class | Decision | Commit |
+|---|---|---|---|---|
+| L1 | v1 case 29 (`bgp graceful-restart` appended to pe1): every strategy went from `safe` to `error`. The boot log has `line 64: Failure to communicate[13] to bgpd` and `processing failure: 13`, but pe1's running config has `bgp graceful-restart`: bgpd applied the line and returned CMD_WARNING_CONFIG_FAILED. A false error from the rejected-config check | other (false error) | Fixed: a reported line counts only if the node's `show running-config` doesn't have it; a running config that can't be read, or a processing-failure count with no line, still makes the run an error (`test_a_line_the_daemon_complained_about_but_applied_is_not_rejected`, `test_a_line_missing_from_the_running_config_is_still_rejected`, `test_an_applied_line_passes_the_run`, `test_an_unreadable_running_config_keeps_the_error`). New documented limit: a rejected line that is word for word another applied line is not reported; fix scheduled: 0.4 | this commit |
+| L2 | v2 case 18 (aggregate discard route removed): `netdryrun` went from `unsafe` to `safe` | other (lab nondeterminism) | Not a code change: three identical reruns gave unsafe, unsafe, safe. FRR's import check sometimes withholds 192.0.2.0/24 ("inaccessible, import-check enabled") and sometimes announces it, so this case's verdict follows the lab. The v2 text that credits the 0.3.1 flip to a code change is wrong; the public wording and the gate rule for this case are the coordinator's decision | — |

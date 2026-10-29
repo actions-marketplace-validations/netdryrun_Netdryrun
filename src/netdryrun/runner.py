@@ -287,6 +287,12 @@ def rejected_config(lab, config: Config) -> str:
             continue
         errors = parse_config_load_errors(r.stdout)
         if errors:
+            # a line the daemon complained about can still have been applied: only one missing from the running
+            # config counts. If that can't be read, every reported line does (fail closed)
+            rc = lab.exec(name, ["vtysh", "-c", "show running-config"])
+            if rc.rc == 0:
+                errors = parse_config_load_errors(r.stdout, rc.stdout)
+        if errors:
             found.append(f"{name}: {'; '.join(errors)}")
         elif driver == "frr" and not LOAD_RAN.search(r.stdout):
             found.append(f"{name}: its boot log shows no sign of a config load (no vtysh boot output, no daemon "

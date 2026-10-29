@@ -54,6 +54,13 @@ class BootLogLab(FakeLab):
         log = self.logs.get(node, CLEAN)
         return log if isinstance(log, ExecResult) else ExecResult([], 0, log, "")
 
+    running: dict = {}
+
+    def exec(self, node, cmd, timeout=60, input=None):
+        assert cmd == ["vtysh", "-c", "show running-config"], cmd
+        r = self.running.get(node, "")
+        return r if isinstance(r, ExecResult) else ExecResult(cmd, 0, r, "")
+
 
 def _run(tmp_path, monkeypatch, lab, deploy=False):
     w = lab.world
@@ -225,3 +232,57 @@ def test_every_daemon_rejected_line_is_reported_in_line_order():
         "line 21: neighbor 1.1.1.1 bar (No such command, bgp)",
         "line 25: baz (Unknown command)",
         "line 30: neighbor 1.1.1.1 foo (No such command, bgp)"]
+
+
+# --- Live gate on ada4dd0 (corpus v1 case 29, 2026-10-29): bgpd can answer a line with "Failure to communicate[13]"
+# (CMD_WARNING_CONFIG_FAILED) and still apply it: `bgp graceful-restart` was in pe1's running config. A reported line
+# is rejected only if the node's running config doesn't have it; when that can't be read, it stays an error.
+
+GR_LOG = """[36|zebra] done
+[35|mgmtd] done
+line 64: Failure to communicate[13] to bgpd, line:  bgp graceful-restart
+[42|bgpd] Configuration file[/etc/frr/frr.conf] processing failure: 13
+"""
+GR_RUNNING = """frr version 10.4.1
+!
+router bgp 65000
+ bgp router-id 10.255.0.1
+ bgp graceful-restart
+ neighbor 10.0.1.2 remote-as 65100
+exit
+!
+end
+"""
+
+
+def test_a_line_the_daemon_complained_about_but_applied_is_not_rejected():
+    assert frr.parse_config_load_errors(GR_LOG, running=GR_RUNNING) == []
+    assert frr.parse_config_load_errors(GR_LOG) == ["line 64: bgp graceful-restart (rejected by bgpd)"]
+
+
+def test_a_line_missing_from_the_running_config_is_still_rejected():
+    assert frr.parse_config_load_errors(REJECTED, running=GR_RUNNING) == [
+        "line 21: neighbor 10.0.12.2 default-orignate (Unknown command)",
+        "line 22: neighbor 10.0.12.2 maximum-prefix (Command incomplete)",
+        "line 23: neighbor 10.9.9.9 route-map ALLOW-ALL in (rejected by bgpd)",
+    ]
+
+
+def test_a_processing_failure_with_no_line_is_still_an_error_whatever_the_running_config():
+    text = "[45|bgpd] Configuration file[/etc/frr/frr.conf] processing failure: 13\n"
+    assert frr.parse_config_load_errors(text, running=GR_RUNNING) == [
+        "bgpd reported a configuration file processing failure (13)"]
+
+
+def test_an_applied_line_passes_the_run(tmp_path, monkeypatch):
+    lab = BootLogLab(World(), {"r1": GR_LOG})
+    lab.running = {"r1": GR_RUNNING}
+    rep = _run(tmp_path, monkeypatch, lab)
+    assert rep.status == "passed", rep.error
+
+
+def test_an_unreadable_running_config_keeps_the_error(tmp_path, monkeypatch):
+    lab = BootLogLab(World(), {"r1": GR_LOG})
+    lab.running = {"r1": ExecResult([], 1, "", "vtysh: not found")}
+    rep = _run(tmp_path, monkeypatch, lab)
+    assert rep.status == "error" and "r1: line 64: bgp graceful-restart (rejected by bgpd)" in rep.error
