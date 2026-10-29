@@ -50,6 +50,8 @@ ROUTE_INFORMATION_KEYS = frozenset({"attributes", "route-table"})
 ROUTE_TABLE_KEYS = frozenset({"table-name", "destination-count", "total-route-count", "active-route-count",
                               "holddown-route-count", "hidden-route-count", "rt", "comment"})
 BGP_INFORMATION_KEYS = frozenset({"attributes", "bgp-peer"})
+# Timer elements of a peer that aren't an advertisement delay (holdtime is the session's hold timer)
+KNOWN_TIMERS = frozenset({"outbound-timer", "peer-stale-route-time-configured"})
 INSTANCE_INFORMATION_KEYS = frozenset({"attributes", "instance-core"})
 
 
@@ -187,8 +189,45 @@ def parse_bgp_neighbors(text: str, instance: str = "master") -> dict[str, BgpNei
         key = _canon_addr(addr)
         if key in out:
             raise unexpected(NEIGHBORS_CMD, f"peer {addr} listed twice")
-        out[key] = BgpNeighbor(addr, state, prefixes)
+        out[key] = BgpNeighbor(addr, state, prefixes, adv_interval=_adv_interval(peer, addr))
     return out
+
+
+_DELAY = re.compile(r"delay|timer", re.I)
+
+
+def _adv_interval(peer: dict, addr: str) -> float:
+    """The session's advertisement interval in seconds. Junos sends updates without delay (platform default
+    0) unless `out-delay` is configured; then it prints `outbound-timer` in the peer's options (captured
+    live, 26.2R1.7-EVO). Any other delay-like element or option flag is a shape not captured yet: an error,
+    never 0, which would keep settle and hold short while a leak may still be on its way."""
+    options = _one(NEIGHBORS_CMD, peer, "bgp-option-information") or {}
+    timer = _leaf(NEIGHBORS_CMD, options, "outbound-timer", required=False)
+    others = [k for k in (*peer, *options) if _DELAY.search(str(k)) and k not in KNOWN_TIMERS]
+    flags = [_leaf(NEIGHBORS_CMD, options, k, required=False) or "" for k in options if k.startswith("bgp-options")]
+    if others or any(_DELAY.search(f) for f in flags):
+        raise DriverError(f"peer {addr}: an advertisement delay in a form this driver doesn't read "
+                          f"({', '.join(others) or 'an option flag'}); unexpected output, never read as no delay")
+    if timer is None:
+        return 0.0
+    seconds = as_int(NEIGHBORS_CMD, timer)
+    if seconds < 0:
+        raise unexpected(NEIGHBORS_CMD, f"{addr}: outbound-timer {timer!r}")
+    return float(seconds)
+
+
+INSTANCES_CMD = "show route instance"
+VRF_TYPES = ("vrf", "virtual-router")   # routing instances with their own tables, as a VRF elsewhere
+MGMT_INSTANCE = "mgmt_junos"           # the management instance (`management-instance`): not the network's
+
+
+@parser(INSTANCES_CMD)
+def parse_vrfs(text: str) -> list[str]:
+    """`show route instance`: the routing instances that work as VRFs (master is the default VRF)."""
+    info = _root(INSTANCES_CMD, _json(INSTANCES_CMD, text), "instance-information", INSTANCE_INFORMATION_KEYS)
+    return sorted(_leaf(INSTANCES_CMD, c, "instance-name") for c in _items(INSTANCES_CMD, info, "instance-core")
+                  if (_leaf(INSTANCES_CMD, c, "instance-type", required=False) or "") in VRF_TYPES
+                  and _leaf(INSTANCES_CMD, c, "instance-name") != MGMT_INSTANCE)
 
 
 @parser(INSTANCE_CMD)
@@ -420,6 +459,10 @@ class JunosDriver(Driver):
         if ribs is None:
             raise NoSuchInstance(f"routing-instance {vrf!r} does not exist on {self.node}")
         return table is None or table in ribs
+
+    def vrfs(self) -> Observation:
+        ev: list[dict] = []
+        return Observation(parse_vrfs(self._cli(INSTANCES_CMD, ev)), ev)
 
     def bgp_neighbors(self, vrf: str = "default") -> Observation:
         vrf = self._vrf(vrf)

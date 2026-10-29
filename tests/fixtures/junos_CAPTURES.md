@@ -42,3 +42,7 @@ Captured live on 2026-10-28 from `cjunosevolved:26.2R1.7-EVO` (containerlab 0.81
 | `junos_route_ibgp.txt` | `show route 10.50.0.0/24 exact table inet.0 all extensive \| display json \| no-more` (lab `ndr-junos-ibgp`: iBGP from FRR, next hop set to 10.60.0.1, reached by a static via 10.0.1.2) |
 | `junos_route_ibgp_noexport.txt` | `show route 10.51.0.0/24 exact table inet.0 all extensive \| display json \| no-more` (same lab: community no-export, local-pref 200 set by the peer) |
 | `junos_bgp_neighbor_ibgp.txt` | `show bgp neighbor instance master \| display json \| no-more` (same lab) |
+| `junos_bgp_neighbor_outdelay.txt` | `show bgp neighbor instance master \| display json \| no-more` (2026-10-29, lab `ndr-cap-junos` = examples/junos-frr, with `set protocols bgp group frr1 out-delay 10`: the IPv4 peer shows `outbound-timer` 10) |
+| `junos_instances.txt` | `show route instance \| display json \| no-more` (same lab, with routing-instance CUST added: master, CUST, mgmt_junos and two private instances) |
+| `junos_bgp_neighbor_vrf_idle.txt` | `show bgp neighbor instance CUST \| display json \| no-more` (same lab: a CUST peer with no link, idle) |
+| `junos_ping_vrf_local.txt` | `ping 10.77.0.1 source 10.77.0.1 count 3 rapid wait 1 routing-instance CUST \| display json \| no-more` (same lab) |

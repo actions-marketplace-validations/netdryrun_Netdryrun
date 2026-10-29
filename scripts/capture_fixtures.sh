@@ -228,6 +228,7 @@ capture_junos() {                   # junos.py: bgp_neighbors, routes, bgp_paths
           "cli -c '$1 | display json | no-more'"; }
   wait_for "j1 BGP established" 1800 bash -c "docker exec $j ssh -q -i /root/.ssh/sshkey -o StrictHostKeyChecking=no -o BatchMode=yes root@176.1.1.1 \"cli -c 'show bgp summary | no-more'\" | grep -q Establ"
   wait_for "j1 to learn 192.168.20.0/24" 300 bash -c "docker exec $j ssh -q -i /root/.ssh/sshkey -o StrictHostKeyChecking=no -o BatchMode=yes root@176.1.1.1 \"cli -c 'show route 192.168.20.0/24 exact | no-more'\" | grep -q BGP"
+  wait_for "j1 to learn 2001:db8:20::/48" 300 bash -c "docker exec $j ssh -q -i /root/.ssh/sshkey -o StrictHostKeyChecking=no -o BatchMode=yes root@176.1.1.1 \"cli -c 'show route 2001:db8:20::/48 exact | no-more'\" | grep -q BGP"
   sleep 5
   shape junos_version          cli "show version"
   shape junos_bgp_neighbor     cli "show bgp neighbor instance master"

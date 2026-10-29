@@ -15,7 +15,7 @@
     "date": "2026-10-28"
   },
   "junos": {
-    "date": "2026-10-28",
+    "date": "2026-10-29",
     "limits": [
       "Hidden routes count as received, except routes Junos hid because the import policy rejected them (`hidden-reason` \"Rejected by import policy\"): those can never be used, and FRR and Arista EOS don't keep them at all.",
       "`bgp_route` reads routes received over BGP only. Junos doesn't list its own static, direct or aggregate routes as BGP routes, even when an export policy advertises them.",
