@@ -7,10 +7,17 @@
   <meta property="og:title" content="{{ page.title | striptags }} - Netdryrun">
   <meta property="og:description" content="{{ page.meta.description or config.site_description }}">
   <meta property="og:url" content="{{ page.canonical_url }}">
+  <meta property="og:type" content="{{ 'website' if page.is_homepage else 'article' }}">
+  <meta name="twitter:title" content="{{ page.title | striptags }} - Netdryrun">
+  <meta name="twitter:description" content="{{ page.meta.description or config.site_description }}">
   {% endif %}
-  <meta property="og:image" content="https://netdryrun.com/assets/netdryrun-social-1280x640.png">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:image" content="https://netdryrun.com/assets/netdryrun-social-1200x630.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Netdryrun: test network changes in a real containerlab lab before they reach production">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:image" content="https://netdryrun.com/assets/netdryrun-social-1280x640.png">
+  <meta name="twitter:image" content="https://netdryrun.com/assets/netdryrun-social-1200x630.png">
   <link rel="icon" href="{{ 'assets/favicon.ico' | url }}" sizes="48x48">
   <link rel="icon" type="image/png" sizes="32x32" href="{{ 'assets/favicon-32.png' | url }}">
   <link rel="apple-touch-icon" href="{{ 'assets/netdryrun-mark-180.png' | url }}">
@@ -27,14 +34,31 @@
         "@type": "SoftwareApplication",
         "@id": "https://netdryrun.com/#software",
         "name": "Netdryrun",
-        "description": "Netdryrun is an open-source tool that tests network changes in a real virtual lab before they reach production. It boots the topology with containerlab, waits for convergence, checks BGP sessions, prefixes, routes and reachability, and returns a pass/fail verdict with evidence. It runs locally, in GitHub Actions, or as an MCP server for AI agents.",
+        "description": "Netdryrun is an open-source tool that tests network changes in a real virtual lab before they reach production. It boots the topology with containerlab, waits for convergence, checks BGP sessions, prefixes, routes and reachability, and returns a pass/fail verdict with evidence. Supported network operating systems: FRR, Nokia SR Linux, SONiC (docker-sonic-vs) and Arista EOS (cEOS, bring your own image). It runs locally, in GitHub Actions, or as an MCP server for AI agents.",
         "url": "https://netdryrun.com/",
         "applicationCategory": "DeveloperApplication",
-        "operatingSystem": "Linux",
-        "softwareVersion": "0.3.1",
+        "applicationSubCategory": "Network change testing",
+        "operatingSystem": "Linux, Windows (WSL2)",
+        "softwareRequirements": "Docker, containerlab, Python 3.10 or later",
+        "featureList": [
+          "Boots the topology in a real containerlab lab and waits for convergence",
+          "Checks BGP sessions, prefix counts, routes, BGP best-path attributes and ping reachability",
+          "Negative checks for things that must not happen, such as a leaked default route",
+          "Link-down and node-isolation failure scenarios, and route injection on FRR",
+          "Pass/fail verdict with a JSON, Markdown or JUnit evidence report",
+          "GitHub Action for pull requests",
+          "MCP server for AI agents (netdryrun mcp)"
+        ],
+        "keywords": "network change testing, BGP testing, containerlab CI, network CI/CD, NetDevOps, MCP server, network automation",
+        "isAccessibleForFree": true,
+        "softwareVersion": "0.3.2",
         "license": "https://www.apache.org/licenses/LICENSE-2.0",
         "downloadUrl": "https://pypi.org/project/netdryrun/",
         "codeRepository": "https://github.com/netdryrun/netdryrun",
+        "sameAs": [
+          "https://github.com/netdryrun/netdryrun",
+          "https://pypi.org/project/netdryrun/"
+        ],
         "offers": {
           "@type": "Offer",
           "price": "0",
@@ -52,8 +76,20 @@
           "https://github.com/netdryrun",
           "https://pypi.org/project/netdryrun/"
         ]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://netdryrun.com/#website",
+        "name": "Netdryrun",
+        "url": "https://netdryrun.com/",
+        "description": "{{ config.site_description | trim }}",
+        "inLanguage": "en",
+        "publisher": { "@id": "https://netdryrun.com/#organization" }
       }
     ]
   }
   </script>
+  {% if page and page.meta.jsonld %}
+  <script type="application/ld+json">{{ page.meta.jsonld }}</script>
+  {% endif %}
 {% endblock %}
