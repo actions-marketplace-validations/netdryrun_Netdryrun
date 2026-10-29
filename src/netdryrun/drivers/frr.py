@@ -244,6 +244,12 @@ class FrrDriver(Driver):
             self._confirm_vrf(vrf, ev)
         return Observation(routes, ev)
 
+    def vrfs(self) -> Observation:
+        """Active VRFs from zebra's `show vrf` (an inactive one has no kernel device, so no state to record)."""
+        ev: list[dict] = []
+        found = parse_vrfs(self._vtysh(VRF_CMD, ev))
+        return Observation(sorted(v for v, active in found.items() if active and v != "default"), ev)
+
     def all_routes(self, vrf: str = "default", family: int = 4) -> Observation:
         vrf = check_vrf_name(vrf)
         ev: list[dict] = []

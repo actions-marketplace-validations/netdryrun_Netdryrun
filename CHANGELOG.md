@@ -26,6 +26,8 @@
 
 - **Advertisement intervals stretch the windows.** Each BGP session's advertisement interval (MRAI) is read where the driver reports it (FRR and SONiC: per neighbor; SR Linux: `minimum-advertisement-interval`, default 5 s; EOS: its default of 0, because a configured `out-delay` is not read yet: on EOS raise `--settle` and `--hold` above it, fix planned for 0.4.1), and `--settle` and `--hold` of `run`, and `verify`'s `--settle`, stretch to the longest one plus 2 s, so a leak sent after the default windows can't let a negative check pass on a prefix count still at 0 (0.3.2 multi-vendor audit). The log says when they were stretched.
 
+- **`record` beyond the default VRF** (0.3.3 cross-platform review): on FRR and SONiC it records every active VRF, each check with its `vrf:`; a VRF without BGP is skipped. On SR Linux and Arista EOS it still records the default VRF only, and now says so in a warning instead of silently.
+
 ### Release gate
 
 - `verify.engine` and `verify.intent` join the verdict modules: mutation testing attacks them (`scripts/release_gate.py`, `[tool.mutmut] only_mutate`), and their coverage has floors at the coverage measured when they joined, rounded down: engine 95 (95.9), intent 93 (93.3), lines and branches. A first mutation run of `verify.engine` (1,353 mutants) left 442 survivors; new tests on every way a declaration can fail to happen, what each form may explain and the report of each declared line brought that to 211, most of them in message text and report wording (the remaining ones are listed for the release review).

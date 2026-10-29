@@ -53,7 +53,7 @@ OK: examples/frr-bgp/netdryrun.yml (7 checks, lab .../examples/frr-bgp/topology.
 netdryrun record path/to/topology.clab.yml --deploy
 ```
 
-Snapshots a known-good lab into a `netdryrun.yml` baseline: every established BGP session, every prefix count (exact, or minimums with `--min-prefixes`) and up to 50 BGP routes per node. Commit it, and every later change is tested against today's behavior. Review the file before committing: remove what is allowed to change, and add negative checks for what must never happen.
+Snapshots a known-good lab into a `netdryrun.yml` baseline: every established BGP session, every prefix count (exact, or minimums with `--min-prefixes`) and up to 50 BGP routes per node and address family. From 0.4 it covers every active VRF on FRR and SONiC, each check with its `vrf:`; on SR Linux and Arista EOS it records the default VRF only and says so in a warning (add checks for other VRFs by hand). Commit it, and every later change is tested against today's behavior. Review the file before committing: remove what is allowed to change, and add negative checks for what must never happen.
 
 | Option | Meaning |
 |---|---|

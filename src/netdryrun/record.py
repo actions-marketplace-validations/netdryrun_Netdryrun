@@ -15,6 +15,7 @@ import yaml
 from . import __version__
 from .config import community_name
 from .drivers import DriverError, detect, for_node
+from .drivers.base import NoSuchInstance
 from .lab import Lab
 
 MAX_ROUTES_PER_NODE = 50
@@ -39,56 +40,74 @@ def record(topology: Path, include_routes: bool = True, exact_prefixes: bool = T
         if drv.name == "sonic":
             warnings.append(f"{name}: SONiC is configured after boot; add its commands under nodes.{name}.setup "
                             "or the checks will fail on a fresh deploy")
+        vrfs = ["default"]
         try:
-            neighbors = drv.bgp_neighbors().value
+            vrfs += [v for v in drv.vrfs().value if v != "default"]
         except DriverError as e:
-            warnings.append(f"{name}: could not read BGP state ({e}); skipped")
-            continue
-        for addr, n in sorted(neighbors.items()):
-            try:
-                ipaddress.ip_address(addr)
-            except ValueError:
-                warnings.append(f"{name}: BGP neighbor {addr!r} is not an IP address (unnumbered?); not recorded")
-                continue
-            if n.state != "established":
-                warnings.append(f"{name}: BGP neighbor {addr} is {n.state}; not recorded (fix it or add a check by hand)")
-                continue
-            checks.append({"type": "bgp_session", "node": name, "neighbor": addr})
-            for afi, count in sorted(n.prefixes.items()):
-                c = {"type": "bgp_prefixes", "node": name, "neighbor": addr, "afi": afi}
-                if exact_prefixes:
-                    c["exact"] = count
-                else:
-                    c["min"] = count
-                checks.append(c)
-        if include_routes:
-            for fam in (4, 6):
-                try:
-                    routes = [r for r in drv.all_routes(family=fam).value if r.protocol == "bgp" and r.active]
-                except DriverError as e:
-                    warnings.append(f"{name}: could not read IPv{fam} routes ({e})")
-                    continue
-                if len(routes) > MAX_ROUTES_PER_NODE:
-                    warnings.append(f"{name}: {len(routes)} BGP routes (IPv{fam}); recorded the first {MAX_ROUTES_PER_NODE}")
-                for r in sorted(routes, key=lambda r: r.prefix)[:MAX_ROUTES_PER_NODE]:
-                    checks.append({"type": "route", "node": name, "prefix": r.prefix, "protocol": "bgp"})
-                    if attributes:
-                        try:
-                            c = _attribute_check(drv, name, r.prefix)
-                        except DriverError as e:
-                            warnings.append(f"{name}: could not read BGP attributes of {r.prefix} ({e})")
-                            continue
-                        if c:
-                            checks.append(c)
+            warnings.append(f"{name}: only the default VRF is recorded ({e}); add checks for other VRFs by hand")
+        for vrf in vrfs:
+            _record_vrf(drv, name, vrf, checks, warnings, include_routes, exact_prefixes, attributes)
     data = {"lab": topology.name, "timeout": 120, "checks": checks}
     return data, warnings
 
 
-def _attribute_check(drv, node: str, prefix: str) -> dict | None:
-    best = next((p for p in drv.bgp_paths(prefix).value if p.best), None)
+def _record_vrf(drv, name: str, vrf: str, checks: list[dict], warnings: list[str], include_routes: bool,
+                exact_prefixes: bool, attributes: bool) -> None:
+    """One VRF of one node; every check carries `vrf:` outside the default VRF."""
+    at = {} if vrf == "default" else {"vrf": vrf}
+    where = name if vrf == "default" else f"{name} (vrf {vrf})"
+    try:
+        neighbors = drv.bgp_neighbors(vrf).value
+    except NoSuchInstance as e:
+        if vrf == "default":
+            warnings.append(f"{where}: could not read BGP state ({e}); skipped")
+        return   # a VRF without a BGP instance: no session or BGP route to record
+    except DriverError as e:
+        warnings.append(f"{where}: could not read BGP state ({e}); skipped")
+        return
+    for addr, n in sorted(neighbors.items()):
+        try:
+            ipaddress.ip_address(addr)
+        except ValueError:
+            warnings.append(f"{where}: BGP neighbor {addr!r} is not an IP address (unnumbered?); not recorded")
+            continue
+        if n.state != "established":
+            warnings.append(f"{where}: BGP neighbor {addr} is {n.state}; not recorded (fix it or add a check by hand)")
+            continue
+        checks.append({"type": "bgp_session", "node": name, "neighbor": addr, **at})
+        for afi, count in sorted(n.prefixes.items()):
+            c = {"type": "bgp_prefixes", "node": name, "neighbor": addr, "afi": afi, **at}
+            if exact_prefixes:
+                c["exact"] = count
+            else:
+                c["min"] = count
+            checks.append(c)
+    if include_routes:
+        for fam in (4, 6):
+            try:
+                routes = [r for r in drv.all_routes(vrf=vrf, family=fam).value if r.protocol == "bgp" and r.active]
+            except DriverError as e:
+                warnings.append(f"{where}: could not read IPv{fam} routes ({e})")
+                continue
+            if len(routes) > MAX_ROUTES_PER_NODE:
+                warnings.append(f"{where}: {len(routes)} BGP routes (IPv{fam}); recorded the first {MAX_ROUTES_PER_NODE}")
+            for r in sorted(routes, key=lambda r: r.prefix)[:MAX_ROUTES_PER_NODE]:
+                checks.append({"type": "route", "node": name, "prefix": r.prefix, "protocol": "bgp", **at})
+                if attributes:
+                    try:
+                        c = _attribute_check(drv, name, r.prefix, vrf)
+                    except DriverError as e:
+                        warnings.append(f"{where}: could not read BGP attributes of {r.prefix} ({e})")
+                        continue
+                    if c:
+                        checks.append(c)
+
+
+def _attribute_check(drv, node: str, prefix: str, vrf: str = "default") -> dict | None:
+    best = next((p for p in drv.bgp_paths(prefix, vrf=vrf).value if p.best), None)
     if best is None:
         return None
-    c: dict = {"type": "bgp_route", "node": node, "prefix": prefix}
+    c: dict = {"type": "bgp_route", "node": node, "prefix": prefix, **({} if vrf == "default" else {"vrf": vrf})}
     if best.as_path is not None:
         c["as_path"] = best.as_path
     if best.local_pref is not None:

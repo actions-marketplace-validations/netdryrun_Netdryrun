@@ -31,6 +31,16 @@ The same engine runs in three places: this command, the MCP tool [`verify_change
 
 **Explained is not the same as safe.** The report echoes the declared intent at the top, for a human to review: an intent that declares a leak explains the leak. None of its verdicts is a pass of checks. A verdict covers the observed control-plane state of this lab (sessions, RIB, BGP paths and advertisements), nothing else.
 
+**What "anything else fails" covers, exactly.** Declare what you intend to change; anything else that changes in the routing state that `verify` observes fails the run: on every FRR node, BGP sessions (established or not, remote AS, address families, soft-reconfiguration), the VRFs, routes of every protocol (selected, in the FIB, next hops, distance, metric), every BGP path with its attributes, and what each node advertises to and receives from each neighbor. Not covered, so an undeclared change there does not fail:
+
+- nodes passed with `--unobserved` (hosts without a routing stack);
+- communities on routes received before inbound policy (FRR doesn't list them there), and the attributes of a `default-originate` advertisement (its presence is compared);
+- IGP adjacency state (OSPF, IS-IS): their routes are compared, their adjacencies are not;
+- an update that arrives after the stretched `--settle` (several peers with long advertisement intervals in a row, `update-delay`);
+- the data plane beyond what a standing guard's ping checks.
+
+A lab that gives a different snapshot on a second boot approves nothing (INCONCLUSIVE). Changes that only a boot makes (management addresses, link-local addresses) are not configuration changes and are not compared.
+
 **The intent must come from outside the change**: the ticket, the operator, or the base branch. A pass is never earned by copying the undeclared items into the intent. The report says who supplied it (`intent.supplied_by`: `cli` from the command line, `mcp` from an MCP caller, `action` from the GitHub Action). When the intent file itself differs between `--before` and `--after` (the change edits its own intent), every report carries the warning "intent edited in the same change: needs a code-owner review".
 
 ## Options

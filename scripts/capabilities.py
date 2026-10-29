@@ -83,6 +83,11 @@ LIMITS = [
     "A lab whose state never settles gives INCONCLUSIVE (exit 3): this says nothing about the change; retry at "
     "most once, then escalate.",
     "afi: evpn is refused on Arista EOS and Nokia SR Linux.",
+    "verify_change does not observe nodes passed as unobserved (hosts), IGP adjacency state (OSPF and IS-IS routes are "
+    "compared, their adjacencies are not), or the data plane beyond a standing guard's ping checks: an undeclared "
+    "change there does not fail.",
+    "record covers every active VRF on FRR and SONiC; on Nokia SR Linux and Arista EOS it records the default VRF "
+    "only, with a warning.",
 ]
 
 EXIT_CODES = {

@@ -198,3 +198,7 @@ class Driver:
     def all_routes(self, vrf: str = "default", family: int = 4) -> Observation:
         """Every route in the table (used by `netdryrun record`)."""
         raise NotImplementedError
+
+    def vrfs(self) -> Observation:
+        """The node's active VRFs other than default (list[str], used by `netdryrun record`)."""
+        raise DriverError(f"listing VRFs is not supported on {self.name} yet")
