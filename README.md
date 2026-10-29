@@ -163,6 +163,8 @@ The action installs containerlab, runs the checks, uploads the JSON and JUnit re
 
 ## For AI agents (MCP)
 
+Listed in the [official MCP Registry](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.netdryrun) (`io.github.netdryrun/netdryrun`); the agent skill is also on [Smithery](https://smithery.ai/skills/netdryrun/netdryrun).
+
 **AI can propose network changes. Netdryrun verifies the outcome.** Agents: read [AGENTS.md](https://github.com/netdryrun/netdryrun/blob/main/AGENTS.md).
 
 AI agents are starting to change networks. Netdryrun gives them a safety gate: an [MCP](https://modelcontextprotocol.io) server that lets an agent dry-run its change in a real lab and proceed only if every check passes.

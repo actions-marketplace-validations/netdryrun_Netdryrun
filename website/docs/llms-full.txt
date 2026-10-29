@@ -2819,6 +2819,8 @@ Netdryrun™ includes an [MCP](https://modelcontextprotocol.io) server for testi
 
 ## Set up the MCP server
 
+Listed where agents and their hosts look for tools: the [official MCP Registry](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.netdryrun) as `io.github.netdryrun/netdryrun`, [PyPI](https://pypi.org/project/netdryrun/) as `netdryrun`, and the agent skill on [Smithery](https://smithery.ai/skills/netdryrun/netdryrun).
+
 ```bash
 pipx install netdryrun   # or uv tool install netdryrun
 ```
