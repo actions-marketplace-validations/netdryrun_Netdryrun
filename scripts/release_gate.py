@@ -15,7 +15,9 @@ Layers (RELEASING.md explains each one):
   python scripts/release_gate.py unit            tests on Python 3.10-3.14 and in a plain container, coverage
   python scripts/release_gate.py mutation        mutmut on the verdict modules; survivors block
   python scripts/release_gate.py live            the built wheel on the lab machine: examples, corpora, chaos
-  python scripts/release_gate.py after-publish X pip and uvx from PyPI, MCP handshake, one live example
+  python scripts/release_gate.py after-publish X pip and uvx from PyPI, MCP handshake, one live example,
+                                                release consistency (every public place names X)
+  python scripts/release_gate.py consistency     release consistency alone, on main (the nightly; not a release layer)
   python scripts/release_gate.py all             static, unit, mutation and live, in that order
   python scripts/release_gate.py report          rebuild GATE.md from the recorded layers
 
@@ -91,6 +93,8 @@ LAYERS = {  # name -> title, in report order
     "live": "Layer 5: live matrix on the built package",
     "after-publish": "Layer 7: after-publish proof",
 }
+# Run by the nightly gate on main, outside the release record (GATE.md never waits for it).
+CHECK_LAYERS = {"consistency": "Release consistency: every public place names the release"}
 BLOCKER, MAJOR, INFO = "BLOCKER", "MAJOR", "INFO"
 PASS, FAIL, SKIP, ACCEPTED = "PASS", "FAIL", "SKIP", "ACCEPTED"
 
@@ -179,7 +183,7 @@ class Layer:
         return version
 
     def record(self) -> dict:
-        return {"layer": self.name, "title": LAYERS[self.name], "version": self.args.version,
+        return {"layer": self.name, "title": {**LAYERS, **CHECK_LAYERS}[self.name], "version": self.args.version,
                 "started": self.started, "seconds": round(time.monotonic() - self.t0, 1),
                 "git": git_state(), "host": f"{platform.system()} {platform.release()} ({platform.machine()})",
                 "python": platform.python_version(), "strict": bool(self.args.strict),
@@ -1240,7 +1244,7 @@ def layer_after_publish(args) -> Layer:
         after_publish_live(layer, work, args)
     finally:
         shutil.rmtree(work, ignore_errors=True)
-    registry_check(layer, v)
+    release_consistency(layer, v)
     if shutil.which("gh"):
         p = run(["gh", "run", "list", "--workflow", "published-action.yml", "--limit", "1",
                  "--json", "conclusion,headSha,url"], timeout=120)
@@ -1276,29 +1280,174 @@ def after_publish_live(layer: Layer, work: Path, args) -> None:
               BLOCKER, ok, f"exit {p.code}" + (f"; left running: {', '.join(left)}" if left else ""), tail(p.out), p.seconds)
 
 
-def registry_check(layer: Layer, v: str) -> None:
-    name = json.loads((ROOT / "server.json").read_text(encoding="utf-8"))["name"]
-    url = f"https://registry.modelcontextprotocol.io/v0/servers?search={name}"
-    try:
-        with urllib.request.urlopen(url, timeout=30) as r:
-            data = json.load(r)
-    except (urllib.error.URLError, OSError, ValueError) as e:
-        layer.add("mcp-registry", f"the MCP Registry lists {name} {v}", MAJOR, None, f"registry unreachable: {e}")
-        return
-    versions = set()
+# --------------------------------------------------------------------------------------------
+# Release consistency: every public place names the released version (after-publish, and nightly on main)
+# --------------------------------------------------------------------------------------------
 
-    def walk(x) -> None:
-        if isinstance(x, dict):
-            if x.get("name") == name and "version" in x:
-                versions.add(x["version"])
-            for y in x.values():
-                walk(y)
-        elif isinstance(x, list):
-            for y in x:
-                walk(y)
-    walk(data)
-    layer.add("mcp-registry", f"the MCP Registry lists {name} {v}", MAJOR, v in versions,
-              f"listed versions: {', '.join(sorted(versions)) or 'none'}")
+SITE_PAGES = ("https://netdryrun.com/", "https://netdryrun.com/llms.txt")
+PUBLISHED_ACTION = ".github/workflows/published-action.yml"
+ACTION_REF = re.compile(r"netdryrun/netdryrun@v(\d+\.\d+\.\d+)")
+README_STATUS = re.compile(r"^> Status: \*\*v(\d+\.\d+\.\d+)\.\*\*", re.M)
+RELEASE_PIN = re.compile(r'^\s*RELEASE:\s*"?(\d+\.\d+\.\d+)"?\s*$', re.M)
+# What the site says about the current version: its structured data, the Action ref, and "version X.Y.Z" (the
+# phrase sync_facts writes). Past releases named as history ("ran on Netdryrun 0.3.1") match none of these.
+SITE_VERSION = re.compile(r'"softwareVersion":\s*"(\d+\.\d+\.\d+)"|netdryrun/netdryrun@v(\d+\.\d+\.\d+)'
+                          r"|(?i:\bversion) (\d+\.\d+\.\d+)")
+
+
+def fetch(url: str) -> tuple[int | None, str]:
+    """One GET, 30 s, no retry: (HTTP status, body), or (None, why) when unreachable."""
+    req = urllib.request.Request(url, headers={"User-Agent": "netdryrun-release-gate"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return r.status, r.read(5_000_000).decode("utf-8", "replace")
+    except urllib.error.HTTPError as e:
+        return e.code, ""
+    except (urllib.error.URLError, OSError, ValueError) as e:
+        return None, str(e)
+
+
+def main_texts() -> dict[str, str] | None:
+    """README.md, published-action.yml and every file naming the Action, as origin/main has them after one fetch."""
+    if run(["git", "-C", ROOT, "fetch", "--quiet", "origin", "main"], timeout=120).code != 0:
+        return None
+    p = run(["git", "-C", ROOT, "grep", "-l", "-F", "netdryrun/netdryrun@v", "origin/main"], timeout=60)
+    if p.code not in (0, 1):   # 1: no match
+        return None
+    paths = {ln.split(":", 1)[1] for ln in p.out.splitlines() if ln.startswith("origin/main:")}
+    texts = {}
+    for path in sorted(paths | {"README.md", PUBLISHED_ACTION}):
+        q = subprocess.run(["git", "-C", str(ROOT), "show", f"origin/main:{path}"], capture_output=True, timeout=60)
+        if q.returncode == 0:
+            texts[path] = q.stdout.decode("utf-8", "replace")
+    return texts
+
+
+def line_of(text: str, m: re.Match) -> int:
+    return text.count("\n", 0, m.start()) + 1
+
+
+def main_version_problems(version: str, texts: dict[str, str]) -> tuple[list[str], list[str]]:
+    """(what main says, each place that says another version): the README status line, published-action.yml's
+    RELEASE, and every Action ref outside the recorded history."""
+    found, problems = [], []
+    readme = texts.get("README.md", "")
+    m = README_STATUS.search(readme)
+    if m:
+        found.append((f"README.md:{line_of(readme, m)} status line v{m.group(1)}", m.group(1)))
+    else:
+        problems.append("README.md: no status line (> Status: **vX.Y.Z.**)")
+    action = texts.get(PUBLISHED_ACTION, "")
+    m = RELEASE_PIN.search(action)
+    if m:
+        found.append((f"{PUBLISHED_ACTION}:{line_of(action, m)} RELEASE {m.group(1)}", m.group(1)))
+    else:
+        problems.append(f"{PUBLISHED_ACTION}: no RELEASE pin")
+    for path, text in sorted(texts.items()):
+        if not path.startswith(RETIRED_HISTORY_PATHS):
+            found += [(f"{path}:{line_of(text, m)} {m.group(0)}", m.group(1)) for m in ACTION_REF.finditer(text)]
+    problems += [where for where, v in found if v != version]
+    return [where for where, _ in found], problems
+
+
+def site_version_problems(version: str, url: str, body: str) -> tuple[list[str], list[str]]:
+    found = [(f"{url} {m.group(0)}", next(g for g in m.groups() if g)) for m in SITE_VERSION.finditer(body)]
+    problems = [where for where, v in found if v != version] or ([] if found else [f"{url}: names no version"])
+    return [where for where, _ in found], problems
+
+
+def registry_latest(data, name: str) -> tuple[str | None, list[str]]:
+    """(the version the MCP Registry marks latest, every version it lists) for one server."""
+    latest, listed = None, []
+    for item in data.get("servers", []) if isinstance(data, dict) else []:
+        server = item.get("server", item)
+        if server.get("name") != name or "version" not in server:
+            continue
+        listed.append(server["version"])
+        meta = item.get("_meta") or server.get("_meta") or {}
+        if meta.get("io.modelcontextprotocol.registry/official", {}).get("isLatest"):
+            latest = server["version"]
+    return latest, sorted(listed)
+
+
+def release_consistency(layer: Layer, version: str, get=fetch, main=main_texts) -> None:
+    """Every public place names `version`: PyPI's latest, the GitHub latest release, main (README status line,
+    Action refs, published-action.yml RELEASE), the website, the MCP Registry's latest. One request per source,
+    no retry; a source that can't be read is SKIP, never PASS."""
+    server = json.loads((ROOT / "server.json").read_text(encoding="utf-8"))
+    name = server["name"]
+    repo = server["repository"]["url"].removeprefix("https://github.com/")
+
+    def report(id_: str, title: str, ok: bool | None, summary: str, found=(), problems=()) -> None:
+        if problems:
+            summary = "; ".join(problems)[:300]
+        output = "\n".join([*(f"WRONG {p}" for p in problems), *(f"ok    {f}" for f in found if f not in problems)])
+        layer.add(id_, title, BLOCKER, ok, summary, output)
+
+    def get_json(url: str):
+        status, body = get(url) or (None, "")
+        if status is None:
+            return None, f"unreachable: {body}".strip()
+        try:
+            return status, json.loads(body)
+        except ValueError:
+            return status, None
+
+    title = f"PyPI's latest netdryrun is {version}"
+    status, data = get_json("https://pypi.org/pypi/netdryrun/json")
+    if status is None:
+        report("latest-pypi", title, None, data)
+    else:
+        got = data.get("info", {}).get("version") if isinstance(data, dict) else None
+        report("latest-pypi", title, got == version, f"PyPI latest: {got or f'unreadable (HTTP {status})'}")
+
+    title = f"the GitHub latest release is v{version} (notes pasted, marked latest)"
+    status, data = get_json(f"https://api.github.com/repos/{repo}/releases/latest")
+    if status is None:
+        report("latest-github", title, None, data)
+    elif status == 404:
+        report("latest-github", title, False, "no release is marked latest")
+    else:
+        got = data.get("tag_name") if isinstance(data, dict) else None
+        report("latest-github", title, got == f"v{version}", f"latest release: {got or f'unreadable (HTTP {status})'}")
+
+    title = f"main names {version}: README status line, every netdryrun/netdryrun@v ref, published-action.yml RELEASE"
+    texts = main()
+    if texts is None:
+        report("main-version", title, None, "could not fetch and read origin/main")
+    else:
+        found, problems = main_version_problems(version, texts)
+        report("main-version", title, not problems, f"{len(found)} places say {version}", found, problems)
+
+    title = f"netdryrun.com names {version} (home page, llms.txt)"
+    found, problems, unreachable = [], [], []
+    for url in SITE_PAGES:
+        status, body = get(url) or (None, "")
+        if status != 200:
+            (unreachable if status is None else problems).append(f"{url}: " + (body or f"HTTP {status}"))
+            continue
+        f, p = site_version_problems(version, url, body)
+        found, problems = found + f, problems + p
+    if unreachable and not problems:
+        report("site-version", title, None, "; ".join(unreachable))
+    else:
+        report("site-version", title, not problems, f"{len(found)} mentions say {version}", found, problems)
+
+    title = f"the MCP Registry's latest {name} is {version}"
+    status, data = get_json(f"https://registry.modelcontextprotocol.io/v0/servers?search={name}")
+    if status is None:
+        report("mcp-registry", title, None, data)
+    else:
+        latest, listed = registry_latest(data, name)
+        report("mcp-registry", title, latest == version,
+               f"latest: {latest or 'none'}; listed: {', '.join(listed) or 'none'}")
+
+
+def layer_consistency(args) -> Layer:
+    """The nightly's check on main between releases: the same release_consistency as after-publish."""
+    layer = Layer("consistency", args)
+    release_consistency(layer, args.version)
+    return layer
 
 
 # --------------------------------------------------------------------------------------------
@@ -1489,7 +1638,7 @@ def layer_failed(layer: Layer) -> bool:
 # --------------------------------------------------------------------------------------------
 
 RUNNERS = {"static": layer_static, "unit": layer_unit, "mutation": layer_mutation, "live": layer_live,
-           "after-publish": layer_after_publish}
+           "after-publish": layer_after_publish, "consistency": layer_consistency}
 
 
 def main() -> int:
@@ -1538,7 +1687,7 @@ def main() -> int:
     names = ["static", "unit", "mutation", "live"] if args.layer == "all" else [args.layer]
     failed = []
     for name in names:
-        print(f"== {LAYERS[name]} (Netdryrun {args.version})", flush=True)
+        print(f"== {({**LAYERS, **CHECK_LAYERS})[name]} (Netdryrun {args.version})", flush=True)
         layer = RUNNERS[name](args)
         save(layer)
         if layer_failed(layer):

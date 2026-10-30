@@ -31,6 +31,7 @@ python scripts/release_gate.py unit              # minutes
 python scripts/release_gate.py mutation          # minutes to an hour
 python scripts/release_gate.py live              # 1 to 2 hours, on the lab machine
 python scripts/release_gate.py after-publish 0.4.0
+python scripts/release_gate.py consistency      # seconds: every public place names the release (nightly)
 python scripts/release_gate.py all               # static, unit, mutation, live
 python scripts/release_gate.py report            # rebuild GATE.md from the recorded layers
 ```
@@ -140,9 +141,17 @@ python scripts/release_gate.py after-publish 0.4.0
   `--version`, `validate` and the MCP handshake;
 - `uvx netdryrun@0.4.0` on every supported Python, then `--version` and the MCP handshake;
 - one live example (`frr-bgp`) run with the package from PyPI;
-- the MCP Registry lists the new version;
 - the Action by its new tag passes a good change and rejects a bad one (the
-  [`published-action.yml`](.github/workflows/published-action.yml) workflow).
+  [`published-action.yml`](.github/workflows/published-action.yml) workflow);
+- release consistency (BLOCKER): every public place names the new version, and each one that doesn't
+  is listed: PyPI's latest version, the GitHub release marked latest, `main`'s README status line,
+  every `uses: netdryrun/netdryrun@vX` on `main` (outside the CHANGELOG, advisories and release
+  records), `RELEASE` in `published-action.yml` on `main`, the netdryrun.com home page and
+  `llms.txt`, and the MCP Registry's latest version. One request per source, no retries: a source
+  that can't be reached is SKIP, never a pass.
+
+The nightly gate on `main` runs the same checks between releases (`release_gate.py consistency
+--strict`), outside the release record: a failure there pages the owner and blocks promotion.
 
 ## What blocks a release
 
@@ -175,11 +184,12 @@ A release is never "probably fine".
    and `review.md`) together with the release changes.
 6. **Tag and push:** `git tag vX.Y.Z && git push origin vX.Y.Z`. The release workflow publishes
    to PyPI and creates the GitHub release. The MCP Registry workflow publishes `server.json`.
-7. **Prove it:** run `python scripts/release_gate.py after-publish X.Y.Z`, bump `RELEASE` and
-   the `uses:` refs in `published-action.yml`, and commit the updated `releases/X.Y.Z/`. Then
-   `report` must say CLEARED.
-8. **Merge** the release branch into `main`. The website deploys from `main`, so the docs switch
-   to the new version only after the proof.
+7. **Merge** the release branch into `main` (a merge commit), then bump `RELEASE` and the `uses:`
+   refs in `published-action.yml` on `main`. The website deploys from `main`.
+8. **Paste the release notes** into the GitHub release and mark it **latest**, before CLEARED: the
+   after-publish consistency check fails until the GitHub latest release is `vX.Y.Z`.
+9. **Prove it:** run `python scripts/release_gate.py after-publish X.Y.Z` and commit the updated
+   `releases/X.Y.Z/`. Then `report` must say CLEARED; merge that record into `main`.
 
 ## Running it in CI
 
