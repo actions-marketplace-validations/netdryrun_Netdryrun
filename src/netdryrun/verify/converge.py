@@ -71,12 +71,11 @@ def stable_snapshot(collect: Callable[[], Snapshot], *, settle: float, timeout: 
     t0 = clock()
     prev: Snapshot | None = None
     moving: list[str] = []
-    last_failure = ""
     while True:
         try:
             cur = collect()
         except CommandFailed as e:
-            prev, last_failure = None, str(e)
+            prev = None
             if clock() - t0 >= timeout:
                 if isinstance(e, CommandTimedOut):
                     return Inconclusive(f"the snapshot was cut: a command never finished within its time limit "
@@ -85,7 +84,6 @@ def stable_snapshot(collect: Callable[[], Snapshot], *, settle: float, timeout: 
                 raise SnapshotUnreadable(f"could not read the snapshot within {timeout:g}s: {e}") from None
             sleep(POLL)
             continue
-        last_failure = ""
         # a peer sends at most once per advertisement interval: two samples closer than that can miss a route
         # still on its way (0.3.2 multi-vendor audit), so settle covers the longest interval a node reports
         interval, where = max(((ns.adv_interval, n) for n, ns in cur.nodes.items()), default=(0.0, ""))
@@ -111,7 +109,7 @@ def stable_snapshot(collect: Callable[[], Snapshot], *, settle: float, timeout: 
             what = "never became ready" if waiting else "kept moving"
             return Inconclusive(f"the lab's state {what} within {timeout:g}s (two snapshots {settle:g}s apart "
                                 "never matched). Retry at most once, then escalate: this says nothing about the change",
-                                moving or ([last_failure] if last_failure else []))
+                                moving)
         if not waiting:
             prev = cur
         sleep(settle if not waiting else POLL)
