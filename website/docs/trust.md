@@ -55,7 +55,7 @@ The GitHub Action has a `cloud` input reserved for a future hosted service, Netd
 
 **No AI inside the tool.** The CLI, the GitHub Action and the MCP server contain no AI model and call no AI service; verdicts come from checks run against your lab. When an AI agent uses the MCP server, the agent sends whatever it chooses to the model provider *you* picked; Netdryrun is not part of that path.
 
-**Configs you send us.** If you are a [design partner](design-partners.md), the sanitized configs you send us are processed with Anthropic's Claude to build your lab, under terms that don't allow training on them, and with no other AI service. They are deleted within 30 days after delivery unless you ask us to keep them. There are no paid products yet. See the [privacy notice](privacy.md#configs-you-send-us).
+**Configs you send us.** Design partners keep their configs on their side by default; the lab runs on their machine or CI runner. If a [design partner](design-partners.md) opts in to sending us sanitized configs, they are processed with Anthropic's Claude to build their lab, under terms that don't allow training on them, and with no other AI service. They are deleted within 30 days after delivery unless the partner asks us to keep them. There are no paid products yet. See the [privacy notice](privacy.md#configs-you-send-us).
 
 **This website** is static documentation hosted on GitHub Pages. It sets no cookies, has no analytics and no forms, and serves its fonts itself, so your browser contacts no third party. GitHub, as the host, receives your IP address and request details to serve the pages.
 
