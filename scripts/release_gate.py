@@ -1356,6 +1356,15 @@ def site_version_problems(version: str, url: str, body: str) -> tuple[list[str],
     return [where for where, _ in found], problems
 
 
+# What `gh release create --generate-notes` (release.yml) writes on its own: anything else means notes were pasted.
+GENERATED_NOTES = re.compile(r"## What's Changed|## New Contributors|\*\*Full Changelog\*\*: \S+"
+                             r"|\* .* in https://github\.com/\S+/pull/\d+")
+
+
+def release_notes_pasted(body) -> bool:
+    return any(ln.strip() and not GENERATED_NOTES.fullmatch(ln.strip()) for ln in str(body or "").splitlines())
+
+
 def registry_latest(data, name: str) -> tuple[str | None, list[str]]:
     """(the version the MCP Registry marks latest, every version it lists) for one server."""
     latest, listed = None, []
@@ -1409,7 +1418,10 @@ def release_consistency(layer: Layer, version: str, get=fetch, main=main_texts) 
         report("latest-github", title, False, "no release is marked latest")
     else:
         got = data.get("tag_name") if isinstance(data, dict) else None
-        report("latest-github", title, got == f"v{version}", f"latest release: {got or f'unreadable (HTTP {status})'}")
+        pasted = got and release_notes_pasted(data.get("body"))
+        report("latest-github", title, bool(got == f"v{version}" and pasted),
+               f"latest release: {got or f'unreadable (HTTP {status})'}"
+               + ("" if pasted or not got else "; its notes are only what GitHub generates (paste the release notes)"))
 
     title = f"main names {version}: README status line, every netdryrun/netdryrun@v ref, published-action.yml RELEASE"
     texts = main()
