@@ -15,7 +15,9 @@ Layers (RELEASING.md explains each one):
   python scripts/release_gate.py unit            tests on Python 3.10-3.14 and in a plain container, coverage
   python scripts/release_gate.py mutation        mutmut on the verdict modules; survivors block
   python scripts/release_gate.py live            the built wheel on the lab machine: examples, corpora, chaos
-  python scripts/release_gate.py after-publish X pip and uvx from PyPI, MCP handshake, one live example
+  python scripts/release_gate.py after-publish X pip and uvx from PyPI, MCP handshake, one live example,
+                                                release consistency (every public place names X)
+  python scripts/release_gate.py consistency     release consistency alone, on main (the nightly; not a release layer)
   python scripts/release_gate.py all             static, unit, mutation and live, in that order
   python scripts/release_gate.py report          rebuild GATE.md from the recorded layers
 
@@ -91,6 +93,8 @@ LAYERS = {  # name -> title, in report order
     "live": "Layer 5: live matrix on the built package",
     "after-publish": "Layer 7: after-publish proof",
 }
+# Run by the nightly gate on main, outside the release record (GATE.md never waits for it).
+CHECK_LAYERS = {"consistency": "Release consistency: every public place names the release"}
 BLOCKER, MAJOR, INFO = "BLOCKER", "MAJOR", "INFO"
 PASS, FAIL, SKIP, ACCEPTED = "PASS", "FAIL", "SKIP", "ACCEPTED"
 
@@ -179,7 +183,7 @@ class Layer:
         return version
 
     def record(self) -> dict:
-        return {"layer": self.name, "title": LAYERS[self.name], "version": self.args.version,
+        return {"layer": self.name, "title": {**LAYERS, **CHECK_LAYERS}[self.name], "version": self.args.version,
                 "started": self.started, "seconds": round(time.monotonic() - self.t0, 1),
                 "git": git_state(), "host": f"{platform.system()} {platform.release()} ({platform.machine()})",
                 "python": platform.python_version(), "strict": bool(self.args.strict),
@@ -380,6 +384,16 @@ def layer_static(args) -> Layer:
            if not n.startswith(OUR_LAB_PREFIX.removeprefix("clab-"))]
     layer.add("lab-names", "every topology we ship is named ndr-*", BLOCKER, not off,
               "; ".join(off) or f"{len(topos)} topologies")
+    tracked = run(["git", "ls-files"]).out.split()
+    texts = []
+    for f in tracked:
+        try:
+            texts.append((f, (ROOT / f).read_text(encoding="utf-8")))
+        except (UnicodeDecodeError, OSError):
+            pass   # binary or unreadable: no public text in it
+    retired = retired_string_problems(texts)
+    layer.add("retired-strings", "no retired public string outside the history (CHANGELOG, advisories, records)",
+              BLOCKER, not retired, "; ".join(retired[:10]) or "none")
 
     if args.candidate:
         candidate_checks(layer, args.version)
@@ -418,6 +432,28 @@ def version_sources(version: str) -> tuple[list[tuple[str, str]], list[str]]:
                 found.append((f"{rel}:{text.count(chr(10), 0, m.start()) + 1} {m.group(0)}", m.group(1)))
     problems = [f"{where} says {v}" for where, v in found if v != version]
     return found, problems
+
+
+# Public strings the project retired, with the release that retired them. An agent or a user copies these
+# exactly, so a doc that still shows one is a wrong instruction. The old text stays only where history is
+# recorded: the paths below, and a line that says it is history.
+RETIRED = {"SAFE" + " TO PROCEED": "the MCP pass verdict until 0.3.1 (0.3.2: CHECKS PASSED (only what the checks cover))"}
+RETIRED_HISTORY_PATHS = ("CHANGELOG.md", "advisories/", "releases/", "examples/agent-eval/results/",
+                         "examples/agent-eval/RESULTS.md", "examples/agent-demo/AGENT-RUN.md")
+RETIRED_HISTORY_LINE = re.compile(r"\b\d+\.\d+\.\d+ (said|returned)\b|\bbefore \d+\.\d+\.\d+\b|\brenamed\b", re.I)
+
+
+def retired_string_problems(texts) -> list[str]:
+    """`path:line: retired "..." (why)` for each retired string found outside the recorded history."""
+    problems = []
+    for path, text in texts:
+        if path.startswith(RETIRED_HISTORY_PATHS):
+            continue
+        for n, line in enumerate(text.splitlines(), 1):
+            for old, why in RETIRED.items():
+                if old in line and not RETIRED_HISTORY_LINE.search(line):
+                    problems.append(f"{path}:{n}: retired {old!r} ({why})")
+    return problems
 
 
 def python_support_problems() -> list[str]:
@@ -621,18 +657,21 @@ def layer_mutation(args) -> Layer:
         caught = len(checked) - len(survived)
         score = 100.0 * caught / max(1, len(checked))
         untested = sum(checked[n] == "no tests" for n in survived)
-        summary = (f"{caught}/{len(checked)} mutants caught ({score:.1f}%); not caught: "
+        by_class = accepted_by_class(accepted, survived, diffs)
+        summary = (f"{len(mine)} generated, {caught}/{len(checked)} caught ({score:.1f}%); not caught: "
                    f"{len(survived) - untested} survived the tests, {untested} in code no test runs"
-                   + (f", {len(survived) - len(open_)} accepted" if len(survived) != len(open_) else "")
-                   + (f"; {len(stale)} accepted entries no longer match their mutant's diff (re-review them)"
+                   + (f", {len(survived) - len(open_)} accepted ("
+                      + ", ".join(f"{v} {k}" for k, v in sorted(by_class.items())) + ")"
+                      if len(survived) != len(open_) else "")
+                   + (f"; {len(stale)} accepted entries don't accept their mutant (diff moved, no class, or no reviewed argument): see the notes"
                       if stale else ""))
         if not checked:
             layer.add(f"mutants-{module}", f"no surviving mutants in {VERDICT_MODULES[module]}", BLOCKER, False,
                       "no mutants were checked", tail(out), p.seconds)
             continue
         layer.add(f"mutants-{module}", f"no surviving mutants in {VERDICT_MODULES[module]}", BLOCKER, not open_,
-                  summary, tail("\n".join(f"{n}: {checked[n]}" + (f"  [accepted: {reason(accepted[n])}]" if accepted_now(accepted, n, diffs)
-                                                                   else "  [STALE acceptance]" if n in accepted else "")
+                  summary, tail("\n".join(f"{n}: {checked[n]}" + (f"  [accepted, {accepted[n]['class']}: {reason(accepted[n])}]" if accepted_now(accepted, n, diffs)
+                                                                   else f"  [NOT accepted: {acceptance_problem(accepted[n], n, diffs)}]" if n in accepted else "")
                                           for n in survived), 40), p.seconds if module == modules[0] else 0.0,
                   cmdline(["mutmut", *cmd[3:]]))
     gone = sorted(n for n in accepted if n not in survived_names
@@ -656,10 +695,52 @@ def reason(entry) -> str:
     return entry if isinstance(entry, str) else entry.get("reason", "")
 
 
+# Every accepted survivor says why in one of these classes (RELEASE-GATE.md, Layer 4).
+ACCEPT_CLASSES = ("message-text", "logging", "equivalent", "timing-only", "safety")
+
+# The functions that decide a verdict: check evaluation, the convergence and no-neighbor gates, inconclusive
+# classification, the fault-visible wait and the exit-code mapping. A survivor here is accepted only with a
+# written argument that it can't turn a failure into a pass, checked by the Layer 6 adversarial reviewer
+# ("argument" and "reviewed" in its accepted.json entry). The `tested` hashing (agent_result.py) is not in
+# the mutated modules; its behaviour is pinned by tests.
+VERDICT_FUNCTIONS = frozenset({
+    "checks._bgp_session", "checks._bgp_prefixes", "checks._route", "checks._ping", "checks._bgp_route",
+    "checks._not_configured", "checks.is_post_convergence", "checks._evaluate", "checks._counts", "checks.run_check",
+    "checks.hold_check", "checks.converge_then_hold", "checks.run_round_robin", "checks._reach_view",
+    "checks.hold_together", "checks.never_ready_nodes", "checks.inconclusive_reason",
+    "runner._bgp_convergence_gate", "runner._wait_fault_visible", "runner._link_sessions",
+    "runner._sessions_over_links", "runner._reach_then_hold", "runner.run_scenario",
+    "runner.RunReport.passed", "runner.RunReport.failed", "runner.RunReport.status",
+    "runner.RunReport.inconclusive_reason", "runner.RunReport.exit_code", "runner.rejected_config",
+})
+
+
+def acceptance_problem(entry, name: str, diffs: dict[str, str]) -> str | None:
+    """Why an accepted.json entry doesn't accept this mutant today, or None if it does."""
+    if not isinstance(entry, dict):
+        return "no entry, or the old format with no diff fingerprint"
+    if name not in diffs or entry.get("diff") != mutant_fingerprint(diffs[name]):
+        return "its diff fingerprint doesn't match this mutant (code moved: re-review)"
+    if entry.get("class") not in ACCEPT_CLASSES:
+        return f"no class (one of {', '.join(ACCEPT_CLASSES)})"
+    if mutant_function(name) in VERDICT_FUNCTIONS and not (entry.get("argument") and entry.get("reviewed")):
+        return ("a verdict-deciding function: needs a written argument that it can't turn a failure into a pass, "
+                "checked by the adversarial reviewer (argument, reviewed)")
+    return None
+
+
+def accepted_by_class(accepted: dict, names, diffs: dict[str, str]) -> dict[str, int]:
+    out: dict[str, int] = {}
+    for n in names:
+        if acceptance_problem(accepted.get(n), n, diffs) is None:
+            out[accepted[n]["class"]] = out.get(accepted[n]["class"], 0) + 1
+    return out
+
+
 def accepted_now(accepted: dict, name: str, diffs: dict[str, str]) -> bool:
-    """Accepted only if the entry pins the diff this mutant has today."""
-    entry = accepted.get(name)
-    return isinstance(entry, dict) and name in diffs and entry.get("diff") == mutant_fingerprint(diffs[name])
+    """Accepted only if the entry pins the diff this mutant has today, names a class, and, in a verdict-deciding
+    function, carries a reviewed argument."""
+    return acceptance_problem(accepted.get(name), name, diffs) is None
 
 
 def pin_accepted(args, accepted: dict, diffs: dict[str, str]) -> None:
@@ -707,8 +788,10 @@ def mutant_section(survivors: dict[str, list[str]], status: dict, accepted: dict
     for func, ns in sorted(by_func.items(), key=lambda kv: (-len(kv[1]), kv[0])):
         lines += [f"## `{func}` ({len(ns)})", ""]
         for n in ns:
-            note = (f" (accepted: {reason(accepted[n])})" if accepted_now(accepted, n, diffs) else
-                    f" (STALE acceptance, re-review: {reason(accepted[n])})" if n in accepted else "")
+            note = (f" (accepted, {accepted[n]['class']}: {reason(accepted[n])})" if accepted_now(accepted, n, diffs) else
+                    f" (NOT accepted: {acceptance_problem(accepted[n], n, diffs)}; {reason(accepted[n])})" if n in accepted else "")
+            if n in accepted and isinstance(accepted[n], dict) and accepted[n].get("argument"):
+                note += f"; argument: {accepted[n]['argument']}; reviewed: {accepted[n].get('reviewed', 'no')}"
             fp = mutant_fingerprint(diffs.get(n, ""))
             lines += [f"`{n}`: {status[n]}{note}; diff fingerprint `{fp}`", "", "```diff",
                       diffs.get(n) or "(no diff)", "```", ""]
@@ -897,6 +980,57 @@ def live_examples(live: Live, args) -> None:
               "\n".join(f"{n}: {s:.0f} s (documented {'-'.join(map(str, d))} s)" for n, s, d in times))
 
 
+def harmful_approved(cases: list[dict], skip=()) -> list[str]:
+    """The case IDs where a harmful change ("expected": "unsafe") got Netdryrun's approval: the false passes, counted
+    on their own. Cases in `skip` (nondeterministic) are left out."""
+    return sorted(c["id"] for c in cases if c["id"] not in skip
+                  and c.get("expected") == "unsafe" and c.get("strategies", {}).get("netdryrun", {}).get("verdict") == "safe")
+
+
+# The cases each corpus may exempt from the verdict diff: adding one to NONDETERMINISTIC.yml takes a change here too.
+NONDETERMINISTIC_PINNED = {"v1": [], "v2": ["18-aggregate-discard-route-removed"]}
+
+
+def nondeterministic_problems(version: str, nd: dict, new: dict) -> list[str]:
+    """Why the nondeterministic exemption doesn't hold this run: a list that differs from the pinned one, a case
+    that didn't run its repeats, or any run that ended in error (an error is never part of the race)."""
+    out = []
+    if sorted(nd) != sorted(NONDETERMINISTIC_PINNED.get(version, [])):
+        out.append(f"NONDETERMINISTIC.yml lists {sorted(nd)}, the gate pins {NONDETERMINISTIC_PINNED.get(version, [])}")
+    for cid in sorted(nd):
+        runs = new.get(cid, {}).get("runs") or []
+        if len(runs) < 2:
+            out.append(f"{cid}: {len(runs)} runs recorded, not the repeats")
+        bad = [f"run {i + 1} {s}" for i, r in enumerate(runs) for s, v in r.items() if v not in ("safe", "unsafe")]
+        if bad:
+            out.append(f"{cid}: error in {', '.join(bad)}")
+    return out
+
+
+def nd_always_approved(published: dict, rerun: dict) -> bool:
+    """A harmful nondeterministic case that Netdryrun approved in every run of this release."""
+    runs = rerun.get("runs") or []
+    expected = rerun.get("expected") or published.get("expected")   # a case new in this release has no published row
+    return expected == "unsafe" and bool(runs) and all(r.get("netdryrun") == "safe" for r in runs)
+
+
+def nondeterministic_cases(corpus: Path) -> dict:
+    """corpus/[v2/]NONDETERMINISTIC.yml: cases whose verdict follows a race in the lab, recorded and never a blocker."""
+    import yaml   # the gate's Python has Netdryrun's dependencies (Layer 5 installs the package)
+    path = corpus / "NONDETERMINISTIC.yml"
+    return (yaml.safe_load(path.read_text(encoding="utf-8")) or {}) if path.exists() else {}
+
+
+def harmful_approved_check(published: list[dict], rerun: list[dict], skip=()) -> tuple[bool, str]:
+    """A harmful case approved that isn't among the published known misses is a BLOCKER, whatever the score."""
+    known, now = set(harmful_approved(published, skip)), harmful_approved(rerun, skip)
+    new = [c for c in now if c not in known]
+    summary = f"harmful changes approved: {len(now)} ({', '.join(now) or 'none'}); published known misses: "               f"{', '.join(sorted(known)) or 'none'}"
+    if new:
+        summary += f"; new, not published: {', '.join(new)}"
+    return not new, summary
+
+
 def live_corpora(live: Live, args) -> None:
     """Rerun both Verdict Corpus versions from a scratch copy; every verdict must match results.json."""
     layer = live.layer
@@ -911,12 +1045,13 @@ def live_corpora(live: Live, args) -> None:
         committed = ROOT / "corpus" / sub / "results" / "results.json"
         fresh = copy / sub / "results" / "results.json"
         diffs = []
+        nd = nondeterministic_cases(ROOT / "corpus" / sub)
         if fresh.exists():   # kept beside GATE.md: the corpus results of this exact release, for the docs
             write_out(args, f"corpus-{version}-results.json", fresh.read_text(encoding="utf-8"))
         if p.code == 0:
             old = {c["id"]: c for c in json.loads(committed.read_text(encoding="utf-8"))["cases"]}
             new = {c["id"]: c for c in json.loads(fresh.read_text(encoding="utf-8"))["cases"]}
-            for cid in sorted(set(old) | set(new)):
+            for cid in sorted((set(old) | set(new)) - set(nd)):
                 for s in ("ping", "sessions", "netdryrun"):
                     a = old.get(cid, {}).get("strategies", {}).get(s, {}).get("verdict")
                     b = new.get(cid, {}).get("strategies", {}).get(s, {}).get("verdict")
@@ -926,6 +1061,27 @@ def live_corpora(live: Live, args) -> None:
                   BLOCKER, p.code == 0 and not diffs,
                   f"exit {p.code}" if p.code else (f"{len(diffs)} verdict(s) differ" if diffs else "all verdicts match"),
                   "\n".join(diffs) or tail(p.out), p.seconds, cmdline(["python", "corpus/run.py", "--corpus", version]))
+        if p.code == 0 and (nd or NONDETERMINISTIC_PINNED.get(version)):
+            # the verdicts are recorded, never a blocker: they follow the lab, not the change. The exemption
+            # itself is held: the pinned list, the repeats ran, and no run ended in error
+            problems = nondeterministic_problems(version, nd, new)
+            layer.add(f"corpus-{version}-nondeterministic-held",
+                      f"Verdict Corpus {version}: the nondeterministic exemption holds (pinned list, repeats ran, no error)",
+                      BLOCKER, not problems, "; ".join(problems) or ", ".join(sorted(nd)))
+            seen = "; ".join(f"{cid}: " + ", ".join(str(r.get("netdryrun")) for r in new.get(cid, {}).get("runs", []))
+                             for cid in nd)
+            # every run approving a harmful case is shown as a failed INFO line: not a blocker (it happens by chance),
+            # but in plain sight
+            approved = [cid for cid in nd if nd_always_approved(old.get(cid, {}), new.get(cid, {}))]
+            layer.add(f"corpus-{version}-nondeterministic",
+                      f"Verdict Corpus {version}: nondeterministic cases recorded (known, not scored, never a blocker)",
+                      INFO, not approved, f"Netdryrun verdicts per run: {seen}"
+                      + (f"; every run approved the harmful change: {', '.join(approved)}" if approved else ""))
+        if p.code == 0 and fresh.exists():
+            ok, summary = harmful_approved_check(list(old.values()), list(new.values()), nd)
+            layer.add(f"corpus-{version}-harmful-approved",
+                      f"Verdict Corpus {version}: no harmful change approved beyond the published known misses",
+                      BLOCKER, ok, summary)
         live.assert_clean(f"corpus-{version}", f"Verdict Corpus {version}")
 
 
@@ -1088,7 +1244,7 @@ def layer_after_publish(args) -> Layer:
         after_publish_live(layer, work, args)
     finally:
         shutil.rmtree(work, ignore_errors=True)
-    registry_check(layer, v)
+    release_consistency(layer, v)
     if shutil.which("gh"):
         p = run(["gh", "run", "list", "--workflow", "published-action.yml", "--limit", "1",
                  "--json", "conclusion,headSha,url"], timeout=120)
@@ -1124,29 +1280,187 @@ def after_publish_live(layer: Layer, work: Path, args) -> None:
               BLOCKER, ok, f"exit {p.code}" + (f"; left running: {', '.join(left)}" if left else ""), tail(p.out), p.seconds)
 
 
-def registry_check(layer: Layer, v: str) -> None:
-    name = json.loads((ROOT / "server.json").read_text(encoding="utf-8"))["name"]
-    url = f"https://registry.modelcontextprotocol.io/v0/servers?search={name}"
-    try:
-        with urllib.request.urlopen(url, timeout=30) as r:
-            data = json.load(r)
-    except (urllib.error.URLError, OSError, ValueError) as e:
-        layer.add("mcp-registry", f"the MCP Registry lists {name} {v}", MAJOR, None, f"registry unreachable: {e}")
-        return
-    versions = set()
+# --------------------------------------------------------------------------------------------
+# Release consistency: every public place names the released version (after-publish, and nightly on main)
+# --------------------------------------------------------------------------------------------
 
-    def walk(x) -> None:
-        if isinstance(x, dict):
-            if x.get("name") == name and "version" in x:
-                versions.add(x["version"])
-            for y in x.values():
-                walk(y)
-        elif isinstance(x, list):
-            for y in x:
-                walk(y)
-    walk(data)
-    layer.add("mcp-registry", f"the MCP Registry lists {name} {v}", MAJOR, v in versions,
-              f"listed versions: {', '.join(sorted(versions)) or 'none'}")
+SITE_PAGES = ("https://netdryrun.com/", "https://netdryrun.com/llms.txt")
+PUBLISHED_ACTION = ".github/workflows/published-action.yml"
+ACTION_REF = re.compile(r"netdryrun/netdryrun@v(\d+\.\d+\.\d+)")
+README_STATUS = re.compile(r"^> Status: \*\*v(\d+\.\d+\.\d+)\.\*\*", re.M)
+RELEASE_PIN = re.compile(r'^\s*RELEASE:\s*"?(\d+\.\d+\.\d+)"?\s*$', re.M)
+# What the site says about the current version: its structured data, the Action ref, and "version X.Y.Z" (the
+# phrase sync_facts writes). Past releases named as history ("ran on Netdryrun 0.3.1") match none of these.
+SITE_VERSION = re.compile(r'"softwareVersion":\s*"(\d+\.\d+\.\d+)"|netdryrun/netdryrun@v(\d+\.\d+\.\d+)'
+                          r"|(?i:\bversion) (\d+\.\d+\.\d+)")
+
+
+def fetch(url: str) -> tuple[int | None, str]:
+    """One GET, 30 s, no retry: (HTTP status, body), or (None, why) when unreachable."""
+    req = urllib.request.Request(url, headers={"User-Agent": "netdryrun-release-gate"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return r.status, r.read(5_000_000).decode("utf-8", "replace")
+    except urllib.error.HTTPError as e:
+        return e.code, ""
+    except (urllib.error.URLError, OSError, ValueError) as e:
+        return None, str(e)
+
+
+def main_texts() -> dict[str, str] | None:
+    """README.md, published-action.yml and every file naming the Action, as origin/main has them after one fetch."""
+    if run(["git", "-C", ROOT, "fetch", "--quiet", "origin", "main"], timeout=120).code != 0:
+        return None
+    p = run(["git", "-C", ROOT, "grep", "-l", "-F", "netdryrun/netdryrun@v", "origin/main"], timeout=60)
+    if p.code not in (0, 1):   # 1: no match
+        return None
+    paths = {ln.split(":", 1)[1] for ln in p.out.splitlines() if ln.startswith("origin/main:")}
+    texts = {}
+    for path in sorted(paths | {"README.md", PUBLISHED_ACTION}):
+        q = subprocess.run(["git", "-C", str(ROOT), "show", f"origin/main:{path}"], capture_output=True, timeout=60)
+        if q.returncode == 0:
+            texts[path] = q.stdout.decode("utf-8", "replace")
+    return texts
+
+
+def line_of(text: str, m: re.Match) -> int:
+    return text.count("\n", 0, m.start()) + 1
+
+
+def main_version_problems(version: str, texts: dict[str, str]) -> tuple[list[str], list[str]]:
+    """(what main says, each place that says another version): the README status line, published-action.yml's
+    RELEASE, and every Action ref outside the recorded history."""
+    found, problems = [], []
+    readme = texts.get("README.md", "")
+    m = README_STATUS.search(readme)
+    if m:
+        found.append((f"README.md:{line_of(readme, m)} status line v{m.group(1)}", m.group(1)))
+    else:
+        problems.append("README.md: no status line (> Status: **vX.Y.Z.**)")
+    action = texts.get(PUBLISHED_ACTION, "")
+    m = RELEASE_PIN.search(action)
+    if m:
+        found.append((f"{PUBLISHED_ACTION}:{line_of(action, m)} RELEASE {m.group(1)}", m.group(1)))
+    else:
+        problems.append(f"{PUBLISHED_ACTION}: no RELEASE pin")
+    for path, text in sorted(texts.items()):
+        # tests/ holds old refs on purpose (this check's own fixtures); users never read them
+        if not path.startswith(RETIRED_HISTORY_PATHS + ("tests/",)):
+            found += [(f"{path}:{line_of(text, m)} {m.group(0)}", m.group(1)) for m in ACTION_REF.finditer(text)]
+    problems += [where for where, v in found if v != version]
+    return [where for where, _ in found], problems
+
+
+def site_version_problems(version: str, url: str, body: str) -> tuple[list[str], list[str]]:
+    found = [(f"{url} {m.group(0)}", next(g for g in m.groups() if g)) for m in SITE_VERSION.finditer(body)]
+    problems = [where for where, v in found if v != version] or ([] if found else [f"{url}: names no version"])
+    return [where for where, _ in found], problems
+
+
+# What `gh release create --generate-notes` (release.yml) writes on its own: anything else means notes were pasted.
+GENERATED_NOTES = re.compile(r"## What's Changed|## New Contributors|\*\*Full Changelog\*\*: \S+"
+                             r"|\* .* in https://github\.com/\S+/pull/\d+")
+
+
+def release_notes_pasted(body) -> bool:
+    return any(ln.strip() and not GENERATED_NOTES.fullmatch(ln.strip()) for ln in str(body or "").splitlines())
+
+
+def registry_latest(data, name: str) -> tuple[str | None, list[str]]:
+    """(the version the MCP Registry marks latest, every version it lists) for one server."""
+    latest, listed = None, []
+    for item in data.get("servers", []) if isinstance(data, dict) else []:
+        server = item.get("server", item)
+        if server.get("name") != name or "version" not in server:
+            continue
+        listed.append(server["version"])
+        meta = item.get("_meta") or server.get("_meta") or {}
+        if meta.get("io.modelcontextprotocol.registry/official", {}).get("isLatest"):
+            latest = server["version"]
+    return latest, sorted(listed)
+
+
+def release_consistency(layer: Layer, version: str, get=fetch, main=main_texts) -> None:
+    """Every public place names `version`: PyPI's latest, the GitHub latest release, main (README status line,
+    Action refs, published-action.yml RELEASE), the website, the MCP Registry's latest. One request per source,
+    no retry; a source that can't be read is SKIP, never PASS."""
+    server = json.loads((ROOT / "server.json").read_text(encoding="utf-8"))
+    name = server["name"]
+    repo = server["repository"]["url"].removeprefix("https://github.com/")
+
+    def report(id_: str, title: str, ok: bool | None, summary: str, found=(), problems=()) -> None:
+        if problems:
+            summary = "; ".join(problems)[:300]
+        output = "\n".join([*(f"WRONG {p}" for p in problems), *(f"ok    {f}" for f in found if f not in problems)])
+        layer.add(id_, title, BLOCKER, ok, summary, output)
+
+    def get_json(url: str):
+        status, body = get(url) or (None, "")
+        if status is None:
+            return None, f"unreachable: {body}".strip()
+        try:
+            return status, json.loads(body)
+        except ValueError:
+            return status, None
+
+    title = f"PyPI's latest netdryrun is {version}"
+    status, data = get_json("https://pypi.org/pypi/netdryrun/json")
+    if status is None:
+        report("latest-pypi", title, None, data)
+    else:
+        got = data.get("info", {}).get("version") if isinstance(data, dict) else None
+        report("latest-pypi", title, got == version, f"PyPI latest: {got or f'unreadable (HTTP {status})'}")
+
+    title = f"the GitHub latest release is v{version} (notes pasted, marked latest)"
+    status, data = get_json(f"https://api.github.com/repos/{repo}/releases/latest")
+    if status is None:
+        report("latest-github", title, None, data)
+    elif status == 404:
+        report("latest-github", title, False, "no release is marked latest")
+    else:
+        got = data.get("tag_name") if isinstance(data, dict) else None
+        pasted = got and release_notes_pasted(data.get("body"))
+        report("latest-github", title, bool(got == f"v{version}" and pasted),
+               f"latest release: {got or f'unreadable (HTTP {status})'}"
+               + ("" if pasted or not got else "; its notes are only what GitHub generates (paste the release notes)"))
+
+    title = f"main names {version}: README status line, every netdryrun/netdryrun@v ref, published-action.yml RELEASE"
+    texts = main()
+    if texts is None:
+        report("main-version", title, None, "could not fetch and read origin/main")
+    else:
+        found, problems = main_version_problems(version, texts)
+        report("main-version", title, not problems, f"{len(found)} places say {version}", found, problems)
+
+    title = f"netdryrun.com names {version} (home page, llms.txt)"
+    found, problems, unreachable = [], [], []
+    for url in SITE_PAGES:
+        status, body = get(url) or (None, "")
+        if status != 200:
+            (unreachable if status is None else problems).append(f"{url}: " + (body or f"HTTP {status}"))
+            continue
+        f, p = site_version_problems(version, url, body)
+        found, problems = found + f, problems + p
+    if unreachable and not problems:
+        report("site-version", title, None, "; ".join(unreachable))
+    else:
+        report("site-version", title, not problems, f"{len(found)} mentions say {version}", found, problems)
+
+    title = f"the MCP Registry's latest {name} is {version}"
+    status, data = get_json(f"https://registry.modelcontextprotocol.io/v0/servers?search={name}")
+    if status is None:
+        report("mcp-registry", title, None, data)
+    else:
+        latest, listed = registry_latest(data, name)
+        report("mcp-registry", title, latest == version,
+               f"latest: {latest or 'none'}; listed: {', '.join(listed) or 'none'}")
+
+
+def layer_consistency(args) -> Layer:
+    """The nightly's check on main between releases: the same release_consistency as after-publish."""
+    layer = Layer("consistency", args)
+    release_consistency(layer, args.version)
+    return layer
 
 
 # --------------------------------------------------------------------------------------------
@@ -1337,7 +1651,7 @@ def layer_failed(layer: Layer) -> bool:
 # --------------------------------------------------------------------------------------------
 
 RUNNERS = {"static": layer_static, "unit": layer_unit, "mutation": layer_mutation, "live": layer_live,
-           "after-publish": layer_after_publish}
+           "after-publish": layer_after_publish, "consistency": layer_consistency}
 
 
 def main() -> int:
@@ -1386,7 +1700,7 @@ def main() -> int:
     names = ["static", "unit", "mutation", "live"] if args.layer == "all" else [args.layer]
     failed = []
     for name in names:
-        print(f"== {LAYERS[name]} (Netdryrun {args.version})", flush=True)
+        print(f"== {({**LAYERS, **CHECK_LAYERS})[name]} (Netdryrun {args.version})", flush=True)
         layer = RUNNERS[name](args)
         save(layer)
         if layer_failed(layer):

@@ -52,7 +52,7 @@ One check per neighbor that catches a leak of *any* prefix, including ones nobod
   max: 10
 ```
 
-The count is of *accepted* prefixes (received minus rejected by import policy), so this also shows a filter that suddenly drops everything (`min`). `record --min-prefixes` writes the `min` side for every neighbor; add `max` by hand.
+The count is of *accepted* prefixes (received minus rejected by import policy), so this also shows a filter that suddenly drops everything (`min`). From 0.3.3, `netdryrun record` writes both sides for every neighbor: today's count as `min` and `max` with 20% headroom; adjust `max` to the growth you expect. `record` also writes the no-default-route and link-subnet guards below for every BGP node (`--no-guards` leaves them out).
 
 **Tested:** passes on `frr-bgp` (2 prefixes); fails on r2 announcing 12 extra static /24s with `redistribute static`, exit 1:
 
@@ -156,7 +156,7 @@ In a triangle, r3 also passes r2's flood on to r1, unless r1 limits r3 too: the 
   [FAIL] r1: route 10.255.0.2/32 via ospf is present -- not active via ospf; seen: nothing (60.4s)
 ```
 
-Netdryrun can't check OSPF or IS-IS adjacencies themselves yet: those checks are planned for 0.5. Until then, a route learned from the protocol is the evidence that the adjacency came up.
+Netdryrun can't check OSPF or IS-IS adjacencies themselves yet: those checks are on the roadmap, not in a release yet. Until then, a route learned from the protocol is the evidence that the adjacency came up.
 
 ## Scenario catalog
 

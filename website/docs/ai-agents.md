@@ -7,6 +7,8 @@ description: Connect an AI agent to Netdryrun. MCP setup for Claude Code and oth
 
 Netdryrun™ includes an [MCP](https://modelcontextprotocol.io) server for testing network changes: `netdryrun mcp` (stdio). Before an AI agent applies a change, it calls `dry_run`; Netdryrun boots the changed configs in a real containerlab lab, runs the checks in `netdryrun.yml`, destroys the lab and returns a `verdict` field, so the agent proceeds only if every check passed. It is listed in the official MCP Registry as `io.github.netdryrun/netdryrun`, and it never connects to real devices.
 
+**Agents use it where a human puts it.** In our agent evaluation (2026-10-30), Claude Code worked 28 network tickets with no mention of Netdryrun and never searched for, fetched or installed a verifier: it used containerlab and the router CLI. To get Netdryrun into an agent's path, add it as a pull-request check, an `AGENTS.md` rule or an MCP server: [two-minute setup](add.md). The real run below was a workflow test with the tool provided, not a test of discovery.
+
 ## Watch the demo
 
 <figure class="ndr-video">
@@ -17,6 +19,10 @@ Netdryrun™ includes an [MCP](https://modelcontextprotocol.io) server for testi
 </video>
 <figcaption>About 90 seconds, captions on screen, no sound. A leaked default route that ping and session checks miss, an AI agent's tempting change rejected and the two-line fix passed (a scripted replay), a real agent run, and the verdict corpus with its losses. Every terminal line comes from a real run. <a href="/assets/video/netdryrun-demo.vtt">Captions as text</a>.</figcaption>
 </figure>
+
+[Try it in your browser](https://codespaces.new/netdryrun/netdryrun?quickstart=1){ .md-button .md-button--primary }
+
+The browser trial runs in GitHub Codespaces: it needs a free GitHub account, takes a few minutes to start, and then `bash examples/agent-demo/demo.sh` shows a bad change rejected and the fix accepted. Think you can make it give a wrong verdict? Try, and [tell us](https://github.com/netdryrun/netdryrun/issues/new/choose).
 
 ## Set up the MCP server
 
@@ -43,15 +49,15 @@ Add `-s project` to write the server into `.mcp.json` in the current folder, so 
 On Windows, with Claude Code running on Windows and Netdryrun installed in WSL, start the server through `wsl.exe` and give the full path to `netdryrun` inside WSL:
 
 ```text
-$ claude mcp add -s project netdryrun -- wsl.exe -d Ubuntu-22.04 -- /home/user/ndr-docs/bin/netdryrun mcp
-Added stdio MCP server netdryrun with command: wsl.exe -d Ubuntu-22.04 -- /home/user/ndr-docs/bin/netdryrun mcp to project config
+$ claude mcp add -s project netdryrun -- wsl.exe -d Ubuntu-22.04 -- /home/<you>/.local/bin/netdryrun mcp
+Added stdio MCP server netdryrun with command: wsl.exe -d Ubuntu-22.04 -- /home/<you>/.local/bin/netdryrun mcp to project config
 $ claude mcp get netdryrun
 netdryrun:
   Scope: Project config (shared via .mcp.json)
   Status: ✓ Connected
   Type: stdio
   Command: wsl.exe
-  Args: -d Ubuntu-22.04 -- /home/user/ndr-docs/bin/netdryrun mcp
+  Args: -d Ubuntu-22.04 -- /home/<you>/.local/bin/netdryrun mcp
 ```
 
 (Claude Code 2.1.116. Use your own distribution name and path; `which netdryrun` inside WSL prints it.)
@@ -84,7 +90,65 @@ Configure a stdio server with command `netdryrun` and argument `mcp`. Most clien
 
 This repository already carries the server config for the clients that read a project file, so an agent that opens a clone, or the [Codespace](getting-started.md), finds the tools without setup: `.mcp.json` (Claude Code, and the portable file VS Code reads), `.vscode/mcp.json` (VS Code and GitHub Copilot, which use `servers` as the top-level key) and `.cursor/mcp.json` (Cursor). Copy the one your client reads into your own repository. The Codespace installs `netdryrun` from the checkout, so the command resolves; clients ask for approval before they start a project server.
 
-Without installing, use `"command": "uvx", "args": ["netdryrun", "mcp"]`. On Windows, use the `wsl.exe` command and arguments shown above. Set the client's tool-call timeout to at least 5 minutes.
+Without installing, use `"command": "uvx", "args": ["netdryrun", "mcp"]`. On Windows, use the `wsl.exe` command and arguments shown above. Set the client's tool-call timeout to at least 5 minutes, or use `start_run` and `get_result` (from 0.3.3), which each answer within seconds.
+
+The exact files for four clients, checked against each client's own documentation on 2026-10-28 (the link is the page we read; if your version differs, that page wins). `NETDRYRUN_MCP_ROOT` is optional and keeps the agent to one folder; see the [safety model](#safety-model).
+
+**Cursor:** `.cursor/mcp.json` in the project, or `~/.cursor/mcp.json` for every project ([Cursor docs](https://cursor.com/docs/context/mcp)). The server's toggle shows it enabled once it loads.
+
+```json
+{
+  "mcpServers": {
+    "netdryrun": {
+      "type": "stdio",
+      "command": "netdryrun",
+      "args": ["mcp"],
+      "env": { "NETDRYRUN_MCP_ROOT": "/path/to/labs" }
+    }
+  }
+}
+```
+
+**VS Code with GitHub Copilot (agent mode):** `.vscode/mcp.json` in the workspace, or the user configuration (command **MCP: Open User Configuration**). The top-level key is `servers`, not `mcpServers`, and `type` is required ([VS Code docs](https://code.visualstudio.com/docs/copilot/reference/mcp-configuration)).
+
+```json
+{
+  "servers": {
+    "netdryrun": {
+      "type": "stdio",
+      "command": "netdryrun",
+      "args": ["mcp"],
+      "env": { "NETDRYRUN_MCP_ROOT": "/path/to/labs" }
+    }
+  }
+}
+```
+
+**Windsurf:** `~/.config/devin/mcp_config.json` (or `$XDG_CONFIG_HOME/devin/mcp_config.json`; `%APPDATA%\devin\mcp_config.json` on Windows), per Windsurf's docs, which now live at [docs.devin.ai](https://docs.devin.ai/desktop/cascade/mcp). The MCPs entry in the Cascade panel's menu lists the server and its tools.
+
+```json
+{
+  "mcpServers": {
+    "netdryrun": {
+      "command": "netdryrun",
+      "args": ["mcp"],
+      "env": { "NETDRYRUN_MCP_ROOT": "/path/to/labs" }
+    }
+  }
+}
+```
+
+**Codex CLI:** `~/.codex/config.toml`, or `.codex/config.toml` in a trusted project ([Codex docs](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)). Its default per-tool timeout, `tool_timeout_sec`, is 60 seconds, shorter than a dry run: raise it, or have the agent use `start_run` and `get_result`. `codex mcp list` shows the server.
+
+```toml
+[mcp_servers.netdryrun]
+command = "netdryrun"
+args = ["mcp"]
+tool_timeout_sec = 300
+
+[mcp_servers.netdryrun.env]
+NETDRYRUN_MCP_ROOT = "/path/to/labs"
+```
 
 ### Not supported: Docker MCP Toolkit and other containerized gateways
 
@@ -174,7 +238,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.3.2
+      - uses: netdryrun/netdryrun@v0.3.3
         with:
           path: network/
           pr-comment: true
@@ -190,12 +254,14 @@ The PR comment lists failures first with their evidence, so the reviewer sees wh
 
 ## Tools
 
-The server has these tools: <!-- facts:mcp_tools -->`dry_run`, `run_checks`, `record_baseline`, `validate` and `check_types`<!-- /facts:mcp_tools -->.
+The server has these tools: <!-- facts:mcp_tools -->`dry_run`, `start_run`, `get_result`, `run_checks`, `record_baseline`, `validate` and `check_types`<!-- /facts:mcp_tools -->.
 
 
 | Tool | Arguments | What it does |
 |---|---|---|
 | `dry_run` | `path`, `keep_lab` (default `false`) | The primary tool. Deploy the lab, run every check, destroy the lab, return the verdict. Takes about 60–120 s for a small lab; longer with big labs or long timeouts. |
+| `start_run` | `path`, `keep_lab` (default `false`) | The same dry run, for clients that give up on a long tool call (from 0.3.3): returns at once with a `run_id` and `status: running`, and no verdict. A config error or a path outside `NETDRYRUN_MCP_ROOT` is answered at once with `status: error` |
+| `get_result` | `run_id` | Poll a run started with `start_run`: `status: running` (no verdict; call again after `poll_after_s` seconds), then exactly `dry_run`'s result with its `run_id`. Runs live in the server process: after a restart, start again |
 | `run_checks` | `path` | Run the checks against a lab that is already running (no deploy or destroy) |
 | `record_baseline` | `topology`, `deploy` (default `true`), `wait_seconds` (default `45`) | Deploy the lab, snapshot its BGP sessions, prefix counts and routes as `netdryrun.yml` text, destroy the lab. Returns the YAML; nothing is written to disk. Like [`netdryrun record`](reference/cli.md#record) |
 | `validate` | `path` | Validate `netdryrun.yml` and its topology without starting a lab: node names, drivers and supported keys, as `dry_run` checks them before deploying (0.3.1 and later) |

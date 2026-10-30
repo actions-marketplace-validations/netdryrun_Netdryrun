@@ -9,6 +9,8 @@ description: Which network operating systems Netdryrun is verified on, the exact
 
 Netdryrun reads each network OS through a driver. A driver is only as good as the device output it was built and tested on, so this page lists, for every driver, the exact image it is verified on, the date its test data was last captured from a live lab, and what each check does on it. It is generated from the tests (`tests/test_driver_matrix.py`) and from the images the shipped examples pin; if a cell is not on this page, it is not tested.
 
+Where each one runs live: FRR and SR Linux images are public, so this repository's CI boots them on every change (the `frr-bgp` and `srl-frr` examples). SONiC and Arista cEOS images can't be pulled from a public registry, so they are run live in the release gate on the maintainers' lab, and CI tests their drivers against the captured output.
+
 ## Verified images
 
 | Platform | Image verified on | Source of the image | Test data last captured live | Status |
@@ -57,7 +59,13 @@ A check on a refused address family stops the run before the lab is deployed, wi
 
 ## Known limits
 
-- **SR Linux:** `bgp_prefixes` counts the neighbor's `received-routes`, which on SR Linux 26.7.2 includes routes that fail BGP loop detection and are not usable. On a live capture of `examples/srl-frr` on 2026-10-28 the counter read 3 where one prefix was usable and `rejected-routes` read 0. A `min` or `exact` prefix check on SR Linux can pass on a count that includes unusable routes. The test data above predates that capture; it has not yet been re-captured.
+- **SR Linux:** `bgp_prefixes` counts the neighbor's `received-routes`, which on SR Linux 26.7.2 includes routes that fail BGP loop detection and are not usable. On a live capture of `examples/srl-frr` on 2026-10-28 the counter read 3 where one prefix was usable and `rejected-routes` read 0. A `min` or `exact` prefix check on SR Linux can pass on a count that includes unusable routes. The test data above predates that capture; it has not yet been re-captured. Mitigation: pair the count with `route` checks for the prefixes that matter. Fix scheduled: 0.4.
+- **SR Linux:** graceful restart: a stale path (a restarting peer's route, kept until it re-sends it or the stale timer ends) counts as present and best; no stale marker is read yet. A route check can pass on a route that is about to go. Mitigation: leave graceful restart off in the lab, or use a `timeout` above the stale timer. Fix scheduled: 0.4.
+- **SR Linux:** startup config: a line the NOS rejects at boot isn't detected yet, so the lab can run without it. Config applied with `setup:` commands is checked. Mitigation: add a positive check for what each changed line creates. Fix scheduled: 0.4.
+- **SONiC:** graceful restart: a stale path (a restarting peer's route, kept until it re-sends it or the stale timer ends) counts as present and best; no stale marker is read yet. A route check can pass on a route that is about to go. Mitigation: leave graceful restart off in the lab, or use a `timeout` above the stale timer. Fix scheduled: 0.4.
+- **SONiC:** startup config: a line the NOS rejects at boot isn't detected yet, so the lab can run without it. Config applied with `setup:` commands is checked. Mitigation: add a positive check for what each changed line creates. Fix scheduled: 0.4.
+- **Arista EOS:** graceful restart: a stale path (a restarting peer's route, kept until it re-sends it or the stale timer ends) counts as present and best; no stale marker is read yet. A route check can pass on a route that is about to go. Mitigation: leave graceful restart off in the lab, or use a `timeout` above the stale timer. Fix scheduled: 0.4.
+- **Arista EOS:** startup config: a line the NOS rejects at boot isn't detected yet, so the lab can run without it. Config applied with `setup:` commands is checked. Mitigation: add a positive check for what each changed line creates. Fix scheduled: 0.4.
 
 ## How a platform gets on this page
 

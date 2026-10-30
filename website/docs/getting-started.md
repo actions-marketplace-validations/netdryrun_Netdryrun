@@ -30,6 +30,9 @@ The codespace runs on the 2-core machine and uses your GitHub account's free Cod
 
 containerlab needs root (or a user in the right groups) to create the lab. Run Netdryrun the same way you run containerlab on that machine.
 
+!!! warning "0.3.3 and earlier: keep routing config out of topology `exec:` lines"
+    containerlab only logs a failed `exec:` command, and the lab runs without what it configured, so a run can pass. Put routing config in `setup:` in `netdryrun.yml` (or, on FRR, in `frr.conf`). Fixed in 0.4. [Advisory](https://github.com/netdryrun/netdryrun/blob/main/advisories/0.3.3-exec-not-checked/README.md).
+
 !!! note "WSL2 and /mnt/c"
     If your topology lives under `/mnt/...` (a Windows drive), Netdryrun keeps containerlab's lab directory on the Linux filesystem (`~/.cache/netdryrun/labs`) unless you set `CLAB_LABDIR_BASE` yourself. SR Linux cannot save its config on a Windows drive.
 

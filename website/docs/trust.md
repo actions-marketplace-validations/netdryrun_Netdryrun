@@ -14,13 +14,19 @@ Netdryrun™ is open source under the [Apache License 2.0](https://github.com/ne
 - Releases are built and published by a GitHub Actions workflow when a version tag (`v*`) is pushed. The workflow checks that the tag matches the package version before building.
 - Packages are uploaded to [PyPI](https://pypi.org/project/netdryrun/) with **Trusted Publishing** (OpenID Connect). No PyPI token or password is stored in the repository or its secrets; PyPI accepts the upload because it comes from that workflow in that repository.
 - The same workflow creates a GitHub release with the built files attached.
-- The GitHub Action (`netdryrun/netdryrun@v0.3.2`) installs Netdryrun from the action's own source at the tag you reference. Pin a tag or a commit SHA.
+- The GitHub Action (`netdryrun/netdryrun@v0.3.3`) installs Netdryrun from the action's own source at the tag you reference. Pin a tag or a commit SHA.
 
 ## Reporting a security issue
 
 Email **[security@netdryrun.com](mailto:security@netdryrun.com)**. Please do not open a public issue for a vulnerability. Include the version, what you found, and how to reproduce it.
 
-Past advisories: [0.3.0 could pass a check without testing what the file said](https://github.com/netdryrun/netdryrun/blob/main/advisories/0.3.0-false-pass/README.md), found by our own audit and fixed in 0.3.1, with a rerunnable test for each path. 0.3.0 is yanked on PyPI.
+Advisories: every false pass we have found, in our own audits and games before any outside user reported it:
+
+| Version | What could pass wrongly | Status |
+|---|---|---|
+| 0.3.0 | A check could pass without testing what the file said | Fixed in 0.3.1; 0.3.0 is yanked on PyPI. [Advisory](https://github.com/netdryrun/netdryrun/blob/main/advisories/0.3.0-false-pass/README.md) |
+| 0.3.2 and earlier | An FRR config line the router rejected at boot was skipped silently | Fixed in 0.3.3. [Advisory](https://github.com/netdryrun/netdryrun/blob/main/advisories/0.3.2-rejected-config/README.md) |
+| 0.3.3 and earlier | A failed topology `exec:` command left the lab without that config | Fixed in 0.4; until then use `setup:` (or `frr.conf` on FRR). [Advisory](https://github.com/netdryrun/netdryrun/blob/main/advisories/0.3.3-exec-not-checked/README.md) |
 
 ## What a lab cannot prove
 
@@ -29,10 +35,12 @@ A Netdryrun pass means the change behaved correctly in a lab. The lab runs real 
 - **Vendor-specific behavior.** Open-source and container routers (FRR, SR Linux, SONiC VS) are not your vendor's routers, and even Arista cEOS is not the same as EOS on hardware. Defaults, policy evaluation and bugs differ between implementations and versions. For Arista you can bring your own licensed cEOS image.
 - **Scale.** A lab has a handful of nodes and small tables, not full Internet tables or hundreds of peers.
 - **Hardware and ASIC behavior.** Containers have no forwarding hardware, so TCAM limits, hardware programming and line-rate effects are not tested.
+- **Config the NOS skipped, on some platforms.** On FRR, a config line rejected at boot makes the run an error. On Arista cEOS, SR Linux and SONiC, Netdryrun doesn't yet check that every startup-config line loaded (fix scheduled for 0.4): add a positive check for what each changed line creates.
+- **A topology `exec:` command that fails** (0.3.3 and earlier): containerlab logs it and still exits 0, and Netdryrun doesn't read that log, so the lab can run without what the command configured and a run can pass. Put routing config in `setup:` (or, on FRR, in `frr.conf`), not in `exec:`. Fixed in 0.4 ([advisory](https://github.com/netdryrun/netdryrun/blob/main/advisories/0.3.3-exec-not-checked/README.md)).
 - **Timing at scale.** Convergence time in a small lab says little about convergence time in a large production network.
 
 <!-- facts:trust_scope -->
-Version 0.3.2 also covers only BGP (IPv4/IPv6 unicast), routes, BGP best-path attributes and ping, plus link-down, node-isolation and route-injection (FRR only) failure scenarios. OSPF/IS-IS adjacencies and path checks are not covered yet.
+Version 0.3.3 also covers only BGP (IPv4/IPv6 unicast), routes, BGP best-path attributes and ping, plus link-down, node-isolation and route-injection (FRR only) failure scenarios. OSPF/IS-IS adjacencies and path checks are not covered yet.
 <!-- /facts:trust_scope -->
 
 ## Running untrusted labs
@@ -54,7 +62,7 @@ The GitHub Action has a `cloud` input reserved for a future hosted service, Netd
 
 **No AI inside the tool.** The CLI, the GitHub Action and the MCP server contain no AI model and call no AI service; verdicts come from checks run against your lab. When an AI agent uses the MCP server, the agent sends whatever it chooses to the model provider *you* picked; Netdryrun is not part of that path.
 
-**Configs you send us.** If you are a [design partner](design-partners.md), the sanitized configs you send us are processed with Anthropic's Claude to build your lab, under terms that don't allow training on them, and with no other AI service. They are deleted within 30 days after delivery unless you ask us to keep them. There are no paid products yet. See the [privacy notice](privacy.md#configs-you-send-us).
+**Configs you send us.** Design partners keep their configs on their side by default; the lab runs on their machine or CI runner. If a [design partner](design-partners.md) opts in to sending us sanitized configs, they are processed with Anthropic's Claude to build their lab, under terms that don't allow training on them, and with no other AI service. They are deleted within 30 days after delivery unless the partner asks us to keep them. There are no paid products yet. See the [privacy notice](privacy.md#configs-you-send-us).
 
 **This website** is static documentation hosted on GitHub Pages. It sets no cookies, has no analytics and no forms, and serves its fonts itself, so your browser contacts no third party. GitHub, as the host, receives your IP address and request details to serve the pages.
 
