@@ -25,6 +25,13 @@
 
 ### Fixes
 
+- **False approvals found by the 0.4 expert gauntlet** (`research/games` in the business repo; each pinned by a test in `tests/test_verify_gauntlet.py`):
+  - **No bound file differs: nothing to verify** (exit `2`, before any boot). A change to a file the lab doesn't bind used to approve as NO BEHAVIOR CHANGE after four boots.
+  - **Only an observed node's FRR config may differ.** A changed `daemons` file (shell FRR's start script runs), `vtysh.conf`, a script or the config of an unobserved node can change what runs unseen: exit `2`, naming the file.
+  - **`--unobserved` refuses an FRR router**: it would leave any change on it uncompared.
+  - **`appears_on` never accepts a discard route.** A route whose every next hop drops traffic (`ip route X Null0` plus `redistribute static`) satisfied "selected and in the FIB"; it is now `state: discard`, declared as such.
+  - **A link-local next hop set in config is compared.** Every IPv6 link-local next hop was compared as `fe80::`, so a typo in a configured one was invisible. It is now named by the lab interface that owns it (stable across boots), and one no lab node owns keeps its address.
+  - **The Action refuses a PR that edits the workflow judging it** (`mode: verify`: any change under `.github/workflows/`; `mode: run`: a workflow change together with the lab). Under `pull_request` the workflow comes from the PR, so it could set `allow-intent-edit` for itself.
 - **`verify` reads each side's config load the way `run` does (0.3.3).** A changed line FRR rejected on the after side would read as no change at all; it is now exit code `2` on that side, naming the node and the line, from the same reading of the boot log as `run`. `environment.nodes.<node>.config_load` (and the MCP result's `tested.nodes`) records each node's load: `clean`, why it didn't load as written, or `not verified on <driver>` (SONiC, Arista EOS, Juniper for now; SR Linux syntax errors already fail containerlab's deploy).
 - **What ran is named:** each node's image digest and the NOS version it reports are in the report (`environment.nodes`) and in the MCP result's `tested.nodes` (FRR reads its version; other drivers say null until their output is captured).
 - **The Action refuses a PR that changes the checks and the configs together** in `mode: run` (it would grade its own change), before any lab boots, unless `allow-check-edit: true`, which a workflow sets only where branch protection requires a code-owner review of `netdryrun.yml`. Like `mode: verify`, it judges the PR merged into the base branch.
