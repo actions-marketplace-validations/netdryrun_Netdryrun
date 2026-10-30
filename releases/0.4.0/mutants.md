@@ -2,6 +2,3737 @@
 
 Each mutant below is a deliberate change to the code that no test noticed. In verdict logic each is a BLOCKER until a test kills it or it is accepted as harmless in accepted.json with a reason.
 
+## `drivers.frr._bgp_paths_raw` (26)
+
+`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_12`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `97d447da32b8a6d5`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_12: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -4,7 +4,7 @@
+     if not data:
+         return []
+     if not isinstance(data.get("paths"), list) or "prefix" not in data:
+-        raise unexpected(command, text)
++        raise unexpected(None, text)
+     if network(command, data["prefix"]) != ipaddress.ip_network(prefix):
+         return []  # bgpd answered for another (covering) prefix: nothing for this one
+     for p in data["paths"]:
+```
+
+`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_13`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `51538289ed3a8f90`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_13: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -4,7 +4,7 @@
+     if not data:
+         return []
+     if not isinstance(data.get("paths"), list) or "prefix" not in data:
+-        raise unexpected(command, text)
++        raise unexpected(command, None)
+     if network(command, data["prefix"]) != ipaddress.ip_network(prefix):
+         return []  # bgpd answered for another (covering) prefix: nothing for this one
+     for p in data["paths"]:
+```
+
+`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_14`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `18f801b369ff4a8e`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_14: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -4,7 +4,7 @@
+     if not data:
+         return []
+     if not isinstance(data.get("paths"), list) or "prefix" not in data:
+-        raise unexpected(command, text)
++        raise unexpected(text)
+     if network(command, data["prefix"]) != ipaddress.ip_network(prefix):
+         return []  # bgpd answered for another (covering) prefix: nothing for this one
+     for p in data["paths"]:
+```
+
+`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_15`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `a3d54de42703d41d`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_15: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -4,7 +4,7 @@
+     if not data:
+         return []
+     if not isinstance(data.get("paths"), list) or "prefix" not in data:
+-        raise unexpected(command, text)
++        raise unexpected(command, )
+     if network(command, data["prefix"]) != ipaddress.ip_network(prefix):
+         return []  # bgpd answered for another (covering) prefix: nothing for this one
+     for p in data["paths"]:
+```
+
+`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_16`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `7dce13effa42e90c`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_16: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -5,7 +5,7 @@
+         return []
+     if not isinstance(data.get("paths"), list) or "prefix" not in data:
+         raise unexpected(command, text)
+-    if network(command, data["prefix"]) != ipaddress.ip_network(prefix):
++    if network(None, data["prefix"]) != ipaddress.ip_network(prefix):
+         return []  # bgpd answered for another (covering) prefix: nothing for this one
+     for p in data["paths"]:
+         if not isinstance(p, dict):
+```
+
+`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_2`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `5b1331f53d60c448`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_2: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -1,6 +1,6 @@
+ def _bgp_paths_raw(command: str, text: str, prefix: str) -> list[dict]:
+     """Path objects for exactly `prefix` from `show bgp ... <prefix> json`. `{}` means no path."""
+-    data = _bgp_json(command, text)
++    data = _bgp_json(None, text)
+     if not data:
+         return []
+     if not isinstance(data.get("paths"), list) or "prefix" not in data:
+```
+
+`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_27`: survived (accepted, message-text: message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes); diff fingerprint `77a30ef77715b1b3`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_27: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -9,7 +9,7 @@
+         return []  # bgpd answered for another (covering) prefix: nothing for this one
+     for p in data["paths"]:
+         if not isinstance(p, dict):
+-            raise unexpected(command, f"path: {str(p)[:150]}")
++            raise unexpected(None, f"path: {str(p)[:150]}")
+         if p.get("stale"):
+             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
+             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
+```
+
+`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_28`: survived (accepted, message-text: message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes); diff fingerprint `072b8ea9b9443e6e`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_28: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -9,7 +9,7 @@
+         return []  # bgpd answered for another (covering) prefix: nothing for this one
+     for p in data["paths"]:
+         if not isinstance(p, dict):
+-            raise unexpected(command, f"path: {str(p)[:150]}")
++            raise unexpected(command, None)
+         if p.get("stale"):
+             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
+             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
+```
+
+`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_29`: survived (accepted, message-text: message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes); diff fingerprint `2aade544b8a35086`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_29: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -9,7 +9,7 @@
+         return []  # bgpd answered for another (covering) prefix: nothing for this one
+     for p in data["paths"]:
+         if not isinstance(p, dict):
+-            raise unexpected(command, f"path: {str(p)[:150]}")
++            raise unexpected(f"path: {str(p)[:150]}")
+         if p.get("stale"):
+             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
+             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
+```
+
+`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_30`: survived (accepted, message-text: message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes); diff fingerprint `521e4cc68d03b68f`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_30: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -9,7 +9,7 @@
+         return []  # bgpd answered for another (covering) prefix: nothing for this one
+     for p in data["paths"]:
+         if not isinstance(p, dict):
+-            raise unexpected(command, f"path: {str(p)[:150]}")
++            raise unexpected(command, )
+         if p.get("stale"):
+             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
+             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
+```
+
+`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_31`: survived (accepted, message-text: message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes); diff fingerprint `10ff992640aa3969`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_31: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -9,7 +9,7 @@
+         return []  # bgpd answered for another (covering) prefix: nothing for this one
+     for p in data["paths"]:
+         if not isinstance(p, dict):
+-            raise unexpected(command, f"path: {str(p)[:150]}")
++            raise unexpected(command, f"path: {str(None)[:150]}")
+         if p.get("stale"):
+             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
+             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
+```
+
+`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_32`: survived (accepted, message-text: message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes); diff fingerprint `2fe1a09324ab3b5d`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_32: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -9,7 +9,7 @@
+         return []  # bgpd answered for another (covering) prefix: nothing for this one
+     for p in data["paths"]:
+         if not isinstance(p, dict):
+-            raise unexpected(command, f"path: {str(p)[:150]}")
++            raise unexpected(command, f"path: {str(p)[:151]}")
+         if p.get("stale"):
+             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
+             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
+```
+
+`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_37`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `c3c7ea8c6eb4a117`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_37: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -13,6 +13,6 @@
+         if p.get("stale"):
+             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
+             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
+-            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
++            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get(None, '?')} is stale "
+                               "(graceful restart in progress): not settled")
+     return data["paths"]
+```
+
+`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_38`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `e8db09c2d37ec7e6`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_38: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -13,6 +13,6 @@
+         if p.get("stale"):
+             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
+             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
+-            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
++            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', None)} is stale "
+                               "(graceful restart in progress): not settled")
+     return data["paths"]
+```
+
+`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_39`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `6ef6591857897e9c`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_39: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -13,6 +13,6 @@
+         if p.get("stale"):
+             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
+             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
+-            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
++            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('?')} is stale "
+                               "(graceful restart in progress): not settled")
+     return data["paths"]
+```
+
+`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_40`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `1e19a061e416a7ee`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_40: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -13,6 +13,6 @@
+         if p.get("stale"):
+             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
+             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
+-            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
++            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', )} is stale "
+                               "(graceful restart in progress): not settled")
+     return data["paths"]
+```
+
+`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_41`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `3b46027635eab567`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_41: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -13,6 +13,6 @@
+         if p.get("stale"):
+             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
+             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
+-            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
++            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') and {}).get('peerId', '?')} is stale "
+                               "(graceful restart in progress): not settled")
+     return data["paths"]
+```
+
+`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_42`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `51804f2b3fb44be2`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_42: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -13,6 +13,6 @@
+         if p.get("stale"):
+             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
+             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
+-            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
++            raise DriverError(f"{prefix}: BGP path from {(p.get(None) or {}).get('peerId', '?')} is stale "
+                               "(graceful restart in progress): not settled")
+     return data["paths"]
+```
+
+`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_43`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `93a41f7e41f53994`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_43: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -13,6 +13,6 @@
+         if p.get("stale"):
+             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
+             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
+-            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
++            raise DriverError(f"{prefix}: BGP path from {(p.get('XXpeerXX') or {}).get('peerId', '?')} is stale "
+                               "(graceful restart in progress): not settled")
+     return data["paths"]
+```
+
+`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_44`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `b0f1e9a2e984c3b0`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_44: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -13,6 +13,6 @@
+         if p.get("stale"):
+             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
+             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
+-            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
++            raise DriverError(f"{prefix}: BGP path from {(p.get('PEER') or {}).get('peerId', '?')} is stale "
+                               "(graceful restart in progress): not settled")
+     return data["paths"]
+```
+
+`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_45`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `eb62ae5ba3866ec3`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_45: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -13,6 +13,6 @@
+         if p.get("stale"):
+             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
+             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
+-            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
++            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('XXpeerIdXX', '?')} is stale "
+                               "(graceful restart in progress): not settled")
+     return data["paths"]
+```
+
+`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_46`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `0b7c38a29cd64c17`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_46: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -13,6 +13,6 @@
+         if p.get("stale"):
+             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
+             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
+-            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
++            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerid', '?')} is stale "
+                               "(graceful restart in progress): not settled")
+     return data["paths"]
+```
+
+`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_47`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `494b7d575551cf86`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_47: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -13,6 +13,6 @@
+         if p.get("stale"):
+             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
+             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
+-            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
++            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('PEERID', '?')} is stale "
+                               "(graceful restart in progress): not settled")
+     return data["paths"]
+```
+
+`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_48`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `e85c692ed30c6d3a`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_48: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -13,6 +13,6 @@
+         if p.get("stale"):
+             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
+             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
+-            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
++            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', 'XX?XX')} is stale "
+                               "(graceful restart in progress): not settled")
+     return data["paths"]
+```
+
+`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_49`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `6a55dc277cf7a70d`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_49: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -14,5 +14,5 @@
+             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
+             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
+             raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
+-                              "(graceful restart in progress): not settled")
++                              "XX(graceful restart in progress): not settledXX")
+     return data["paths"]
+```
+
+`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_50`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `9cadc12335cd40c4`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_50: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -14,5 +14,5 @@
+             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
+             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
+             raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
+-                              "(graceful restart in progress): not settled")
++                              "(GRACEFUL RESTART IN PROGRESS): NOT SETTLED")
+     return data["paths"]
+```
+
+## `drivers.frr._route_table` (18)
+
+`netdryrun.drivers.frr.x__route_table__mutmut_10`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `7d96088b6aa52080`
+
+```diff
+# netdryrun.drivers.frr.x__route_table__mutmut_10: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -3,7 +3,7 @@
+     that isn't a prefix (a warning, output keyed by VRF name) is unexpected."""
+     data = load_json(command, text)
+     if not isinstance(data, dict):
+-        raise unexpected(command, text)
++        raise unexpected(command, )
+     table = {}
+     for key, entries in data.items():
+         net = network(command, key)
+```
+
+`netdryrun.drivers.frr.x__route_table__mutmut_13`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `3dddfbc78098915e`
+
+```diff
+# netdryrun.drivers.frr.x__route_table__mutmut_13: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -6,7 +6,7 @@
+         raise unexpected(command, text)
+     table = {}
+     for key, entries in data.items():
+-        net = network(command, key)
++        net = network(None, key)
+         if not isinstance(entries, list) or not entries:
+             raise unexpected(command, f"{key}: {str(entries)[:150]}")
+         for e in entries:
+```
+
+`netdryrun.drivers.frr.x__route_table__mutmut_2`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `e9e85b6faee88aa7`
+
+```diff
+# netdryrun.drivers.frr.x__route_table__mutmut_2: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -1,7 +1,7 @@
+ def _route_table(command: str, text: str) -> dict[ipaddress._BaseNetwork, list[dict]]:
+     """zebra's `show ip route ... json`: {prefix: [entry, ...]}. `{}` is a real empty answer; any key
+     that isn't a prefix (a warning, output keyed by VRF name) is unexpected."""
+-    data = load_json(command, text)
++    data = load_json(None, text)
+     if not isinstance(data, dict):
+         raise unexpected(command, text)
+     table = {}
+```
+
+`netdryrun.drivers.frr.x__route_table__mutmut_20`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `e847ae102d35b869`
+
+```diff
+# netdryrun.drivers.frr.x__route_table__mutmut_20: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -8,7 +8,7 @@
+     for key, entries in data.items():
+         net = network(command, key)
+         if not isinstance(entries, list) or not entries:
+-            raise unexpected(command, f"{key}: {str(entries)[:150]}")
++            raise unexpected(None, f"{key}: {str(entries)[:150]}")
+         for e in entries:
+             if not isinstance(e, dict) or not isinstance(e.get("protocol"), str):
+                 raise unexpected(command, f"{key}: {str(e)[:150]}")
+```
+
+`netdryrun.drivers.frr.x__route_table__mutmut_21`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `ea6b726cca1236c2`
+
+```diff
+# netdryrun.drivers.frr.x__route_table__mutmut_21: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -8,7 +8,7 @@
+     for key, entries in data.items():
+         net = network(command, key)
+         if not isinstance(entries, list) or not entries:
+-            raise unexpected(command, f"{key}: {str(entries)[:150]}")
++            raise unexpected(command, None)
+         for e in entries:
+             if not isinstance(e, dict) or not isinstance(e.get("protocol"), str):
+                 raise unexpected(command, f"{key}: {str(e)[:150]}")
+```
+
+`netdryrun.drivers.frr.x__route_table__mutmut_22`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `6d82d860c8b9c644`
+
+```diff
+# netdryrun.drivers.frr.x__route_table__mutmut_22: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -8,7 +8,7 @@
+     for key, entries in data.items():
+         net = network(command, key)
+         if not isinstance(entries, list) or not entries:
+-            raise unexpected(command, f"{key}: {str(entries)[:150]}")
++            raise unexpected(f"{key}: {str(entries)[:150]}")
+         for e in entries:
+             if not isinstance(e, dict) or not isinstance(e.get("protocol"), str):
+                 raise unexpected(command, f"{key}: {str(e)[:150]}")
+```
+
+`netdryrun.drivers.frr.x__route_table__mutmut_23`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `640de4f8e03240cf`
+
+```diff
+# netdryrun.drivers.frr.x__route_table__mutmut_23: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -8,7 +8,7 @@
+     for key, entries in data.items():
+         net = network(command, key)
+         if not isinstance(entries, list) or not entries:
+-            raise unexpected(command, f"{key}: {str(entries)[:150]}")
++            raise unexpected(command, )
+         for e in entries:
+             if not isinstance(e, dict) or not isinstance(e.get("protocol"), str):
+                 raise unexpected(command, f"{key}: {str(e)[:150]}")
+```
+
+`netdryrun.drivers.frr.x__route_table__mutmut_24`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `bed2654ea13cecfa`
+
+```diff
+# netdryrun.drivers.frr.x__route_table__mutmut_24: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -8,7 +8,7 @@
+     for key, entries in data.items():
+         net = network(command, key)
+         if not isinstance(entries, list) or not entries:
+-            raise unexpected(command, f"{key}: {str(entries)[:150]}")
++            raise unexpected(command, f"{key}: {str(None)[:150]}")
+         for e in entries:
+             if not isinstance(e, dict) or not isinstance(e.get("protocol"), str):
+                 raise unexpected(command, f"{key}: {str(e)[:150]}")
+```
+
+`netdryrun.drivers.frr.x__route_table__mutmut_25`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `e4e57e58b1e77789`
+
+```diff
+# netdryrun.drivers.frr.x__route_table__mutmut_25: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -8,7 +8,7 @@
+     for key, entries in data.items():
+         net = network(command, key)
+         if not isinstance(entries, list) or not entries:
+-            raise unexpected(command, f"{key}: {str(entries)[:150]}")
++            raise unexpected(command, f"{key}: {str(entries)[:151]}")
+         for e in entries:
+             if not isinstance(e, dict) or not isinstance(e.get("protocol"), str):
+                 raise unexpected(command, f"{key}: {str(e)[:150]}")
+```
+
+`netdryrun.drivers.frr.x__route_table__mutmut_29`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `452f8d15ad9efbe4`
+
+```diff
+# netdryrun.drivers.frr.x__route_table__mutmut_29: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -11,6 +11,6 @@
+             raise unexpected(command, f"{key}: {str(entries)[:150]}")
+         for e in entries:
+             if not isinstance(e, dict) or not isinstance(e.get("protocol"), str):
+-                raise unexpected(command, f"{key}: {str(e)[:150]}")
++                raise unexpected(None, f"{key}: {str(e)[:150]}")
+         table[net] = entries
+     return table
+```
+
+`netdryrun.drivers.frr.x__route_table__mutmut_30`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `f5840f1596252e1c`
+
+```diff
+# netdryrun.drivers.frr.x__route_table__mutmut_30: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -11,6 +11,6 @@
+             raise unexpected(command, f"{key}: {str(entries)[:150]}")
+         for e in entries:
+             if not isinstance(e, dict) or not isinstance(e.get("protocol"), str):
+-                raise unexpected(command, f"{key}: {str(e)[:150]}")
++                raise unexpected(command, None)
+         table[net] = entries
+     return table
+```
+
+`netdryrun.drivers.frr.x__route_table__mutmut_31`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `b0e51fcee0470994`
+
+```diff
+# netdryrun.drivers.frr.x__route_table__mutmut_31: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -11,6 +11,6 @@
+             raise unexpected(command, f"{key}: {str(entries)[:150]}")
+         for e in entries:
+             if not isinstance(e, dict) or not isinstance(e.get("protocol"), str):
+-                raise unexpected(command, f"{key}: {str(e)[:150]}")
++                raise unexpected(f"{key}: {str(e)[:150]}")
+         table[net] = entries
+     return table
+```
+
+`netdryrun.drivers.frr.x__route_table__mutmut_32`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `c3641fb643b37af8`
+
+```diff
+# netdryrun.drivers.frr.x__route_table__mutmut_32: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -11,6 +11,6 @@
+             raise unexpected(command, f"{key}: {str(entries)[:150]}")
+         for e in entries:
+             if not isinstance(e, dict) or not isinstance(e.get("protocol"), str):
+-                raise unexpected(command, f"{key}: {str(e)[:150]}")
++                raise unexpected(command, )
+         table[net] = entries
+     return table
+```
+
+`netdryrun.drivers.frr.x__route_table__mutmut_33`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `82962ea5c566fe74`
+
+```diff
+# netdryrun.drivers.frr.x__route_table__mutmut_33: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -11,6 +11,6 @@
+             raise unexpected(command, f"{key}: {str(entries)[:150]}")
+         for e in entries:
+             if not isinstance(e, dict) or not isinstance(e.get("protocol"), str):
+-                raise unexpected(command, f"{key}: {str(e)[:150]}")
++                raise unexpected(command, f"{key}: {str(None)[:150]}")
+         table[net] = entries
+     return table
+```
+
+`netdryrun.drivers.frr.x__route_table__mutmut_34`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `4b1151e845c5ae68`
+
+```diff
+# netdryrun.drivers.frr.x__route_table__mutmut_34: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -11,6 +11,6 @@
+             raise unexpected(command, f"{key}: {str(entries)[:150]}")
+         for e in entries:
+             if not isinstance(e, dict) or not isinstance(e.get("protocol"), str):
+-                raise unexpected(command, f"{key}: {str(e)[:150]}")
++                raise unexpected(command, f"{key}: {str(e)[:151]}")
+         table[net] = entries
+     return table
+```
+
+`netdryrun.drivers.frr.x__route_table__mutmut_7`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `9a3c76562c5914e5`
+
+```diff
+# netdryrun.drivers.frr.x__route_table__mutmut_7: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -3,7 +3,7 @@
+     that isn't a prefix (a warning, output keyed by VRF name) is unexpected."""
+     data = load_json(command, text)
+     if not isinstance(data, dict):
+-        raise unexpected(command, text)
++        raise unexpected(None, text)
+     table = {}
+     for key, entries in data.items():
+         net = network(command, key)
+```
+
+`netdryrun.drivers.frr.x__route_table__mutmut_8`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `7245ec5215625baf`
+
+```diff
+# netdryrun.drivers.frr.x__route_table__mutmut_8: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -3,7 +3,7 @@
+     that isn't a prefix (a warning, output keyed by VRF name) is unexpected."""
+     data = load_json(command, text)
+     if not isinstance(data, dict):
+-        raise unexpected(command, text)
++        raise unexpected(command, None)
+     table = {}
+     for key, entries in data.items():
+         net = network(command, key)
+```
+
+`netdryrun.drivers.frr.x__route_table__mutmut_9`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `e9e8548b935149b6`
+
+```diff
+# netdryrun.drivers.frr.x__route_table__mutmut_9: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -3,7 +3,7 @@
+     that isn't a prefix (a warning, output keyed by VRF name) is unexpected."""
+     data = load_json(command, text)
+     if not isinstance(data, dict):
+-        raise unexpected(command, text)
++        raise unexpected(text)
+     table = {}
+     for key, entries in data.items():
+         net = network(command, key)
+```
+
+## `drivers.eos._summary` (16)
+
+`netdryrun.drivers.eos.x__summary__mutmut_11`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `daffb94d6dfe0b91`
+
+```diff
+# netdryrun.drivers.eos.x__summary__mutmut_11: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -1,7 +1,7 @@
+ def _summary(text: str, vrf: str, afi: str, into: dict[str, BgpNeighbor] | None):
+     command = SUMMARY_CMD.get(afi, f"show bgp {afi} summary | json")
+     out = into if into is not None else {}
+-    entry = _vrf(command, _json(command, text), vrf)
++    entry = _vrf(None, _json(command, text), vrf)
+     for addr, p in _table(command, entry, "peers").items():
+         if not isinstance(p, dict) or not isinstance(p.get("peerState"), str) or not p["peerState"].strip():
+             raise unexpected(command, f"{addr}: {str(p)[:150]}")
+```
+
+`netdryrun.drivers.eos.x__summary__mutmut_17`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `9bacb10eacc9f4a7`
+
+```diff
+# netdryrun.drivers.eos.x__summary__mutmut_17: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -1,7 +1,7 @@
+ def _summary(text: str, vrf: str, afi: str, into: dict[str, BgpNeighbor] | None):
+     command = SUMMARY_CMD.get(afi, f"show bgp {afi} summary | json")
+     out = into if into is not None else {}
+-    entry = _vrf(command, _json(command, text), vrf)
++    entry = _vrf(command, _json(None, text), vrf)
+     for addr, p in _table(command, entry, "peers").items():
+         if not isinstance(p, dict) or not isinstance(p.get("peerState"), str) or not p["peerState"].strip():
+             raise unexpected(command, f"{addr}: {str(p)[:150]}")
+```
+
+`netdryrun.drivers.eos.x__summary__mutmut_21`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `7ccb41104c55ab9e`
+
+```diff
+# netdryrun.drivers.eos.x__summary__mutmut_21: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -2,7 +2,7 @@
+     command = SUMMARY_CMD.get(afi, f"show bgp {afi} summary | json")
+     out = into if into is not None else {}
+     entry = _vrf(command, _json(command, text), vrf)
+-    for addr, p in _table(command, entry, "peers").items():
++    for addr, p in _table(None, entry, "peers").items():
+         if not isinstance(p, dict) or not isinstance(p.get("peerState"), str) or not p["peerState"].strip():
+             raise unexpected(command, f"{addr}: {str(p)[:150]}")
+         key = _canon_addr(str(addr))
+```
+
+`netdryrun.drivers.eos.x__summary__mutmut_3`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `235d4c5d1d2a1e87`
+
+```diff
+# netdryrun.drivers.eos.x__summary__mutmut_3: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -1,5 +1,5 @@
+ def _summary(text: str, vrf: str, afi: str, into: dict[str, BgpNeighbor] | None):
+-    command = SUMMARY_CMD.get(afi, f"show bgp {afi} summary | json")
++    command = SUMMARY_CMD.get(afi, None)
+     out = into if into is not None else {}
+     entry = _vrf(command, _json(command, text), vrf)
+     for addr, p in _table(command, entry, "peers").items():
+```
+
+`netdryrun.drivers.eos.x__summary__mutmut_30`: survived (accepted, equivalent: equivalent: a non-mapping peer or a missing peerState still raises (AttributeError or KeyError, turned into a DriverError by the parser wrapper)); diff fingerprint `e37c8c806f69bc18`
+
+```diff
+# netdryrun.drivers.eos.x__summary__mutmut_30: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -3,7 +3,7 @@
+     out = into if into is not None else {}
+     entry = _vrf(command, _json(command, text), vrf)
+     for addr, p in _table(command, entry, "peers").items():
+-        if not isinstance(p, dict) or not isinstance(p.get("peerState"), str) or not p["peerState"].strip():
++        if not isinstance(p, dict) and not isinstance(p.get("peerState"), str) or not p["peerState"].strip():
+             raise unexpected(command, f"{addr}: {str(p)[:150]}")
+         key = _canon_addr(str(addr))
+         # "Idle(Admin)" (EOS prints no space) -> "idle": the first word is the FSM state
+```
+
+`netdryrun.drivers.eos.x__summary__mutmut_37`: survived (accepted, message-text: message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes); diff fingerprint `52e2c0163e315774`
+
+```diff
+# netdryrun.drivers.eos.x__summary__mutmut_37: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -4,7 +4,7 @@
+     entry = _vrf(command, _json(command, text), vrf)
+     for addr, p in _table(command, entry, "peers").items():
+         if not isinstance(p, dict) or not isinstance(p.get("peerState"), str) or not p["peerState"].strip():
+-            raise unexpected(command, f"{addr}: {str(p)[:150]}")
++            raise unexpected(None, f"{addr}: {str(p)[:150]}")
+         key = _canon_addr(str(addr))
+         # "Idle(Admin)" (EOS prints no space) -> "idle": the first word is the FSM state
+         state = re.split(r"[\s(]", p["peerState"].strip(), maxsplit=1)[0].lower()
+```
+
+`netdryrun.drivers.eos.x__summary__mutmut_38`: survived (accepted, message-text: message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes); diff fingerprint `2cde62b02df322ac`
+
+```diff
+# netdryrun.drivers.eos.x__summary__mutmut_38: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -4,7 +4,7 @@
+     entry = _vrf(command, _json(command, text), vrf)
+     for addr, p in _table(command, entry, "peers").items():
+         if not isinstance(p, dict) or not isinstance(p.get("peerState"), str) or not p["peerState"].strip():
+-            raise unexpected(command, f"{addr}: {str(p)[:150]}")
++            raise unexpected(command, None)
+         key = _canon_addr(str(addr))
+         # "Idle(Admin)" (EOS prints no space) -> "idle": the first word is the FSM state
+         state = re.split(r"[\s(]", p["peerState"].strip(), maxsplit=1)[0].lower()
+```
+
+`netdryrun.drivers.eos.x__summary__mutmut_39`: survived (accepted, message-text: message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes); diff fingerprint `cdbc8f2550034043`
+
+```diff
+# netdryrun.drivers.eos.x__summary__mutmut_39: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -4,7 +4,7 @@
+     entry = _vrf(command, _json(command, text), vrf)
+     for addr, p in _table(command, entry, "peers").items():
+         if not isinstance(p, dict) or not isinstance(p.get("peerState"), str) or not p["peerState"].strip():
+-            raise unexpected(command, f"{addr}: {str(p)[:150]}")
++            raise unexpected(f"{addr}: {str(p)[:150]}")
+         key = _canon_addr(str(addr))
+         # "Idle(Admin)" (EOS prints no space) -> "idle": the first word is the FSM state
+         state = re.split(r"[\s(]", p["peerState"].strip(), maxsplit=1)[0].lower()
+```
+
+`netdryrun.drivers.eos.x__summary__mutmut_40`: survived (accepted, message-text: message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes); diff fingerprint `8efa6e11789db57e`
+
+```diff
+# netdryrun.drivers.eos.x__summary__mutmut_40: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -4,7 +4,7 @@
+     entry = _vrf(command, _json(command, text), vrf)
+     for addr, p in _table(command, entry, "peers").items():
+         if not isinstance(p, dict) or not isinstance(p.get("peerState"), str) or not p["peerState"].strip():
+-            raise unexpected(command, f"{addr}: {str(p)[:150]}")
++            raise unexpected(command, )
+         key = _canon_addr(str(addr))
+         # "Idle(Admin)" (EOS prints no space) -> "idle": the first word is the FSM state
+         state = re.split(r"[\s(]", p["peerState"].strip(), maxsplit=1)[0].lower()
+```
+
+`netdryrun.drivers.eos.x__summary__mutmut_41`: survived (accepted, message-text: message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes); diff fingerprint `5b8329665b4c361c`
+
+```diff
+# netdryrun.drivers.eos.x__summary__mutmut_41: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -4,7 +4,7 @@
+     entry = _vrf(command, _json(command, text), vrf)
+     for addr, p in _table(command, entry, "peers").items():
+         if not isinstance(p, dict) or not isinstance(p.get("peerState"), str) or not p["peerState"].strip():
+-            raise unexpected(command, f"{addr}: {str(p)[:150]}")
++            raise unexpected(command, f"{addr}: {str(None)[:150]}")
+         key = _canon_addr(str(addr))
+         # "Idle(Admin)" (EOS prints no space) -> "idle": the first word is the FSM state
+         state = re.split(r"[\s(]", p["peerState"].strip(), maxsplit=1)[0].lower()
+```
+
+`netdryrun.drivers.eos.x__summary__mutmut_42`: survived (accepted, message-text: message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes); diff fingerprint `5972f5b063b58bbd`
+
+```diff
+# netdryrun.drivers.eos.x__summary__mutmut_42: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -4,7 +4,7 @@
+     entry = _vrf(command, _json(command, text), vrf)
+     for addr, p in _table(command, entry, "peers").items():
+         if not isinstance(p, dict) or not isinstance(p.get("peerState"), str) or not p["peerState"].strip():
+-            raise unexpected(command, f"{addr}: {str(p)[:150]}")
++            raise unexpected(command, f"{addr}: {str(p)[:151]}")
+         key = _canon_addr(str(addr))
+         # "Idle(Admin)" (EOS prints no space) -> "idle": the first word is the FSM state
+         state = re.split(r"[\s(]", p["peerState"].strip(), maxsplit=1)[0].lower()
+```
+
+`netdryrun.drivers.eos.x__summary__mutmut_5`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `0a27c1f003d41579`
+
+```diff
+# netdryrun.drivers.eos.x__summary__mutmut_5: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -1,5 +1,5 @@
+ def _summary(text: str, vrf: str, afi: str, into: dict[str, BgpNeighbor] | None):
+-    command = SUMMARY_CMD.get(afi, f"show bgp {afi} summary | json")
++    command = SUMMARY_CMD.get(afi, )
+     out = into if into is not None else {}
+     entry = _vrf(command, _json(command, text), vrf)
+     for addr, p in _table(command, entry, "peers").items():
+```
+
+`netdryrun.drivers.eos.x__summary__mutmut_53`: survived (accepted, equivalent: dropping maxsplit=1 from the peerState split: only element [0] is used, and the first field of re.split is the same for any maxsplit); argument: re.split(p, s)[0] == re.split(p, s, maxsplit=1)[0] for every string s, so the parsed state is identical on every input; reviewed: no; diff fingerprint `3e375af80b6df06d`
+
+```diff
+# netdryrun.drivers.eos.x__summary__mutmut_53: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -7,7 +7,7 @@
+             raise unexpected(command, f"{addr}: {str(p)[:150]}")
+         key = _canon_addr(str(addr))
+         # "Idle(Admin)" (EOS prints no space) -> "idle": the first word is the FSM state
+-        state = re.split(r"[\s(]", p["peerState"].strip(), maxsplit=1)[0].lower()
++        state = re.split(r"[\s(]", p["peerState"].strip(), )[0].lower()
+         # EOS sends updates without delay unless `neighbor ... out-delay` is set, which the summary doesn't show:
+         # its platform default (0) is used
+         n = out.get(key) or BgpNeighbor(str(addr), state, adv_interval=0.0)
+```
+
+`netdryrun.drivers.eos.x__summary__mutmut_59`: survived (accepted, equivalent: maxsplit=1 -> maxsplit=2 on the peerState split: only element [0] is used, which does not depend on maxsplit (>=1)); argument: re.split(p, s, maxsplit=k)[0] is the text before the first separator for every k >= 1, so the parsed state is identical on every input; reviewed: no; diff fingerprint `26542544118646ac`
+
+```diff
+# netdryrun.drivers.eos.x__summary__mutmut_59: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -7,7 +7,7 @@
+             raise unexpected(command, f"{addr}: {str(p)[:150]}")
+         key = _canon_addr(str(addr))
+         # "Idle(Admin)" (EOS prints no space) -> "idle": the first word is the FSM state
+-        state = re.split(r"[\s(]", p["peerState"].strip(), maxsplit=1)[0].lower()
++        state = re.split(r"[\s(]", p["peerState"].strip(), maxsplit=2)[0].lower()
+         # EOS sends updates without delay unless `neighbor ... out-delay` is set, which the summary doesn't show:
+         # its platform default (0) is used
+         n = out.get(key) or BgpNeighbor(str(addr), state, adv_interval=0.0)
+```
+
+`netdryrun.drivers.eos.x__summary__mutmut_85`: survived (accepted, equivalent: state != 'established' -> state != 'XXestablishedXX' in the down-wins merge: the only extra case is state == 'established', where n.state (already 'established') is reassigned the same value); argument: the branch runs only when n.state == 'established'; with state == 'established' the mutant assigns 'established' to it, a no-op; any other state is assigned by both versions, so a down session still wins; reviewed: no; diff fingerprint `40f055d5ef147262`
+
+```diff
+# netdryrun.drivers.eos.x__summary__mutmut_85: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -16,7 +16,7 @@
+             # down session is never hidden by an up one
+             if str(addr) not in n.ambiguous:
+                 n.ambiguous = (n.ambiguous or [n.address]) + [str(addr)]
+-            if n.state == "established" and state != "established":
++            if n.state == "established" and state != "XXestablishedXX":
+                 n.state = state
+         if "prefixAccepted" in p:
+             n.prefixes[afi] = as_int(command, p["prefixAccepted"])
+```
+
+`netdryrun.drivers.eos.x__summary__mutmut_86`: survived (accepted, equivalent: state != 'established' -> state != 'ESTABLISHED' in the down-wins merge: state is lowercased, so the only extra case reassigns 'established' to a neighbor already 'established'); argument: state is .lower()ed so never equals 'ESTABLISHED'; the extra assignment happens only when n.state and state are both 'established', a no-op; a down state is still assigned by both versions; reviewed: no; diff fingerprint `62bcd1173ccf6aec`
+
+```diff
+# netdryrun.drivers.eos.x__summary__mutmut_86: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -16,7 +16,7 @@
+             # down session is never hidden by an up one
+             if str(addr) not in n.ambiguous:
+                 n.ambiguous = (n.ambiguous or [n.address]) + [str(addr)]
+-            if n.state == "established" and state != "established":
++            if n.state == "established" and state != "ESTABLISHED":
+                 n.state = state
+         if "prefixAccepted" in p:
+             n.prefixes[afi] = as_int(command, p["prefixAccepted"])
+```
+
+## `drivers.eos._bgp_entries` (15)
+
+`netdryrun.drivers.eos.x__bgp_entries__mutmut_13`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `b7448e0ee66b47cc`
+
+```diff
+# netdryrun.drivers.eos.x__bgp_entries__mutmut_13: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -1,6 +1,6 @@
+ def _bgp_entries(command: str, text: str, vrf: str) -> dict:
+     entry = _vrf(command, _json(command, text), vrf)
+-    entries = _table(command, entry, "bgpRouteEntries")
++    entries = _table(None, entry, "bgpRouteEntries")
+     for key, e in entries.items():
+         if not isinstance(e, dict) or not isinstance(e.get("bgpRoutePaths"), list):
+             raise unexpected(command, f"{key}: {str(e)[:150]}")
+```
+
+`netdryrun.drivers.eos.x__bgp_entries__mutmut_2`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `6c94c9ed500d8f30`
+
+```diff
+# netdryrun.drivers.eos.x__bgp_entries__mutmut_2: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -1,5 +1,5 @@
+ def _bgp_entries(command: str, text: str, vrf: str) -> dict:
+-    entry = _vrf(command, _json(command, text), vrf)
++    entry = _vrf(None, _json(command, text), vrf)
+     entries = _table(command, entry, "bgpRouteEntries")
+     for key, e in entries.items():
+         if not isinstance(e, dict) or not isinstance(e.get("bgpRoutePaths"), list):
+```
+
+`netdryrun.drivers.eos.x__bgp_entries__mutmut_25`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `eee2c36d411c83f2`
+
+```diff
+# netdryrun.drivers.eos.x__bgp_entries__mutmut_25: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -3,7 +3,7 @@
+     entries = _table(command, entry, "bgpRouteEntries")
+     for key, e in entries.items():
+         if not isinstance(e, dict) or not isinstance(e.get("bgpRoutePaths"), list):
+-            raise unexpected(command, f"{key}: {str(e)[:150]}")
++            raise unexpected(None, f"{key}: {str(e)[:150]}")
+         for p in e["bgpRoutePaths"]:
+             if not isinstance(p, dict):
+                 raise unexpected(command, f"{key} path: {str(p)[:150]}")
+```
+
+`netdryrun.drivers.eos.x__bgp_entries__mutmut_26`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `8d25975485893b08`
+
+```diff
+# netdryrun.drivers.eos.x__bgp_entries__mutmut_26: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -3,7 +3,7 @@
+     entries = _table(command, entry, "bgpRouteEntries")
+     for key, e in entries.items():
+         if not isinstance(e, dict) or not isinstance(e.get("bgpRoutePaths"), list):
+-            raise unexpected(command, f"{key}: {str(e)[:150]}")
++            raise unexpected(command, None)
+         for p in e["bgpRoutePaths"]:
+             if not isinstance(p, dict):
+                 raise unexpected(command, f"{key} path: {str(p)[:150]}")
+```
+
+`netdryrun.drivers.eos.x__bgp_entries__mutmut_27`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `c035994fbecb85f5`
+
+```diff
+# netdryrun.drivers.eos.x__bgp_entries__mutmut_27: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -3,7 +3,7 @@
+     entries = _table(command, entry, "bgpRouteEntries")
+     for key, e in entries.items():
+         if not isinstance(e, dict) or not isinstance(e.get("bgpRoutePaths"), list):
+-            raise unexpected(command, f"{key}: {str(e)[:150]}")
++            raise unexpected(f"{key}: {str(e)[:150]}")
+         for p in e["bgpRoutePaths"]:
+             if not isinstance(p, dict):
+                 raise unexpected(command, f"{key} path: {str(p)[:150]}")
+```
+
+`netdryrun.drivers.eos.x__bgp_entries__mutmut_28`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `284817930db29970`
+
+```diff
+# netdryrun.drivers.eos.x__bgp_entries__mutmut_28: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -3,7 +3,7 @@
+     entries = _table(command, entry, "bgpRouteEntries")
+     for key, e in entries.items():
+         if not isinstance(e, dict) or not isinstance(e.get("bgpRoutePaths"), list):
+-            raise unexpected(command, f"{key}: {str(e)[:150]}")
++            raise unexpected(command, )
+         for p in e["bgpRoutePaths"]:
+             if not isinstance(p, dict):
+                 raise unexpected(command, f"{key} path: {str(p)[:150]}")
+```
+
+`netdryrun.drivers.eos.x__bgp_entries__mutmut_29`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `86b394403070735b`
+
+```diff
+# netdryrun.drivers.eos.x__bgp_entries__mutmut_29: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -3,7 +3,7 @@
+     entries = _table(command, entry, "bgpRouteEntries")
+     for key, e in entries.items():
+         if not isinstance(e, dict) or not isinstance(e.get("bgpRoutePaths"), list):
+-            raise unexpected(command, f"{key}: {str(e)[:150]}")
++            raise unexpected(command, f"{key}: {str(None)[:150]}")
+         for p in e["bgpRoutePaths"]:
+             if not isinstance(p, dict):
+                 raise unexpected(command, f"{key} path: {str(p)[:150]}")
+```
+
+`netdryrun.drivers.eos.x__bgp_entries__mutmut_30`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `b6a5d6df296c70a1`
+
+```diff
+# netdryrun.drivers.eos.x__bgp_entries__mutmut_30: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -3,7 +3,7 @@
+     entries = _table(command, entry, "bgpRouteEntries")
+     for key, e in entries.items():
+         if not isinstance(e, dict) or not isinstance(e.get("bgpRoutePaths"), list):
+-            raise unexpected(command, f"{key}: {str(e)[:150]}")
++            raise unexpected(command, f"{key}: {str(e)[:151]}")
+         for p in e["bgpRoutePaths"]:
+             if not isinstance(p, dict):
+                 raise unexpected(command, f"{key} path: {str(p)[:150]}")
+```
+
+`netdryrun.drivers.eos.x__bgp_entries__mutmut_35`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `b872e17f21d6a855`
+
+```diff
+# netdryrun.drivers.eos.x__bgp_entries__mutmut_35: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -6,5 +6,5 @@
+             raise unexpected(command, f"{key}: {str(e)[:150]}")
+         for p in e["bgpRoutePaths"]:
+             if not isinstance(p, dict):
+-                raise unexpected(command, f"{key} path: {str(p)[:150]}")
++                raise unexpected(None, f"{key} path: {str(p)[:150]}")
+     return entries
+```
+
+`netdryrun.drivers.eos.x__bgp_entries__mutmut_36`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `aa8a5916e8a80977`
+
+```diff
+# netdryrun.drivers.eos.x__bgp_entries__mutmut_36: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -6,5 +6,5 @@
+             raise unexpected(command, f"{key}: {str(e)[:150]}")
+         for p in e["bgpRoutePaths"]:
+             if not isinstance(p, dict):
+-                raise unexpected(command, f"{key} path: {str(p)[:150]}")
++                raise unexpected(command, None)
+     return entries
+```
+
+`netdryrun.drivers.eos.x__bgp_entries__mutmut_37`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `29d964f0aea2feca`
+
+```diff
+# netdryrun.drivers.eos.x__bgp_entries__mutmut_37: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -6,5 +6,5 @@
+             raise unexpected(command, f"{key}: {str(e)[:150]}")
+         for p in e["bgpRoutePaths"]:
+             if not isinstance(p, dict):
+-                raise unexpected(command, f"{key} path: {str(p)[:150]}")
++                raise unexpected(f"{key} path: {str(p)[:150]}")
+     return entries
+```
+
+`netdryrun.drivers.eos.x__bgp_entries__mutmut_38`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `ccd250d776eaea95`
+
+```diff
+# netdryrun.drivers.eos.x__bgp_entries__mutmut_38: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -6,5 +6,5 @@
+             raise unexpected(command, f"{key}: {str(e)[:150]}")
+         for p in e["bgpRoutePaths"]:
+             if not isinstance(p, dict):
+-                raise unexpected(command, f"{key} path: {str(p)[:150]}")
++                raise unexpected(command, )
+     return entries
+```
+
+`netdryrun.drivers.eos.x__bgp_entries__mutmut_39`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `d58462afbd8e2d2c`
+
+```diff
+# netdryrun.drivers.eos.x__bgp_entries__mutmut_39: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -6,5 +6,5 @@
+             raise unexpected(command, f"{key}: {str(e)[:150]}")
+         for p in e["bgpRoutePaths"]:
+             if not isinstance(p, dict):
+-                raise unexpected(command, f"{key} path: {str(p)[:150]}")
++                raise unexpected(command, f"{key} path: {str(None)[:150]}")
+     return entries
+```
+
+`netdryrun.drivers.eos.x__bgp_entries__mutmut_40`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `a316e9fec4e60f5b`
+
+```diff
+# netdryrun.drivers.eos.x__bgp_entries__mutmut_40: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -6,5 +6,5 @@
+             raise unexpected(command, f"{key}: {str(e)[:150]}")
+         for p in e["bgpRoutePaths"]:
+             if not isinstance(p, dict):
+-                raise unexpected(command, f"{key} path: {str(p)[:150]}")
++                raise unexpected(command, f"{key} path: {str(p)[:151]}")
+     return entries
+```
+
+`netdryrun.drivers.eos.x__bgp_entries__mutmut_8`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `08a2d94f2969d488`
+
+```diff
+# netdryrun.drivers.eos.x__bgp_entries__mutmut_8: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -1,5 +1,5 @@
+ def _bgp_entries(command: str, text: str, vrf: str) -> dict:
+-    entry = _vrf(command, _json(command, text), vrf)
++    entry = _vrf(command, _json(None, text), vrf)
+     entries = _table(command, entry, "bgpRouteEntries")
+     for key, e in entries.items():
+         if not isinstance(e, dict) or not isinstance(e.get("bgpRoutePaths"), list):
+```
+
+## `drivers.eos._vrf` (12)
+
+`netdryrun.drivers.eos.x__vrf__mutmut_12`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `f9f70159b8385cac`
+
+```diff
+# netdryrun.drivers.eos.x__vrf__mutmut_12: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -7,7 +7,7 @@
+         raise unexpected(command, data)
+     if vrf not in vrfs:
+         raise NoSuchInstance(f"VRF {vrf!r} is not in the output of `{command}` (VRFs listed: "
+-                          f"{', '.join(sorted(map(str, vrfs))) or 'none'}): it does not exist, or this "
++                          f"{', '.join(sorted(map(str, vrfs))) and 'none'}): it does not exist, or this "
+                           "command has nothing configured in it")
+     entry = vrfs[vrf]
+     if not isinstance(entry, dict):
+```
+
+`netdryrun.drivers.eos.x__vrf__mutmut_14`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `3760c7fad85e833c`
+
+```diff
+# netdryrun.drivers.eos.x__vrf__mutmut_14: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -7,7 +7,7 @@
+         raise unexpected(command, data)
+     if vrf not in vrfs:
+         raise NoSuchInstance(f"VRF {vrf!r} is not in the output of `{command}` (VRFs listed: "
+-                          f"{', '.join(sorted(map(str, vrfs))) or 'none'}): it does not exist, or this "
++                          f"{'XX, XX'.join(sorted(map(str, vrfs))) or 'none'}): it does not exist, or this "
+                           "command has nothing configured in it")
+     entry = vrfs[vrf]
+     if not isinstance(entry, dict):
+```
+
+`netdryrun.drivers.eos.x__vrf__mutmut_20`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `fe214041462dd117`
+
+```diff
+# netdryrun.drivers.eos.x__vrf__mutmut_20: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -7,7 +7,7 @@
+         raise unexpected(command, data)
+     if vrf not in vrfs:
+         raise NoSuchInstance(f"VRF {vrf!r} is not in the output of `{command}` (VRFs listed: "
+-                          f"{', '.join(sorted(map(str, vrfs))) or 'none'}): it does not exist, or this "
++                          f"{', '.join(sorted(map(str, vrfs))) or 'XXnoneXX'}): it does not exist, or this "
+                           "command has nothing configured in it")
+     entry = vrfs[vrf]
+     if not isinstance(entry, dict):
+```
+
+`netdryrun.drivers.eos.x__vrf__mutmut_21`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `627c74d0799cb825`
+
+```diff
+# netdryrun.drivers.eos.x__vrf__mutmut_21: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -7,7 +7,7 @@
+         raise unexpected(command, data)
+     if vrf not in vrfs:
+         raise NoSuchInstance(f"VRF {vrf!r} is not in the output of `{command}` (VRFs listed: "
+-                          f"{', '.join(sorted(map(str, vrfs))) or 'none'}): it does not exist, or this "
++                          f"{', '.join(sorted(map(str, vrfs))) or 'NONE'}): it does not exist, or this "
+                           "command has nothing configured in it")
+     entry = vrfs[vrf]
+     if not isinstance(entry, dict):
+```
+
+`netdryrun.drivers.eos.x__vrf__mutmut_22`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `3969df2c5e2a4cce`
+
+```diff
+# netdryrun.drivers.eos.x__vrf__mutmut_22: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -8,7 +8,7 @@
+     if vrf not in vrfs:
+         raise NoSuchInstance(f"VRF {vrf!r} is not in the output of `{command}` (VRFs listed: "
+                           f"{', '.join(sorted(map(str, vrfs))) or 'none'}): it does not exist, or this "
+-                          "command has nothing configured in it")
++                          "XXcommand has nothing configured in itXX")
+     entry = vrfs[vrf]
+     if not isinstance(entry, dict):
+         raise unexpected(command, f"vrf {vrf}: {str(entry)[:150]}")
+```
+
+`netdryrun.drivers.eos.x__vrf__mutmut_23`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `b6b4f59f02181930`
+
+```diff
+# netdryrun.drivers.eos.x__vrf__mutmut_23: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -8,7 +8,7 @@
+     if vrf not in vrfs:
+         raise NoSuchInstance(f"VRF {vrf!r} is not in the output of `{command}` (VRFs listed: "
+                           f"{', '.join(sorted(map(str, vrfs))) or 'none'}): it does not exist, or this "
+-                          "command has nothing configured in it")
++                          "COMMAND HAS NOTHING CONFIGURED IN IT")
+     entry = vrfs[vrf]
+     if not isinstance(entry, dict):
+         raise unexpected(command, f"vrf {vrf}: {str(entry)[:150]}")
+```
+
+`netdryrun.drivers.eos.x__vrf__mutmut_26`: survived (accepted, message-text: message text only: the text of the unexpected-output DriverError raised either way); diff fingerprint `1574dfe3e983632f`
+
+```diff
+# netdryrun.drivers.eos.x__vrf__mutmut_26: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -11,5 +11,5 @@
+                           "command has nothing configured in it")
+     entry = vrfs[vrf]
+     if not isinstance(entry, dict):
+-        raise unexpected(command, f"vrf {vrf}: {str(entry)[:150]}")
++        raise unexpected(None, f"vrf {vrf}: {str(entry)[:150]}")
+     return entry
+```
+
+`netdryrun.drivers.eos.x__vrf__mutmut_27`: survived (accepted, message-text: message text only: the text of the unexpected-output DriverError raised either way); diff fingerprint `0fd34b2a5fd921a1`
+
+```diff
+# netdryrun.drivers.eos.x__vrf__mutmut_27: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -11,5 +11,5 @@
+                           "command has nothing configured in it")
+     entry = vrfs[vrf]
+     if not isinstance(entry, dict):
+-        raise unexpected(command, f"vrf {vrf}: {str(entry)[:150]}")
++        raise unexpected(command, None)
+     return entry
+```
+
+`netdryrun.drivers.eos.x__vrf__mutmut_30`: survived (accepted, message-text: message text only: the text of the unexpected-output DriverError raised either way); diff fingerprint `36c0d1736deed8e9`
+
+```diff
+# netdryrun.drivers.eos.x__vrf__mutmut_30: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -11,5 +11,5 @@
+                           "command has nothing configured in it")
+     entry = vrfs[vrf]
+     if not isinstance(entry, dict):
+-        raise unexpected(command, f"vrf {vrf}: {str(entry)[:150]}")
++        raise unexpected(command, f"vrf {vrf}: {str(None)[:150]}")
+     return entry
+```
+
+`netdryrun.drivers.eos.x__vrf__mutmut_31`: survived (accepted, message-text: message text only: the text of the unexpected-output DriverError raised either way); diff fingerprint `5b75b1b56fb4dcbd`
+
+```diff
+# netdryrun.drivers.eos.x__vrf__mutmut_31: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -11,5 +11,5 @@
+                           "command has nothing configured in it")
+     entry = vrfs[vrf]
+     if not isinstance(entry, dict):
+-        raise unexpected(command, f"vrf {vrf}: {str(entry)[:150]}")
++        raise unexpected(command, f"vrf {vrf}: {str(entry)[:151]}")
+     return entry
+```
+
+`netdryrun.drivers.eos.x__vrf__mutmut_6`: survived (accepted, message-text: message text only: the text of the unexpected-output DriverError raised either way); diff fingerprint `e2a7beea3a5abc6b`
+
+```diff
+# netdryrun.drivers.eos.x__vrf__mutmut_6: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -4,7 +4,7 @@
+     can't be told apart from output this driver doesn't know, so it raises: never "no routes"."""
+     vrfs = data.get("vrfs")
+     if not isinstance(vrfs, dict):
+-        raise unexpected(command, data)
++        raise unexpected(None, data)
+     if vrf not in vrfs:
+         raise NoSuchInstance(f"VRF {vrf!r} is not in the output of `{command}` (VRFs listed: "
+                           f"{', '.join(sorted(map(str, vrfs))) or 'none'}): it does not exist, or this "
+```
+
+`netdryrun.drivers.eos.x__vrf__mutmut_7`: survived (accepted, message-text: message text only: the text of the unexpected-output DriverError raised either way); diff fingerprint `5bfc5879a0adab73`
+
+```diff
+# netdryrun.drivers.eos.x__vrf__mutmut_7: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -4,7 +4,7 @@
+     can't be told apart from output this driver doesn't know, so it raises: never "no routes"."""
+     vrfs = data.get("vrfs")
+     if not isinstance(vrfs, dict):
+-        raise unexpected(command, data)
++        raise unexpected(command, None)
+     if vrf not in vrfs:
+         raise NoSuchInstance(f"VRF {vrf!r} is not in the output of `{command}` (VRFs listed: "
+                           f"{', '.join(sorted(map(str, vrfs))) or 'none'}): it does not exist, or this "
+```
+
+## `drivers.srlinux._rib_rows` (10)
+
+`netdryrun.drivers.srlinux.x__rib_rows__mutmut_11`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `595f0d4568550fab`
+
+```diff
+# netdryrun.drivers.srlinux.x__rib_rows__mutmut_11: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -1,6 +1,6 @@
+ def _rib_rows(text: str, prefix: str) -> list[dict]:
+     want = ipaddress.ip_network(prefix)
+-    rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
++    rows = _list(RIB_CMD, _json(text, None), "route")
+     for r in rows:
+         if "prefix" not in r:
+             raise unexpected(RIB_CMD, str(r)[:150])
+```
+
+`netdryrun.drivers.srlinux.x__rib_rows__mutmut_13`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `4b1143b213bc504f`
+
+```diff
+# netdryrun.drivers.srlinux.x__rib_rows__mutmut_13: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -1,6 +1,6 @@
+ def _rib_rows(text: str, prefix: str) -> list[dict]:
+     want = ipaddress.ip_network(prefix)
+-    rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
++    rows = _list(RIB_CMD, _json(text, ), "route")
+     for r in rows:
+         if "prefix" not in r:
+             raise unexpected(RIB_CMD, str(r)[:150])
+```
+
+`netdryrun.drivers.srlinux.x__rib_rows__mutmut_19`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `6a6193c731c35825`
+
+```diff
+# netdryrun.drivers.srlinux.x__rib_rows__mutmut_19: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -3,5 +3,5 @@
+     rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
+     for r in rows:
+         if "prefix" not in r:
+-            raise unexpected(RIB_CMD, str(r)[:150])
++            raise unexpected(None, str(r)[:150])
+     return [r for r in rows if network(RIB_CMD, r["prefix"]) == want]
+```
+
+`netdryrun.drivers.srlinux.x__rib_rows__mutmut_20`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `bcc9d04ace2bd0d6`
+
+```diff
+# netdryrun.drivers.srlinux.x__rib_rows__mutmut_20: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -3,5 +3,5 @@
+     rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
+     for r in rows:
+         if "prefix" not in r:
+-            raise unexpected(RIB_CMD, str(r)[:150])
++            raise unexpected(RIB_CMD, None)
+     return [r for r in rows if network(RIB_CMD, r["prefix"]) == want]
+```
+
+`netdryrun.drivers.srlinux.x__rib_rows__mutmut_21`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `d951ce431bac664f`
+
+```diff
+# netdryrun.drivers.srlinux.x__rib_rows__mutmut_21: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -3,5 +3,5 @@
+     rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
+     for r in rows:
+         if "prefix" not in r:
+-            raise unexpected(RIB_CMD, str(r)[:150])
++            raise unexpected(str(r)[:150])
+     return [r for r in rows if network(RIB_CMD, r["prefix"]) == want]
+```
+
+`netdryrun.drivers.srlinux.x__rib_rows__mutmut_22`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `4c146b75903c56a6`
+
+```diff
+# netdryrun.drivers.srlinux.x__rib_rows__mutmut_22: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -3,5 +3,5 @@
+     rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
+     for r in rows:
+         if "prefix" not in r:
+-            raise unexpected(RIB_CMD, str(r)[:150])
++            raise unexpected(RIB_CMD, )
+     return [r for r in rows if network(RIB_CMD, r["prefix"]) == want]
+```
+
+`netdryrun.drivers.srlinux.x__rib_rows__mutmut_23`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `0d3414006c4babf0`
+
+```diff
+# netdryrun.drivers.srlinux.x__rib_rows__mutmut_23: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -3,5 +3,5 @@
+     rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
+     for r in rows:
+         if "prefix" not in r:
+-            raise unexpected(RIB_CMD, str(r)[:150])
++            raise unexpected(RIB_CMD, str(None)[:150])
+     return [r for r in rows if network(RIB_CMD, r["prefix"]) == want]
+```
+
+`netdryrun.drivers.srlinux.x__rib_rows__mutmut_24`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `9d8b87afbf113535`
+
+```diff
+# netdryrun.drivers.srlinux.x__rib_rows__mutmut_24: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -3,5 +3,5 @@
+     rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
+     for r in rows:
+         if "prefix" not in r:
+-            raise unexpected(RIB_CMD, str(r)[:150])
++            raise unexpected(RIB_CMD, str(r)[:151])
+     return [r for r in rows if network(RIB_CMD, r["prefix"]) == want]
+```
+
+`netdryrun.drivers.srlinux.x__rib_rows__mutmut_25`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `4e13c8d4a06b79e1`
+
+```diff
+# netdryrun.drivers.srlinux.x__rib_rows__mutmut_25: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -4,4 +4,4 @@
+     for r in rows:
+         if "prefix" not in r:
+             raise unexpected(RIB_CMD, str(r)[:150])
+-    return [r for r in rows if network(RIB_CMD, r["prefix"]) == want]
++    return [r for r in rows if network(None, r["prefix"]) == want]
+```
+
+`netdryrun.drivers.srlinux.x__rib_rows__mutmut_4`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `6c4598e111047857`
+
+```diff
+# netdryrun.drivers.srlinux.x__rib_rows__mutmut_4: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -1,6 +1,6 @@
+ def _rib_rows(text: str, prefix: str) -> list[dict]:
+     want = ipaddress.ip_network(prefix)
+-    rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
++    rows = _list(None, _json(text, RIB_CMD), "route")
+     for r in rows:
+         if "prefix" not in r:
+             raise unexpected(RIB_CMD, str(r)[:150])
+```
+
+## `drivers.srlinux.SrlDriver._read_path` (9)
+
+`netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_10`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `1e921a78f33931ac`
+
+```diff
+# netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_10: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -2,7 +2,7 @@
+     # attr-id and neighbor come from device output and go back into a CLI string: only a number and an IP
+     attr_id = str(row.get("attr-id"))
+     if not attr_id.isdigit():
+-        raise DriverError(f"unexpected attr-id {attr_id[:40]!r} for {row.get('prefix')}")
++        raise DriverError(f"unexpected attr-id {attr_id[:40]!r} for {row.get('XXprefixXX')}")
+     attrs = self._cli(f"info from state /network-instance {vrf} bgp-rib attr-sets attr-set {attr_id}", ev)
+     default_lp = None
+     neighbor = _ip_or_none(row.get("neighbor"))
+```
+
+`netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_11`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `510da5dbb49fac3d`
+
+```diff
+# netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_11: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -2,7 +2,7 @@
+     # attr-id and neighbor come from device output and go back into a CLI string: only a number and an IP
+     attr_id = str(row.get("attr-id"))
+     if not attr_id.isdigit():
+-        raise DriverError(f"unexpected attr-id {attr_id[:40]!r} for {row.get('prefix')}")
++        raise DriverError(f"unexpected attr-id {attr_id[:40]!r} for {row.get('PREFIX')}")
+     attrs = self._cli(f"info from state /network-instance {vrf} bgp-rib attr-sets attr-set {attr_id}", ev)
+     default_lp = None
+     neighbor = _ip_or_none(row.get("neighbor"))
+```
+
+`netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_30`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `80b067b0fa5cf2e2`
+
+```diff
+# netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_30: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -8,7 +8,7 @@
+     neighbor = _ip_or_none(row.get("neighbor"))
+     # The router's own routes (neighbor 0.0.0.0) have no neighbor to ask. For a learned path, a failing
+     # lookup is an error, never a silently unknown local-pref.
+-    if "local-pref" not in _json(attrs, ATTR_CMD) and neighbor and _bgp_learned(row) \
++    if "local-pref" not in _json(attrs, None) and neighbor and _bgp_learned(row) \
+                 and not ipaddress.ip_address(neighbor).is_unspecified:
+         state = _json(self._cli(f"info from state /network-instance {vrf} protocols bgp neighbor "
+                                 f"{neighbor} local-preference", ev), NEIGHBORS_CMD)
+```
+
+`netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_32`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `8b51dfdc3e6d6ec3`
+
+```diff
+# netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_32: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -8,7 +8,7 @@
+     neighbor = _ip_or_none(row.get("neighbor"))
+     # The router's own routes (neighbor 0.0.0.0) have no neighbor to ask. For a learned path, a failing
+     # lookup is an error, never a silently unknown local-pref.
+-    if "local-pref" not in _json(attrs, ATTR_CMD) and neighbor and _bgp_learned(row) \
++    if "local-pref" not in _json(attrs, ) and neighbor and _bgp_learned(row) \
+                 and not ipaddress.ip_address(neighbor).is_unspecified:
+         state = _json(self._cli(f"info from state /network-instance {vrf} protocols bgp neighbor "
+                                 f"{neighbor} local-preference", ev), NEIGHBORS_CMD)
+```
+
+`netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_38`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `389a80466c6dd8ca`
+
+```diff
+# netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_38: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -11,7 +11,7 @@
+     if "local-pref" not in _json(attrs, ATTR_CMD) and neighbor and _bgp_learned(row) \
+                 and not ipaddress.ip_address(neighbor).is_unspecified:
+         state = _json(self._cli(f"info from state /network-instance {vrf} protocols bgp neighbor "
+-                                f"{neighbor} local-preference", ev), NEIGHBORS_CMD)
++                                f"{neighbor} local-preference", ev), None)
+         lp = state.get("local-preference")
+         default_lp = as_int(NEIGHBORS_CMD, lp) if lp is not None else None
+     return parse_attr_set(attrs, row, default_lp)
+```
+
+`netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_40`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `5a1198369fc60c13`
+
+```diff
+# netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_40: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -11,7 +11,7 @@
+     if "local-pref" not in _json(attrs, ATTR_CMD) and neighbor and _bgp_learned(row) \
+                 and not ipaddress.ip_address(neighbor).is_unspecified:
+         state = _json(self._cli(f"info from state /network-instance {vrf} protocols bgp neighbor "
+-                                f"{neighbor} local-preference", ev), NEIGHBORS_CMD)
++                                f"{neighbor} local-preference", ev), )
+         lp = state.get("local-preference")
+         default_lp = as_int(NEIGHBORS_CMD, lp) if lp is not None else None
+     return parse_attr_set(attrs, row, default_lp)
+```
+
+`netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_52`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `ae10172804a0d3b6`
+
+```diff
+# netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_52: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -13,5 +13,5 @@
+         state = _json(self._cli(f"info from state /network-instance {vrf} protocols bgp neighbor "
+                                 f"{neighbor} local-preference", ev), NEIGHBORS_CMD)
+         lp = state.get("local-preference")
+-        default_lp = as_int(NEIGHBORS_CMD, lp) if lp is not None else None
++        default_lp = as_int(None, lp) if lp is not None else None
+     return parse_attr_set(attrs, row, default_lp)
+```
+
+`netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_8`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `be4c81fbd4e0e253`
+
+```diff
+# netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_8: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -2,7 +2,7 @@
+     # attr-id and neighbor come from device output and go back into a CLI string: only a number and an IP
+     attr_id = str(row.get("attr-id"))
+     if not attr_id.isdigit():
+-        raise DriverError(f"unexpected attr-id {attr_id[:40]!r} for {row.get('prefix')}")
++        raise DriverError(f"unexpected attr-id {attr_id[:41]!r} for {row.get('prefix')}")
+     attrs = self._cli(f"info from state /network-instance {vrf} bgp-rib attr-sets attr-set {attr_id}", ev)
+     default_lp = None
+     neighbor = _ip_or_none(row.get("neighbor"))
+```
+
+`netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_9`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `fc71a8a8d0175c71`
+
+```diff
+# netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_9: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -2,7 +2,7 @@
+     # attr-id and neighbor come from device output and go back into a CLI string: only a number and an IP
+     attr_id = str(row.get("attr-id"))
+     if not attr_id.isdigit():
+-        raise DriverError(f"unexpected attr-id {attr_id[:40]!r} for {row.get('prefix')}")
++        raise DriverError(f"unexpected attr-id {attr_id[:40]!r} for {row.get(None)}")
+     attrs = self._cli(f"info from state /network-instance {vrf} bgp-rib attr-sets attr-set {attr_id}", ev)
+     default_lp = None
+     neighbor = _ip_or_none(row.get("neighbor"))
+```
+
+## `drivers.frr._bgp_json` (7)
+
+`netdryrun.drivers.frr.x__bgp_json__mutmut_18`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `4299cd884cb945ed`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_json__mutmut_18: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -4,7 +4,7 @@
+         raise unexpected(command, text)
+     if "warning" in data:  # e.g. {"warning": "View/Vrf is unknown"}
+         if isinstance(data["warning"], str) and _NO_INSTANCE.search(data["warning"]):
+-            raise NoSuchInstance(f"vtysh: {data['warning']}")
++            raise NoSuchInstance(None)
+         raise DriverError(f"vtysh: {data['warning']}")
+     if data.get("bgpNoSuchInstance"):
+         raise NoSuchInstance("vtysh: no BGP instance in this VRF")
+```
+
+`netdryrun.drivers.frr.x__bgp_json__mutmut_2`: survived (accepted, message-text: message text only: the text of the DriverError raised either way); diff fingerprint `5229bbaf13963c07`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_json__mutmut_2: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -1,5 +1,5 @@
+ def _bgp_json(command: str, text: str) -> dict:
+-    data = load_json(command, text)
++    data = load_json(None, text)
+     if not isinstance(data, dict):
+         raise unexpected(command, text)
+     if "warning" in data:  # e.g. {"warning": "View/Vrf is unknown"}
+```
+
+`netdryrun.drivers.frr.x__bgp_json__mutmut_21`: survived (accepted, message-text: message text only: the text of the DriverError raised either way); diff fingerprint `1323bfb67756aebc`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_json__mutmut_21: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -5,7 +5,7 @@
+     if "warning" in data:  # e.g. {"warning": "View/Vrf is unknown"}
+         if isinstance(data["warning"], str) and _NO_INSTANCE.search(data["warning"]):
+             raise NoSuchInstance(f"vtysh: {data['warning']}")
+-        raise DriverError(f"vtysh: {data['warning']}")
++        raise DriverError(None)
+     if data.get("bgpNoSuchInstance"):
+         raise NoSuchInstance("vtysh: no BGP instance in this VRF")
+     return data
+```
+
+`netdryrun.drivers.frr.x__bgp_json__mutmut_29`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `f56d93f66c1e6958`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_json__mutmut_29: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -7,5 +7,5 @@
+             raise NoSuchInstance(f"vtysh: {data['warning']}")
+         raise DriverError(f"vtysh: {data['warning']}")
+     if data.get("bgpNoSuchInstance"):
+-        raise NoSuchInstance("vtysh: no BGP instance in this VRF")
++        raise NoSuchInstance("XXvtysh: no BGP instance in this VRFXX")
+     return data
+```
+
+`netdryrun.drivers.frr.x__bgp_json__mutmut_30`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `1b62d0ce9835dfbf`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_json__mutmut_30: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -7,5 +7,5 @@
+             raise NoSuchInstance(f"vtysh: {data['warning']}")
+         raise DriverError(f"vtysh: {data['warning']}")
+     if data.get("bgpNoSuchInstance"):
+-        raise NoSuchInstance("vtysh: no BGP instance in this VRF")
++        raise NoSuchInstance("vtysh: no bgp instance in this vrf")
+     return data
+```
+
+`netdryrun.drivers.frr.x__bgp_json__mutmut_7`: survived (accepted, message-text: message text only: the text of the DriverError raised either way); diff fingerprint `f86b68e146bf2555`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_json__mutmut_7: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -1,7 +1,7 @@
+ def _bgp_json(command: str, text: str) -> dict:
+     data = load_json(command, text)
+     if not isinstance(data, dict):
+-        raise unexpected(command, text)
++        raise unexpected(None, text)
+     if "warning" in data:  # e.g. {"warning": "View/Vrf is unknown"}
+         if isinstance(data["warning"], str) and _NO_INSTANCE.search(data["warning"]):
+             raise NoSuchInstance(f"vtysh: {data['warning']}")
+```
+
+`netdryrun.drivers.frr.x__bgp_json__mutmut_8`: survived (accepted, message-text: message text only: the text of the DriverError raised either way); diff fingerprint `729e23e81a856286`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_json__mutmut_8: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -1,7 +1,7 @@
+ def _bgp_json(command: str, text: str) -> dict:
+     data = load_json(command, text)
+     if not isinstance(data, dict):
+-        raise unexpected(command, text)
++        raise unexpected(command, None)
+     if "warning" in data:  # e.g. {"warning": "View/Vrf is unknown"}
+         if isinstance(data["warning"], str) and _NO_INSTANCE.search(data["warning"]):
+             raise NoSuchInstance(f"vtysh: {data['warning']}")
+```
+
+## `drivers.base.Driver._exec` (6)
+
+`netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_28`: survived (accepted, message-text: message text only: the last output line quoted in the error); diff fingerprint `59f36e6254c686f0`
+
+```diff
+# netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_28: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -3,6 +3,6 @@
+     r = self.lab.exec(self.node, cmd, timeout=timeout)
+     evidence.append({"node": self.node, "cmd": " ".join(cmd), "rc": r.rc, "output": r.stdout[-20000:], "stderr": r.stderr[-2000:]})
+     if r.rc != 0:
+-        msg = (r.stderr or r.stdout).strip().splitlines()
++        msg = None
+         raise DriverError(f"`{' '.join(cmd)}` failed on {self.node} (rc={r.rc}): {msg[-1] if msg else 'no output'}")
+     return r.stdout
+```
+
+`netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_29`: survived (accepted, message-text: message text only: the last output line quoted in the error); diff fingerprint `ef66365799d488a0`
+
+```diff
+# netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_29: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -3,6 +3,6 @@
+     r = self.lab.exec(self.node, cmd, timeout=timeout)
+     evidence.append({"node": self.node, "cmd": " ".join(cmd), "rc": r.rc, "output": r.stdout[-20000:], "stderr": r.stderr[-2000:]})
+     if r.rc != 0:
+-        msg = (r.stderr or r.stdout).strip().splitlines()
++        msg = (r.stderr and r.stdout).strip().splitlines()
+         raise DriverError(f"`{' '.join(cmd)}` failed on {self.node} (rc={r.rc}): {msg[-1] if msg else 'no output'}")
+     return r.stdout
+```
+
+`netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_32`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `5de867ab931b6c89`
+
+```diff
+# netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_32: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -4,5 +4,5 @@
+     evidence.append({"node": self.node, "cmd": " ".join(cmd), "rc": r.rc, "output": r.stdout[-20000:], "stderr": r.stderr[-2000:]})
+     if r.rc != 0:
+         msg = (r.stderr or r.stdout).strip().splitlines()
+-        raise DriverError(f"`{' '.join(cmd)}` failed on {self.node} (rc={r.rc}): {msg[-1] if msg else 'no output'}")
++        raise DriverError(f"`{'XX XX'.join(cmd)}` failed on {self.node} (rc={r.rc}): {msg[-1] if msg else 'no output'}")
+     return r.stdout
+```
+
+`netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_33`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `68714f41c1b4d289`
+
+```diff
+# netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_33: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -4,5 +4,5 @@
+     evidence.append({"node": self.node, "cmd": " ".join(cmd), "rc": r.rc, "output": r.stdout[-20000:], "stderr": r.stderr[-2000:]})
+     if r.rc != 0:
+         msg = (r.stderr or r.stdout).strip().splitlines()
+-        raise DriverError(f"`{' '.join(cmd)}` failed on {self.node} (rc={r.rc}): {msg[-1] if msg else 'no output'}")
++        raise DriverError(f"`{' '.join(cmd)}` failed on {self.node} (rc={r.rc}): {msg[-1] if (msg) and False else 'no output'}")
+     return r.stdout
+```
+
+`netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_37`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `3254e442ac9c218b`
+
+```diff
+# netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_37: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -4,5 +4,5 @@
+     evidence.append({"node": self.node, "cmd": " ".join(cmd), "rc": r.rc, "output": r.stdout[-20000:], "stderr": r.stderr[-2000:]})
+     if r.rc != 0:
+         msg = (r.stderr or r.stdout).strip().splitlines()
+-        raise DriverError(f"`{' '.join(cmd)}` failed on {self.node} (rc={r.rc}): {msg[-1] if msg else 'no output'}")
++        raise DriverError(f"`{' '.join(cmd)}` failed on {self.node} (rc={r.rc}): {msg[-1] if msg else 'XXno outputXX'}")
+     return r.stdout
+```
+
+`netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_38`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `9f2c29f2cb29e7e1`
+
+```diff
+# netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_38: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -4,5 +4,5 @@
+     evidence.append({"node": self.node, "cmd": " ".join(cmd), "rc": r.rc, "output": r.stdout[-20000:], "stderr": r.stderr[-2000:]})
+     if r.rc != 0:
+         msg = (r.stderr or r.stdout).strip().splitlines()
+-        raise DriverError(f"`{' '.join(cmd)}` failed on {self.node} (rc={r.rc}): {msg[-1] if msg else 'no output'}")
++        raise DriverError(f"`{' '.join(cmd)}` failed on {self.node} (rc={r.rc}): {msg[-1] if msg else 'NO OUTPUT'}")
+     return r.stdout
+```
+
+## `drivers.base.load_json` (6)
+
+`netdryrun.drivers.base.x_load_json__mutmut_15`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `6413073a198c7571`
+
+```diff
+# netdryrun.drivers.base.x_load_json__mutmut_15: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -8,6 +8,6 @@
+         return json.loads(text, object_pairs_hook=object_pairs_hook)
+     except RepeatedKey as e:
+         raise DriverError(f"`{command}`: repeated key {e.key!r} in one JSON object; refusing to read one of its "
+-                          "values as the only one") from None
++                          "XXvalues as the only oneXX") from None
+     except (json.JSONDecodeError, RecursionError):
+         raise unexpected(command, text) from None
+```
+
+`netdryrun.drivers.base.x_load_json__mutmut_16`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `bd95c63c20f7cc06`
+
+```diff
+# netdryrun.drivers.base.x_load_json__mutmut_16: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -8,6 +8,6 @@
+         return json.loads(text, object_pairs_hook=object_pairs_hook)
+     except RepeatedKey as e:
+         raise DriverError(f"`{command}`: repeated key {e.key!r} in one JSON object; refusing to read one of its "
+-                          "values as the only one") from None
++                          "VALUES AS THE ONLY ONE") from None
+     except (json.JSONDecodeError, RecursionError):
+         raise unexpected(command, text) from None
+```
+
+`netdryrun.drivers.base.x_load_json__mutmut_4`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `f2fe08d8e34fff8d`
+
+```diff
+# netdryrun.drivers.base.x_load_json__mutmut_4: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -3,7 +3,7 @@
+     JSON document (at least `{}`) for a state query that succeeded. A repeated key in one object is an error,
+     unless the driver's hook knows what the repeat means (Junos)."""
+     if not isinstance(text, str) or not text.strip():
+-        raise unexpected(command, "no output")
++        raise unexpected(None, "no output")
+     try:
+         return json.loads(text, object_pairs_hook=object_pairs_hook)
+     except RepeatedKey as e:
+```
+
+`netdryrun.drivers.base.x_load_json__mutmut_5`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `650c7d9e14c6863a`
+
+```diff
+# netdryrun.drivers.base.x_load_json__mutmut_5: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -3,7 +3,7 @@
+     JSON document (at least `{}`) for a state query that succeeded. A repeated key in one object is an error,
+     unless the driver's hook knows what the repeat means (Junos)."""
+     if not isinstance(text, str) or not text.strip():
+-        raise unexpected(command, "no output")
++        raise unexpected(command, None)
+     try:
+         return json.loads(text, object_pairs_hook=object_pairs_hook)
+     except RepeatedKey as e:
+```
+
+`netdryrun.drivers.base.x_load_json__mutmut_8`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `2cad22143598bdde`
+
+```diff
+# netdryrun.drivers.base.x_load_json__mutmut_8: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -3,7 +3,7 @@
+     JSON document (at least `{}`) for a state query that succeeded. A repeated key in one object is an error,
+     unless the driver's hook knows what the repeat means (Junos)."""
+     if not isinstance(text, str) or not text.strip():
+-        raise unexpected(command, "no output")
++        raise unexpected(command, "XXno outputXX")
+     try:
+         return json.loads(text, object_pairs_hook=object_pairs_hook)
+     except RepeatedKey as e:
+```
+
+`netdryrun.drivers.base.x_load_json__mutmut_9`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `7def6f5addac6628`
+
+```diff
+# netdryrun.drivers.base.x_load_json__mutmut_9: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -3,7 +3,7 @@
+     JSON document (at least `{}`) for a state query that succeeded. A repeated key in one object is an error,
+     unless the driver's hook knows what the repeat means (Junos)."""
+     if not isinstance(text, str) or not text.strip():
+-        raise unexpected(command, "no output")
++        raise unexpected(command, "NO OUTPUT")
+     try:
+         return json.loads(text, object_pairs_hook=object_pairs_hook)
+     except RepeatedKey as e:
+```
+
+## `drivers.eos._learned` (6)
+
+`netdryrun.drivers.eos.x__learned__mutmut_10`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `84cb212a3b0e39cd`
+
+```diff
+# netdryrun.drivers.eos.x__learned__mutmut_10: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -3,5 +3,5 @@
+     network statements, redistribution). Valid or not, active or not, it was received."""
+     peer = p.get("peerEntry")
+     if not isinstance(peer, dict) or not isinstance(peer.get("peerAddr"), str):  # "" for its own paths
+-        raise unexpected(BGP_CMD, f"path without peerEntry: {str(p)[:150]}")
++        raise unexpected(BGP_CMD, None)
+     return bool(peer["peerAddr"])
+```
+
+`netdryrun.drivers.eos.x__learned__mutmut_11`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `a647465d1b48a427`
+
+```diff
+# netdryrun.drivers.eos.x__learned__mutmut_11: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -3,5 +3,5 @@
+     network statements, redistribution). Valid or not, active or not, it was received."""
+     peer = p.get("peerEntry")
+     if not isinstance(peer, dict) or not isinstance(peer.get("peerAddr"), str):  # "" for its own paths
+-        raise unexpected(BGP_CMD, f"path without peerEntry: {str(p)[:150]}")
++        raise unexpected(f"path without peerEntry: {str(p)[:150]}")
+     return bool(peer["peerAddr"])
+```
+
+`netdryrun.drivers.eos.x__learned__mutmut_12`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `d1ecb114785edad2`
+
+```diff
+# netdryrun.drivers.eos.x__learned__mutmut_12: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -3,5 +3,5 @@
+     network statements, redistribution). Valid or not, active or not, it was received."""
+     peer = p.get("peerEntry")
+     if not isinstance(peer, dict) or not isinstance(peer.get("peerAddr"), str):  # "" for its own paths
+-        raise unexpected(BGP_CMD, f"path without peerEntry: {str(p)[:150]}")
++        raise unexpected(BGP_CMD, )
+     return bool(peer["peerAddr"])
+```
+
+`netdryrun.drivers.eos.x__learned__mutmut_13`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `0bf369cc1565bc1d`
+
+```diff
+# netdryrun.drivers.eos.x__learned__mutmut_13: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -3,5 +3,5 @@
+     network statements, redistribution). Valid or not, active or not, it was received."""
+     peer = p.get("peerEntry")
+     if not isinstance(peer, dict) or not isinstance(peer.get("peerAddr"), str):  # "" for its own paths
+-        raise unexpected(BGP_CMD, f"path without peerEntry: {str(p)[:150]}")
++        raise unexpected(BGP_CMD, f"path without peerEntry: {str(None)[:150]}")
+     return bool(peer["peerAddr"])
+```
+
+`netdryrun.drivers.eos.x__learned__mutmut_14`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `98c65e1f5596d662`
+
+```diff
+# netdryrun.drivers.eos.x__learned__mutmut_14: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -3,5 +3,5 @@
+     network statements, redistribution). Valid or not, active or not, it was received."""
+     peer = p.get("peerEntry")
+     if not isinstance(peer, dict) or not isinstance(peer.get("peerAddr"), str):  # "" for its own paths
+-        raise unexpected(BGP_CMD, f"path without peerEntry: {str(p)[:150]}")
++        raise unexpected(BGP_CMD, f"path without peerEntry: {str(p)[:151]}")
+     return bool(peer["peerAddr"])
+```
+
+`netdryrun.drivers.eos.x__learned__mutmut_9`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `b3529522c1f4ec07`
+
+```diff
+# netdryrun.drivers.eos.x__learned__mutmut_9: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -3,5 +3,5 @@
+     network statements, redistribution). Valid or not, active or not, it was received."""
+     peer = p.get("peerEntry")
+     if not isinstance(peer, dict) or not isinstance(peer.get("peerAddr"), str):  # "" for its own paths
+-        raise unexpected(BGP_CMD, f"path without peerEntry: {str(p)[:150]}")
++        raise unexpected(None, f"path without peerEntry: {str(p)[:150]}")
+     return bool(peer["peerAddr"])
+```
+
+## `drivers.frr._learned` (6)
+
+`netdryrun.drivers.frr.x__learned__mutmut_10`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `2ed470ee5d67b686`
+
+```diff
+# netdryrun.drivers.frr.x__learned__mutmut_10: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -3,7 +3,7 @@
+     aggregate). Validity and best-path selection don't matter: received but not selected is present."""
+     peer = p.get("peer")
+     if not isinstance(peer, dict) or not isinstance(peer.get("peerId"), str):  # every path names its peer
+-        raise unexpected(BGP_PATHS_CMD, f"path without peer: {str(p)[:150]}")
++        raise unexpected(f"path without peer: {str(p)[:150]}")
+     if p.get("local") or p.get("sourced"):
+         return False
+     return peer["peerId"] not in ("", "0.0.0.0", "::")
+```
+
+`netdryrun.drivers.frr.x__learned__mutmut_11`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `6b374f7d584ef989`
+
+```diff
+# netdryrun.drivers.frr.x__learned__mutmut_11: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -3,7 +3,7 @@
+     aggregate). Validity and best-path selection don't matter: received but not selected is present."""
+     peer = p.get("peer")
+     if not isinstance(peer, dict) or not isinstance(peer.get("peerId"), str):  # every path names its peer
+-        raise unexpected(BGP_PATHS_CMD, f"path without peer: {str(p)[:150]}")
++        raise unexpected(BGP_PATHS_CMD, )
+     if p.get("local") or p.get("sourced"):
+         return False
+     return peer["peerId"] not in ("", "0.0.0.0", "::")
+```
+
+`netdryrun.drivers.frr.x__learned__mutmut_12`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `2c1a202b3f35aaa0`
+
+```diff
+# netdryrun.drivers.frr.x__learned__mutmut_12: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -3,7 +3,7 @@
+     aggregate). Validity and best-path selection don't matter: received but not selected is present."""
+     peer = p.get("peer")
+     if not isinstance(peer, dict) or not isinstance(peer.get("peerId"), str):  # every path names its peer
+-        raise unexpected(BGP_PATHS_CMD, f"path without peer: {str(p)[:150]}")
++        raise unexpected(BGP_PATHS_CMD, f"path without peer: {str(None)[:150]}")
+     if p.get("local") or p.get("sourced"):
+         return False
+     return peer["peerId"] not in ("", "0.0.0.0", "::")
+```
+
+`netdryrun.drivers.frr.x__learned__mutmut_13`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `bb38c5485fb2f855`
+
+```diff
+# netdryrun.drivers.frr.x__learned__mutmut_13: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -3,7 +3,7 @@
+     aggregate). Validity and best-path selection don't matter: received but not selected is present."""
+     peer = p.get("peer")
+     if not isinstance(peer, dict) or not isinstance(peer.get("peerId"), str):  # every path names its peer
+-        raise unexpected(BGP_PATHS_CMD, f"path without peer: {str(p)[:150]}")
++        raise unexpected(BGP_PATHS_CMD, f"path without peer: {str(p)[:151]}")
+     if p.get("local") or p.get("sourced"):
+         return False
+     return peer["peerId"] not in ("", "0.0.0.0", "::")
+```
+
+`netdryrun.drivers.frr.x__learned__mutmut_8`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `8c5d09c080765daa`
+
+```diff
+# netdryrun.drivers.frr.x__learned__mutmut_8: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -3,7 +3,7 @@
+     aggregate). Validity and best-path selection don't matter: received but not selected is present."""
+     peer = p.get("peer")
+     if not isinstance(peer, dict) or not isinstance(peer.get("peerId"), str):  # every path names its peer
+-        raise unexpected(BGP_PATHS_CMD, f"path without peer: {str(p)[:150]}")
++        raise unexpected(None, f"path without peer: {str(p)[:150]}")
+     if p.get("local") or p.get("sourced"):
+         return False
+     return peer["peerId"] not in ("", "0.0.0.0", "::")
+```
+
+`netdryrun.drivers.frr.x__learned__mutmut_9`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `417966b6ad6b1194`
+
+```diff
+# netdryrun.drivers.frr.x__learned__mutmut_9: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -3,7 +3,7 @@
+     aggregate). Validity and best-path selection don't matter: received but not selected is present."""
+     peer = p.get("peer")
+     if not isinstance(peer, dict) or not isinstance(peer.get("peerId"), str):  # every path names its peer
+-        raise unexpected(BGP_PATHS_CMD, f"path without peer: {str(p)[:150]}")
++        raise unexpected(BGP_PATHS_CMD, None)
+     if p.get("local") or p.get("sourced"):
+         return False
+     return peer["peerId"] not in ("", "0.0.0.0", "::")
+```
+
+## `drivers.junos._as_path` (6)
+
+`netdryrun.drivers.junos.x__as_path__mutmut_22`: survived (accepted, equivalent: segment kind 'as-sequence' renamed 'XXas-sequenceXX'); argument: render_as_path treats any kind that is not a set and not confed as a sequence (its else branch); 'xxas-sequencexx' takes that same branch, so the rendered AS path is identical; reviewed: no; diff fingerprint `083e3e20590fb588`
+
+```diff
+# netdryrun.drivers.junos.x__as_path__mutmut_22: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -10,7 +10,7 @@
+         if tok in _ORIGINS:
+             return render_as_path(segments)
+         if tok.isdigit():
+-            segments.append(("as-sequence", [tok]))
++            segments.append(("XXas-sequenceXX", [tok]))
+         elif tok.startswith("{"):
+             segments.append(("as-set", tok[1:-1].replace(",", " ").split()))
+         elif tok.startswith("("):
+```
+
+`netdryrun.drivers.junos.x__as_path__mutmut_23`: survived (accepted, equivalent: segment kind 'as-sequence' upper-cased); argument: render_as_path lower-cases the kind before comparing, so 'AS-SEQUENCE' renders exactly as 'as-sequence'; reviewed: no; diff fingerprint `c24880d3be9e7860`
+
+```diff
+# netdryrun.drivers.junos.x__as_path__mutmut_23: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -10,7 +10,7 @@
+         if tok in _ORIGINS:
+             return render_as_path(segments)
+         if tok.isdigit():
+-            segments.append(("as-sequence", [tok]))
++            segments.append(("AS-SEQUENCE", [tok]))
+         elif tok.startswith("{"):
+             segments.append(("as-set", tok[1:-1].replace(",", " ").split()))
+         elif tok.startswith("("):
+```
+
+`netdryrun.drivers.junos.x__as_path__mutmut_28`: survived (accepted, equivalent: segment kind 'as-set' upper-cased); argument: render_as_path lower-cases the kind before comparing, so 'AS-SET' renders as {a,b} exactly like 'as-set'; reviewed: no; diff fingerprint `d32a778a115feb27`
+
+```diff
+# netdryrun.drivers.junos.x__as_path__mutmut_28: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -12,7 +12,7 @@
+         if tok.isdigit():
+             segments.append(("as-sequence", [tok]))
+         elif tok.startswith("{"):
+-            segments.append(("as-set", tok[1:-1].replace(",", " ").split()))
++            segments.append(("AS-SET", tok[1:-1].replace(",", " ").split()))
+         elif tok.startswith("("):
+             segments.append(("as-confed-sequence", tok[1:-1].split()))
+         else:
+```
+
+`netdryrun.drivers.junos.x__as_path__mutmut_41`: survived (accepted, equivalent: segment kind 'as-confed-sequence' renamed 'XXas-confed-sequenceXX'); argument: render_as_path checks only that 'confed' is in the kind and 'set' is not; 'xxas-confed-sequencexx' satisfies both the same way, rendering (a b) identically; reviewed: no; diff fingerprint `356b97c2202225e2`
+
+```diff
+# netdryrun.drivers.junos.x__as_path__mutmut_41: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -14,7 +14,7 @@
+         elif tok.startswith("{"):
+             segments.append(("as-set", tok[1:-1].replace(",", " ").split()))
+         elif tok.startswith("("):
+-            segments.append(("as-confed-sequence", tok[1:-1].split()))
++            segments.append(("XXas-confed-sequenceXX", tok[1:-1].split()))
+         else:
+             raise unexpected(command, f"as-path token {tok!r} in {line[:80]!r}")
+     raise unexpected(command, f"as-path without origin: {line[:80]!r}")
+```
+
+`netdryrun.drivers.junos.x__as_path__mutmut_42`: survived (accepted, equivalent: segment kind 'as-confed-sequence' upper-cased); argument: render_as_path lower-cases the kind before comparing, so the rendering is identical; reviewed: no; diff fingerprint `2fd4c96f34e669d7`
+
+```diff
+# netdryrun.drivers.junos.x__as_path__mutmut_42: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -14,7 +14,7 @@
+         elif tok.startswith("{"):
+             segments.append(("as-set", tok[1:-1].replace(",", " ").split()))
+         elif tok.startswith("("):
+-            segments.append(("as-confed-sequence", tok[1:-1].split()))
++            segments.append(("AS-CONFED-SEQUENCE", tok[1:-1].split()))
+         else:
+             raise unexpected(command, f"as-path token {tok!r} in {line[:80]!r}")
+     raise unexpected(command, f"as-path without origin: {line[:80]!r}")
+```
+
+`netdryrun.drivers.junos.x__as_path__mutmut_6`: survived (accepted, equivalent: blank as-path text yields line 'XXXX' instead of ''); argument: neither '' nor 'XXXX' starts with 'AS path:', so both raise the same unexpected error, whose message quotes `text`, not `line`; reviewed: no; diff fingerprint `6b0ecb80320937e6`
+
+```diff
+# netdryrun.drivers.junos.x__as_path__mutmut_6: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -2,7 +2,7 @@
+     """Junos `AS path: 65002 {65010 65011} I` -> `65002 {65010,65011}`; `AS path: I` (local) -> "".
+     Sets are {a b}, confederation sequences (a b). Anything else (a bracketed local AS, an unknown token, no
+     origin) is unexpected."""
+-    line = text.strip().splitlines()[0] if text and text.strip() else ""
++    line = text.strip().splitlines()[0] if text and text.strip() else "XXXX"
+     if not line.startswith("AS path:"):
+         raise unexpected(command, f"as-path {text[:80]!r}")
+     segments: list[tuple[str, list]] = []
+```
+
+## `drivers.srlinux._list` (6)
+
+`netdryrun.drivers.srlinux.x__list__mutmut_10`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `1d735876cf89afdd`
+
+```diff
+# netdryrun.drivers.srlinux.x__list__mutmut_10: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -7,5 +7,5 @@
+         raise unexpected(command, data)
+     for r in rows:
+         if not isinstance(r, dict):
+-            raise unexpected(command, f"{key}: {str(r)[:150]}")
++            raise unexpected(None, f"{key}: {str(r)[:150]}")
+     return rows
+```
+
+`netdryrun.drivers.srlinux.x__list__mutmut_11`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `bd90ff21d9caf199`
+
+```diff
+# netdryrun.drivers.srlinux.x__list__mutmut_11: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -7,5 +7,5 @@
+         raise unexpected(command, data)
+     for r in rows:
+         if not isinstance(r, dict):
+-            raise unexpected(command, f"{key}: {str(r)[:150]}")
++            raise unexpected(command, None)
+     return rows
+```
+
+`netdryrun.drivers.srlinux.x__list__mutmut_14`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `ebd8a8ba71c7620d`
+
+```diff
+# netdryrun.drivers.srlinux.x__list__mutmut_14: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -7,5 +7,5 @@
+         raise unexpected(command, data)
+     for r in rows:
+         if not isinstance(r, dict):
+-            raise unexpected(command, f"{key}: {str(r)[:150]}")
++            raise unexpected(command, f"{key}: {str(None)[:150]}")
+     return rows
+```
+
+`netdryrun.drivers.srlinux.x__list__mutmut_15`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `e5322e26afbcc0fe`
+
+```diff
+# netdryrun.drivers.srlinux.x__list__mutmut_15: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -7,5 +7,5 @@
+         raise unexpected(command, data)
+     for r in rows:
+         if not isinstance(r, dict):
+-            raise unexpected(command, f"{key}: {str(r)[:150]}")
++            raise unexpected(command, f"{key}: {str(r)[:151]}")
+     return rows
+```
+
+`netdryrun.drivers.srlinux.x__list__mutmut_5`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `219bb7ad7740e5a0`
+
+```diff
+# netdryrun.drivers.srlinux.x__list__mutmut_5: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -4,7 +4,7 @@
+         return []
+     rows = data.get(key)
+     if not isinstance(rows, list):
+-        raise unexpected(command, data)
++        raise unexpected(None, data)
+     for r in rows:
+         if not isinstance(r, dict):
+             raise unexpected(command, f"{key}: {str(r)[:150]}")
+```
+
+`netdryrun.drivers.srlinux.x__list__mutmut_6`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `aacb0c0c88860c41`
+
+```diff
+# netdryrun.drivers.srlinux.x__list__mutmut_6: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -4,7 +4,7 @@
+         return []
+     rows = data.get(key)
+     if not isinstance(rows, list):
+-        raise unexpected(command, data)
++        raise unexpected(command, None)
+     for r in rows:
+         if not isinstance(r, dict):
+             raise unexpected(command, f"{key}: {str(r)[:150]}")
+```
+
+## `drivers.base.network` (5)
+
+`netdryrun.drivers.base.x_network__mutmut_11`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `7c71bcab7eb361ee`
+
+```diff
+# netdryrun.drivers.base.x_network__mutmut_11: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -3,4 +3,4 @@
+     try:
+         return ipaddress.ip_network(str(value), strict=False)
+     except ValueError:
+-        raise unexpected(command, f"not a prefix: {str(value)[:80]!r}") from None
++        raise unexpected(command, f"not a prefix: {str(None)[:80]!r}") from None
+```
+
+`netdryrun.drivers.base.x_network__mutmut_12`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `2d76887a5bd29299`
+
+```diff
+# netdryrun.drivers.base.x_network__mutmut_12: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -3,4 +3,4 @@
+     try:
+         return ipaddress.ip_network(str(value), strict=False)
+     except ValueError:
+-        raise unexpected(command, f"not a prefix: {str(value)[:80]!r}") from None
++        raise unexpected(command, f"not a prefix: {str(value)[:81]!r}") from None
+```
+
+`netdryrun.drivers.base.x_network__mutmut_2`: survived (accepted, equivalent: equivalent: strict=None is falsy, the same as strict=False); diff fingerprint `50af274eb8707675`
+
+```diff
+# netdryrun.drivers.base.x_network__mutmut_2: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -1,6 +1,6 @@
+ def network(command: str, value: object):
+     """A prefix from device output; output with a key that isn't one is unexpected."""
+     try:
+-        return ipaddress.ip_network(str(value), strict=False)
++        return ipaddress.ip_network(str(value), strict=None)
+     except ValueError:
+         raise unexpected(command, f"not a prefix: {str(value)[:80]!r}") from None
+```
+
+`netdryrun.drivers.base.x_network__mutmut_7`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `1cdeae623bc34399`
+
+```diff
+# netdryrun.drivers.base.x_network__mutmut_7: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -3,4 +3,4 @@
+     try:
+         return ipaddress.ip_network(str(value), strict=False)
+     except ValueError:
+-        raise unexpected(command, f"not a prefix: {str(value)[:80]!r}") from None
++        raise unexpected(None, f"not a prefix: {str(value)[:80]!r}") from None
+```
+
+`netdryrun.drivers.base.x_network__mutmut_8`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `1dd86904d0cb32f0`
+
+```diff
+# netdryrun.drivers.base.x_network__mutmut_8: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -3,4 +3,4 @@
+     try:
+         return ipaddress.ip_network(str(value), strict=False)
+     except ValueError:
+-        raise unexpected(command, f"not a prefix: {str(value)[:80]!r}") from None
++        raise unexpected(command, None) from None
+```
+
+## `drivers.srlinux._json` (5)
+
+`netdryrun.drivers.srlinux.x__json__mutmut_1`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `9345465bc3e939fc`
+
+```diff
+# netdryrun.drivers.srlinux.x__json__mutmut_1: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -1,4 +1,4 @@
+-def _json(text: str, command: str = "sr_cli") -> dict:
++def _json(text: str, command: str = "XXsr_cliXX") -> dict:
+     data = load_json(command, text)
+     if not isinstance(data, dict):
+         raise unexpected(command, text)
+```
+
+`netdryrun.drivers.srlinux.x__json__mutmut_10`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `18eefd073906ac1b`
+
+```diff
+# netdryrun.drivers.srlinux.x__json__mutmut_10: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -1,5 +1,5 @@
+ def _json(text: str, command: str = "sr_cli") -> dict:
+     data = load_json(command, text)
+     if not isinstance(data, dict):
+-        raise unexpected(command, text)
++        raise unexpected(command, None)
+     return data
+```
+
+`netdryrun.drivers.srlinux.x__json__mutmut_2`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `31335a870854b118`
+
+```diff
+# netdryrun.drivers.srlinux.x__json__mutmut_2: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -1,4 +1,4 @@
+-def _json(text: str, command: str = "sr_cli") -> dict:
++def _json(text: str, command: str = "SR_CLI") -> dict:
+     data = load_json(command, text)
+     if not isinstance(data, dict):
+         raise unexpected(command, text)
+```
+
+`netdryrun.drivers.srlinux.x__json__mutmut_4`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `7b8effee425d78a2`
+
+```diff
+# netdryrun.drivers.srlinux.x__json__mutmut_4: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -1,5 +1,5 @@
+ def _json(text: str, command: str = "sr_cli") -> dict:
+-    data = load_json(command, text)
++    data = load_json(None, text)
+     if not isinstance(data, dict):
+         raise unexpected(command, text)
+     return data
+```
+
+`netdryrun.drivers.srlinux.x__json__mutmut_9`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `8ba54a775f0b2766`
+
+```diff
+# netdryrun.drivers.srlinux.x__json__mutmut_9: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -1,5 +1,5 @@
+ def _json(text: str, command: str = "sr_cli") -> dict:
+     data = load_json(command, text)
+     if not isinstance(data, dict):
+-        raise unexpected(command, text)
++        raise unexpected(None, text)
+     return data
+```
+
+## `drivers.eos._json` (4)
+
+`netdryrun.drivers.eos.x__json__mutmut_10`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `b28984661e329cdc`
+
+```diff
+# netdryrun.drivers.eos.x__json__mutmut_10: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -1,7 +1,7 @@
+ def _json(command: str, text: str) -> dict:
+     data = load_json(command, text)
+     if isinstance(data, dict) and "errors" in data:
+-        raise DriverError(f"EOS error from `{command}`: {data['errors']}")
++        raise DriverError(None)
+     if not isinstance(data, dict):
+         raise unexpected(command, text)
+     return data
+```
+
+`netdryrun.drivers.eos.x__json__mutmut_14`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `73e7b937848eff66`
+
+```diff
+# netdryrun.drivers.eos.x__json__mutmut_14: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -3,5 +3,5 @@
+     if isinstance(data, dict) and "errors" in data:
+         raise DriverError(f"EOS error from `{command}`: {data['errors']}")
+     if not isinstance(data, dict):
+-        raise unexpected(command, text)
++        raise unexpected(None, text)
+     return data
+```
+
+`netdryrun.drivers.eos.x__json__mutmut_15`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `b9c986b9de7a7361`
+
+```diff
+# netdryrun.drivers.eos.x__json__mutmut_15: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -3,5 +3,5 @@
+     if isinstance(data, dict) and "errors" in data:
+         raise DriverError(f"EOS error from `{command}`: {data['errors']}")
+     if not isinstance(data, dict):
+-        raise unexpected(command, text)
++        raise unexpected(command, None)
+     return data
+```
+
+`netdryrun.drivers.eos.x__json__mutmut_2`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `34ba1bda56bc6583`
+
+```diff
+# netdryrun.drivers.eos.x__json__mutmut_2: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -1,5 +1,5 @@
+ def _json(command: str, text: str) -> dict:
+-    data = load_json(command, text)
++    data = load_json(None, text)
+     if isinstance(data, dict) and "errors" in data:
+         raise DriverError(f"EOS error from `{command}`: {data['errors']}")
+     if not isinstance(data, dict):
+```
+
+## `drivers.eos._table` (4)
+
+`netdryrun.drivers.eos.x__table__mutmut_4`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `958eaa7ec28b0e07`
+
+```diff
+# netdryrun.drivers.eos.x__table__mutmut_4: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -2,5 +2,5 @@
+     """A required map inside a VRF's answer (routes, peers, bgpRouteEntries); `{}` is a real empty one."""
+     table = entry.get(key)
+     if not isinstance(table, dict):
+-        raise unexpected(command, f"no {key!r} map: {str(entry)[:150]}")
++        raise unexpected(None, f"no {key!r} map: {str(entry)[:150]}")
+     return table
+```
+
+`netdryrun.drivers.eos.x__table__mutmut_5`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `bb7483b4271d2b51`
+
+```diff
+# netdryrun.drivers.eos.x__table__mutmut_5: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -2,5 +2,5 @@
+     """A required map inside a VRF's answer (routes, peers, bgpRouteEntries); `{}` is a real empty one."""
+     table = entry.get(key)
+     if not isinstance(table, dict):
+-        raise unexpected(command, f"no {key!r} map: {str(entry)[:150]}")
++        raise unexpected(command, None)
+     return table
+```
+
+`netdryrun.drivers.eos.x__table__mutmut_8`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `181d29ffa881384e`
+
+```diff
+# netdryrun.drivers.eos.x__table__mutmut_8: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -2,5 +2,5 @@
+     """A required map inside a VRF's answer (routes, peers, bgpRouteEntries); `{}` is a real empty one."""
+     table = entry.get(key)
+     if not isinstance(table, dict):
+-        raise unexpected(command, f"no {key!r} map: {str(entry)[:150]}")
++        raise unexpected(command, f"no {key!r} map: {str(None)[:150]}")
+     return table
+```
+
+`netdryrun.drivers.eos.x__table__mutmut_9`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `db6ac3204953c6d9`
+
+```diff
+# netdryrun.drivers.eos.x__table__mutmut_9: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -2,5 +2,5 @@
+     """A required map inside a VRF's answer (routes, peers, bgpRouteEntries); `{}` is a real empty one."""
+     table = entry.get(key)
+     if not isinstance(table, dict):
+-        raise unexpected(command, f"no {key!r} map: {str(entry)[:150]}")
++        raise unexpected(command, f"no {key!r} map: {str(entry)[:151]}")
+     return table
+```
+
+## `drivers.frr.FrrDriver._confirm_vrf` (4)
+
+`netdryrun.drivers.frr.xǁFrrDriverǁ_confirm_vrf__mutmut_12`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `469e6af154216306`
+
+```diff
+# netdryrun.drivers.frr.xǁFrrDriverǁ_confirm_vrf__mutmut_12: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -6,6 +6,6 @@
+     vrfs = parse_vrfs(self._vtysh(VRF_CMD, evidence))
+     if vrf not in vrfs:
+         raise NoSuchInstance(f"VRF {vrf!r} does not exist on {self.node} "
+-                          f"(`show vrf` lists: {', '.join(sorted(vrfs)) or 'none'})")
++                          f"(`show vrf` lists: {', '.join(sorted(vrfs)) and 'none'})")
+     if not vrfs[vrf]:
+         raise NoSuchInstance(f"VRF {vrf!r} is configured on {self.node} but inactive (no kernel VRF device)")
+```
+
+`netdryrun.drivers.frr.xǁFrrDriverǁ_confirm_vrf__mutmut_14`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `8fd8cb6ad10042f5`
+
+```diff
+# netdryrun.drivers.frr.xǁFrrDriverǁ_confirm_vrf__mutmut_14: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -6,6 +6,6 @@
+     vrfs = parse_vrfs(self._vtysh(VRF_CMD, evidence))
+     if vrf not in vrfs:
+         raise NoSuchInstance(f"VRF {vrf!r} does not exist on {self.node} "
+-                          f"(`show vrf` lists: {', '.join(sorted(vrfs)) or 'none'})")
++                          f"(`show vrf` lists: {'XX, XX'.join(sorted(vrfs)) or 'none'})")
+     if not vrfs[vrf]:
+         raise NoSuchInstance(f"VRF {vrf!r} is configured on {self.node} but inactive (no kernel VRF device)")
+```
+
+`netdryrun.drivers.frr.xǁFrrDriverǁ_confirm_vrf__mutmut_16`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `ce67a4bedd07e98d`
+
+```diff
+# netdryrun.drivers.frr.xǁFrrDriverǁ_confirm_vrf__mutmut_16: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -6,6 +6,6 @@
+     vrfs = parse_vrfs(self._vtysh(VRF_CMD, evidence))
+     if vrf not in vrfs:
+         raise NoSuchInstance(f"VRF {vrf!r} does not exist on {self.node} "
+-                          f"(`show vrf` lists: {', '.join(sorted(vrfs)) or 'none'})")
++                          f"(`show vrf` lists: {', '.join(sorted(vrfs)) or 'XXnoneXX'})")
+     if not vrfs[vrf]:
+         raise NoSuchInstance(f"VRF {vrf!r} is configured on {self.node} but inactive (no kernel VRF device)")
+```
+
+`netdryrun.drivers.frr.xǁFrrDriverǁ_confirm_vrf__mutmut_17`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `55fac487bcc84d9b`
+
+```diff
+# netdryrun.drivers.frr.xǁFrrDriverǁ_confirm_vrf__mutmut_17: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -6,6 +6,6 @@
+     vrfs = parse_vrfs(self._vtysh(VRF_CMD, evidence))
+     if vrf not in vrfs:
+         raise NoSuchInstance(f"VRF {vrf!r} does not exist on {self.node} "
+-                          f"(`show vrf` lists: {', '.join(sorted(vrfs)) or 'none'})")
++                          f"(`show vrf` lists: {', '.join(sorted(vrfs)) or 'NONE'})")
+     if not vrfs[vrf]:
+         raise NoSuchInstance(f"VRF {vrf!r} is configured on {self.node} but inactive (no kernel VRF device)")
+```
+
+## `drivers.junos._next_hop` (4)
+
+`netdryrun.drivers.junos.x__next_hop__mutmut_24`: survived (accepted, equivalent: equivalent: _leaf tests `required` for truth only; False and None are both falsy); diff fingerprint `9efe1ecf76ec989f`
+
+```diff
+# netdryrun.drivers.junos.x__next_hop__mutmut_24: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -5,7 +5,7 @@
+     for key in ("protocol-nh", "nh"):
+         hops = _items(command, e, key)
+         chosen = [h for h in hops if "selected-next-hop" in h] or hops
+-        tos = list(dict.fromkeys(_canon_addr(t) for t in (_leaf(command, h, "to", required=False) for h in chosen)
++        tos = list(dict.fromkeys(_canon_addr(t) for t in (_leaf(command, h, "to", required=None) for h in chosen)
+                                  if t))
+         if len(tos) > 1:
+             raise unexpected(command, f"{key}: several next hops ({', '.join(tos[:4])}) and none selected")
+```
+
+`netdryrun.drivers.junos.x__next_hop__mutmut_34`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `d7ff478ea9b8d2e8`
+
+```diff
+# netdryrun.drivers.junos.x__next_hop__mutmut_34: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -8,7 +8,7 @@
+         tos = list(dict.fromkeys(_canon_addr(t) for t in (_leaf(command, h, "to", required=False) for h in chosen)
+                                  if t))
+         if len(tos) > 1:
+-            raise unexpected(command, f"{key}: several next hops ({', '.join(tos[:4])}) and none selected")
++            raise unexpected(None, f"{key}: several next hops ({', '.join(tos[:4])}) and none selected")
+         if tos:
+             return tos[0]
+     return None
+```
+
+`netdryrun.drivers.junos.x__next_hop__mutmut_39`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `635f5a06a9c0425d`
+
+```diff
+# netdryrun.drivers.junos.x__next_hop__mutmut_39: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -8,7 +8,7 @@
+         tos = list(dict.fromkeys(_canon_addr(t) for t in (_leaf(command, h, "to", required=False) for h in chosen)
+                                  if t))
+         if len(tos) > 1:
+-            raise unexpected(command, f"{key}: several next hops ({', '.join(tos[:4])}) and none selected")
++            raise unexpected(command, f"{key}: several next hops ({'XX, XX'.join(tos[:4])}) and none selected")
+         if tos:
+             return tos[0]
+     return None
+```
+
+`netdryrun.drivers.junos.x__next_hop__mutmut_40`: survived (accepted, message-text: message text only: how many of the disagreeing next hops the error lists; the error is still raised); diff fingerprint `0b876c23f9cf9e7a`
+
+```diff
+# netdryrun.drivers.junos.x__next_hop__mutmut_40: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -8,7 +8,7 @@
+         tos = list(dict.fromkeys(_canon_addr(t) for t in (_leaf(command, h, "to", required=False) for h in chosen)
+                                  if t))
+         if len(tos) > 1:
+-            raise unexpected(command, f"{key}: several next hops ({', '.join(tos[:4])}) and none selected")
++            raise unexpected(command, f"{key}: several next hops ({', '.join(tos[:5])}) and none selected")
+         if tos:
+             return tos[0]
+     return None
+```
+
+## `drivers.base.Driver.all_routes` (3)
+
+`netdryrun.drivers.base.xǁDriverǁall_routes__mutmut_1`: survived (accepted, equivalent: equivalent: default argument of an abstract base-class method that only raises NotImplementedError); diff fingerprint `ad9ef2abf022df26`
+
+```diff
+# netdryrun.drivers.base.xǁDriverǁall_routes__mutmut_1: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -1,3 +1,3 @@
+-def all_routes(self, vrf: str = "default", family: int = 4) -> Observation:
++def all_routes(self, vrf: str = "XXdefaultXX", family: int = 4) -> Observation:
+     """Every route in the table (used by `netdryrun record`)."""
+     raise NotImplementedError
+```
+
+`netdryrun.drivers.base.xǁDriverǁall_routes__mutmut_2`: survived (accepted, equivalent: equivalent: default argument of an abstract base-class method that only raises NotImplementedError); diff fingerprint `b40a321059f2c012`
+
+```diff
+# netdryrun.drivers.base.xǁDriverǁall_routes__mutmut_2: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -1,3 +1,3 @@
+-def all_routes(self, vrf: str = "default", family: int = 4) -> Observation:
++def all_routes(self, vrf: str = "DEFAULT", family: int = 4) -> Observation:
+     """Every route in the table (used by `netdryrun record`)."""
+     raise NotImplementedError
+```
+
+`netdryrun.drivers.base.xǁDriverǁall_routes__mutmut_3`: survived (accepted, equivalent: equivalent: default argument of an abstract base-class method that only raises NotImplementedError); diff fingerprint `679c76ae7178beb9`
+
+```diff
+# netdryrun.drivers.base.xǁDriverǁall_routes__mutmut_3: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -1,3 +1,3 @@
+-def all_routes(self, vrf: str = "default", family: int = 4) -> Observation:
++def all_routes(self, vrf: str = "default", family: int = 5) -> Observation:
+     """Every route in the table (used by `netdryrun record`)."""
+     raise NotImplementedError
+```
+
+## `drivers.base.as_int` (3)
+
+`netdryrun.drivers.base.x_as_int__mutmut_1`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `4427d58b48503dc0`
+
+```diff
+# netdryrun.drivers.base.x_as_int__mutmut_1: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -1,6 +1,6 @@
+ def as_int(command: str, value: object) -> int:
+     if isinstance(value, bool):
+-        raise unexpected(command, f"not a number: {value!r}")
++        raise unexpected(None, f"not a number: {value!r}")
+     try:
+         return int(value)
+     except (TypeError, ValueError):
+```
+
+`netdryrun.drivers.base.x_as_int__mutmut_11`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `8e2df5a5ce969623`
+
+```diff
+# netdryrun.drivers.base.x_as_int__mutmut_11: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -4,4 +4,4 @@
+     try:
+         return int(value)
+     except (TypeError, ValueError):
+-        raise unexpected(command, f"not a number: {str(value)[:80]!r}") from None
++        raise unexpected(command, f"not a number: {str(value)[:81]!r}") from None
+```
+
+`netdryrun.drivers.base.x_as_int__mutmut_2`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `023e389bcdefa468`
+
+```diff
+# netdryrun.drivers.base.x_as_int__mutmut_2: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -1,6 +1,6 @@
+ def as_int(command: str, value: object) -> int:
+     if isinstance(value, bool):
+-        raise unexpected(command, f"not a number: {value!r}")
++        raise unexpected(command, None)
+     try:
+         return int(value)
+     except (TypeError, ValueError):
+```
+
+## `drivers.base.unexpected` (3)
+
+`netdryrun.drivers.base.x_unexpected__mutmut_6`: survived (accepted, message-text: message text only: the output snippet in the error); diff fingerprint `95d108cdf6c9eea8`
+
+```diff
+# netdryrun.drivers.base.x_unexpected__mutmut_6: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -1,4 +1,4 @@
+ def unexpected(command: str, text: object) -> DriverError:
+     """The error for output that doesn't have the structure the parser knows. Never read it as 'nothing'."""
+-    snippet = " ".join(str(text).split())[:200] or "no output"
++    snippet = " ".join(str(text).split())[:201] or "no output"
+     return DriverError(f"unexpected output from `{command}`: {snippet}")
+```
+
+`netdryrun.drivers.base.x_unexpected__mutmut_7`: survived (accepted, message-text: message text only: the text of a detail or error message); diff fingerprint `33017b0e283901f0`
+
+```diff
+# netdryrun.drivers.base.x_unexpected__mutmut_7: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -1,4 +1,4 @@
+ def unexpected(command: str, text: object) -> DriverError:
+     """The error for output that doesn't have the structure the parser knows. Never read it as 'nothing'."""
+-    snippet = " ".join(str(text).split())[:200] or "no output"
++    snippet = " ".join(str(text).split())[:200] or "XXno outputXX"
+     return DriverError(f"unexpected output from `{command}`: {snippet}")
+```
+
+`netdryrun.drivers.base.x_unexpected__mutmut_8`: survived (accepted, message-text: message text only: the text of a detail or error message); diff fingerprint `c09ed68052896115`
+
+```diff
+# netdryrun.drivers.base.x_unexpected__mutmut_8: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -1,4 +1,4 @@
+ def unexpected(command: str, text: object) -> DriverError:
+     """The error for output that doesn't have the structure the parser knows. Never read it as 'nothing'."""
+-    snippet = " ".join(str(text).split())[:200] or "no output"
++    snippet = " ".join(str(text).split())[:200] or "NO OUTPUT"
+     return DriverError(f"unexpected output from `{command}`: {snippet}")
+```
+
+## `drivers.check_supported` (3)
+
+`netdryrun.drivers.x_check_supported__mutmut_34`: survived (accepted, message-text: message text only: the unsupported-afi error text; the same exception is raised); diff fingerprint `bdd097102fce75ed`
+
+```diff
+# netdryrun.drivers.x_check_supported__mutmut_34: survived
+--- src/netdryrun/drivers/__init__.py
++++ src/netdryrun/drivers/__init__.py
+@@ -9,7 +9,7 @@
+         if afi in getattr(DRIVERS.get(name), "unsupported_afis", ()):
+             # the count would read as 0, which passes max and exact: refuse instead
+             raise DriverError(f"{check.name}: afi {afi} is not supported on {name} (the {name} driver reads "
+-                              "ipv4-unicast and ipv6-unicast prefix counts only)")
++                              "XXipv4-unicast and ipv6-unicast prefix counts only)XX")
+         return
+     cls = DRIVERS.get(name)
+     keys = sorted(set(check.params) & set(cls.unsupported_bgp_attributes)) if cls else []
+```
+
+`netdryrun.drivers.x_check_supported__mutmut_35`: survived (accepted, message-text: message text only: the unsupported-afi error text; the same exception is raised); diff fingerprint `e200d1732c7222f9`
+
+```diff
+# netdryrun.drivers.x_check_supported__mutmut_35: survived
+--- src/netdryrun/drivers/__init__.py
++++ src/netdryrun/drivers/__init__.py
+@@ -9,7 +9,7 @@
+         if afi in getattr(DRIVERS.get(name), "unsupported_afis", ()):
+             # the count would read as 0, which passes max and exact: refuse instead
+             raise DriverError(f"{check.name}: afi {afi} is not supported on {name} (the {name} driver reads "
+-                              "ipv4-unicast and ipv6-unicast prefix counts only)")
++                              "IPV4-UNICAST AND IPV6-UNICAST PREFIX COUNTS ONLY)")
+         return
+     cls = DRIVERS.get(name)
+     keys = sorted(set(check.params) & set(cls.unsupported_bgp_attributes)) if cls else []
+```
+
+`netdryrun.drivers.x_check_supported__mutmut_47`: survived (accepted, message-text: message text only: the key list in the unsupported-key error; the same exception is raised); diff fingerprint `b0f4a07fcc19ec85`
+
+```diff
+# netdryrun.drivers.x_check_supported__mutmut_47: survived
+--- src/netdryrun/drivers/__init__.py
++++ src/netdryrun/drivers/__init__.py
+@@ -14,7 +14,7 @@
+     cls = DRIVERS.get(name)
+     keys = sorted(set(check.params) & set(cls.unsupported_bgp_attributes)) if cls else []
+     if keys:
+-        raise DriverError(f"{check.name}: {', '.join(keys)} is not supported on {name}")
++        raise DriverError(f"{check.name}: {'XX, XX'.join(keys)} is not supported on {name}")
+     # a value the driver's output can't tell from another state (config.py has checked it is an integer)
+     for key, values in (cls.ambiguous_bgp_values if cls else {}).items():
+         if key in check.params and check.params[key] in values:
+```
+
+## `drivers.eos.parse_startup_config_errors` (3)
+
+`netdryrun.drivers.eos.x_parse_startup_config_errors__mutmut_42`: survived (accepted, equivalent: zip(strict=True) -> strict=None: the len(body) % 2 check just above raises on an odd body, so body[::2] and body[1::2] always have equal length); argument: strict only matters when the two slices differ in length, which the preceding odd-length raise makes impossible; every pair is still read and checked; reviewed: no; diff fingerprint `a5073bdbc2732ebe`
+
+```diff
+# netdryrun.drivers.eos.x_parse_startup_config_errors__mutmut_42: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -11,7 +11,7 @@
+     out, body = [], lines[1:-1]
+     if len(body) % 2:
+         raise DriverError(f"{STARTUP_ERRORS_CMD}: unexpected output: {' '.join(text.split())[:200]!r}")
+-    for cmd, why in zip(body[::2], body[1::2], strict=True):
++    for cmd, why in zip(body[::2], body[1::2], strict=None):
+         m = _STARTUP_REASON.match(why)
+         if not cmd.startswith(">") or not m:
+             raise DriverError(f"{STARTUP_ERRORS_CMD}: unexpected output: {cmd[:80]!r} {why[:80]!r}")
+```
+
+`netdryrun.drivers.eos.x_parse_startup_config_errors__mutmut_45`: survived (accepted, equivalent: zip(strict=True) -> zip() (strict dropped): the len(body) % 2 check just above guarantees equal-length slices); argument: with an even body the slices have equal length, so no pair can be silently dropped; an odd body already raised DriverError before the loop; reviewed: no; diff fingerprint `3027d18c53247d3d`
+
+```diff
+# netdryrun.drivers.eos.x_parse_startup_config_errors__mutmut_45: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -11,7 +11,7 @@
+     out, body = [], lines[1:-1]
+     if len(body) % 2:
+         raise DriverError(f"{STARTUP_ERRORS_CMD}: unexpected output: {' '.join(text.split())[:200]!r}")
+-    for cmd, why in zip(body[::2], body[1::2], strict=True):
++    for cmd, why in zip(body[::2], body[1::2], ):
+         m = _STARTUP_REASON.match(why)
+         if not cmd.startswith(">") or not m:
+             raise DriverError(f"{STARTUP_ERRORS_CMD}: unexpected output: {cmd[:80]!r} {why[:80]!r}")
+```
+
+`netdryrun.drivers.eos.x_parse_startup_config_errors__mutmut_49`: survived (accepted, equivalent: zip(strict=True) -> strict=False: the len(body) % 2 check just above guarantees equal-length slices); argument: with an even body the slices have equal length, so no pair can be silently dropped; an odd body already raised DriverError before the loop; the final total == count == len(out) check also still runs; reviewed: no; diff fingerprint `07b9dcb32118e5e3`
+
+```diff
+# netdryrun.drivers.eos.x_parse_startup_config_errors__mutmut_49: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -11,7 +11,7 @@
+     out, body = [], lines[1:-1]
+     if len(body) % 2:
+         raise DriverError(f"{STARTUP_ERRORS_CMD}: unexpected output: {' '.join(text.split())[:200]!r}")
+-    for cmd, why in zip(body[::2], body[1::2], strict=True):
++    for cmd, why in zip(body[::2], body[1::2], strict=False):
+         m = _STARTUP_REASON.match(why)
+         if not cmd.startswith(">") or not m:
+             raise DriverError(f"{STARTUP_ERRORS_CMD}: unexpected output: {cmd[:80]!r} {why[:80]!r}")
+```
+
+## `drivers.for_node` (3)
+
+`netdryrun.drivers.x_for_node__mutmut_2`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `d47d65c7450291d1`
+
+```diff
+# netdryrun.drivers.x_for_node__mutmut_2: survived
+--- src/netdryrun/drivers/__init__.py
++++ src/netdryrun/drivers/__init__.py
+@@ -1,6 +1,6 @@
+ def for_node(lab: Lab, node: str, override: str | None = None) -> Driver:
+     if node not in lab.nodes:
+-        raise DriverError(f"node {node!r} is not in the topology (nodes: {', '.join(lab.nodes)})")
++        raise DriverError(None)
+     name = override or detect(lab.nodes[node])
+     if name not in DRIVERS:
+         raise DriverError(f"unknown driver {name!r} for node {node}; expected one of {sorted(DRIVERS)}")
+```
+
+`netdryrun.drivers.x_for_node__mutmut_4`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `acd403462d346b59`
+
+```diff
+# netdryrun.drivers.x_for_node__mutmut_4: survived
+--- src/netdryrun/drivers/__init__.py
++++ src/netdryrun/drivers/__init__.py
+@@ -1,6 +1,6 @@
+ def for_node(lab: Lab, node: str, override: str | None = None) -> Driver:
+     if node not in lab.nodes:
+-        raise DriverError(f"node {node!r} is not in the topology (nodes: {', '.join(lab.nodes)})")
++        raise DriverError(f"node {node!r} is not in the topology (nodes: {'XX, XX'.join(lab.nodes)})")
+     name = override or detect(lab.nodes[node])
+     if name not in DRIVERS:
+         raise DriverError(f"unknown driver {name!r} for node {node}; expected one of {sorted(DRIVERS)}")
+```
+
+`netdryrun.drivers.x_for_node__mutmut_9`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `96d459bdaec6901f`
+
+```diff
+# netdryrun.drivers.x_for_node__mutmut_9: survived
+--- src/netdryrun/drivers/__init__.py
++++ src/netdryrun/drivers/__init__.py
+@@ -3,5 +3,5 @@
+         raise DriverError(f"node {node!r} is not in the topology (nodes: {', '.join(lab.nodes)})")
+     name = override or detect(lab.nodes[node])
+     if name not in DRIVERS:
+-        raise DriverError(f"unknown driver {name!r} for node {node}; expected one of {sorted(DRIVERS)}")
++        raise DriverError(None)
+     return DRIVERS[name](lab, node)
+```
+
+## `drivers.junos._adv_interval` (3)
+
+`netdryrun.drivers.junos.x__adv_interval__mutmut_15`: survived (accepted, equivalent: required=None instead of required=False for the optional outbound-timer leaf); argument: _leaf only tests `if required:`; None and False are both falsy, so a missing timer still returns None and every other path is identical; reviewed: no; diff fingerprint `1e01732b99127590`
+
+```diff
+# netdryrun.drivers.junos.x__adv_interval__mutmut_15: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -4,7 +4,7 @@
+     live, 26.2R1.7-EVO). Any other delay-like element or option flag is a shape not captured yet: an error,
+     never 0, which would keep settle and hold short while a leak may still be on its way."""
+     options = _one(NEIGHBORS_CMD, peer, "bgp-option-information") or {}
+-    timer = _leaf(NEIGHBORS_CMD, options, "outbound-timer", required=False)
++    timer = _leaf(NEIGHBORS_CMD, options, "outbound-timer", required=None)
+     others = [k for k in (*peer, *options) if _DELAY.search(str(k)) and k not in KNOWN_TIMERS]
+     flags = [_leaf(NEIGHBORS_CMD, options, k, required=False) or "" for k in options if k.startswith("bgp-options")]
+     if others or any(_DELAY.search(f) for f in flags):
+```
+
+`netdryrun.drivers.junos.x__adv_interval__mutmut_33`: survived (accepted, equivalent: required=None instead of required=False for the bgp-options flag leaves); argument: _leaf only tests `if required:`; None and False are both falsy, so the flag read is identical; reviewed: no; diff fingerprint `99b4e6cba348092c`
+
+```diff
+# netdryrun.drivers.junos.x__adv_interval__mutmut_33: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -6,7 +6,7 @@
+     options = _one(NEIGHBORS_CMD, peer, "bgp-option-information") or {}
+     timer = _leaf(NEIGHBORS_CMD, options, "outbound-timer", required=False)
+     others = [k for k in (*peer, *options) if _DELAY.search(str(k)) and k not in KNOWN_TIMERS]
+-    flags = [_leaf(NEIGHBORS_CMD, options, k, required=False) or "" for k in options if k.startswith("bgp-options")]
++    flags = [_leaf(NEIGHBORS_CMD, options, k, required=None) or "" for k in options if k.startswith("bgp-options")]
+     if others or any(_DELAY.search(f) for f in flags):
+         raise DriverError(f"peer {addr}: an advertisement delay in a form this driver doesn't read "
+                           f"({', '.join(others) or 'an option flag'}); unexpected output, never read as no delay")
+```
+
+`netdryrun.drivers.junos.x__adv_interval__mutmut_39`: survived (accepted, equivalent: an absent/empty option flag defaults to 'XXXX' instead of ''); argument: the default is only searched with _DELAY (delay|timer); neither '' nor 'XXXX' matches, so the refusal decision and the returned interval are unchanged; reviewed: no; diff fingerprint `4016d0da0846fcce`
+
+```diff
+# netdryrun.drivers.junos.x__adv_interval__mutmut_39: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -6,7 +6,7 @@
+     options = _one(NEIGHBORS_CMD, peer, "bgp-option-information") or {}
+     timer = _leaf(NEIGHBORS_CMD, options, "outbound-timer", required=False)
+     others = [k for k in (*peer, *options) if _DELAY.search(str(k)) and k not in KNOWN_TIMERS]
+-    flags = [_leaf(NEIGHBORS_CMD, options, k, required=False) or "" for k in options if k.startswith("bgp-options")]
++    flags = [_leaf(NEIGHBORS_CMD, options, k, required=False) or "XXXX" for k in options if k.startswith("bgp-options")]
+     if others or any(_DELAY.search(f) for f in flags):
+         raise DriverError(f"peer {addr}: an advertisement delay in a form this driver doesn't read "
+                           f"({', '.join(others) or 'an option flag'}); unexpected output, never read as no delay")
+```
+
+## `drivers.base.Driver.bgp_neighbors` (2)
+
+`netdryrun.drivers.base.xǁDriverǁbgp_neighbors__mutmut_1`: survived (accepted, equivalent: equivalent: default argument of an abstract base-class method that only raises NotImplementedError); diff fingerprint `6e942bf8e1424cf9`
+
+```diff
+# netdryrun.drivers.base.xǁDriverǁbgp_neighbors__mutmut_1: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -1,2 +1,2 @@
+-def bgp_neighbors(self, vrf: str = "default") -> Observation:
++def bgp_neighbors(self, vrf: str = "XXdefaultXX") -> Observation:
+     raise NotImplementedError
+```
+
+`netdryrun.drivers.base.xǁDriverǁbgp_neighbors__mutmut_2`: survived (accepted, equivalent: equivalent: default argument of an abstract base-class method that only raises NotImplementedError); diff fingerprint `c26c7c2807e89202`
+
+```diff
+# netdryrun.drivers.base.xǁDriverǁbgp_neighbors__mutmut_2: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -1,2 +1,2 @@
+-def bgp_neighbors(self, vrf: str = "default") -> Observation:
++def bgp_neighbors(self, vrf: str = "DEFAULT") -> Observation:
+     raise NotImplementedError
+```
+
+## `drivers.base.Driver.bgp_paths` (2)
+
+`netdryrun.drivers.base.xǁDriverǁbgp_paths__mutmut_1`: survived (accepted, equivalent: equivalent: default argument of an abstract base-class method that only raises NotImplementedError); diff fingerprint `776c1657b3950962`
+
+```diff
+# netdryrun.drivers.base.xǁDriverǁbgp_paths__mutmut_1: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -1,3 +1,3 @@
+-def bgp_paths(self, prefix: str, vrf: str = "default") -> Observation:
++def bgp_paths(self, prefix: str, vrf: str = "XXdefaultXX") -> Observation:
+     """Every path for exactly `prefix` in the BGP table (list[BgpPath]), best path flagged."""
+     raise NotImplementedError
+```
+
+`netdryrun.drivers.base.xǁDriverǁbgp_paths__mutmut_2`: survived (accepted, equivalent: equivalent: default argument of an abstract base-class method that only raises NotImplementedError); diff fingerprint `bd8a7d5890fc4a72`
+
+```diff
+# netdryrun.drivers.base.xǁDriverǁbgp_paths__mutmut_2: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -1,3 +1,3 @@
+-def bgp_paths(self, prefix: str, vrf: str = "default") -> Observation:
++def bgp_paths(self, prefix: str, vrf: str = "DEFAULT") -> Observation:
+     """Every path for exactly `prefix` in the BGP table (list[BgpPath]), best path flagged."""
+     raise NotImplementedError
+```
+
+## `drivers.base.Driver.ping` (2)
+
+`netdryrun.drivers.base.xǁDriverǁping__mutmut_1`: survived (accepted, equivalent: equivalent: default argument of an abstract base-class method that only raises NotImplementedError); diff fingerprint `f9d238998e6c2f11`
+
+```diff
+# netdryrun.drivers.base.xǁDriverǁping__mutmut_1: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -1,2 +1,2 @@
+-def ping(self, target: str, source: str | None, count: int, vrf: str = "default") -> Observation:
++def ping(self, target: str, source: str | None, count: int, vrf: str = "XXdefaultXX") -> Observation:
+     raise NotImplementedError
+```
+
+`netdryrun.drivers.base.xǁDriverǁping__mutmut_2`: survived (accepted, equivalent: equivalent: default argument of an abstract base-class method that only raises NotImplementedError); diff fingerprint `2478a27511284922`
+
+```diff
+# netdryrun.drivers.base.xǁDriverǁping__mutmut_2: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -1,2 +1,2 @@
+-def ping(self, target: str, source: str | None, count: int, vrf: str = "default") -> Observation:
++def ping(self, target: str, source: str | None, count: int, vrf: str = "DEFAULT") -> Observation:
+     raise NotImplementedError
+```
+
+## `drivers.base.Driver.routes` (2)
+
+`netdryrun.drivers.base.xǁDriverǁroutes__mutmut_1`: survived (accepted, equivalent: equivalent: default argument of an abstract base-class method that only raises NotImplementedError); diff fingerprint `ed45c173dbf42783`
+
+```diff
+# netdryrun.drivers.base.xǁDriverǁroutes__mutmut_1: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -1,2 +1,2 @@
+-def routes(self, prefix: str, vrf: str = "default") -> Observation:
++def routes(self, prefix: str, vrf: str = "XXdefaultXX") -> Observation:
+     raise NotImplementedError
+```
+
+`netdryrun.drivers.base.xǁDriverǁroutes__mutmut_2`: survived (accepted, equivalent: equivalent: default argument of an abstract base-class method that only raises NotImplementedError); diff fingerprint `dca49e257c250c95`
+
+```diff
+# netdryrun.drivers.base.xǁDriverǁroutes__mutmut_2: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -1,2 +1,2 @@
+-def routes(self, prefix: str, vrf: str = "default") -> Observation:
++def routes(self, prefix: str, vrf: str = "DEFAULT") -> Observation:
+     raise NotImplementedError
+```
+
+## `drivers.base.check_vrf_name` (2)
+
+`netdryrun.drivers.base.x_check_vrf_name__mutmut_6`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `ef55333e2827e4a0`
+
+```diff
+# netdryrun.drivers.base.x_check_vrf_name__mutmut_6: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -1,7 +1,7 @@
+ def check_vrf_name(vrf: object) -> str:
+     """The VRF name if a driver can ask for exactly that one VRF; DriverError otherwise."""
+     if not isinstance(vrf, str) or not _VRF_NAME.fullmatch(vrf):
+-        raise DriverError(f"bad VRF name {str(vrf)[:70]!r}: use letters, digits and . _ : - (at most 64)")
++        raise DriverError(f"bad VRF name {str(None)[:70]!r}: use letters, digits and . _ : - (at most 64)")
+     if vrf.lower() in SPECIAL_VRF_NAMES:
+         raise DriverError(f"VRF {vrf!r} means every VRF on the device, not one VRF; name the VRF to check")
+     return vrf
+```
+
+`netdryrun.drivers.base.x_check_vrf_name__mutmut_7`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `62658c245f999e7c`
+
+```diff
+# netdryrun.drivers.base.x_check_vrf_name__mutmut_7: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -1,7 +1,7 @@
+ def check_vrf_name(vrf: object) -> str:
+     """The VRF name if a driver can ask for exactly that one VRF; DriverError otherwise."""
+     if not isinstance(vrf, str) or not _VRF_NAME.fullmatch(vrf):
+-        raise DriverError(f"bad VRF name {str(vrf)[:70]!r}: use letters, digits and . _ : - (at most 64)")
++        raise DriverError(f"bad VRF name {str(vrf)[:71]!r}: use letters, digits and . _ : - (at most 64)")
+     if vrf.lower() in SPECIAL_VRF_NAMES:
+         raise DriverError(f"VRF {vrf!r} means every VRF on the device, not one VRF; name the VRF to check")
+     return vrf
+```
+
+## `drivers.frr._bgp_paths_for_route_check` (2)
+
+`netdryrun.drivers.frr.x__bgp_paths_for_route_check__mutmut_16`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `b75b25d3e782aff0`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_for_route_check__mutmut_16: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -6,4 +6,4 @@
+         return []
+     if isinstance(data, dict) and isinstance(data.get("warning"), str) and _NO_INSTANCE.search(data["warning"]):
+         return []
+-    return _bgp_paths_raw(BGP_PATHS_CMD, text, prefix)
++    return _bgp_paths_raw(None, text, prefix)
+```
+
+`netdryrun.drivers.frr.x__bgp_paths_for_route_check__mutmut_2`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `4c4930aaf5f9fa46`
+
+```diff
+# netdryrun.drivers.frr.x__bgp_paths_for_route_check__mutmut_2: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -1,7 +1,7 @@
+ def _bgp_paths_for_route_check(text: str, prefix: str) -> list[dict]:
+     """The BGP side of a route check. No BGP instance in the VRF means no BGP paths (the VRF itself is
+     confirmed separately); any other warning or shape is an error."""
+-    data = load_json(BGP_PATHS_CMD, text)
++    data = load_json(None, text)
+     if isinstance(data, dict) and data.get("bgpNoSuchInstance"):
+         return []
+     if isinstance(data, dict) and isinstance(data.get("warning"), str) and _NO_INSTANCE.search(data["warning"]):
+```
+
+## `drivers.frr.parse_config_load_errors` (2)
+
+`netdryrun.drivers.frr.x_parse_config_load_errors__mutmut_67`: survived (accepted, equivalent: equivalent: a vtysh line with no daemon is never cleared, so its stored daemon is never read); argument: The daemon stored here is read only by `explained`, which is reached only when every reported line was cleared. A vtysh line with no daemon (Unknown command, Warning) can't be cleared: clearing needs the daemon among the running configs read, and those are keyed by the daemon names communicate_daemons returns, never None. So `explained` never sees this value and the returned list is the same for every input.; reviewed: adversarial (fresh Opus agent), 2026-10-30: equivalent, no input differs; diff fingerprint `cbd7135846c5d28b`
+
+```diff
+# netdryrun.drivers.frr.x_parse_config_load_errors__mutmut_67: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -29,7 +29,7 @@
+             done = (daemon in applied and daemon != "mgmtd" and 0 <= i < len(file) and file[i][1] == cmd.strip()
+                     and applied[daemon][file[i]] >= in_file[file[i]] and not _is_header(config, i)
+                     and _block_applied(config, i, running[daemon]))
+-            lines.setdefault((int(n), ""), (done, daemon or "", f"line {n}: {cmd.strip()} ({why})"))
++            lines.setdefault((int(n), ""), (done, daemon or "XXXX", f"line {n}: {cmd.strip()} ({why})"))
+             continue
+         d = _DAEMON_LINE.match(raw.strip())
+         if d:   # the daemon's own file, numbered on its own: kept apart from frr.conf's line N
+```
+
+`netdryrun.drivers.frr.x_parse_config_load_errors__mutmut_79`: survived (accepted, equivalent: equivalent: a per-daemon line is never cleared, so its stored daemon is never read); argument: The daemon stored here is read only by `explained`, which is reached only when every reported line was cleared. A per-daemon file line is always stored as not cleared, so when one exists the kept lines are returned first. So `explained` never sees this value and the returned list is the same for every input.; reviewed: adversarial (fresh Opus agent), 2026-10-30: equivalent, no input differs; diff fingerprint `70ef05d8d58c1c69`
+
+```diff
+# netdryrun.drivers.frr.x_parse_config_load_errors__mutmut_79: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -35,7 +35,7 @@
+         if d:   # the daemon's own file, numbered on its own: kept apart from frr.conf's line N
+             daemon, why, n, cmd = d.groups()
+             lines.setdefault((int(n), daemon.lower()),
+-                             (False, "", f"line {n}: {cmd.strip()} ({why.strip()}, {daemon.lower()})"))
++                             (False, "XXXX", f"line {n}: {cmd.strip()} ({why.strip()}, {daemon.lower()})"))
+             continue
+         f = _LOAD_FAILURE.match(raw.strip())
+         if f:
+```
+
+## `drivers.junos._afi` (2)
+
+`netdryrun.drivers.junos.x__afi__mutmut_16`: survived (accepted, equivalent: rib.rsplit('.') without maxsplit instead of rsplit('.', 2)); argument: only the last two components ([-2:]) are compared; rsplit from the right yields the same last two components whatever the maxsplit (>=1); reviewed: no; diff fingerprint `ca9182bf20ab462c`
+
+```diff
+# netdryrun.drivers.junos.x__afi__mutmut_16: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -5,6 +5,6 @@
+     own = rib if instance == "master" else rib[len(instance) + 1:] if rib.startswith(f"{instance}.") else None
+     if own in _UNICAST_RIBS:
+         return _UNICAST_RIBS[own]
+-    if rib.rsplit(".", 2)[-2:] in (["inet", "0"], ["inet6", "0"]):
++    if rib.rsplit(".", )[-2:] in (["inet", "0"], ["inet6", "0"]):
+         raise unexpected(command, f"RIB {rib!r} is not in instance {instance!r}")
+     return None
+```
+
+`netdryrun.drivers.junos.x__afi__mutmut_19`: survived (accepted, equivalent: rib.rsplit('.', 3) instead of rsplit('.', 2)); argument: only the last two components ([-2:]) are compared; any maxsplit >= 1 from the right yields the same last two; reviewed: no; diff fingerprint `cd5c102f9125e63a`
+
+```diff
+# netdryrun.drivers.junos.x__afi__mutmut_19: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -5,6 +5,6 @@
+     own = rib if instance == "master" else rib[len(instance) + 1:] if rib.startswith(f"{instance}.") else None
+     if own in _UNICAST_RIBS:
+         return _UNICAST_RIBS[own]
+-    if rib.rsplit(".", 2)[-2:] in (["inet", "0"], ["inet6", "0"]):
++    if rib.rsplit(".", 3)[-2:] in (["inet", "0"], ["inet6", "0"]):
+         raise unexpected(command, f"RIB {rib!r} is not in instance {instance!r}")
+     return None
+```
+
+## `drivers.junos._destination` (2)
+
+`netdryrun.drivers.junos.x__destination__mutmut_14`: survived (accepted, equivalent: required=None instead of required=False for the optional rt-prefix-length leaf); argument: _leaf only tests `if required:`; None and False are both falsy; reviewed: no; diff fingerprint `089b241a5cf6005e`
+
+```diff
+# netdryrun.drivers.junos.x__destination__mutmut_14: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -1,7 +1,7 @@
+ def _destination(command: str, rt: dict):
+     """`rt-destination` plus `rt-prefix-length` (extensive), or a destination with its length (terse)."""
+     dest = _leaf(command, rt, "rt-destination")
+-    length = _leaf(command, rt, "rt-prefix-length", required=False)
++    length = _leaf(command, rt, "rt-prefix-length", required=None)
+     text = f"{dest}/{length}" if length is not None else dest
+     if "/" not in text:
+         raise unexpected(command, f"not a prefix: {text[:80]!r}")
+```
+
+`netdryrun.drivers.junos.x__destination__mutmut_34`: survived (accepted, equivalent: ip_network(text, strict=None) instead of strict=False); argument: ipaddress only tests `if strict:`; None is falsy, so host bits are masked exactly as with False (strict=True is killed by test_destination_with_host_bits_is_its_network); reviewed: no; diff fingerprint `7a232795c9643f4e`
+
+```diff
+# netdryrun.drivers.junos.x__destination__mutmut_34: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -6,6 +6,6 @@
+     if "/" not in text:
+         raise unexpected(command, f"not a prefix: {text[:80]!r}")
+     try:
+-        return ipaddress.ip_network(text, strict=False)
++        return ipaddress.ip_network(text, strict=None)
+     except ValueError:
+         raise unexpected(command, f"not a prefix: {text[:80]!r}") from None
+```
+
+## `drivers.junos._hidden` (2)
+
+`netdryrun.drivers.junos.x__hidden__mutmut_14`: survived (accepted, equivalent: absent rt-entry-state defaults to 'XXXX' instead of ''); argument: the default is only split and searched for the word 'Hidden'; neither '' nor 'XXXX' contains it, so the hidden verdict is identical; reviewed: no; diff fingerprint `ba184bd8ae17c909`
+
+```diff
+# netdryrun.drivers.junos.x__hidden__mutmut_14: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -1,3 +1,3 @@
+ def _hidden(command: str, e: dict) -> bool:
+-    state = _leaf(command, e, "rt-entry-state", required=False) or ""
++    state = _leaf(command, e, "rt-entry-state", required=False) or "XXXX"
+     return "Hidden" in state.split() or "hidden-reason" in e
+```
+
+`netdryrun.drivers.junos.x__hidden__mutmut_6`: survived (accepted, equivalent: required=None instead of required=False for the optional rt-entry-state leaf); argument: _leaf only tests `if required:`; None and False are both falsy; reviewed: no; diff fingerprint `51cfe30771655279`
+
+```diff
+# netdryrun.drivers.junos.x__hidden__mutmut_6: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -1,3 +1,3 @@
+ def _hidden(command: str, e: dict) -> bool:
+-    state = _leaf(command, e, "rt-entry-state", required=False) or ""
++    state = _leaf(command, e, "rt-entry-state", required=None) or ""
+     return "Hidden" in state.split() or "hidden-reason" in e
+```
+
+## `drivers.junos._strip_port` (2)
+
+`netdryrun.drivers.junos.x__strip_port__mutmut_4`: survived (accepted, equivalent: addr.split('+') without maxsplit instead of split('+', 1)); argument: only [0] is used; the first piece of a left split is the text before the first '+' whatever the maxsplit; reviewed: no; diff fingerprint `717045e1c363557f`
+
+```diff
+# netdryrun.drivers.junos.x__strip_port__mutmut_4: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -1,3 +1,3 @@
+ def _strip_port(addr: str) -> str:
+     """`10.0.1.2+179` (the TCP port of an established session) -> `10.0.1.2`."""
+-    return addr.split("+", 1)[0]
++    return addr.split("+", )[0]
+```
+
+`netdryrun.drivers.junos.x__strip_port__mutmut_7`: survived (accepted, equivalent: addr.split('+', 2) instead of split('+', 1)); argument: only [0] is used; it is the text before the first '+' for any maxsplit >= 1 (rsplit is killed by test_peer_address_port_is_cut_at_the_first_plus); reviewed: no; diff fingerprint `d753e4fa3b3219ab`
+
+```diff
+# netdryrun.drivers.junos.x__strip_port__mutmut_7: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -1,3 +1,3 @@
+ def _strip_port(addr: str) -> str:
+     """`10.0.1.2+179` (the TCP port of an established session) -> `10.0.1.2`."""
+-    return addr.split("+", 1)[0]
++    return addr.split("+", 2)[0]
+```
+
+## `drivers.srlinux.parse_instance_state` (2)
+
+`netdryrun.drivers.srlinux.x_parse_instance_state__mutmut_7`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `c6a54b8cac4636ba`
+
+```diff
+# netdryrun.drivers.srlinux.x_parse_instance_state__mutmut_7: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -1,4 +1,4 @@
+ def parse_instance_state(text: str) -> str | None:
+     """`info from state /network-instance X oper-state`: the oper-state, None when the instance is absent."""
+-    state = _find(_json(text, INSTANCE_CMD), "oper-state")
++    state = _find(_json(text, None), "oper-state")
+     return state if isinstance(state, str) and state else None
+```
+
+`netdryrun.drivers.srlinux.x_parse_instance_state__mutmut_9`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `ec5a68db6b855afe`
+
+```diff
+# netdryrun.drivers.srlinux.x_parse_instance_state__mutmut_9: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -1,4 +1,4 @@
+ def parse_instance_state(text: str) -> str | None:
+     """`info from state /network-instance X oper-state`: the oper-state, None when the instance is absent."""
+-    state = _find(_json(text, INSTANCE_CMD), "oper-state")
++    state = _find(_json(text, ), "oper-state")
+     return state if isinstance(state, str) and state else None
+```
+
+## `drivers.base.RepeatedKey.__init__` (1)
+
+`netdryrun.drivers.base.xǁRepeatedKeyǁ__init____mutmut_1`: survived (accepted, message-text: message text only: the exception's args; load_json reads e.key, never str(e), and still raises); diff fingerprint `8ef5833dd03ef609`
+
+```diff
+# netdryrun.drivers.base.xǁRepeatedKeyǁ__init____mutmut_1: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -1,3 +1,3 @@
+ def __init__(self, key: str):
+-    super().__init__(key)
++    super().__init__(None)
+     self.key = key
+```
+
+## `drivers.base.no_repeated_keys` (1)
+
+`netdryrun.drivers.base.x_no_repeated_keys__mutmut_3`: survived (accepted, message-text: message text only: RepeatedKey is still raised and load_json still raises DriverError; only the key it names changes); diff fingerprint `2aedb6d65b6471ec`
+
+```diff
+# netdryrun.drivers.base.x_no_repeated_keys__mutmut_3: survived
+--- src/netdryrun/drivers/base.py
++++ src/netdryrun/drivers/base.py
+@@ -4,6 +4,6 @@
+     out: dict = {}
+     for k, v in pairs:
+         if k in out:
+-            raise RepeatedKey(k)
++            raise RepeatedKey(None)
+         out[k] = v
+     return out
+```
+
+## `drivers.eos.EosDriver.all_routes` (1)
+
+`netdryrun.drivers.eos.xǁEosDriverǁall_routes__mutmut_3`: survived (accepted, equivalent: equivalent: family default 4 vs 5: only family == 6 selects IPv6, every other value reads IPv4); diff fingerprint `1aeb2f2755355f04`
+
+```diff
+# netdryrun.drivers.eos.xǁEosDriverǁall_routes__mutmut_3: survived
+--- src/netdryrun/drivers/eos.py
++++ src/netdryrun/drivers/eos.py
+@@ -1,4 +1,4 @@
+-def all_routes(self, vrf: str = "default", family: int = 4) -> Observation:
++def all_routes(self, vrf: str = "default", family: int = 5) -> Observation:
+     vrf = check_vrf_name(vrf)
+     ev: list[dict] = []
+     fam = "ipv6" if family == 6 else "ip"
+```
+
+## `drivers.frr.FrrDriver.all_routes` (1)
+
+`netdryrun.drivers.frr.xǁFrrDriverǁall_routes__mutmut_3`: survived (accepted, equivalent: equivalent: family default 4 vs 5: only family == 6 selects IPv6, every other value reads IPv4); diff fingerprint `f5868264b0c0342c`
+
+```diff
+# netdryrun.drivers.frr.xǁFrrDriverǁall_routes__mutmut_3: survived
+--- src/netdryrun/drivers/frr.py
++++ src/netdryrun/drivers/frr.py
+@@ -1,4 +1,4 @@
+-def all_routes(self, vrf: str = "default", family: int = 4) -> Observation:
++def all_routes(self, vrf: str = "default", family: int = 5) -> Observation:
+     vrf = check_vrf_name(vrf)
+     ev: list[dict] = []
+     fam = "ipv6" if family == 6 else "ip"
+```
+
+## `drivers.junos.JunosDriver.all_routes` (1)
+
+`netdryrun.drivers.junos.xǁJunosDriverǁall_routes__mutmut_3`: survived (accepted, equivalent: default family 5 instead of 4); argument: family is used only by _table, which returns inet6.0 for 6 and inet.0 for anything else; 4 and 5 both give inet.0 (the IPv6 branch is pinned by test_table_names and test_default_vrf_queries); reviewed: no; diff fingerprint `ee04149d13da9aa0`
+
+```diff
+# netdryrun.drivers.junos.xǁJunosDriverǁall_routes__mutmut_3: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -1,4 +1,4 @@
+-def all_routes(self, vrf: str = "default", family: int = 4) -> Observation:
++def all_routes(self, vrf: str = "default", family: int = 5) -> Observation:
+     vrf = self._vrf(vrf)
+     ev: list[dict] = []
+     table = _table(vrf, family)
+```
+
+## `drivers.junos._active` (1)
+
+`netdryrun.drivers.junos.x__active__mutmut_5`: survived (accepted, equivalent: required=None instead of required=False for the optional active-tag leaf); argument: _leaf only tests `if required:`; None and False are both falsy (required=True and the default are killed by test_entry_without_active_tag_is_inactive_not_an_error); reviewed: no; diff fingerprint `4191014952b34f05`
+
+```diff
+# netdryrun.drivers.junos.x__active__mutmut_5: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -1,2 +1,2 @@
+ def _active(command: str, e: dict) -> bool:
+-    return _leaf(command, e, "active-tag", required=False) == "*" and not _hidden(command, e)
++    return _leaf(command, e, "active-tag", required=None) == "*" and not _hidden(command, e)
+```
+
+## `drivers.junos._filtered` (1)
+
+`netdryrun.drivers.junos.x__filtered__mutmut_5`: survived (accepted, equivalent: required=None instead of required=False for the optional hidden-reason leaf); argument: _leaf only tests `if required:`; None and False are both falsy; reviewed: no; diff fingerprint `a0aae80a2dc56ca5`
+
+```diff
+# netdryrun.drivers.junos.x__filtered__mutmut_5: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -1,4 +1,4 @@
+ def _filtered(command: str, e: dict) -> bool:
+     """A hidden route rejected by import policy: never accepted, never usable (see the module docstring)."""
+-    reason = _leaf(command, e, "hidden-reason", required=False)
++    reason = _leaf(command, e, "hidden-reason", required=None)
+     return _hidden(command, e) and reason is not None and reason.strip().lower() == REJECTED
+```
+
+## `drivers.junos._protocol` (1)
+
+`netdryrun.drivers.junos.x__protocol__mutmut_3`: survived (accepted, equivalent: _leaf(None, e, 'protocol-name') in _protocol); argument: every caller (parse_routes, parse_all_routes, parse_bgp_paths) reaches _protocol only after _entries has read the same protocol-name leaf of the same entry with the real command; every raise condition (missing, repeated, not text) fires there first, so the None command is never printed; reviewed: no; diff fingerprint `c921ee43f832492f`
+
+```diff
+# netdryrun.drivers.junos.x__protocol__mutmut_3: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -1,3 +1,3 @@
+ def _protocol(command: str, e: dict) -> str:
+-    name = _leaf(command, e, "protocol-name").strip().lower()
++    name = _leaf(None, e, "protocol-name").strip().lower()
+     return PROTOCOLS.get(name, name)
+```
+
+## `drivers.srlinux.SrlDriver.all_routes` (1)
+
+`netdryrun.drivers.srlinux.xǁSrlDriverǁall_routes__mutmut_3`: survived (accepted, equivalent: equivalent: family default 4 vs 5: only family == 6 selects IPv6, every other value reads IPv4); diff fingerprint `2b21f88e9018806f`
+
+```diff
+# netdryrun.drivers.srlinux.xǁSrlDriverǁall_routes__mutmut_3: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -1,4 +1,4 @@
+-def all_routes(self, vrf: str = "default", family: int = 4) -> Observation:
++def all_routes(self, vrf: str = "default", family: int = 5) -> Observation:
+     vrf = check_vrf_name(vrf)
+     ev: list[dict] = []
+     table, key = ("ipv6-unicast", "ipv6-prefix") if family == 6 else ("ipv4-unicast", "ipv4-prefix")
+```
+
+## `drivers.srlinux._bgp_learned` (1)
+
+`netdryrun.drivers.srlinux.x__bgp_learned__mutmut_10`: survived (accepted, equivalent: equivalent: the default origin-protocol is lower-cased before the comparison); diff fingerprint `97bbe3c55120e82f`
+
+```diff
+# netdryrun.drivers.srlinux.x__bgp_learned__mutmut_10: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -2,4 +2,4 @@
+     """SR Linux lists the router's own static and interface routes in its BGP local-RIB as locally
+     originated paths (neighbor 0.0.0.0, origin-protocol static, ...), whether or not an export policy
+     advertises them. Only paths with origin-protocol bgp were learned over BGP."""
+-    return str(row.get("origin-protocol", "bgp")).lower() == "bgp"
++    return str(row.get("origin-protocol", "BGP")).lower() == "bgp"
+```
+
+## Carried over from 81a49b3
+
+The sections below are the 81a49b3 run's survivors for the modules whose source is byte-identical at this commit (see GATE.md, Layer 4); drivers above was mutated at this commit.
+
 ## `verify.frr._nexthop` (148)
 
 `netdryrun.verify.frr.x__nexthop__mutmut_1`: survived; diff fingerprint `dbd105b6f6be551f`
@@ -24251,433 +27982,6 @@ Each mutant below is a deliberate change to the code that no test noticed. In ve
 +    _require(list(self.extra) == sorted(set(self.extra)), "BGP ATTRIBUTES: EXTRA ATTRIBUTES NOT CANONICAL")
 ```
 
-## `drivers.frr._bgp_paths_raw` (26)
-
-`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_12`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `97d447da32b8a6d5`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_12: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -4,7 +4,7 @@
-     if not data:
-         return []
-     if not isinstance(data.get("paths"), list) or "prefix" not in data:
--        raise unexpected(command, text)
-+        raise unexpected(None, text)
-     if network(command, data["prefix"]) != ipaddress.ip_network(prefix):
-         return []  # bgpd answered for another (covering) prefix: nothing for this one
-     for p in data["paths"]:
-```
-
-`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_13`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `51538289ed3a8f90`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_13: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -4,7 +4,7 @@
-     if not data:
-         return []
-     if not isinstance(data.get("paths"), list) or "prefix" not in data:
--        raise unexpected(command, text)
-+        raise unexpected(command, None)
-     if network(command, data["prefix"]) != ipaddress.ip_network(prefix):
-         return []  # bgpd answered for another (covering) prefix: nothing for this one
-     for p in data["paths"]:
-```
-
-`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_14`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `18f801b369ff4a8e`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_14: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -4,7 +4,7 @@
-     if not data:
-         return []
-     if not isinstance(data.get("paths"), list) or "prefix" not in data:
--        raise unexpected(command, text)
-+        raise unexpected(text)
-     if network(command, data["prefix"]) != ipaddress.ip_network(prefix):
-         return []  # bgpd answered for another (covering) prefix: nothing for this one
-     for p in data["paths"]:
-```
-
-`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_15`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `a3d54de42703d41d`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_15: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -4,7 +4,7 @@
-     if not data:
-         return []
-     if not isinstance(data.get("paths"), list) or "prefix" not in data:
--        raise unexpected(command, text)
-+        raise unexpected(command, )
-     if network(command, data["prefix"]) != ipaddress.ip_network(prefix):
-         return []  # bgpd answered for another (covering) prefix: nothing for this one
-     for p in data["paths"]:
-```
-
-`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_16`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `7dce13effa42e90c`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_16: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -5,7 +5,7 @@
-         return []
-     if not isinstance(data.get("paths"), list) or "prefix" not in data:
-         raise unexpected(command, text)
--    if network(command, data["prefix"]) != ipaddress.ip_network(prefix):
-+    if network(None, data["prefix"]) != ipaddress.ip_network(prefix):
-         return []  # bgpd answered for another (covering) prefix: nothing for this one
-     for p in data["paths"]:
-         if not isinstance(p, dict):
-```
-
-`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_2`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `5b1331f53d60c448`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_2: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -1,6 +1,6 @@
- def _bgp_paths_raw(command: str, text: str, prefix: str) -> list[dict]:
-     """Path objects for exactly `prefix` from `show bgp ... <prefix> json`. `{}` means no path."""
--    data = _bgp_json(command, text)
-+    data = _bgp_json(None, text)
-     if not data:
-         return []
-     if not isinstance(data.get("paths"), list) or "prefix" not in data:
-```
-
-`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_27`: survived (accepted, message-text: message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes); diff fingerprint `77a30ef77715b1b3`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_27: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -9,7 +9,7 @@
-         return []  # bgpd answered for another (covering) prefix: nothing for this one
-     for p in data["paths"]:
-         if not isinstance(p, dict):
--            raise unexpected(command, f"path: {str(p)[:150]}")
-+            raise unexpected(None, f"path: {str(p)[:150]}")
-         if p.get("stale"):
-             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
-             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
-```
-
-`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_28`: survived (accepted, message-text: message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes); diff fingerprint `072b8ea9b9443e6e`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_28: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -9,7 +9,7 @@
-         return []  # bgpd answered for another (covering) prefix: nothing for this one
-     for p in data["paths"]:
-         if not isinstance(p, dict):
--            raise unexpected(command, f"path: {str(p)[:150]}")
-+            raise unexpected(command, None)
-         if p.get("stale"):
-             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
-             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
-```
-
-`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_29`: survived (accepted, message-text: message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes); diff fingerprint `2aade544b8a35086`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_29: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -9,7 +9,7 @@
-         return []  # bgpd answered for another (covering) prefix: nothing for this one
-     for p in data["paths"]:
-         if not isinstance(p, dict):
--            raise unexpected(command, f"path: {str(p)[:150]}")
-+            raise unexpected(f"path: {str(p)[:150]}")
-         if p.get("stale"):
-             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
-             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
-```
-
-`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_30`: survived (accepted, message-text: message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes); diff fingerprint `521e4cc68d03b68f`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_30: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -9,7 +9,7 @@
-         return []  # bgpd answered for another (covering) prefix: nothing for this one
-     for p in data["paths"]:
-         if not isinstance(p, dict):
--            raise unexpected(command, f"path: {str(p)[:150]}")
-+            raise unexpected(command, )
-         if p.get("stale"):
-             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
-             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
-```
-
-`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_31`: survived (accepted, message-text: message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes); diff fingerprint `10ff992640aa3969`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_31: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -9,7 +9,7 @@
-         return []  # bgpd answered for another (covering) prefix: nothing for this one
-     for p in data["paths"]:
-         if not isinstance(p, dict):
--            raise unexpected(command, f"path: {str(p)[:150]}")
-+            raise unexpected(command, f"path: {str(None)[:150]}")
-         if p.get("stale"):
-             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
-             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
-```
-
-`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_32`: survived (accepted, message-text: message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes); diff fingerprint `2fe1a09324ab3b5d`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_32: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -9,7 +9,7 @@
-         return []  # bgpd answered for another (covering) prefix: nothing for this one
-     for p in data["paths"]:
-         if not isinstance(p, dict):
--            raise unexpected(command, f"path: {str(p)[:150]}")
-+            raise unexpected(command, f"path: {str(p)[:151]}")
-         if p.get("stale"):
-             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
-             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
-```
-
-`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_37`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `c3c7ea8c6eb4a117`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_37: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -13,6 +13,6 @@
-         if p.get("stale"):
-             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
-             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
--            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
-+            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get(None, '?')} is stale "
-                               "(graceful restart in progress): not settled")
-     return data["paths"]
-```
-
-`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_38`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `e8db09c2d37ec7e6`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_38: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -13,6 +13,6 @@
-         if p.get("stale"):
-             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
-             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
--            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
-+            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', None)} is stale "
-                               "(graceful restart in progress): not settled")
-     return data["paths"]
-```
-
-`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_39`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `6ef6591857897e9c`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_39: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -13,6 +13,6 @@
-         if p.get("stale"):
-             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
-             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
--            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
-+            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('?')} is stale "
-                               "(graceful restart in progress): not settled")
-     return data["paths"]
-```
-
-`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_40`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `1e19a061e416a7ee`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_40: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -13,6 +13,6 @@
-         if p.get("stale"):
-             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
-             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
--            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
-+            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', )} is stale "
-                               "(graceful restart in progress): not settled")
-     return data["paths"]
-```
-
-`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_41`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `3b46027635eab567`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_41: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -13,6 +13,6 @@
-         if p.get("stale"):
-             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
-             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
--            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
-+            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') and {}).get('peerId', '?')} is stale "
-                               "(graceful restart in progress): not settled")
-     return data["paths"]
-```
-
-`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_42`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `51804f2b3fb44be2`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_42: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -13,6 +13,6 @@
-         if p.get("stale"):
-             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
-             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
--            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
-+            raise DriverError(f"{prefix}: BGP path from {(p.get(None) or {}).get('peerId', '?')} is stale "
-                               "(graceful restart in progress): not settled")
-     return data["paths"]
-```
-
-`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_43`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `93a41f7e41f53994`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_43: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -13,6 +13,6 @@
-         if p.get("stale"):
-             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
-             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
--            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
-+            raise DriverError(f"{prefix}: BGP path from {(p.get('XXpeerXX') or {}).get('peerId', '?')} is stale "
-                               "(graceful restart in progress): not settled")
-     return data["paths"]
-```
-
-`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_44`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `b0f1e9a2e984c3b0`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_44: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -13,6 +13,6 @@
-         if p.get("stale"):
-             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
-             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
--            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
-+            raise DriverError(f"{prefix}: BGP path from {(p.get('PEER') or {}).get('peerId', '?')} is stale "
-                               "(graceful restart in progress): not settled")
-     return data["paths"]
-```
-
-`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_45`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `eb62ae5ba3866ec3`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_45: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -13,6 +13,6 @@
-         if p.get("stale"):
-             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
-             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
--            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
-+            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('XXpeerIdXX', '?')} is stale "
-                               "(graceful restart in progress): not settled")
-     return data["paths"]
-```
-
-`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_46`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `0b7c38a29cd64c17`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_46: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -13,6 +13,6 @@
-         if p.get("stale"):
-             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
-             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
--            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
-+            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerid', '?')} is stale "
-                               "(graceful restart in progress): not settled")
-     return data["paths"]
-```
-
-`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_47`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `494b7d575551cf86`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_47: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -13,6 +13,6 @@
-         if p.get("stale"):
-             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
-             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
--            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
-+            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('PEERID', '?')} is stale "
-                               "(graceful restart in progress): not settled")
-     return data["paths"]
-```
-
-`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_48`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `e85c692ed30c6d3a`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_48: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -13,6 +13,6 @@
-         if p.get("stale"):
-             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
-             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
--            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
-+            raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', 'XX?XX')} is stale "
-                               "(graceful restart in progress): not settled")
-     return data["paths"]
-```
-
-`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_49`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `6a55dc277cf7a70d`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_49: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -14,5 +14,5 @@
-             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
-             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
-             raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
--                              "(graceful restart in progress): not settled")
-+                              "XX(graceful restart in progress): not settledXX")
-     return data["paths"]
-```
-
-`netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_50`: survived (accepted, message-text: message text only: the stale path still raises the DriverError (the check is not settled, never a pass); only the peer named in its message changes); diff fingerprint `9cadc12335cd40c4`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_raw__mutmut_50: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -14,5 +14,5 @@
-             # graceful restart: bgpd keeps the restarting peer's paths, marked stale, until it re-sends them or
-             # the stale timer ends. Such a path is neither present nor gone yet, so no check can pass on it
-             raise DriverError(f"{prefix}: BGP path from {(p.get('peer') or {}).get('peerId', '?')} is stale "
--                              "(graceful restart in progress): not settled")
-+                              "(GRACEFUL RESTART IN PROGRESS): NOT SETTLED")
-     return data["paths"]
-```
-
 ## `verify.intent._glob` (25)
 
 `netdryrun.verify.intent.x__glob__mutmut_1`: survived (accepted, message-text: message text only: the IntentError (exit 2) is raised either way, only its wording changes); diff fingerprint `e9f94fbb59769d91`
@@ -29890,308 +33194,6 @@ Each mutant below is a deliberate change to the code that no test noticed. In ve
          elif kind == "confed-seq":
 ```
 
-## `drivers.frr._route_table` (18)
-
-`netdryrun.drivers.frr.x__route_table__mutmut_10`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `7d96088b6aa52080`
-
-```diff
-# netdryrun.drivers.frr.x__route_table__mutmut_10: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -3,7 +3,7 @@
-     that isn't a prefix (a warning, output keyed by VRF name) is unexpected."""
-     data = load_json(command, text)
-     if not isinstance(data, dict):
--        raise unexpected(command, text)
-+        raise unexpected(command, )
-     table = {}
-     for key, entries in data.items():
-         net = network(command, key)
-```
-
-`netdryrun.drivers.frr.x__route_table__mutmut_13`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `3dddfbc78098915e`
-
-```diff
-# netdryrun.drivers.frr.x__route_table__mutmut_13: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -6,7 +6,7 @@
-         raise unexpected(command, text)
-     table = {}
-     for key, entries in data.items():
--        net = network(command, key)
-+        net = network(None, key)
-         if not isinstance(entries, list) or not entries:
-             raise unexpected(command, f"{key}: {str(entries)[:150]}")
-         for e in entries:
-```
-
-`netdryrun.drivers.frr.x__route_table__mutmut_2`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `e9e85b6faee88aa7`
-
-```diff
-# netdryrun.drivers.frr.x__route_table__mutmut_2: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -1,7 +1,7 @@
- def _route_table(command: str, text: str) -> dict[ipaddress._BaseNetwork, list[dict]]:
-     """zebra's `show ip route ... json`: {prefix: [entry, ...]}. `{}` is a real empty answer; any key
-     that isn't a prefix (a warning, output keyed by VRF name) is unexpected."""
--    data = load_json(command, text)
-+    data = load_json(None, text)
-     if not isinstance(data, dict):
-         raise unexpected(command, text)
-     table = {}
-```
-
-`netdryrun.drivers.frr.x__route_table__mutmut_20`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `e847ae102d35b869`
-
-```diff
-# netdryrun.drivers.frr.x__route_table__mutmut_20: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -8,7 +8,7 @@
-     for key, entries in data.items():
-         net = network(command, key)
-         if not isinstance(entries, list) or not entries:
--            raise unexpected(command, f"{key}: {str(entries)[:150]}")
-+            raise unexpected(None, f"{key}: {str(entries)[:150]}")
-         for e in entries:
-             if not isinstance(e, dict) or not isinstance(e.get("protocol"), str):
-                 raise unexpected(command, f"{key}: {str(e)[:150]}")
-```
-
-`netdryrun.drivers.frr.x__route_table__mutmut_21`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `ea6b726cca1236c2`
-
-```diff
-# netdryrun.drivers.frr.x__route_table__mutmut_21: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -8,7 +8,7 @@
-     for key, entries in data.items():
-         net = network(command, key)
-         if not isinstance(entries, list) or not entries:
--            raise unexpected(command, f"{key}: {str(entries)[:150]}")
-+            raise unexpected(command, None)
-         for e in entries:
-             if not isinstance(e, dict) or not isinstance(e.get("protocol"), str):
-                 raise unexpected(command, f"{key}: {str(e)[:150]}")
-```
-
-`netdryrun.drivers.frr.x__route_table__mutmut_22`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `6d82d860c8b9c644`
-
-```diff
-# netdryrun.drivers.frr.x__route_table__mutmut_22: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -8,7 +8,7 @@
-     for key, entries in data.items():
-         net = network(command, key)
-         if not isinstance(entries, list) or not entries:
--            raise unexpected(command, f"{key}: {str(entries)[:150]}")
-+            raise unexpected(f"{key}: {str(entries)[:150]}")
-         for e in entries:
-             if not isinstance(e, dict) or not isinstance(e.get("protocol"), str):
-                 raise unexpected(command, f"{key}: {str(e)[:150]}")
-```
-
-`netdryrun.drivers.frr.x__route_table__mutmut_23`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `640de4f8e03240cf`
-
-```diff
-# netdryrun.drivers.frr.x__route_table__mutmut_23: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -8,7 +8,7 @@
-     for key, entries in data.items():
-         net = network(command, key)
-         if not isinstance(entries, list) or not entries:
--            raise unexpected(command, f"{key}: {str(entries)[:150]}")
-+            raise unexpected(command, )
-         for e in entries:
-             if not isinstance(e, dict) or not isinstance(e.get("protocol"), str):
-                 raise unexpected(command, f"{key}: {str(e)[:150]}")
-```
-
-`netdryrun.drivers.frr.x__route_table__mutmut_24`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `bed2654ea13cecfa`
-
-```diff
-# netdryrun.drivers.frr.x__route_table__mutmut_24: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -8,7 +8,7 @@
-     for key, entries in data.items():
-         net = network(command, key)
-         if not isinstance(entries, list) or not entries:
--            raise unexpected(command, f"{key}: {str(entries)[:150]}")
-+            raise unexpected(command, f"{key}: {str(None)[:150]}")
-         for e in entries:
-             if not isinstance(e, dict) or not isinstance(e.get("protocol"), str):
-                 raise unexpected(command, f"{key}: {str(e)[:150]}")
-```
-
-`netdryrun.drivers.frr.x__route_table__mutmut_25`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `e4e57e58b1e77789`
-
-```diff
-# netdryrun.drivers.frr.x__route_table__mutmut_25: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -8,7 +8,7 @@
-     for key, entries in data.items():
-         net = network(command, key)
-         if not isinstance(entries, list) or not entries:
--            raise unexpected(command, f"{key}: {str(entries)[:150]}")
-+            raise unexpected(command, f"{key}: {str(entries)[:151]}")
-         for e in entries:
-             if not isinstance(e, dict) or not isinstance(e.get("protocol"), str):
-                 raise unexpected(command, f"{key}: {str(e)[:150]}")
-```
-
-`netdryrun.drivers.frr.x__route_table__mutmut_29`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `452f8d15ad9efbe4`
-
-```diff
-# netdryrun.drivers.frr.x__route_table__mutmut_29: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -11,6 +11,6 @@
-             raise unexpected(command, f"{key}: {str(entries)[:150]}")
-         for e in entries:
-             if not isinstance(e, dict) or not isinstance(e.get("protocol"), str):
--                raise unexpected(command, f"{key}: {str(e)[:150]}")
-+                raise unexpected(None, f"{key}: {str(e)[:150]}")
-         table[net] = entries
-     return table
-```
-
-`netdryrun.drivers.frr.x__route_table__mutmut_30`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `f5840f1596252e1c`
-
-```diff
-# netdryrun.drivers.frr.x__route_table__mutmut_30: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -11,6 +11,6 @@
-             raise unexpected(command, f"{key}: {str(entries)[:150]}")
-         for e in entries:
-             if not isinstance(e, dict) or not isinstance(e.get("protocol"), str):
--                raise unexpected(command, f"{key}: {str(e)[:150]}")
-+                raise unexpected(command, None)
-         table[net] = entries
-     return table
-```
-
-`netdryrun.drivers.frr.x__route_table__mutmut_31`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `b0e51fcee0470994`
-
-```diff
-# netdryrun.drivers.frr.x__route_table__mutmut_31: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -11,6 +11,6 @@
-             raise unexpected(command, f"{key}: {str(entries)[:150]}")
-         for e in entries:
-             if not isinstance(e, dict) or not isinstance(e.get("protocol"), str):
--                raise unexpected(command, f"{key}: {str(e)[:150]}")
-+                raise unexpected(f"{key}: {str(e)[:150]}")
-         table[net] = entries
-     return table
-```
-
-`netdryrun.drivers.frr.x__route_table__mutmut_32`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `c3641fb643b37af8`
-
-```diff
-# netdryrun.drivers.frr.x__route_table__mutmut_32: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -11,6 +11,6 @@
-             raise unexpected(command, f"{key}: {str(entries)[:150]}")
-         for e in entries:
-             if not isinstance(e, dict) or not isinstance(e.get("protocol"), str):
--                raise unexpected(command, f"{key}: {str(e)[:150]}")
-+                raise unexpected(command, )
-         table[net] = entries
-     return table
-```
-
-`netdryrun.drivers.frr.x__route_table__mutmut_33`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `82962ea5c566fe74`
-
-```diff
-# netdryrun.drivers.frr.x__route_table__mutmut_33: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -11,6 +11,6 @@
-             raise unexpected(command, f"{key}: {str(entries)[:150]}")
-         for e in entries:
-             if not isinstance(e, dict) or not isinstance(e.get("protocol"), str):
--                raise unexpected(command, f"{key}: {str(e)[:150]}")
-+                raise unexpected(command, f"{key}: {str(None)[:150]}")
-         table[net] = entries
-     return table
-```
-
-`netdryrun.drivers.frr.x__route_table__mutmut_34`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `4b1151e845c5ae68`
-
-```diff
-# netdryrun.drivers.frr.x__route_table__mutmut_34: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -11,6 +11,6 @@
-             raise unexpected(command, f"{key}: {str(entries)[:150]}")
-         for e in entries:
-             if not isinstance(e, dict) or not isinstance(e.get("protocol"), str):
--                raise unexpected(command, f"{key}: {str(e)[:150]}")
-+                raise unexpected(command, f"{key}: {str(e)[:151]}")
-         table[net] = entries
-     return table
-```
-
-`netdryrun.drivers.frr.x__route_table__mutmut_7`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `9a3c76562c5914e5`
-
-```diff
-# netdryrun.drivers.frr.x__route_table__mutmut_7: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -3,7 +3,7 @@
-     that isn't a prefix (a warning, output keyed by VRF name) is unexpected."""
-     data = load_json(command, text)
-     if not isinstance(data, dict):
--        raise unexpected(command, text)
-+        raise unexpected(None, text)
-     table = {}
-     for key, entries in data.items():
-         net = network(command, key)
-```
-
-`netdryrun.drivers.frr.x__route_table__mutmut_8`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `7245ec5215625baf`
-
-```diff
-# netdryrun.drivers.frr.x__route_table__mutmut_8: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -3,7 +3,7 @@
-     that isn't a prefix (a warning, output keyed by VRF name) is unexpected."""
-     data = load_json(command, text)
-     if not isinstance(data, dict):
--        raise unexpected(command, text)
-+        raise unexpected(command, None)
-     table = {}
-     for key, entries in data.items():
-         net = network(command, key)
-```
-
-`netdryrun.drivers.frr.x__route_table__mutmut_9`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `e9e8548b935149b6`
-
-```diff
-# netdryrun.drivers.frr.x__route_table__mutmut_9: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -3,7 +3,7 @@
-     that isn't a prefix (a warning, output keyed by VRF name) is unexpected."""
-     data = load_json(command, text)
-     if not isinstance(data, dict):
--        raise unexpected(command, text)
-+        raise unexpected(text)
-     table = {}
-     for key, entries in data.items():
-         net = network(command, key)
-```
-
 ## `config.load` (17)
 
 `netdryrun.config.x_load__mutmut_11`: survived (accepted, message-text: message text only: the file name shown in errors); diff fingerprint `44a8d15c79902e56`
@@ -30481,276 +33483,6 @@ Each mutant below is a deliberate change to the code that no test noticed. In ve
      scenarios: list[Scenario] = []
      if "scenarios" in data:
          if not isinstance(data["scenarios"], list) or not data["scenarios"]:
-```
-
-## `drivers.eos._summary` (16)
-
-`netdryrun.drivers.eos.x__summary__mutmut_11`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `daffb94d6dfe0b91`
-
-```diff
-# netdryrun.drivers.eos.x__summary__mutmut_11: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -1,7 +1,7 @@
- def _summary(text: str, vrf: str, afi: str, into: dict[str, BgpNeighbor] | None):
-     command = SUMMARY_CMD.get(afi, f"show bgp {afi} summary | json")
-     out = into if into is not None else {}
--    entry = _vrf(command, _json(command, text), vrf)
-+    entry = _vrf(None, _json(command, text), vrf)
-     for addr, p in _table(command, entry, "peers").items():
-         if not isinstance(p, dict) or not isinstance(p.get("peerState"), str) or not p["peerState"].strip():
-             raise unexpected(command, f"{addr}: {str(p)[:150]}")
-```
-
-`netdryrun.drivers.eos.x__summary__mutmut_17`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `9bacb10eacc9f4a7`
-
-```diff
-# netdryrun.drivers.eos.x__summary__mutmut_17: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -1,7 +1,7 @@
- def _summary(text: str, vrf: str, afi: str, into: dict[str, BgpNeighbor] | None):
-     command = SUMMARY_CMD.get(afi, f"show bgp {afi} summary | json")
-     out = into if into is not None else {}
--    entry = _vrf(command, _json(command, text), vrf)
-+    entry = _vrf(command, _json(None, text), vrf)
-     for addr, p in _table(command, entry, "peers").items():
-         if not isinstance(p, dict) or not isinstance(p.get("peerState"), str) or not p["peerState"].strip():
-             raise unexpected(command, f"{addr}: {str(p)[:150]}")
-```
-
-`netdryrun.drivers.eos.x__summary__mutmut_21`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `7ccb41104c55ab9e`
-
-```diff
-# netdryrun.drivers.eos.x__summary__mutmut_21: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -2,7 +2,7 @@
-     command = SUMMARY_CMD.get(afi, f"show bgp {afi} summary | json")
-     out = into if into is not None else {}
-     entry = _vrf(command, _json(command, text), vrf)
--    for addr, p in _table(command, entry, "peers").items():
-+    for addr, p in _table(None, entry, "peers").items():
-         if not isinstance(p, dict) or not isinstance(p.get("peerState"), str) or not p["peerState"].strip():
-             raise unexpected(command, f"{addr}: {str(p)[:150]}")
-         key = _canon_addr(str(addr))
-```
-
-`netdryrun.drivers.eos.x__summary__mutmut_3`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `235d4c5d1d2a1e87`
-
-```diff
-# netdryrun.drivers.eos.x__summary__mutmut_3: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -1,5 +1,5 @@
- def _summary(text: str, vrf: str, afi: str, into: dict[str, BgpNeighbor] | None):
--    command = SUMMARY_CMD.get(afi, f"show bgp {afi} summary | json")
-+    command = SUMMARY_CMD.get(afi, None)
-     out = into if into is not None else {}
-     entry = _vrf(command, _json(command, text), vrf)
-     for addr, p in _table(command, entry, "peers").items():
-```
-
-`netdryrun.drivers.eos.x__summary__mutmut_30`: survived (accepted, equivalent: equivalent: a non-mapping peer or a missing peerState still raises (AttributeError or KeyError, turned into a DriverError by the parser wrapper)); diff fingerprint `e37c8c806f69bc18`
-
-```diff
-# netdryrun.drivers.eos.x__summary__mutmut_30: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -3,7 +3,7 @@
-     out = into if into is not None else {}
-     entry = _vrf(command, _json(command, text), vrf)
-     for addr, p in _table(command, entry, "peers").items():
--        if not isinstance(p, dict) or not isinstance(p.get("peerState"), str) or not p["peerState"].strip():
-+        if not isinstance(p, dict) and not isinstance(p.get("peerState"), str) or not p["peerState"].strip():
-             raise unexpected(command, f"{addr}: {str(p)[:150]}")
-         key = _canon_addr(str(addr))
-         # "Idle(Admin)" (EOS prints no space) -> "idle": the first word is the FSM state
-```
-
-`netdryrun.drivers.eos.x__summary__mutmut_37`: survived (accepted, message-text: message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes); diff fingerprint `52e2c0163e315774`
-
-```diff
-# netdryrun.drivers.eos.x__summary__mutmut_37: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -4,7 +4,7 @@
-     entry = _vrf(command, _json(command, text), vrf)
-     for addr, p in _table(command, entry, "peers").items():
-         if not isinstance(p, dict) or not isinstance(p.get("peerState"), str) or not p["peerState"].strip():
--            raise unexpected(command, f"{addr}: {str(p)[:150]}")
-+            raise unexpected(None, f"{addr}: {str(p)[:150]}")
-         key = _canon_addr(str(addr))
-         # "Idle(Admin)" (EOS prints no space) -> "idle": the first word is the FSM state
-         state = re.split(r"[\s(]", p["peerState"].strip(), maxsplit=1)[0].lower()
-```
-
-`netdryrun.drivers.eos.x__summary__mutmut_38`: survived (accepted, message-text: message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes); diff fingerprint `2cde62b02df322ac`
-
-```diff
-# netdryrun.drivers.eos.x__summary__mutmut_38: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -4,7 +4,7 @@
-     entry = _vrf(command, _json(command, text), vrf)
-     for addr, p in _table(command, entry, "peers").items():
-         if not isinstance(p, dict) or not isinstance(p.get("peerState"), str) or not p["peerState"].strip():
--            raise unexpected(command, f"{addr}: {str(p)[:150]}")
-+            raise unexpected(command, None)
-         key = _canon_addr(str(addr))
-         # "Idle(Admin)" (EOS prints no space) -> "idle": the first word is the FSM state
-         state = re.split(r"[\s(]", p["peerState"].strip(), maxsplit=1)[0].lower()
-```
-
-`netdryrun.drivers.eos.x__summary__mutmut_39`: survived (accepted, message-text: message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes); diff fingerprint `cdbc8f2550034043`
-
-```diff
-# netdryrun.drivers.eos.x__summary__mutmut_39: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -4,7 +4,7 @@
-     entry = _vrf(command, _json(command, text), vrf)
-     for addr, p in _table(command, entry, "peers").items():
-         if not isinstance(p, dict) or not isinstance(p.get("peerState"), str) or not p["peerState"].strip():
--            raise unexpected(command, f"{addr}: {str(p)[:150]}")
-+            raise unexpected(f"{addr}: {str(p)[:150]}")
-         key = _canon_addr(str(addr))
-         # "Idle(Admin)" (EOS prints no space) -> "idle": the first word is the FSM state
-         state = re.split(r"[\s(]", p["peerState"].strip(), maxsplit=1)[0].lower()
-```
-
-`netdryrun.drivers.eos.x__summary__mutmut_40`: survived (accepted, message-text: message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes); diff fingerprint `8efa6e11789db57e`
-
-```diff
-# netdryrun.drivers.eos.x__summary__mutmut_40: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -4,7 +4,7 @@
-     entry = _vrf(command, _json(command, text), vrf)
-     for addr, p in _table(command, entry, "peers").items():
-         if not isinstance(p, dict) or not isinstance(p.get("peerState"), str) or not p["peerState"].strip():
--            raise unexpected(command, f"{addr}: {str(p)[:150]}")
-+            raise unexpected(command, )
-         key = _canon_addr(str(addr))
-         # "Idle(Admin)" (EOS prints no space) -> "idle": the first word is the FSM state
-         state = re.split(r"[\s(]", p["peerState"].strip(), maxsplit=1)[0].lower()
-```
-
-`netdryrun.drivers.eos.x__summary__mutmut_41`: survived (accepted, message-text: message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes); diff fingerprint `5b8329665b4c361c`
-
-```diff
-# netdryrun.drivers.eos.x__summary__mutmut_41: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -4,7 +4,7 @@
-     entry = _vrf(command, _json(command, text), vrf)
-     for addr, p in _table(command, entry, "peers").items():
-         if not isinstance(p, dict) or not isinstance(p.get("peerState"), str) or not p["peerState"].strip():
--            raise unexpected(command, f"{addr}: {str(p)[:150]}")
-+            raise unexpected(command, f"{addr}: {str(None)[:150]}")
-         key = _canon_addr(str(addr))
-         # "Idle(Admin)" (EOS prints no space) -> "idle": the first word is the FSM state
-         state = re.split(r"[\s(]", p["peerState"].strip(), maxsplit=1)[0].lower()
-```
-
-`netdryrun.drivers.eos.x__summary__mutmut_42`: survived (accepted, message-text: message text only: the same parse error is still raised (with one argument, `unexpected` raises a TypeError, which the parser wrapper turns into a DriverError); only its message changes); diff fingerprint `5972f5b063b58bbd`
-
-```diff
-# netdryrun.drivers.eos.x__summary__mutmut_42: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -4,7 +4,7 @@
-     entry = _vrf(command, _json(command, text), vrf)
-     for addr, p in _table(command, entry, "peers").items():
-         if not isinstance(p, dict) or not isinstance(p.get("peerState"), str) or not p["peerState"].strip():
--            raise unexpected(command, f"{addr}: {str(p)[:150]}")
-+            raise unexpected(command, f"{addr}: {str(p)[:151]}")
-         key = _canon_addr(str(addr))
-         # "Idle(Admin)" (EOS prints no space) -> "idle": the first word is the FSM state
-         state = re.split(r"[\s(]", p["peerState"].strip(), maxsplit=1)[0].lower()
-```
-
-`netdryrun.drivers.eos.x__summary__mutmut_5`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `0a27c1f003d41579`
-
-```diff
-# netdryrun.drivers.eos.x__summary__mutmut_5: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -1,5 +1,5 @@
- def _summary(text: str, vrf: str, afi: str, into: dict[str, BgpNeighbor] | None):
--    command = SUMMARY_CMD.get(afi, f"show bgp {afi} summary | json")
-+    command = SUMMARY_CMD.get(afi, )
-     out = into if into is not None else {}
-     entry = _vrf(command, _json(command, text), vrf)
-     for addr, p in _table(command, entry, "peers").items():
-```
-
-`netdryrun.drivers.eos.x__summary__mutmut_53`: survived (accepted, equivalent: dropping maxsplit=1 from the peerState split: only element [0] is used, and the first field of re.split is the same for any maxsplit); argument: re.split(p, s)[0] == re.split(p, s, maxsplit=1)[0] for every string s, so the parsed state is identical on every input; reviewed: no; diff fingerprint `3e375af80b6df06d`
-
-```diff
-# netdryrun.drivers.eos.x__summary__mutmut_53: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -7,7 +7,7 @@
-             raise unexpected(command, f"{addr}: {str(p)[:150]}")
-         key = _canon_addr(str(addr))
-         # "Idle(Admin)" (EOS prints no space) -> "idle": the first word is the FSM state
--        state = re.split(r"[\s(]", p["peerState"].strip(), maxsplit=1)[0].lower()
-+        state = re.split(r"[\s(]", p["peerState"].strip(), )[0].lower()
-         # EOS sends updates without delay unless `neighbor ... out-delay` is set, which the summary doesn't show:
-         # its platform default (0) is used
-         n = out.get(key) or BgpNeighbor(str(addr), state, adv_interval=0.0)
-```
-
-`netdryrun.drivers.eos.x__summary__mutmut_59`: survived (accepted, equivalent: maxsplit=1 -> maxsplit=2 on the peerState split: only element [0] is used, which does not depend on maxsplit (>=1)); argument: re.split(p, s, maxsplit=k)[0] is the text before the first separator for every k >= 1, so the parsed state is identical on every input; reviewed: no; diff fingerprint `26542544118646ac`
-
-```diff
-# netdryrun.drivers.eos.x__summary__mutmut_59: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -7,7 +7,7 @@
-             raise unexpected(command, f"{addr}: {str(p)[:150]}")
-         key = _canon_addr(str(addr))
-         # "Idle(Admin)" (EOS prints no space) -> "idle": the first word is the FSM state
--        state = re.split(r"[\s(]", p["peerState"].strip(), maxsplit=1)[0].lower()
-+        state = re.split(r"[\s(]", p["peerState"].strip(), maxsplit=2)[0].lower()
-         # EOS sends updates without delay unless `neighbor ... out-delay` is set, which the summary doesn't show:
-         # its platform default (0) is used
-         n = out.get(key) or BgpNeighbor(str(addr), state, adv_interval=0.0)
-```
-
-`netdryrun.drivers.eos.x__summary__mutmut_85`: survived (accepted, equivalent: state != 'established' -> state != 'XXestablishedXX' in the down-wins merge: the only extra case is state == 'established', where n.state (already 'established') is reassigned the same value); argument: the branch runs only when n.state == 'established'; with state == 'established' the mutant assigns 'established' to it, a no-op; any other state is assigned by both versions, so a down session still wins; reviewed: no; diff fingerprint `40f055d5ef147262`
-
-```diff
-# netdryrun.drivers.eos.x__summary__mutmut_85: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -16,7 +16,7 @@
-             # down session is never hidden by an up one
-             if str(addr) not in n.ambiguous:
-                 n.ambiguous = (n.ambiguous or [n.address]) + [str(addr)]
--            if n.state == "established" and state != "established":
-+            if n.state == "established" and state != "XXestablishedXX":
-                 n.state = state
-         if "prefixAccepted" in p:
-             n.prefixes[afi] = as_int(command, p["prefixAccepted"])
-```
-
-`netdryrun.drivers.eos.x__summary__mutmut_86`: survived (accepted, equivalent: state != 'established' -> state != 'ESTABLISHED' in the down-wins merge: state is lowercased, so the only extra case reassigns 'established' to a neighbor already 'established'); argument: state is .lower()ed so never equals 'ESTABLISHED'; the extra assignment happens only when n.state and state are both 'established', a no-op; a down state is still assigned by both versions; reviewed: no; diff fingerprint `62bcd1173ccf6aec`
-
-```diff
-# netdryrun.drivers.eos.x__summary__mutmut_86: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -16,7 +16,7 @@
-             # down session is never hidden by an up one
-             if str(addr) not in n.ambiguous:
-                 n.ambiguous = (n.ambiguous or [n.address]) + [str(addr)]
--            if n.state == "established" and state != "established":
-+            if n.state == "established" and state != "ESTABLISHED":
-                 n.state = state
-         if "prefixAccepted" in p:
-             n.prefixes[afi] = as_int(command, p["prefixAccepted"])
 ```
 
 ## `verify.engine._pins_ok` (16)
@@ -31526,246 +34258,6 @@ Each mutant below is a deliberate change to the code that no test noticed. In ve
          where = f" at line {mark.line + 1}, column {mark.column + 1}" if mark is not None else ""
          problem = getattr(e, "problem", None) or str(e).splitlines()[0]
          raise ConfigError(f"{source}: not valid YAML{where}: {' '.join(str(problem).split())}") from None
-```
-
-## `drivers.eos._bgp_entries` (15)
-
-`netdryrun.drivers.eos.x__bgp_entries__mutmut_13`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `b7448e0ee66b47cc`
-
-```diff
-# netdryrun.drivers.eos.x__bgp_entries__mutmut_13: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -1,6 +1,6 @@
- def _bgp_entries(command: str, text: str, vrf: str) -> dict:
-     entry = _vrf(command, _json(command, text), vrf)
--    entries = _table(command, entry, "bgpRouteEntries")
-+    entries = _table(None, entry, "bgpRouteEntries")
-     for key, e in entries.items():
-         if not isinstance(e, dict) or not isinstance(e.get("bgpRoutePaths"), list):
-             raise unexpected(command, f"{key}: {str(e)[:150]}")
-```
-
-`netdryrun.drivers.eos.x__bgp_entries__mutmut_2`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `6c94c9ed500d8f30`
-
-```diff
-# netdryrun.drivers.eos.x__bgp_entries__mutmut_2: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -1,5 +1,5 @@
- def _bgp_entries(command: str, text: str, vrf: str) -> dict:
--    entry = _vrf(command, _json(command, text), vrf)
-+    entry = _vrf(None, _json(command, text), vrf)
-     entries = _table(command, entry, "bgpRouteEntries")
-     for key, e in entries.items():
-         if not isinstance(e, dict) or not isinstance(e.get("bgpRoutePaths"), list):
-```
-
-`netdryrun.drivers.eos.x__bgp_entries__mutmut_25`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `eee2c36d411c83f2`
-
-```diff
-# netdryrun.drivers.eos.x__bgp_entries__mutmut_25: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -3,7 +3,7 @@
-     entries = _table(command, entry, "bgpRouteEntries")
-     for key, e in entries.items():
-         if not isinstance(e, dict) or not isinstance(e.get("bgpRoutePaths"), list):
--            raise unexpected(command, f"{key}: {str(e)[:150]}")
-+            raise unexpected(None, f"{key}: {str(e)[:150]}")
-         for p in e["bgpRoutePaths"]:
-             if not isinstance(p, dict):
-                 raise unexpected(command, f"{key} path: {str(p)[:150]}")
-```
-
-`netdryrun.drivers.eos.x__bgp_entries__mutmut_26`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `8d25975485893b08`
-
-```diff
-# netdryrun.drivers.eos.x__bgp_entries__mutmut_26: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -3,7 +3,7 @@
-     entries = _table(command, entry, "bgpRouteEntries")
-     for key, e in entries.items():
-         if not isinstance(e, dict) or not isinstance(e.get("bgpRoutePaths"), list):
--            raise unexpected(command, f"{key}: {str(e)[:150]}")
-+            raise unexpected(command, None)
-         for p in e["bgpRoutePaths"]:
-             if not isinstance(p, dict):
-                 raise unexpected(command, f"{key} path: {str(p)[:150]}")
-```
-
-`netdryrun.drivers.eos.x__bgp_entries__mutmut_27`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `c035994fbecb85f5`
-
-```diff
-# netdryrun.drivers.eos.x__bgp_entries__mutmut_27: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -3,7 +3,7 @@
-     entries = _table(command, entry, "bgpRouteEntries")
-     for key, e in entries.items():
-         if not isinstance(e, dict) or not isinstance(e.get("bgpRoutePaths"), list):
--            raise unexpected(command, f"{key}: {str(e)[:150]}")
-+            raise unexpected(f"{key}: {str(e)[:150]}")
-         for p in e["bgpRoutePaths"]:
-             if not isinstance(p, dict):
-                 raise unexpected(command, f"{key} path: {str(p)[:150]}")
-```
-
-`netdryrun.drivers.eos.x__bgp_entries__mutmut_28`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `284817930db29970`
-
-```diff
-# netdryrun.drivers.eos.x__bgp_entries__mutmut_28: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -3,7 +3,7 @@
-     entries = _table(command, entry, "bgpRouteEntries")
-     for key, e in entries.items():
-         if not isinstance(e, dict) or not isinstance(e.get("bgpRoutePaths"), list):
--            raise unexpected(command, f"{key}: {str(e)[:150]}")
-+            raise unexpected(command, )
-         for p in e["bgpRoutePaths"]:
-             if not isinstance(p, dict):
-                 raise unexpected(command, f"{key} path: {str(p)[:150]}")
-```
-
-`netdryrun.drivers.eos.x__bgp_entries__mutmut_29`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `86b394403070735b`
-
-```diff
-# netdryrun.drivers.eos.x__bgp_entries__mutmut_29: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -3,7 +3,7 @@
-     entries = _table(command, entry, "bgpRouteEntries")
-     for key, e in entries.items():
-         if not isinstance(e, dict) or not isinstance(e.get("bgpRoutePaths"), list):
--            raise unexpected(command, f"{key}: {str(e)[:150]}")
-+            raise unexpected(command, f"{key}: {str(None)[:150]}")
-         for p in e["bgpRoutePaths"]:
-             if not isinstance(p, dict):
-                 raise unexpected(command, f"{key} path: {str(p)[:150]}")
-```
-
-`netdryrun.drivers.eos.x__bgp_entries__mutmut_30`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `b6a5d6df296c70a1`
-
-```diff
-# netdryrun.drivers.eos.x__bgp_entries__mutmut_30: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -3,7 +3,7 @@
-     entries = _table(command, entry, "bgpRouteEntries")
-     for key, e in entries.items():
-         if not isinstance(e, dict) or not isinstance(e.get("bgpRoutePaths"), list):
--            raise unexpected(command, f"{key}: {str(e)[:150]}")
-+            raise unexpected(command, f"{key}: {str(e)[:151]}")
-         for p in e["bgpRoutePaths"]:
-             if not isinstance(p, dict):
-                 raise unexpected(command, f"{key} path: {str(p)[:150]}")
-```
-
-`netdryrun.drivers.eos.x__bgp_entries__mutmut_35`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `b872e17f21d6a855`
-
-```diff
-# netdryrun.drivers.eos.x__bgp_entries__mutmut_35: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -6,5 +6,5 @@
-             raise unexpected(command, f"{key}: {str(e)[:150]}")
-         for p in e["bgpRoutePaths"]:
-             if not isinstance(p, dict):
--                raise unexpected(command, f"{key} path: {str(p)[:150]}")
-+                raise unexpected(None, f"{key} path: {str(p)[:150]}")
-     return entries
-```
-
-`netdryrun.drivers.eos.x__bgp_entries__mutmut_36`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `aa8a5916e8a80977`
-
-```diff
-# netdryrun.drivers.eos.x__bgp_entries__mutmut_36: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -6,5 +6,5 @@
-             raise unexpected(command, f"{key}: {str(e)[:150]}")
-         for p in e["bgpRoutePaths"]:
-             if not isinstance(p, dict):
--                raise unexpected(command, f"{key} path: {str(p)[:150]}")
-+                raise unexpected(command, None)
-     return entries
-```
-
-`netdryrun.drivers.eos.x__bgp_entries__mutmut_37`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `29d964f0aea2feca`
-
-```diff
-# netdryrun.drivers.eos.x__bgp_entries__mutmut_37: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -6,5 +6,5 @@
-             raise unexpected(command, f"{key}: {str(e)[:150]}")
-         for p in e["bgpRoutePaths"]:
-             if not isinstance(p, dict):
--                raise unexpected(command, f"{key} path: {str(p)[:150]}")
-+                raise unexpected(f"{key} path: {str(p)[:150]}")
-     return entries
-```
-
-`netdryrun.drivers.eos.x__bgp_entries__mutmut_38`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `ccd250d776eaea95`
-
-```diff
-# netdryrun.drivers.eos.x__bgp_entries__mutmut_38: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -6,5 +6,5 @@
-             raise unexpected(command, f"{key}: {str(e)[:150]}")
-         for p in e["bgpRoutePaths"]:
-             if not isinstance(p, dict):
--                raise unexpected(command, f"{key} path: {str(p)[:150]}")
-+                raise unexpected(command, )
-     return entries
-```
-
-`netdryrun.drivers.eos.x__bgp_entries__mutmut_39`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `d58462afbd8e2d2c`
-
-```diff
-# netdryrun.drivers.eos.x__bgp_entries__mutmut_39: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -6,5 +6,5 @@
-             raise unexpected(command, f"{key}: {str(e)[:150]}")
-         for p in e["bgpRoutePaths"]:
-             if not isinstance(p, dict):
--                raise unexpected(command, f"{key} path: {str(p)[:150]}")
-+                raise unexpected(command, f"{key} path: {str(None)[:150]}")
-     return entries
-```
-
-`netdryrun.drivers.eos.x__bgp_entries__mutmut_40`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `a316e9fec4e60f5b`
-
-```diff
-# netdryrun.drivers.eos.x__bgp_entries__mutmut_40: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -6,5 +6,5 @@
-             raise unexpected(command, f"{key}: {str(e)[:150]}")
-         for p in e["bgpRoutePaths"]:
-             if not isinstance(p, dict):
--                raise unexpected(command, f"{key} path: {str(p)[:150]}")
-+                raise unexpected(command, f"{key} path: {str(p)[:151]}")
-     return entries
-```
-
-`netdryrun.drivers.eos.x__bgp_entries__mutmut_8`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `08a2d94f2969d488`
-
-```diff
-# netdryrun.drivers.eos.x__bgp_entries__mutmut_8: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -1,5 +1,5 @@
- def _bgp_entries(command: str, text: str, vrf: str) -> dict:
--    entry = _vrf(command, _json(command, text), vrf)
-+    entry = _vrf(command, _json(None, text), vrf)
-     entries = _table(command, entry, "bgpRouteEntries")
-     for key, e in entries.items():
-         if not isinstance(e, dict) or not isinstance(e.get("bgpRoutePaths"), list):
 ```
 
 ## `runner._yaml_problem` (15)
@@ -32850,204 +35342,6 @@ Each mutant below is a deliberate change to the code that no test noticed. In ve
 -        raise SnapshotError(f"{where}: ASN out of range: {n}")
 +        raise SnapshotError(None)
      return n
-```
-
-## `drivers.eos._vrf` (12)
-
-`netdryrun.drivers.eos.x__vrf__mutmut_12`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `f9f70159b8385cac`
-
-```diff
-# netdryrun.drivers.eos.x__vrf__mutmut_12: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -7,7 +7,7 @@
-         raise unexpected(command, data)
-     if vrf not in vrfs:
-         raise NoSuchInstance(f"VRF {vrf!r} is not in the output of `{command}` (VRFs listed: "
--                          f"{', '.join(sorted(map(str, vrfs))) or 'none'}): it does not exist, or this "
-+                          f"{', '.join(sorted(map(str, vrfs))) and 'none'}): it does not exist, or this "
-                           "command has nothing configured in it")
-     entry = vrfs[vrf]
-     if not isinstance(entry, dict):
-```
-
-`netdryrun.drivers.eos.x__vrf__mutmut_14`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `3760c7fad85e833c`
-
-```diff
-# netdryrun.drivers.eos.x__vrf__mutmut_14: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -7,7 +7,7 @@
-         raise unexpected(command, data)
-     if vrf not in vrfs:
-         raise NoSuchInstance(f"VRF {vrf!r} is not in the output of `{command}` (VRFs listed: "
--                          f"{', '.join(sorted(map(str, vrfs))) or 'none'}): it does not exist, or this "
-+                          f"{'XX, XX'.join(sorted(map(str, vrfs))) or 'none'}): it does not exist, or this "
-                           "command has nothing configured in it")
-     entry = vrfs[vrf]
-     if not isinstance(entry, dict):
-```
-
-`netdryrun.drivers.eos.x__vrf__mutmut_20`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `fe214041462dd117`
-
-```diff
-# netdryrun.drivers.eos.x__vrf__mutmut_20: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -7,7 +7,7 @@
-         raise unexpected(command, data)
-     if vrf not in vrfs:
-         raise NoSuchInstance(f"VRF {vrf!r} is not in the output of `{command}` (VRFs listed: "
--                          f"{', '.join(sorted(map(str, vrfs))) or 'none'}): it does not exist, or this "
-+                          f"{', '.join(sorted(map(str, vrfs))) or 'XXnoneXX'}): it does not exist, or this "
-                           "command has nothing configured in it")
-     entry = vrfs[vrf]
-     if not isinstance(entry, dict):
-```
-
-`netdryrun.drivers.eos.x__vrf__mutmut_21`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `627c74d0799cb825`
-
-```diff
-# netdryrun.drivers.eos.x__vrf__mutmut_21: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -7,7 +7,7 @@
-         raise unexpected(command, data)
-     if vrf not in vrfs:
-         raise NoSuchInstance(f"VRF {vrf!r} is not in the output of `{command}` (VRFs listed: "
--                          f"{', '.join(sorted(map(str, vrfs))) or 'none'}): it does not exist, or this "
-+                          f"{', '.join(sorted(map(str, vrfs))) or 'NONE'}): it does not exist, or this "
-                           "command has nothing configured in it")
-     entry = vrfs[vrf]
-     if not isinstance(entry, dict):
-```
-
-`netdryrun.drivers.eos.x__vrf__mutmut_22`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `3969df2c5e2a4cce`
-
-```diff
-# netdryrun.drivers.eos.x__vrf__mutmut_22: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -8,7 +8,7 @@
-     if vrf not in vrfs:
-         raise NoSuchInstance(f"VRF {vrf!r} is not in the output of `{command}` (VRFs listed: "
-                           f"{', '.join(sorted(map(str, vrfs))) or 'none'}): it does not exist, or this "
--                          "command has nothing configured in it")
-+                          "XXcommand has nothing configured in itXX")
-     entry = vrfs[vrf]
-     if not isinstance(entry, dict):
-         raise unexpected(command, f"vrf {vrf}: {str(entry)[:150]}")
-```
-
-`netdryrun.drivers.eos.x__vrf__mutmut_23`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `b6b4f59f02181930`
-
-```diff
-# netdryrun.drivers.eos.x__vrf__mutmut_23: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -8,7 +8,7 @@
-     if vrf not in vrfs:
-         raise NoSuchInstance(f"VRF {vrf!r} is not in the output of `{command}` (VRFs listed: "
-                           f"{', '.join(sorted(map(str, vrfs))) or 'none'}): it does not exist, or this "
--                          "command has nothing configured in it")
-+                          "COMMAND HAS NOTHING CONFIGURED IN IT")
-     entry = vrfs[vrf]
-     if not isinstance(entry, dict):
-         raise unexpected(command, f"vrf {vrf}: {str(entry)[:150]}")
-```
-
-`netdryrun.drivers.eos.x__vrf__mutmut_26`: survived (accepted, message-text: message text only: the text of the unexpected-output DriverError raised either way); diff fingerprint `1574dfe3e983632f`
-
-```diff
-# netdryrun.drivers.eos.x__vrf__mutmut_26: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -11,5 +11,5 @@
-                           "command has nothing configured in it")
-     entry = vrfs[vrf]
-     if not isinstance(entry, dict):
--        raise unexpected(command, f"vrf {vrf}: {str(entry)[:150]}")
-+        raise unexpected(None, f"vrf {vrf}: {str(entry)[:150]}")
-     return entry
-```
-
-`netdryrun.drivers.eos.x__vrf__mutmut_27`: survived (accepted, message-text: message text only: the text of the unexpected-output DriverError raised either way); diff fingerprint `0fd34b2a5fd921a1`
-
-```diff
-# netdryrun.drivers.eos.x__vrf__mutmut_27: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -11,5 +11,5 @@
-                           "command has nothing configured in it")
-     entry = vrfs[vrf]
-     if not isinstance(entry, dict):
--        raise unexpected(command, f"vrf {vrf}: {str(entry)[:150]}")
-+        raise unexpected(command, None)
-     return entry
-```
-
-`netdryrun.drivers.eos.x__vrf__mutmut_30`: survived (accepted, message-text: message text only: the text of the unexpected-output DriverError raised either way); diff fingerprint `36c0d1736deed8e9`
-
-```diff
-# netdryrun.drivers.eos.x__vrf__mutmut_30: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -11,5 +11,5 @@
-                           "command has nothing configured in it")
-     entry = vrfs[vrf]
-     if not isinstance(entry, dict):
--        raise unexpected(command, f"vrf {vrf}: {str(entry)[:150]}")
-+        raise unexpected(command, f"vrf {vrf}: {str(None)[:150]}")
-     return entry
-```
-
-`netdryrun.drivers.eos.x__vrf__mutmut_31`: survived (accepted, message-text: message text only: the text of the unexpected-output DriverError raised either way); diff fingerprint `5b75b1b56fb4dcbd`
-
-```diff
-# netdryrun.drivers.eos.x__vrf__mutmut_31: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -11,5 +11,5 @@
-                           "command has nothing configured in it")
-     entry = vrfs[vrf]
-     if not isinstance(entry, dict):
--        raise unexpected(command, f"vrf {vrf}: {str(entry)[:150]}")
-+        raise unexpected(command, f"vrf {vrf}: {str(entry)[:151]}")
-     return entry
-```
-
-`netdryrun.drivers.eos.x__vrf__mutmut_6`: survived (accepted, message-text: message text only: the text of the unexpected-output DriverError raised either way); diff fingerprint `e2a7beea3a5abc6b`
-
-```diff
-# netdryrun.drivers.eos.x__vrf__mutmut_6: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -4,7 +4,7 @@
-     can't be told apart from output this driver doesn't know, so it raises: never "no routes"."""
-     vrfs = data.get("vrfs")
-     if not isinstance(vrfs, dict):
--        raise unexpected(command, data)
-+        raise unexpected(None, data)
-     if vrf not in vrfs:
-         raise NoSuchInstance(f"VRF {vrf!r} is not in the output of `{command}` (VRFs listed: "
-                           f"{', '.join(sorted(map(str, vrfs))) or 'none'}): it does not exist, or this "
-```
-
-`netdryrun.drivers.eos.x__vrf__mutmut_7`: survived (accepted, message-text: message text only: the text of the unexpected-output DriverError raised either way); diff fingerprint `5bfc5879a0adab73`
-
-```diff
-# netdryrun.drivers.eos.x__vrf__mutmut_7: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -4,7 +4,7 @@
-     can't be told apart from output this driver doesn't know, so it raises: never "no routes"."""
-     vrfs = data.get("vrfs")
-     if not isinstance(vrfs, dict):
--        raise unexpected(command, data)
-+        raise unexpected(command, None)
-     if vrf not in vrfs:
-         raise NoSuchInstance(f"VRF {vrf!r} is not in the output of `{command}` (VRFs listed: "
-                           f"{', '.join(sorted(map(str, vrfs))) or 'none'}): it does not exist, or this "
 ```
 
 ## `runner.run` (12)
@@ -35143,160 +37437,6 @@ Each mutant below is a deliberate change to the code that no test noticed. In ve
              if p is None:
 ```
 
-## `drivers.srlinux._rib_rows` (10)
-
-`netdryrun.drivers.srlinux.x__rib_rows__mutmut_11`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `595f0d4568550fab`
-
-```diff
-# netdryrun.drivers.srlinux.x__rib_rows__mutmut_11: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -1,6 +1,6 @@
- def _rib_rows(text: str, prefix: str) -> list[dict]:
-     want = ipaddress.ip_network(prefix)
--    rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
-+    rows = _list(RIB_CMD, _json(text, None), "route")
-     for r in rows:
-         if "prefix" not in r:
-             raise unexpected(RIB_CMD, str(r)[:150])
-```
-
-`netdryrun.drivers.srlinux.x__rib_rows__mutmut_13`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `4b1143b213bc504f`
-
-```diff
-# netdryrun.drivers.srlinux.x__rib_rows__mutmut_13: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -1,6 +1,6 @@
- def _rib_rows(text: str, prefix: str) -> list[dict]:
-     want = ipaddress.ip_network(prefix)
--    rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
-+    rows = _list(RIB_CMD, _json(text, ), "route")
-     for r in rows:
-         if "prefix" not in r:
-             raise unexpected(RIB_CMD, str(r)[:150])
-```
-
-`netdryrun.drivers.srlinux.x__rib_rows__mutmut_19`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `6a6193c731c35825`
-
-```diff
-# netdryrun.drivers.srlinux.x__rib_rows__mutmut_19: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -3,5 +3,5 @@
-     rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
-     for r in rows:
-         if "prefix" not in r:
--            raise unexpected(RIB_CMD, str(r)[:150])
-+            raise unexpected(None, str(r)[:150])
-     return [r for r in rows if network(RIB_CMD, r["prefix"]) == want]
-```
-
-`netdryrun.drivers.srlinux.x__rib_rows__mutmut_20`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `bcc9d04ace2bd0d6`
-
-```diff
-# netdryrun.drivers.srlinux.x__rib_rows__mutmut_20: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -3,5 +3,5 @@
-     rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
-     for r in rows:
-         if "prefix" not in r:
--            raise unexpected(RIB_CMD, str(r)[:150])
-+            raise unexpected(RIB_CMD, None)
-     return [r for r in rows if network(RIB_CMD, r["prefix"]) == want]
-```
-
-`netdryrun.drivers.srlinux.x__rib_rows__mutmut_21`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `d951ce431bac664f`
-
-```diff
-# netdryrun.drivers.srlinux.x__rib_rows__mutmut_21: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -3,5 +3,5 @@
-     rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
-     for r in rows:
-         if "prefix" not in r:
--            raise unexpected(RIB_CMD, str(r)[:150])
-+            raise unexpected(str(r)[:150])
-     return [r for r in rows if network(RIB_CMD, r["prefix"]) == want]
-```
-
-`netdryrun.drivers.srlinux.x__rib_rows__mutmut_22`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `4c146b75903c56a6`
-
-```diff
-# netdryrun.drivers.srlinux.x__rib_rows__mutmut_22: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -3,5 +3,5 @@
-     rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
-     for r in rows:
-         if "prefix" not in r:
--            raise unexpected(RIB_CMD, str(r)[:150])
-+            raise unexpected(RIB_CMD, )
-     return [r for r in rows if network(RIB_CMD, r["prefix"]) == want]
-```
-
-`netdryrun.drivers.srlinux.x__rib_rows__mutmut_23`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `0d3414006c4babf0`
-
-```diff
-# netdryrun.drivers.srlinux.x__rib_rows__mutmut_23: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -3,5 +3,5 @@
-     rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
-     for r in rows:
-         if "prefix" not in r:
--            raise unexpected(RIB_CMD, str(r)[:150])
-+            raise unexpected(RIB_CMD, str(None)[:150])
-     return [r for r in rows if network(RIB_CMD, r["prefix"]) == want]
-```
-
-`netdryrun.drivers.srlinux.x__rib_rows__mutmut_24`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `9d8b87afbf113535`
-
-```diff
-# netdryrun.drivers.srlinux.x__rib_rows__mutmut_24: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -3,5 +3,5 @@
-     rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
-     for r in rows:
-         if "prefix" not in r:
--            raise unexpected(RIB_CMD, str(r)[:150])
-+            raise unexpected(RIB_CMD, str(r)[:151])
-     return [r for r in rows if network(RIB_CMD, r["prefix"]) == want]
-```
-
-`netdryrun.drivers.srlinux.x__rib_rows__mutmut_25`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `4e13c8d4a06b79e1`
-
-```diff
-# netdryrun.drivers.srlinux.x__rib_rows__mutmut_25: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -4,4 +4,4 @@
-     for r in rows:
-         if "prefix" not in r:
-             raise unexpected(RIB_CMD, str(r)[:150])
--    return [r for r in rows if network(RIB_CMD, r["prefix"]) == want]
-+    return [r for r in rows if network(None, r["prefix"]) == want]
-```
-
-`netdryrun.drivers.srlinux.x__rib_rows__mutmut_4`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `6c4598e111047857`
-
-```diff
-# netdryrun.drivers.srlinux.x__rib_rows__mutmut_4: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -1,6 +1,6 @@
- def _rib_rows(text: str, prefix: str) -> list[dict]:
-     want = ipaddress.ip_network(prefix)
--    rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
-+    rows = _list(None, _json(text, RIB_CMD), "route")
-     for r in rows:
-         if "prefix" not in r:
-             raise unexpected(RIB_CMD, str(r)[:150])
-```
-
 ## `runner._link_sessions` (10)
 
 `netdryrun.runner.x__link_sessions__mutmut_12`: survived (accepted, message-text: message text only: the text of the LabError raised either way when BGP state can't be read before a fault (exit 2)); argument: Changes only text: the text of the LabError raised either way when BGP state can't be read before a fault (exit 2). The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 1: checked and agreed (research/model-reviews/release-0.3.3/ndr-0.3.3-adversarial-mutants-*); diff fingerprint `79f316540513a610`
@@ -36264,159 +38404,6 @@ Each mutant below is a deliberate change to the code that no test noticed. In ve
      if "as_path" in p and best.as_path != p["as_path"]:
          wrong.append(f"as-path is '{best.as_path}', expected '{p['as_path']}'")
      if "as_path_regex" in p and not re.search(p["as_path_regex"], best.as_path or ""):
-```
-
-## `drivers.srlinux.SrlDriver._read_path` (9)
-
-`netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_10`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `1e921a78f33931ac`
-
-```diff
-# netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_10: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -2,7 +2,7 @@
-     # attr-id and neighbor come from device output and go back into a CLI string: only a number and an IP
-     attr_id = str(row.get("attr-id"))
-     if not attr_id.isdigit():
--        raise DriverError(f"unexpected attr-id {attr_id[:40]!r} for {row.get('prefix')}")
-+        raise DriverError(f"unexpected attr-id {attr_id[:40]!r} for {row.get('XXprefixXX')}")
-     attrs = self._cli(f"info from state /network-instance {vrf} bgp-rib attr-sets attr-set {attr_id}", ev)
-     default_lp = None
-     neighbor = _ip_or_none(row.get("neighbor"))
-```
-
-`netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_11`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `510da5dbb49fac3d`
-
-```diff
-# netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_11: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -2,7 +2,7 @@
-     # attr-id and neighbor come from device output and go back into a CLI string: only a number and an IP
-     attr_id = str(row.get("attr-id"))
-     if not attr_id.isdigit():
--        raise DriverError(f"unexpected attr-id {attr_id[:40]!r} for {row.get('prefix')}")
-+        raise DriverError(f"unexpected attr-id {attr_id[:40]!r} for {row.get('PREFIX')}")
-     attrs = self._cli(f"info from state /network-instance {vrf} bgp-rib attr-sets attr-set {attr_id}", ev)
-     default_lp = None
-     neighbor = _ip_or_none(row.get("neighbor"))
-```
-
-`netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_30`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `80b067b0fa5cf2e2`
-
-```diff
-# netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_30: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -8,7 +8,7 @@
-     neighbor = _ip_or_none(row.get("neighbor"))
-     # The router's own routes (neighbor 0.0.0.0) have no neighbor to ask. For a learned path, a failing
-     # lookup is an error, never a silently unknown local-pref.
--    if "local-pref" not in _json(attrs, ATTR_CMD) and neighbor and _bgp_learned(row) \
-+    if "local-pref" not in _json(attrs, None) and neighbor and _bgp_learned(row) \
-                 and not ipaddress.ip_address(neighbor).is_unspecified:
-         state = _json(self._cli(f"info from state /network-instance {vrf} protocols bgp neighbor "
-                                 f"{neighbor} local-preference", ev), NEIGHBORS_CMD)
-```
-
-`netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_32`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `8b51dfdc3e6d6ec3`
-
-```diff
-# netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_32: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -8,7 +8,7 @@
-     neighbor = _ip_or_none(row.get("neighbor"))
-     # The router's own routes (neighbor 0.0.0.0) have no neighbor to ask. For a learned path, a failing
-     # lookup is an error, never a silently unknown local-pref.
--    if "local-pref" not in _json(attrs, ATTR_CMD) and neighbor and _bgp_learned(row) \
-+    if "local-pref" not in _json(attrs, ) and neighbor and _bgp_learned(row) \
-                 and not ipaddress.ip_address(neighbor).is_unspecified:
-         state = _json(self._cli(f"info from state /network-instance {vrf} protocols bgp neighbor "
-                                 f"{neighbor} local-preference", ev), NEIGHBORS_CMD)
-```
-
-`netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_38`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `389a80466c6dd8ca`
-
-```diff
-# netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_38: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -11,7 +11,7 @@
-     if "local-pref" not in _json(attrs, ATTR_CMD) and neighbor and _bgp_learned(row) \
-                 and not ipaddress.ip_address(neighbor).is_unspecified:
-         state = _json(self._cli(f"info from state /network-instance {vrf} protocols bgp neighbor "
--                                f"{neighbor} local-preference", ev), NEIGHBORS_CMD)
-+                                f"{neighbor} local-preference", ev), None)
-         lp = state.get("local-preference")
-         default_lp = as_int(NEIGHBORS_CMD, lp) if lp is not None else None
-     return parse_attr_set(attrs, row, default_lp)
-```
-
-`netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_40`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `5a1198369fc60c13`
-
-```diff
-# netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_40: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -11,7 +11,7 @@
-     if "local-pref" not in _json(attrs, ATTR_CMD) and neighbor and _bgp_learned(row) \
-                 and not ipaddress.ip_address(neighbor).is_unspecified:
-         state = _json(self._cli(f"info from state /network-instance {vrf} protocols bgp neighbor "
--                                f"{neighbor} local-preference", ev), NEIGHBORS_CMD)
-+                                f"{neighbor} local-preference", ev), )
-         lp = state.get("local-preference")
-         default_lp = as_int(NEIGHBORS_CMD, lp) if lp is not None else None
-     return parse_attr_set(attrs, row, default_lp)
-```
-
-`netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_52`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `ae10172804a0d3b6`
-
-```diff
-# netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_52: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -13,5 +13,5 @@
-         state = _json(self._cli(f"info from state /network-instance {vrf} protocols bgp neighbor "
-                                 f"{neighbor} local-preference", ev), NEIGHBORS_CMD)
-         lp = state.get("local-preference")
--        default_lp = as_int(NEIGHBORS_CMD, lp) if lp is not None else None
-+        default_lp = as_int(None, lp) if lp is not None else None
-     return parse_attr_set(attrs, row, default_lp)
-```
-
-`netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_8`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `be4c81fbd4e0e253`
-
-```diff
-# netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_8: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -2,7 +2,7 @@
-     # attr-id and neighbor come from device output and go back into a CLI string: only a number and an IP
-     attr_id = str(row.get("attr-id"))
-     if not attr_id.isdigit():
--        raise DriverError(f"unexpected attr-id {attr_id[:40]!r} for {row.get('prefix')}")
-+        raise DriverError(f"unexpected attr-id {attr_id[:41]!r} for {row.get('prefix')}")
-     attrs = self._cli(f"info from state /network-instance {vrf} bgp-rib attr-sets attr-set {attr_id}", ev)
-     default_lp = None
-     neighbor = _ip_or_none(row.get("neighbor"))
-```
-
-`netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_9`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `fc71a8a8d0175c71`
-
-```diff
-# netdryrun.drivers.srlinux.xǁSrlDriverǁ_read_path__mutmut_9: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -2,7 +2,7 @@
-     # attr-id and neighbor come from device output and go back into a CLI string: only a number and an IP
-     attr_id = str(row.get("attr-id"))
-     if not attr_id.isdigit():
--        raise DriverError(f"unexpected attr-id {attr_id[:40]!r} for {row.get('prefix')}")
-+        raise DriverError(f"unexpected attr-id {attr_id[:40]!r} for {row.get(None)}")
-     attrs = self._cli(f"info from state /network-instance {vrf} bgp-rib attr-sets attr-set {attr_id}", ev)
-     default_lp = None
-     neighbor = _ip_or_none(row.get("neighbor"))
 ```
 
 ## `runner._shape_problem` (9)
@@ -37477,121 +39464,6 @@ Each mutant below is a deliberate change to the code that no test noticed. In ve
                            f"allowed: {', '.join(sorted(allowed))}")
 ```
 
-## `drivers.frr._bgp_json` (7)
-
-`netdryrun.drivers.frr.x__bgp_json__mutmut_18`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `4299cd884cb945ed`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_json__mutmut_18: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -4,7 +4,7 @@
-         raise unexpected(command, text)
-     if "warning" in data:  # e.g. {"warning": "View/Vrf is unknown"}
-         if isinstance(data["warning"], str) and _NO_INSTANCE.search(data["warning"]):
--            raise NoSuchInstance(f"vtysh: {data['warning']}")
-+            raise NoSuchInstance(None)
-         raise DriverError(f"vtysh: {data['warning']}")
-     if data.get("bgpNoSuchInstance"):
-         raise NoSuchInstance("vtysh: no BGP instance in this VRF")
-```
-
-`netdryrun.drivers.frr.x__bgp_json__mutmut_2`: survived (accepted, message-text: message text only: the text of the DriverError raised either way); diff fingerprint `5229bbaf13963c07`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_json__mutmut_2: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -1,5 +1,5 @@
- def _bgp_json(command: str, text: str) -> dict:
--    data = load_json(command, text)
-+    data = load_json(None, text)
-     if not isinstance(data, dict):
-         raise unexpected(command, text)
-     if "warning" in data:  # e.g. {"warning": "View/Vrf is unknown"}
-```
-
-`netdryrun.drivers.frr.x__bgp_json__mutmut_21`: survived (accepted, message-text: message text only: the text of the DriverError raised either way); diff fingerprint `1323bfb67756aebc`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_json__mutmut_21: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -5,7 +5,7 @@
-     if "warning" in data:  # e.g. {"warning": "View/Vrf is unknown"}
-         if isinstance(data["warning"], str) and _NO_INSTANCE.search(data["warning"]):
-             raise NoSuchInstance(f"vtysh: {data['warning']}")
--        raise DriverError(f"vtysh: {data['warning']}")
-+        raise DriverError(None)
-     if data.get("bgpNoSuchInstance"):
-         raise NoSuchInstance("vtysh: no BGP instance in this VRF")
-     return data
-```
-
-`netdryrun.drivers.frr.x__bgp_json__mutmut_29`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `f56d93f66c1e6958`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_json__mutmut_29: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -7,5 +7,5 @@
-             raise NoSuchInstance(f"vtysh: {data['warning']}")
-         raise DriverError(f"vtysh: {data['warning']}")
-     if data.get("bgpNoSuchInstance"):
--        raise NoSuchInstance("vtysh: no BGP instance in this VRF")
-+        raise NoSuchInstance("XXvtysh: no BGP instance in this VRFXX")
-     return data
-```
-
-`netdryrun.drivers.frr.x__bgp_json__mutmut_30`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `1b62d0ce9835dfbf`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_json__mutmut_30: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -7,5 +7,5 @@
-             raise NoSuchInstance(f"vtysh: {data['warning']}")
-         raise DriverError(f"vtysh: {data['warning']}")
-     if data.get("bgpNoSuchInstance"):
--        raise NoSuchInstance("vtysh: no BGP instance in this VRF")
-+        raise NoSuchInstance("vtysh: no bgp instance in this vrf")
-     return data
-```
-
-`netdryrun.drivers.frr.x__bgp_json__mutmut_7`: survived (accepted, message-text: message text only: the text of the DriverError raised either way); diff fingerprint `f86b68e146bf2555`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_json__mutmut_7: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -1,7 +1,7 @@
- def _bgp_json(command: str, text: str) -> dict:
-     data = load_json(command, text)
-     if not isinstance(data, dict):
--        raise unexpected(command, text)
-+        raise unexpected(None, text)
-     if "warning" in data:  # e.g. {"warning": "View/Vrf is unknown"}
-         if isinstance(data["warning"], str) and _NO_INSTANCE.search(data["warning"]):
-             raise NoSuchInstance(f"vtysh: {data['warning']}")
-```
-
-`netdryrun.drivers.frr.x__bgp_json__mutmut_8`: survived (accepted, message-text: message text only: the text of the DriverError raised either way); diff fingerprint `729e23e81a856286`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_json__mutmut_8: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -1,7 +1,7 @@
- def _bgp_json(command: str, text: str) -> dict:
-     data = load_json(command, text)
-     if not isinstance(data, dict):
--        raise unexpected(command, text)
-+        raise unexpected(command, None)
-     if "warning" in data:  # e.g. {"warning": "View/Vrf is unknown"}
-         if isinstance(data["warning"], str) and _NO_INSTANCE.search(data["warning"]):
-             raise NoSuchInstance(f"vtysh: {data['warning']}")
-```
-
 ## `verify.engine._best_path` (7)
 
 `netdryrun.verify.engine.x__best_path__mutmut_224`: survived (accepted, equivalent: equivalent: ok is only read as a truth value, and None is falsy like False); diff fingerprint `5ab6e5fe56c682a2`
@@ -38470,598 +40342,6 @@ Each mutant below is a deliberate change to the code that no test noticed. In ve
      )
 ```
 
-## `drivers.base.Driver._exec` (6)
-
-`netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_28`: survived (accepted, message-text: message text only: the last output line quoted in the error); diff fingerprint `59f36e6254c686f0`
-
-```diff
-# netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_28: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -3,6 +3,6 @@
-     r = self.lab.exec(self.node, cmd, timeout=timeout)
-     evidence.append({"node": self.node, "cmd": " ".join(cmd), "rc": r.rc, "output": r.stdout[-20000:], "stderr": r.stderr[-2000:]})
-     if r.rc != 0:
--        msg = (r.stderr or r.stdout).strip().splitlines()
-+        msg = None
-         raise DriverError(f"`{' '.join(cmd)}` failed on {self.node} (rc={r.rc}): {msg[-1] if msg else 'no output'}")
-     return r.stdout
-```
-
-`netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_29`: survived (accepted, message-text: message text only: the last output line quoted in the error); diff fingerprint `ef66365799d488a0`
-
-```diff
-# netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_29: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -3,6 +3,6 @@
-     r = self.lab.exec(self.node, cmd, timeout=timeout)
-     evidence.append({"node": self.node, "cmd": " ".join(cmd), "rc": r.rc, "output": r.stdout[-20000:], "stderr": r.stderr[-2000:]})
-     if r.rc != 0:
--        msg = (r.stderr or r.stdout).strip().splitlines()
-+        msg = (r.stderr and r.stdout).strip().splitlines()
-         raise DriverError(f"`{' '.join(cmd)}` failed on {self.node} (rc={r.rc}): {msg[-1] if msg else 'no output'}")
-     return r.stdout
-```
-
-`netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_32`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `5de867ab931b6c89`
-
-```diff
-# netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_32: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -4,5 +4,5 @@
-     evidence.append({"node": self.node, "cmd": " ".join(cmd), "rc": r.rc, "output": r.stdout[-20000:], "stderr": r.stderr[-2000:]})
-     if r.rc != 0:
-         msg = (r.stderr or r.stdout).strip().splitlines()
--        raise DriverError(f"`{' '.join(cmd)}` failed on {self.node} (rc={r.rc}): {msg[-1] if msg else 'no output'}")
-+        raise DriverError(f"`{'XX XX'.join(cmd)}` failed on {self.node} (rc={r.rc}): {msg[-1] if msg else 'no output'}")
-     return r.stdout
-```
-
-`netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_33`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `68714f41c1b4d289`
-
-```diff
-# netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_33: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -4,5 +4,5 @@
-     evidence.append({"node": self.node, "cmd": " ".join(cmd), "rc": r.rc, "output": r.stdout[-20000:], "stderr": r.stderr[-2000:]})
-     if r.rc != 0:
-         msg = (r.stderr or r.stdout).strip().splitlines()
--        raise DriverError(f"`{' '.join(cmd)}` failed on {self.node} (rc={r.rc}): {msg[-1] if msg else 'no output'}")
-+        raise DriverError(f"`{' '.join(cmd)}` failed on {self.node} (rc={r.rc}): {msg[-1] if (msg) and False else 'no output'}")
-     return r.stdout
-```
-
-`netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_37`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `3254e442ac9c218b`
-
-```diff
-# netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_37: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -4,5 +4,5 @@
-     evidence.append({"node": self.node, "cmd": " ".join(cmd), "rc": r.rc, "output": r.stdout[-20000:], "stderr": r.stderr[-2000:]})
-     if r.rc != 0:
-         msg = (r.stderr or r.stdout).strip().splitlines()
--        raise DriverError(f"`{' '.join(cmd)}` failed on {self.node} (rc={r.rc}): {msg[-1] if msg else 'no output'}")
-+        raise DriverError(f"`{' '.join(cmd)}` failed on {self.node} (rc={r.rc}): {msg[-1] if msg else 'XXno outputXX'}")
-     return r.stdout
-```
-
-`netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_38`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `9f2c29f2cb29e7e1`
-
-```diff
-# netdryrun.drivers.base.xǁDriverǁ_exec__mutmut_38: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -4,5 +4,5 @@
-     evidence.append({"node": self.node, "cmd": " ".join(cmd), "rc": r.rc, "output": r.stdout[-20000:], "stderr": r.stderr[-2000:]})
-     if r.rc != 0:
-         msg = (r.stderr or r.stdout).strip().splitlines()
--        raise DriverError(f"`{' '.join(cmd)}` failed on {self.node} (rc={r.rc}): {msg[-1] if msg else 'no output'}")
-+        raise DriverError(f"`{' '.join(cmd)}` failed on {self.node} (rc={r.rc}): {msg[-1] if msg else 'NO OUTPUT'}")
-     return r.stdout
-```
-
-## `drivers.base.load_json` (6)
-
-`netdryrun.drivers.base.x_load_json__mutmut_15`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `6413073a198c7571`
-
-```diff
-# netdryrun.drivers.base.x_load_json__mutmut_15: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -8,6 +8,6 @@
-         return json.loads(text, object_pairs_hook=object_pairs_hook)
-     except RepeatedKey as e:
-         raise DriverError(f"`{command}`: repeated key {e.key!r} in one JSON object; refusing to read one of its "
--                          "values as the only one") from None
-+                          "XXvalues as the only oneXX") from None
-     except (json.JSONDecodeError, RecursionError):
-         raise unexpected(command, text) from None
-```
-
-`netdryrun.drivers.base.x_load_json__mutmut_16`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `bd95c63c20f7cc06`
-
-```diff
-# netdryrun.drivers.base.x_load_json__mutmut_16: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -8,6 +8,6 @@
-         return json.loads(text, object_pairs_hook=object_pairs_hook)
-     except RepeatedKey as e:
-         raise DriverError(f"`{command}`: repeated key {e.key!r} in one JSON object; refusing to read one of its "
--                          "values as the only one") from None
-+                          "VALUES AS THE ONLY ONE") from None
-     except (json.JSONDecodeError, RecursionError):
-         raise unexpected(command, text) from None
-```
-
-`netdryrun.drivers.base.x_load_json__mutmut_4`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `f2fe08d8e34fff8d`
-
-```diff
-# netdryrun.drivers.base.x_load_json__mutmut_4: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -3,7 +3,7 @@
-     JSON document (at least `{}`) for a state query that succeeded. A repeated key in one object is an error,
-     unless the driver's hook knows what the repeat means (Junos)."""
-     if not isinstance(text, str) or not text.strip():
--        raise unexpected(command, "no output")
-+        raise unexpected(None, "no output")
-     try:
-         return json.loads(text, object_pairs_hook=object_pairs_hook)
-     except RepeatedKey as e:
-```
-
-`netdryrun.drivers.base.x_load_json__mutmut_5`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `650c7d9e14c6863a`
-
-```diff
-# netdryrun.drivers.base.x_load_json__mutmut_5: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -3,7 +3,7 @@
-     JSON document (at least `{}`) for a state query that succeeded. A repeated key in one object is an error,
-     unless the driver's hook knows what the repeat means (Junos)."""
-     if not isinstance(text, str) or not text.strip():
--        raise unexpected(command, "no output")
-+        raise unexpected(command, None)
-     try:
-         return json.loads(text, object_pairs_hook=object_pairs_hook)
-     except RepeatedKey as e:
-```
-
-`netdryrun.drivers.base.x_load_json__mutmut_8`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `2cad22143598bdde`
-
-```diff
-# netdryrun.drivers.base.x_load_json__mutmut_8: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -3,7 +3,7 @@
-     JSON document (at least `{}`) for a state query that succeeded. A repeated key in one object is an error,
-     unless the driver's hook knows what the repeat means (Junos)."""
-     if not isinstance(text, str) or not text.strip():
--        raise unexpected(command, "no output")
-+        raise unexpected(command, "XXno outputXX")
-     try:
-         return json.loads(text, object_pairs_hook=object_pairs_hook)
-     except RepeatedKey as e:
-```
-
-`netdryrun.drivers.base.x_load_json__mutmut_9`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `7def6f5addac6628`
-
-```diff
-# netdryrun.drivers.base.x_load_json__mutmut_9: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -3,7 +3,7 @@
-     JSON document (at least `{}`) for a state query that succeeded. A repeated key in one object is an error,
-     unless the driver's hook knows what the repeat means (Junos)."""
-     if not isinstance(text, str) or not text.strip():
--        raise unexpected(command, "no output")
-+        raise unexpected(command, "NO OUTPUT")
-     try:
-         return json.loads(text, object_pairs_hook=object_pairs_hook)
-     except RepeatedKey as e:
-```
-
-## `drivers.eos._learned` (6)
-
-`netdryrun.drivers.eos.x__learned__mutmut_10`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `84cb212a3b0e39cd`
-
-```diff
-# netdryrun.drivers.eos.x__learned__mutmut_10: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -3,5 +3,5 @@
-     network statements, redistribution). Valid or not, active or not, it was received."""
-     peer = p.get("peerEntry")
-     if not isinstance(peer, dict) or not isinstance(peer.get("peerAddr"), str):  # "" for its own paths
--        raise unexpected(BGP_CMD, f"path without peerEntry: {str(p)[:150]}")
-+        raise unexpected(BGP_CMD, None)
-     return bool(peer["peerAddr"])
-```
-
-`netdryrun.drivers.eos.x__learned__mutmut_11`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `a647465d1b48a427`
-
-```diff
-# netdryrun.drivers.eos.x__learned__mutmut_11: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -3,5 +3,5 @@
-     network statements, redistribution). Valid or not, active or not, it was received."""
-     peer = p.get("peerEntry")
-     if not isinstance(peer, dict) or not isinstance(peer.get("peerAddr"), str):  # "" for its own paths
--        raise unexpected(BGP_CMD, f"path without peerEntry: {str(p)[:150]}")
-+        raise unexpected(f"path without peerEntry: {str(p)[:150]}")
-     return bool(peer["peerAddr"])
-```
-
-`netdryrun.drivers.eos.x__learned__mutmut_12`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `d1ecb114785edad2`
-
-```diff
-# netdryrun.drivers.eos.x__learned__mutmut_12: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -3,5 +3,5 @@
-     network statements, redistribution). Valid or not, active or not, it was received."""
-     peer = p.get("peerEntry")
-     if not isinstance(peer, dict) or not isinstance(peer.get("peerAddr"), str):  # "" for its own paths
--        raise unexpected(BGP_CMD, f"path without peerEntry: {str(p)[:150]}")
-+        raise unexpected(BGP_CMD, )
-     return bool(peer["peerAddr"])
-```
-
-`netdryrun.drivers.eos.x__learned__mutmut_13`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `0bf369cc1565bc1d`
-
-```diff
-# netdryrun.drivers.eos.x__learned__mutmut_13: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -3,5 +3,5 @@
-     network statements, redistribution). Valid or not, active or not, it was received."""
-     peer = p.get("peerEntry")
-     if not isinstance(peer, dict) or not isinstance(peer.get("peerAddr"), str):  # "" for its own paths
--        raise unexpected(BGP_CMD, f"path without peerEntry: {str(p)[:150]}")
-+        raise unexpected(BGP_CMD, f"path without peerEntry: {str(None)[:150]}")
-     return bool(peer["peerAddr"])
-```
-
-`netdryrun.drivers.eos.x__learned__mutmut_14`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `98c65e1f5596d662`
-
-```diff
-# netdryrun.drivers.eos.x__learned__mutmut_14: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -3,5 +3,5 @@
-     network statements, redistribution). Valid or not, active or not, it was received."""
-     peer = p.get("peerEntry")
-     if not isinstance(peer, dict) or not isinstance(peer.get("peerAddr"), str):  # "" for its own paths
--        raise unexpected(BGP_CMD, f"path without peerEntry: {str(p)[:150]}")
-+        raise unexpected(BGP_CMD, f"path without peerEntry: {str(p)[:151]}")
-     return bool(peer["peerAddr"])
-```
-
-`netdryrun.drivers.eos.x__learned__mutmut_9`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `b3529522c1f4ec07`
-
-```diff
-# netdryrun.drivers.eos.x__learned__mutmut_9: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -3,5 +3,5 @@
-     network statements, redistribution). Valid or not, active or not, it was received."""
-     peer = p.get("peerEntry")
-     if not isinstance(peer, dict) or not isinstance(peer.get("peerAddr"), str):  # "" for its own paths
--        raise unexpected(BGP_CMD, f"path without peerEntry: {str(p)[:150]}")
-+        raise unexpected(None, f"path without peerEntry: {str(p)[:150]}")
-     return bool(peer["peerAddr"])
-```
-
-## `drivers.frr._learned` (6)
-
-`netdryrun.drivers.frr.x__learned__mutmut_10`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `2ed470ee5d67b686`
-
-```diff
-# netdryrun.drivers.frr.x__learned__mutmut_10: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -3,7 +3,7 @@
-     aggregate). Validity and best-path selection don't matter: received but not selected is present."""
-     peer = p.get("peer")
-     if not isinstance(peer, dict) or not isinstance(peer.get("peerId"), str):  # every path names its peer
--        raise unexpected(BGP_PATHS_CMD, f"path without peer: {str(p)[:150]}")
-+        raise unexpected(f"path without peer: {str(p)[:150]}")
-     if p.get("local") or p.get("sourced"):
-         return False
-     return peer["peerId"] not in ("", "0.0.0.0", "::")
-```
-
-`netdryrun.drivers.frr.x__learned__mutmut_11`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `6b374f7d584ef989`
-
-```diff
-# netdryrun.drivers.frr.x__learned__mutmut_11: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -3,7 +3,7 @@
-     aggregate). Validity and best-path selection don't matter: received but not selected is present."""
-     peer = p.get("peer")
-     if not isinstance(peer, dict) or not isinstance(peer.get("peerId"), str):  # every path names its peer
--        raise unexpected(BGP_PATHS_CMD, f"path without peer: {str(p)[:150]}")
-+        raise unexpected(BGP_PATHS_CMD, )
-     if p.get("local") or p.get("sourced"):
-         return False
-     return peer["peerId"] not in ("", "0.0.0.0", "::")
-```
-
-`netdryrun.drivers.frr.x__learned__mutmut_12`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `2c1a202b3f35aaa0`
-
-```diff
-# netdryrun.drivers.frr.x__learned__mutmut_12: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -3,7 +3,7 @@
-     aggregate). Validity and best-path selection don't matter: received but not selected is present."""
-     peer = p.get("peer")
-     if not isinstance(peer, dict) or not isinstance(peer.get("peerId"), str):  # every path names its peer
--        raise unexpected(BGP_PATHS_CMD, f"path without peer: {str(p)[:150]}")
-+        raise unexpected(BGP_PATHS_CMD, f"path without peer: {str(None)[:150]}")
-     if p.get("local") or p.get("sourced"):
-         return False
-     return peer["peerId"] not in ("", "0.0.0.0", "::")
-```
-
-`netdryrun.drivers.frr.x__learned__mutmut_13`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `bb38c5485fb2f855`
-
-```diff
-# netdryrun.drivers.frr.x__learned__mutmut_13: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -3,7 +3,7 @@
-     aggregate). Validity and best-path selection don't matter: received but not selected is present."""
-     peer = p.get("peer")
-     if not isinstance(peer, dict) or not isinstance(peer.get("peerId"), str):  # every path names its peer
--        raise unexpected(BGP_PATHS_CMD, f"path without peer: {str(p)[:150]}")
-+        raise unexpected(BGP_PATHS_CMD, f"path without peer: {str(p)[:151]}")
-     if p.get("local") or p.get("sourced"):
-         return False
-     return peer["peerId"] not in ("", "0.0.0.0", "::")
-```
-
-`netdryrun.drivers.frr.x__learned__mutmut_8`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `8c5d09c080765daa`
-
-```diff
-# netdryrun.drivers.frr.x__learned__mutmut_8: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -3,7 +3,7 @@
-     aggregate). Validity and best-path selection don't matter: received but not selected is present."""
-     peer = p.get("peer")
-     if not isinstance(peer, dict) or not isinstance(peer.get("peerId"), str):  # every path names its peer
--        raise unexpected(BGP_PATHS_CMD, f"path without peer: {str(p)[:150]}")
-+        raise unexpected(None, f"path without peer: {str(p)[:150]}")
-     if p.get("local") or p.get("sourced"):
-         return False
-     return peer["peerId"] not in ("", "0.0.0.0", "::")
-```
-
-`netdryrun.drivers.frr.x__learned__mutmut_9`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `417966b6ad6b1194`
-
-```diff
-# netdryrun.drivers.frr.x__learned__mutmut_9: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -3,7 +3,7 @@
-     aggregate). Validity and best-path selection don't matter: received but not selected is present."""
-     peer = p.get("peer")
-     if not isinstance(peer, dict) or not isinstance(peer.get("peerId"), str):  # every path names its peer
--        raise unexpected(BGP_PATHS_CMD, f"path without peer: {str(p)[:150]}")
-+        raise unexpected(BGP_PATHS_CMD, None)
-     if p.get("local") or p.get("sourced"):
-         return False
-     return peer["peerId"] not in ("", "0.0.0.0", "::")
-```
-
-## `drivers.junos._as_path` (6)
-
-`netdryrun.drivers.junos.x__as_path__mutmut_22`: survived (accepted, equivalent: segment kind 'as-sequence' renamed 'XXas-sequenceXX'); argument: render_as_path treats any kind that is not a set and not confed as a sequence (its else branch); 'xxas-sequencexx' takes that same branch, so the rendered AS path is identical; reviewed: no; diff fingerprint `083e3e20590fb588`
-
-```diff
-# netdryrun.drivers.junos.x__as_path__mutmut_22: survived
---- src/netdryrun/drivers/junos.py
-+++ src/netdryrun/drivers/junos.py
-@@ -10,7 +10,7 @@
-         if tok in _ORIGINS:
-             return render_as_path(segments)
-         if tok.isdigit():
--            segments.append(("as-sequence", [tok]))
-+            segments.append(("XXas-sequenceXX", [tok]))
-         elif tok.startswith("{"):
-             segments.append(("as-set", tok[1:-1].replace(",", " ").split()))
-         elif tok.startswith("("):
-```
-
-`netdryrun.drivers.junos.x__as_path__mutmut_23`: survived (accepted, equivalent: segment kind 'as-sequence' upper-cased); argument: render_as_path lower-cases the kind before comparing, so 'AS-SEQUENCE' renders exactly as 'as-sequence'; reviewed: no; diff fingerprint `c24880d3be9e7860`
-
-```diff
-# netdryrun.drivers.junos.x__as_path__mutmut_23: survived
---- src/netdryrun/drivers/junos.py
-+++ src/netdryrun/drivers/junos.py
-@@ -10,7 +10,7 @@
-         if tok in _ORIGINS:
-             return render_as_path(segments)
-         if tok.isdigit():
--            segments.append(("as-sequence", [tok]))
-+            segments.append(("AS-SEQUENCE", [tok]))
-         elif tok.startswith("{"):
-             segments.append(("as-set", tok[1:-1].replace(",", " ").split()))
-         elif tok.startswith("("):
-```
-
-`netdryrun.drivers.junos.x__as_path__mutmut_28`: survived (accepted, equivalent: segment kind 'as-set' upper-cased); argument: render_as_path lower-cases the kind before comparing, so 'AS-SET' renders as {a,b} exactly like 'as-set'; reviewed: no; diff fingerprint `d32a778a115feb27`
-
-```diff
-# netdryrun.drivers.junos.x__as_path__mutmut_28: survived
---- src/netdryrun/drivers/junos.py
-+++ src/netdryrun/drivers/junos.py
-@@ -12,7 +12,7 @@
-         if tok.isdigit():
-             segments.append(("as-sequence", [tok]))
-         elif tok.startswith("{"):
--            segments.append(("as-set", tok[1:-1].replace(",", " ").split()))
-+            segments.append(("AS-SET", tok[1:-1].replace(",", " ").split()))
-         elif tok.startswith("("):
-             segments.append(("as-confed-sequence", tok[1:-1].split()))
-         else:
-```
-
-`netdryrun.drivers.junos.x__as_path__mutmut_41`: survived (accepted, equivalent: segment kind 'as-confed-sequence' renamed 'XXas-confed-sequenceXX'); argument: render_as_path checks only that 'confed' is in the kind and 'set' is not; 'xxas-confed-sequencexx' satisfies both the same way, rendering (a b) identically; reviewed: no; diff fingerprint `356b97c2202225e2`
-
-```diff
-# netdryrun.drivers.junos.x__as_path__mutmut_41: survived
---- src/netdryrun/drivers/junos.py
-+++ src/netdryrun/drivers/junos.py
-@@ -14,7 +14,7 @@
-         elif tok.startswith("{"):
-             segments.append(("as-set", tok[1:-1].replace(",", " ").split()))
-         elif tok.startswith("("):
--            segments.append(("as-confed-sequence", tok[1:-1].split()))
-+            segments.append(("XXas-confed-sequenceXX", tok[1:-1].split()))
-         else:
-             raise unexpected(command, f"as-path token {tok!r} in {line[:80]!r}")
-     raise unexpected(command, f"as-path without origin: {line[:80]!r}")
-```
-
-`netdryrun.drivers.junos.x__as_path__mutmut_42`: survived (accepted, equivalent: segment kind 'as-confed-sequence' upper-cased); argument: render_as_path lower-cases the kind before comparing, so the rendering is identical; reviewed: no; diff fingerprint `2fd4c96f34e669d7`
-
-```diff
-# netdryrun.drivers.junos.x__as_path__mutmut_42: survived
---- src/netdryrun/drivers/junos.py
-+++ src/netdryrun/drivers/junos.py
-@@ -14,7 +14,7 @@
-         elif tok.startswith("{"):
-             segments.append(("as-set", tok[1:-1].replace(",", " ").split()))
-         elif tok.startswith("("):
--            segments.append(("as-confed-sequence", tok[1:-1].split()))
-+            segments.append(("AS-CONFED-SEQUENCE", tok[1:-1].split()))
-         else:
-             raise unexpected(command, f"as-path token {tok!r} in {line[:80]!r}")
-     raise unexpected(command, f"as-path without origin: {line[:80]!r}")
-```
-
-`netdryrun.drivers.junos.x__as_path__mutmut_6`: survived (accepted, equivalent: blank as-path text yields line 'XXXX' instead of ''); argument: neither '' nor 'XXXX' starts with 'AS path:', so both raise the same unexpected error, whose message quotes `text`, not `line`; reviewed: no; diff fingerprint `6b0ecb80320937e6`
-
-```diff
-# netdryrun.drivers.junos.x__as_path__mutmut_6: survived
---- src/netdryrun/drivers/junos.py
-+++ src/netdryrun/drivers/junos.py
-@@ -2,7 +2,7 @@
-     """Junos `AS path: 65002 {65010 65011} I` -> `65002 {65010,65011}`; `AS path: I` (local) -> "".
-     Sets are {a b}, confederation sequences (a b). Anything else (a bracketed local AS, an unknown token, no
-     origin) is unexpected."""
--    line = text.strip().splitlines()[0] if text and text.strip() else ""
-+    line = text.strip().splitlines()[0] if text and text.strip() else "XXXX"
-     if not line.startswith("AS path:"):
-         raise unexpected(command, f"as-path {text[:80]!r}")
-     segments: list[tuple[str, list]] = []
-```
-
-## `drivers.srlinux._list` (6)
-
-`netdryrun.drivers.srlinux.x__list__mutmut_10`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `1d735876cf89afdd`
-
-```diff
-# netdryrun.drivers.srlinux.x__list__mutmut_10: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -7,5 +7,5 @@
-         raise unexpected(command, data)
-     for r in rows:
-         if not isinstance(r, dict):
--            raise unexpected(command, f"{key}: {str(r)[:150]}")
-+            raise unexpected(None, f"{key}: {str(r)[:150]}")
-     return rows
-```
-
-`netdryrun.drivers.srlinux.x__list__mutmut_11`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `bd90ff21d9caf199`
-
-```diff
-# netdryrun.drivers.srlinux.x__list__mutmut_11: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -7,5 +7,5 @@
-         raise unexpected(command, data)
-     for r in rows:
-         if not isinstance(r, dict):
--            raise unexpected(command, f"{key}: {str(r)[:150]}")
-+            raise unexpected(command, None)
-     return rows
-```
-
-`netdryrun.drivers.srlinux.x__list__mutmut_14`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `ebd8a8ba71c7620d`
-
-```diff
-# netdryrun.drivers.srlinux.x__list__mutmut_14: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -7,5 +7,5 @@
-         raise unexpected(command, data)
-     for r in rows:
-         if not isinstance(r, dict):
--            raise unexpected(command, f"{key}: {str(r)[:150]}")
-+            raise unexpected(command, f"{key}: {str(None)[:150]}")
-     return rows
-```
-
-`netdryrun.drivers.srlinux.x__list__mutmut_15`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `e5322e26afbcc0fe`
-
-```diff
-# netdryrun.drivers.srlinux.x__list__mutmut_15: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -7,5 +7,5 @@
-         raise unexpected(command, data)
-     for r in rows:
-         if not isinstance(r, dict):
--            raise unexpected(command, f"{key}: {str(r)[:150]}")
-+            raise unexpected(command, f"{key}: {str(r)[:151]}")
-     return rows
-```
-
-`netdryrun.drivers.srlinux.x__list__mutmut_5`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `219bb7ad7740e5a0`
-
-```diff
-# netdryrun.drivers.srlinux.x__list__mutmut_5: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -4,7 +4,7 @@
-         return []
-     rows = data.get(key)
-     if not isinstance(rows, list):
--        raise unexpected(command, data)
-+        raise unexpected(None, data)
-     for r in rows:
-         if not isinstance(r, dict):
-             raise unexpected(command, f"{key}: {str(r)[:150]}")
-```
-
-`netdryrun.drivers.srlinux.x__list__mutmut_6`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `aacb0c0c88860c41`
-
-```diff
-# netdryrun.drivers.srlinux.x__list__mutmut_6: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -4,7 +4,7 @@
-         return []
-     rows = data.get(key)
-     if not isinstance(rows, list):
--        raise unexpected(command, data)
-+        raise unexpected(command, None)
-     for r in rows:
-         if not isinstance(r, dict):
-             raise unexpected(command, f"{key}: {str(r)[:150]}")
-```
-
 ## `verify.engine._advertisement` (6)
 
 `netdryrun.verify.engine.x__advertisement__mutmut_60`: survived (accepted, message-text: message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict); diff fingerprint `f6c7cea389005364`
@@ -39784,155 +41064,6 @@ Each mutant below is a deliberate change to the code that no test noticed. In ve
 +    return f"; did you mean {close[0]!r}?" if close else "XXXX"
 ```
 
-## `drivers.base.network` (5)
-
-`netdryrun.drivers.base.x_network__mutmut_11`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `7c71bcab7eb361ee`
-
-```diff
-# netdryrun.drivers.base.x_network__mutmut_11: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -3,4 +3,4 @@
-     try:
-         return ipaddress.ip_network(str(value), strict=False)
-     except ValueError:
--        raise unexpected(command, f"not a prefix: {str(value)[:80]!r}") from None
-+        raise unexpected(command, f"not a prefix: {str(None)[:80]!r}") from None
-```
-
-`netdryrun.drivers.base.x_network__mutmut_12`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `2d76887a5bd29299`
-
-```diff
-# netdryrun.drivers.base.x_network__mutmut_12: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -3,4 +3,4 @@
-     try:
-         return ipaddress.ip_network(str(value), strict=False)
-     except ValueError:
--        raise unexpected(command, f"not a prefix: {str(value)[:80]!r}") from None
-+        raise unexpected(command, f"not a prefix: {str(value)[:81]!r}") from None
-```
-
-`netdryrun.drivers.base.x_network__mutmut_2`: survived (accepted, equivalent: equivalent: strict=None is falsy, the same as strict=False); diff fingerprint `50af274eb8707675`
-
-```diff
-# netdryrun.drivers.base.x_network__mutmut_2: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -1,6 +1,6 @@
- def network(command: str, value: object):
-     """A prefix from device output; output with a key that isn't one is unexpected."""
-     try:
--        return ipaddress.ip_network(str(value), strict=False)
-+        return ipaddress.ip_network(str(value), strict=None)
-     except ValueError:
-         raise unexpected(command, f"not a prefix: {str(value)[:80]!r}") from None
-```
-
-`netdryrun.drivers.base.x_network__mutmut_7`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `1cdeae623bc34399`
-
-```diff
-# netdryrun.drivers.base.x_network__mutmut_7: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -3,4 +3,4 @@
-     try:
-         return ipaddress.ip_network(str(value), strict=False)
-     except ValueError:
--        raise unexpected(command, f"not a prefix: {str(value)[:80]!r}") from None
-+        raise unexpected(None, f"not a prefix: {str(value)[:80]!r}") from None
-```
-
-`netdryrun.drivers.base.x_network__mutmut_8`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `1dd86904d0cb32f0`
-
-```diff
-# netdryrun.drivers.base.x_network__mutmut_8: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -3,4 +3,4 @@
-     try:
-         return ipaddress.ip_network(str(value), strict=False)
-     except ValueError:
--        raise unexpected(command, f"not a prefix: {str(value)[:80]!r}") from None
-+        raise unexpected(command, None) from None
-```
-
-## `drivers.srlinux._json` (5)
-
-`netdryrun.drivers.srlinux.x__json__mutmut_1`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `9345465bc3e939fc`
-
-```diff
-# netdryrun.drivers.srlinux.x__json__mutmut_1: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -1,4 +1,4 @@
--def _json(text: str, command: str = "sr_cli") -> dict:
-+def _json(text: str, command: str = "XXsr_cliXX") -> dict:
-     data = load_json(command, text)
-     if not isinstance(data, dict):
-         raise unexpected(command, text)
-```
-
-`netdryrun.drivers.srlinux.x__json__mutmut_10`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `18eefd073906ac1b`
-
-```diff
-# netdryrun.drivers.srlinux.x__json__mutmut_10: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -1,5 +1,5 @@
- def _json(text: str, command: str = "sr_cli") -> dict:
-     data = load_json(command, text)
-     if not isinstance(data, dict):
--        raise unexpected(command, text)
-+        raise unexpected(command, None)
-     return data
-```
-
-`netdryrun.drivers.srlinux.x__json__mutmut_2`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `31335a870854b118`
-
-```diff
-# netdryrun.drivers.srlinux.x__json__mutmut_2: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -1,4 +1,4 @@
--def _json(text: str, command: str = "sr_cli") -> dict:
-+def _json(text: str, command: str = "SR_CLI") -> dict:
-     data = load_json(command, text)
-     if not isinstance(data, dict):
-         raise unexpected(command, text)
-```
-
-`netdryrun.drivers.srlinux.x__json__mutmut_4`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `7b8effee425d78a2`
-
-```diff
-# netdryrun.drivers.srlinux.x__json__mutmut_4: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -1,5 +1,5 @@
- def _json(text: str, command: str = "sr_cli") -> dict:
--    data = load_json(command, text)
-+    data = load_json(None, text)
-     if not isinstance(data, dict):
-         raise unexpected(command, text)
-     return data
-```
-
-`netdryrun.drivers.srlinux.x__json__mutmut_9`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `8ba54a775f0b2766`
-
-```diff
-# netdryrun.drivers.srlinux.x__json__mutmut_9: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -1,5 +1,5 @@
- def _json(text: str, command: str = "sr_cli") -> dict:
-     data = load_json(command, text)
-     if not isinstance(data, dict):
--        raise unexpected(command, text)
-+        raise unexpected(None, text)
-     return data
-```
-
 ## `runner._reach_then_hold` (5)
 
 `netdryrun.runner.x__reach_then_hold__mutmut_13`: survived (accepted, equivalent: equivalent: hold_together([]) returns [], the same as the {} it replaces); argument: Same behaviour on every input the function can receive: hold_together([]) returns [], the same as the {} it replaces. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 1: checked and agreed (research/model-reviews/release-0.3.3/ndr-0.3.3-adversarial-mutants-*); diff fingerprint `6ac3fbd352aab299`
@@ -40645,268 +41776,6 @@ Each mutant below is a deliberate change to the code that no test noticed. In ve
 -    with ThreadPoolExecutor(max_workers=min(workers, len(checks))) as pool:
 +    with ThreadPoolExecutor(max_workers=None) as pool:
          return list(pool.map(lambda c: _evaluate(c, drivers[c.node]), checks))
-```
-
-## `drivers.eos._json` (4)
-
-`netdryrun.drivers.eos.x__json__mutmut_10`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `b28984661e329cdc`
-
-```diff
-# netdryrun.drivers.eos.x__json__mutmut_10: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -1,7 +1,7 @@
- def _json(command: str, text: str) -> dict:
-     data = load_json(command, text)
-     if isinstance(data, dict) and "errors" in data:
--        raise DriverError(f"EOS error from `{command}`: {data['errors']}")
-+        raise DriverError(None)
-     if not isinstance(data, dict):
-         raise unexpected(command, text)
-     return data
-```
-
-`netdryrun.drivers.eos.x__json__mutmut_14`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `73e7b937848eff66`
-
-```diff
-# netdryrun.drivers.eos.x__json__mutmut_14: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -3,5 +3,5 @@
-     if isinstance(data, dict) and "errors" in data:
-         raise DriverError(f"EOS error from `{command}`: {data['errors']}")
-     if not isinstance(data, dict):
--        raise unexpected(command, text)
-+        raise unexpected(None, text)
-     return data
-```
-
-`netdryrun.drivers.eos.x__json__mutmut_15`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `b9c986b9de7a7361`
-
-```diff
-# netdryrun.drivers.eos.x__json__mutmut_15: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -3,5 +3,5 @@
-     if isinstance(data, dict) and "errors" in data:
-         raise DriverError(f"EOS error from `{command}`: {data['errors']}")
-     if not isinstance(data, dict):
--        raise unexpected(command, text)
-+        raise unexpected(command, None)
-     return data
-```
-
-`netdryrun.drivers.eos.x__json__mutmut_2`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `34ba1bda56bc6583`
-
-```diff
-# netdryrun.drivers.eos.x__json__mutmut_2: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -1,5 +1,5 @@
- def _json(command: str, text: str) -> dict:
--    data = load_json(command, text)
-+    data = load_json(None, text)
-     if isinstance(data, dict) and "errors" in data:
-         raise DriverError(f"EOS error from `{command}`: {data['errors']}")
-     if not isinstance(data, dict):
-```
-
-## `drivers.eos._table` (4)
-
-`netdryrun.drivers.eos.x__table__mutmut_4`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `958eaa7ec28b0e07`
-
-```diff
-# netdryrun.drivers.eos.x__table__mutmut_4: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -2,5 +2,5 @@
-     """A required map inside a VRF's answer (routes, peers, bgpRouteEntries); `{}` is a real empty one."""
-     table = entry.get(key)
-     if not isinstance(table, dict):
--        raise unexpected(command, f"no {key!r} map: {str(entry)[:150]}")
-+        raise unexpected(None, f"no {key!r} map: {str(entry)[:150]}")
-     return table
-```
-
-`netdryrun.drivers.eos.x__table__mutmut_5`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `bb7483b4271d2b51`
-
-```diff
-# netdryrun.drivers.eos.x__table__mutmut_5: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -2,5 +2,5 @@
-     """A required map inside a VRF's answer (routes, peers, bgpRouteEntries); `{}` is a real empty one."""
-     table = entry.get(key)
-     if not isinstance(table, dict):
--        raise unexpected(command, f"no {key!r} map: {str(entry)[:150]}")
-+        raise unexpected(command, None)
-     return table
-```
-
-`netdryrun.drivers.eos.x__table__mutmut_8`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `181d29ffa881384e`
-
-```diff
-# netdryrun.drivers.eos.x__table__mutmut_8: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -2,5 +2,5 @@
-     """A required map inside a VRF's answer (routes, peers, bgpRouteEntries); `{}` is a real empty one."""
-     table = entry.get(key)
-     if not isinstance(table, dict):
--        raise unexpected(command, f"no {key!r} map: {str(entry)[:150]}")
-+        raise unexpected(command, f"no {key!r} map: {str(None)[:150]}")
-     return table
-```
-
-`netdryrun.drivers.eos.x__table__mutmut_9`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `db6ac3204953c6d9`
-
-```diff
-# netdryrun.drivers.eos.x__table__mutmut_9: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -2,5 +2,5 @@
-     """A required map inside a VRF's answer (routes, peers, bgpRouteEntries); `{}` is a real empty one."""
-     table = entry.get(key)
-     if not isinstance(table, dict):
--        raise unexpected(command, f"no {key!r} map: {str(entry)[:150]}")
-+        raise unexpected(command, f"no {key!r} map: {str(entry)[:151]}")
-     return table
-```
-
-## `drivers.frr.FrrDriver._confirm_vrf` (4)
-
-`netdryrun.drivers.frr.xǁFrrDriverǁ_confirm_vrf__mutmut_12`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `469e6af154216306`
-
-```diff
-# netdryrun.drivers.frr.xǁFrrDriverǁ_confirm_vrf__mutmut_12: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -6,6 +6,6 @@
-     vrfs = parse_vrfs(self._vtysh(VRF_CMD, evidence))
-     if vrf not in vrfs:
-         raise NoSuchInstance(f"VRF {vrf!r} does not exist on {self.node} "
--                          f"(`show vrf` lists: {', '.join(sorted(vrfs)) or 'none'})")
-+                          f"(`show vrf` lists: {', '.join(sorted(vrfs)) and 'none'})")
-     if not vrfs[vrf]:
-         raise NoSuchInstance(f"VRF {vrf!r} is configured on {self.node} but inactive (no kernel VRF device)")
-```
-
-`netdryrun.drivers.frr.xǁFrrDriverǁ_confirm_vrf__mutmut_14`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `8fd8cb6ad10042f5`
-
-```diff
-# netdryrun.drivers.frr.xǁFrrDriverǁ_confirm_vrf__mutmut_14: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -6,6 +6,6 @@
-     vrfs = parse_vrfs(self._vtysh(VRF_CMD, evidence))
-     if vrf not in vrfs:
-         raise NoSuchInstance(f"VRF {vrf!r} does not exist on {self.node} "
--                          f"(`show vrf` lists: {', '.join(sorted(vrfs)) or 'none'})")
-+                          f"(`show vrf` lists: {'XX, XX'.join(sorted(vrfs)) or 'none'})")
-     if not vrfs[vrf]:
-         raise NoSuchInstance(f"VRF {vrf!r} is configured on {self.node} but inactive (no kernel VRF device)")
-```
-
-`netdryrun.drivers.frr.xǁFrrDriverǁ_confirm_vrf__mutmut_16`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `ce67a4bedd07e98d`
-
-```diff
-# netdryrun.drivers.frr.xǁFrrDriverǁ_confirm_vrf__mutmut_16: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -6,6 +6,6 @@
-     vrfs = parse_vrfs(self._vtysh(VRF_CMD, evidence))
-     if vrf not in vrfs:
-         raise NoSuchInstance(f"VRF {vrf!r} does not exist on {self.node} "
--                          f"(`show vrf` lists: {', '.join(sorted(vrfs)) or 'none'})")
-+                          f"(`show vrf` lists: {', '.join(sorted(vrfs)) or 'XXnoneXX'})")
-     if not vrfs[vrf]:
-         raise NoSuchInstance(f"VRF {vrf!r} is configured on {self.node} but inactive (no kernel VRF device)")
-```
-
-`netdryrun.drivers.frr.xǁFrrDriverǁ_confirm_vrf__mutmut_17`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `55fac487bcc84d9b`
-
-```diff
-# netdryrun.drivers.frr.xǁFrrDriverǁ_confirm_vrf__mutmut_17: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -6,6 +6,6 @@
-     vrfs = parse_vrfs(self._vtysh(VRF_CMD, evidence))
-     if vrf not in vrfs:
-         raise NoSuchInstance(f"VRF {vrf!r} does not exist on {self.node} "
--                          f"(`show vrf` lists: {', '.join(sorted(vrfs)) or 'none'})")
-+                          f"(`show vrf` lists: {', '.join(sorted(vrfs)) or 'NONE'})")
-     if not vrfs[vrf]:
-         raise NoSuchInstance(f"VRF {vrf!r} is configured on {self.node} but inactive (no kernel VRF device)")
-```
-
-## `drivers.junos._next_hop` (4)
-
-`netdryrun.drivers.junos.x__next_hop__mutmut_24`: survived (accepted, equivalent: equivalent: _leaf tests `required` for truth only; False and None are both falsy); diff fingerprint `9efe1ecf76ec989f`
-
-```diff
-# netdryrun.drivers.junos.x__next_hop__mutmut_24: survived
---- src/netdryrun/drivers/junos.py
-+++ src/netdryrun/drivers/junos.py
-@@ -5,7 +5,7 @@
-     for key in ("protocol-nh", "nh"):
-         hops = _items(command, e, key)
-         chosen = [h for h in hops if "selected-next-hop" in h] or hops
--        tos = list(dict.fromkeys(_canon_addr(t) for t in (_leaf(command, h, "to", required=False) for h in chosen)
-+        tos = list(dict.fromkeys(_canon_addr(t) for t in (_leaf(command, h, "to", required=None) for h in chosen)
-                                  if t))
-         if len(tos) > 1:
-             raise unexpected(command, f"{key}: several next hops ({', '.join(tos[:4])}) and none selected")
-```
-
-`netdryrun.drivers.junos.x__next_hop__mutmut_34`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `d7ff478ea9b8d2e8`
-
-```diff
-# netdryrun.drivers.junos.x__next_hop__mutmut_34: survived
---- src/netdryrun/drivers/junos.py
-+++ src/netdryrun/drivers/junos.py
-@@ -8,7 +8,7 @@
-         tos = list(dict.fromkeys(_canon_addr(t) for t in (_leaf(command, h, "to", required=False) for h in chosen)
-                                  if t))
-         if len(tos) > 1:
--            raise unexpected(command, f"{key}: several next hops ({', '.join(tos[:4])}) and none selected")
-+            raise unexpected(None, f"{key}: several next hops ({', '.join(tos[:4])}) and none selected")
-         if tos:
-             return tos[0]
-     return None
-```
-
-`netdryrun.drivers.junos.x__next_hop__mutmut_39`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `635f5a06a9c0425d`
-
-```diff
-# netdryrun.drivers.junos.x__next_hop__mutmut_39: survived
---- src/netdryrun/drivers/junos.py
-+++ src/netdryrun/drivers/junos.py
-@@ -8,7 +8,7 @@
-         tos = list(dict.fromkeys(_canon_addr(t) for t in (_leaf(command, h, "to", required=False) for h in chosen)
-                                  if t))
-         if len(tos) > 1:
--            raise unexpected(command, f"{key}: several next hops ({', '.join(tos[:4])}) and none selected")
-+            raise unexpected(command, f"{key}: several next hops ({'XX, XX'.join(tos[:4])}) and none selected")
-         if tos:
-             return tos[0]
-     return None
-```
-
-`netdryrun.drivers.junos.x__next_hop__mutmut_40`: survived (accepted, message-text: message text only: how many of the disagreeing next hops the error lists; the error is still raised); diff fingerprint `0b876c23f9cf9e7a`
-
-```diff
-# netdryrun.drivers.junos.x__next_hop__mutmut_40: survived
---- src/netdryrun/drivers/junos.py
-+++ src/netdryrun/drivers/junos.py
-@@ -8,7 +8,7 @@
-         tos = list(dict.fromkeys(_canon_addr(t) for t in (_leaf(command, h, "to", required=False) for h in chosen)
-                                  if t))
-         if len(tos) > 1:
--            raise unexpected(command, f"{key}: several next hops ({', '.join(tos[:4])}) and none selected")
-+            raise unexpected(command, f"{key}: several next hops ({', '.join(tos[:5])}) and none selected")
-         if tos:
-             return tos[0]
-     return None
 ```
 
 ## `verify.engine._flat` (4)
@@ -41839,344 +42708,6 @@ Each mutant below is a deliberate change to the code that no test noticed. In ve
      if isinstance(value, list):
 ```
 
-## `drivers.base.Driver.all_routes` (3)
-
-`netdryrun.drivers.base.xǁDriverǁall_routes__mutmut_1`: survived (accepted, equivalent: equivalent: default argument of an abstract base-class method that only raises NotImplementedError); diff fingerprint `ad9ef2abf022df26`
-
-```diff
-# netdryrun.drivers.base.xǁDriverǁall_routes__mutmut_1: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -1,3 +1,3 @@
--def all_routes(self, vrf: str = "default", family: int = 4) -> Observation:
-+def all_routes(self, vrf: str = "XXdefaultXX", family: int = 4) -> Observation:
-     """Every route in the table (used by `netdryrun record`)."""
-     raise NotImplementedError
-```
-
-`netdryrun.drivers.base.xǁDriverǁall_routes__mutmut_2`: survived (accepted, equivalent: equivalent: default argument of an abstract base-class method that only raises NotImplementedError); diff fingerprint `b40a321059f2c012`
-
-```diff
-# netdryrun.drivers.base.xǁDriverǁall_routes__mutmut_2: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -1,3 +1,3 @@
--def all_routes(self, vrf: str = "default", family: int = 4) -> Observation:
-+def all_routes(self, vrf: str = "DEFAULT", family: int = 4) -> Observation:
-     """Every route in the table (used by `netdryrun record`)."""
-     raise NotImplementedError
-```
-
-`netdryrun.drivers.base.xǁDriverǁall_routes__mutmut_3`: survived (accepted, equivalent: equivalent: default argument of an abstract base-class method that only raises NotImplementedError); diff fingerprint `679c76ae7178beb9`
-
-```diff
-# netdryrun.drivers.base.xǁDriverǁall_routes__mutmut_3: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -1,3 +1,3 @@
--def all_routes(self, vrf: str = "default", family: int = 4) -> Observation:
-+def all_routes(self, vrf: str = "default", family: int = 5) -> Observation:
-     """Every route in the table (used by `netdryrun record`)."""
-     raise NotImplementedError
-```
-
-## `drivers.base.as_int` (3)
-
-`netdryrun.drivers.base.x_as_int__mutmut_1`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `4427d58b48503dc0`
-
-```diff
-# netdryrun.drivers.base.x_as_int__mutmut_1: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -1,6 +1,6 @@
- def as_int(command: str, value: object) -> int:
-     if isinstance(value, bool):
--        raise unexpected(command, f"not a number: {value!r}")
-+        raise unexpected(None, f"not a number: {value!r}")
-     try:
-         return int(value)
-     except (TypeError, ValueError):
-```
-
-`netdryrun.drivers.base.x_as_int__mutmut_11`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `8e2df5a5ce969623`
-
-```diff
-# netdryrun.drivers.base.x_as_int__mutmut_11: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -4,4 +4,4 @@
-     try:
-         return int(value)
-     except (TypeError, ValueError):
--        raise unexpected(command, f"not a number: {str(value)[:80]!r}") from None
-+        raise unexpected(command, f"not a number: {str(value)[:81]!r}") from None
-```
-
-`netdryrun.drivers.base.x_as_int__mutmut_2`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `023e389bcdefa468`
-
-```diff
-# netdryrun.drivers.base.x_as_int__mutmut_2: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -1,6 +1,6 @@
- def as_int(command: str, value: object) -> int:
-     if isinstance(value, bool):
--        raise unexpected(command, f"not a number: {value!r}")
-+        raise unexpected(command, None)
-     try:
-         return int(value)
-     except (TypeError, ValueError):
-```
-
-## `drivers.base.unexpected` (3)
-
-`netdryrun.drivers.base.x_unexpected__mutmut_6`: survived (accepted, message-text: message text only: the output snippet in the error); diff fingerprint `95d108cdf6c9eea8`
-
-```diff
-# netdryrun.drivers.base.x_unexpected__mutmut_6: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -1,4 +1,4 @@
- def unexpected(command: str, text: object) -> DriverError:
-     """The error for output that doesn't have the structure the parser knows. Never read it as 'nothing'."""
--    snippet = " ".join(str(text).split())[:200] or "no output"
-+    snippet = " ".join(str(text).split())[:201] or "no output"
-     return DriverError(f"unexpected output from `{command}`: {snippet}")
-```
-
-`netdryrun.drivers.base.x_unexpected__mutmut_7`: survived (accepted, message-text: message text only: the text of a detail or error message); diff fingerprint `33017b0e283901f0`
-
-```diff
-# netdryrun.drivers.base.x_unexpected__mutmut_7: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -1,4 +1,4 @@
- def unexpected(command: str, text: object) -> DriverError:
-     """The error for output that doesn't have the structure the parser knows. Never read it as 'nothing'."""
--    snippet = " ".join(str(text).split())[:200] or "no output"
-+    snippet = " ".join(str(text).split())[:200] or "XXno outputXX"
-     return DriverError(f"unexpected output from `{command}`: {snippet}")
-```
-
-`netdryrun.drivers.base.x_unexpected__mutmut_8`: survived (accepted, message-text: message text only: the text of a detail or error message); diff fingerprint `c09ed68052896115`
-
-```diff
-# netdryrun.drivers.base.x_unexpected__mutmut_8: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -1,4 +1,4 @@
- def unexpected(command: str, text: object) -> DriverError:
-     """The error for output that doesn't have the structure the parser knows. Never read it as 'nothing'."""
--    snippet = " ".join(str(text).split())[:200] or "no output"
-+    snippet = " ".join(str(text).split())[:200] or "NO OUTPUT"
-     return DriverError(f"unexpected output from `{command}`: {snippet}")
-```
-
-## `drivers.check_supported` (3)
-
-`netdryrun.drivers.x_check_supported__mutmut_34`: survived (accepted, message-text: message text only: the unsupported-afi error text; the same exception is raised); diff fingerprint `bdd097102fce75ed`
-
-```diff
-# netdryrun.drivers.x_check_supported__mutmut_34: survived
---- src/netdryrun/drivers/__init__.py
-+++ src/netdryrun/drivers/__init__.py
-@@ -9,7 +9,7 @@
-         if afi in getattr(DRIVERS.get(name), "unsupported_afis", ()):
-             # the count would read as 0, which passes max and exact: refuse instead
-             raise DriverError(f"{check.name}: afi {afi} is not supported on {name} (the {name} driver reads "
--                              "ipv4-unicast and ipv6-unicast prefix counts only)")
-+                              "XXipv4-unicast and ipv6-unicast prefix counts only)XX")
-         return
-     cls = DRIVERS.get(name)
-     keys = sorted(set(check.params) & set(cls.unsupported_bgp_attributes)) if cls else []
-```
-
-`netdryrun.drivers.x_check_supported__mutmut_35`: survived (accepted, message-text: message text only: the unsupported-afi error text; the same exception is raised); diff fingerprint `e200d1732c7222f9`
-
-```diff
-# netdryrun.drivers.x_check_supported__mutmut_35: survived
---- src/netdryrun/drivers/__init__.py
-+++ src/netdryrun/drivers/__init__.py
-@@ -9,7 +9,7 @@
-         if afi in getattr(DRIVERS.get(name), "unsupported_afis", ()):
-             # the count would read as 0, which passes max and exact: refuse instead
-             raise DriverError(f"{check.name}: afi {afi} is not supported on {name} (the {name} driver reads "
--                              "ipv4-unicast and ipv6-unicast prefix counts only)")
-+                              "IPV4-UNICAST AND IPV6-UNICAST PREFIX COUNTS ONLY)")
-         return
-     cls = DRIVERS.get(name)
-     keys = sorted(set(check.params) & set(cls.unsupported_bgp_attributes)) if cls else []
-```
-
-`netdryrun.drivers.x_check_supported__mutmut_47`: survived (accepted, message-text: message text only: the key list in the unsupported-key error; the same exception is raised); diff fingerprint `180f0ddfb2212dd0`
-
-```diff
-# netdryrun.drivers.x_check_supported__mutmut_47: survived
---- src/netdryrun/drivers/__init__.py
-+++ src/netdryrun/drivers/__init__.py
-@@ -14,4 +14,4 @@
-     cls = DRIVERS.get(name)
-     keys = sorted(set(check.params) & set(cls.unsupported_bgp_attributes)) if cls else []
-     if keys:
--        raise DriverError(f"{check.name}: {', '.join(keys)} is not supported on {name}")
-+        raise DriverError(f"{check.name}: {'XX, XX'.join(keys)} is not supported on {name}")
-```
-
-## `drivers.eos.parse_startup_config_errors` (3)
-
-`netdryrun.drivers.eos.x_parse_startup_config_errors__mutmut_42`: survived (accepted, equivalent: zip(strict=True) -> strict=None: the len(body) % 2 check just above raises on an odd body, so body[::2] and body[1::2] always have equal length); argument: strict only matters when the two slices differ in length, which the preceding odd-length raise makes impossible; every pair is still read and checked; reviewed: no; diff fingerprint `a5073bdbc2732ebe`
-
-```diff
-# netdryrun.drivers.eos.x_parse_startup_config_errors__mutmut_42: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -11,7 +11,7 @@
-     out, body = [], lines[1:-1]
-     if len(body) % 2:
-         raise DriverError(f"{STARTUP_ERRORS_CMD}: unexpected output: {' '.join(text.split())[:200]!r}")
--    for cmd, why in zip(body[::2], body[1::2], strict=True):
-+    for cmd, why in zip(body[::2], body[1::2], strict=None):
-         m = _STARTUP_REASON.match(why)
-         if not cmd.startswith(">") or not m:
-             raise DriverError(f"{STARTUP_ERRORS_CMD}: unexpected output: {cmd[:80]!r} {why[:80]!r}")
-```
-
-`netdryrun.drivers.eos.x_parse_startup_config_errors__mutmut_45`: survived (accepted, equivalent: zip(strict=True) -> zip() (strict dropped): the len(body) % 2 check just above guarantees equal-length slices); argument: with an even body the slices have equal length, so no pair can be silently dropped; an odd body already raised DriverError before the loop; reviewed: no; diff fingerprint `3027d18c53247d3d`
-
-```diff
-# netdryrun.drivers.eos.x_parse_startup_config_errors__mutmut_45: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -11,7 +11,7 @@
-     out, body = [], lines[1:-1]
-     if len(body) % 2:
-         raise DriverError(f"{STARTUP_ERRORS_CMD}: unexpected output: {' '.join(text.split())[:200]!r}")
--    for cmd, why in zip(body[::2], body[1::2], strict=True):
-+    for cmd, why in zip(body[::2], body[1::2], ):
-         m = _STARTUP_REASON.match(why)
-         if not cmd.startswith(">") or not m:
-             raise DriverError(f"{STARTUP_ERRORS_CMD}: unexpected output: {cmd[:80]!r} {why[:80]!r}")
-```
-
-`netdryrun.drivers.eos.x_parse_startup_config_errors__mutmut_49`: survived (accepted, equivalent: zip(strict=True) -> strict=False: the len(body) % 2 check just above guarantees equal-length slices); argument: with an even body the slices have equal length, so no pair can be silently dropped; an odd body already raised DriverError before the loop; the final total == count == len(out) check also still runs; reviewed: no; diff fingerprint `07b9dcb32118e5e3`
-
-```diff
-# netdryrun.drivers.eos.x_parse_startup_config_errors__mutmut_49: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -11,7 +11,7 @@
-     out, body = [], lines[1:-1]
-     if len(body) % 2:
-         raise DriverError(f"{STARTUP_ERRORS_CMD}: unexpected output: {' '.join(text.split())[:200]!r}")
--    for cmd, why in zip(body[::2], body[1::2], strict=True):
-+    for cmd, why in zip(body[::2], body[1::2], strict=False):
-         m = _STARTUP_REASON.match(why)
-         if not cmd.startswith(">") or not m:
-             raise DriverError(f"{STARTUP_ERRORS_CMD}: unexpected output: {cmd[:80]!r} {why[:80]!r}")
-```
-
-## `drivers.for_node` (3)
-
-`netdryrun.drivers.x_for_node__mutmut_2`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `d47d65c7450291d1`
-
-```diff
-# netdryrun.drivers.x_for_node__mutmut_2: survived
---- src/netdryrun/drivers/__init__.py
-+++ src/netdryrun/drivers/__init__.py
-@@ -1,6 +1,6 @@
- def for_node(lab: Lab, node: str, override: str | None = None) -> Driver:
-     if node not in lab.nodes:
--        raise DriverError(f"node {node!r} is not in the topology (nodes: {', '.join(lab.nodes)})")
-+        raise DriverError(None)
-     name = override or detect(lab.nodes[node])
-     if name not in DRIVERS:
-         raise DriverError(f"unknown driver {name!r} for node {node}; expected one of {sorted(DRIVERS)}")
-```
-
-`netdryrun.drivers.x_for_node__mutmut_4`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `acd403462d346b59`
-
-```diff
-# netdryrun.drivers.x_for_node__mutmut_4: survived
---- src/netdryrun/drivers/__init__.py
-+++ src/netdryrun/drivers/__init__.py
-@@ -1,6 +1,6 @@
- def for_node(lab: Lab, node: str, override: str | None = None) -> Driver:
-     if node not in lab.nodes:
--        raise DriverError(f"node {node!r} is not in the topology (nodes: {', '.join(lab.nodes)})")
-+        raise DriverError(f"node {node!r} is not in the topology (nodes: {'XX, XX'.join(lab.nodes)})")
-     name = override or detect(lab.nodes[node])
-     if name not in DRIVERS:
-         raise DriverError(f"unknown driver {name!r} for node {node}; expected one of {sorted(DRIVERS)}")
-```
-
-`netdryrun.drivers.x_for_node__mutmut_9`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `96d459bdaec6901f`
-
-```diff
-# netdryrun.drivers.x_for_node__mutmut_9: survived
---- src/netdryrun/drivers/__init__.py
-+++ src/netdryrun/drivers/__init__.py
-@@ -3,5 +3,5 @@
-         raise DriverError(f"node {node!r} is not in the topology (nodes: {', '.join(lab.nodes)})")
-     name = override or detect(lab.nodes[node])
-     if name not in DRIVERS:
--        raise DriverError(f"unknown driver {name!r} for node {node}; expected one of {sorted(DRIVERS)}")
-+        raise DriverError(None)
-     return DRIVERS[name](lab, node)
-```
-
-## `drivers.junos._adv_interval` (3)
-
-`netdryrun.drivers.junos.x__adv_interval__mutmut_15`: survived (accepted, equivalent: required=None instead of required=False for the optional outbound-timer leaf); argument: _leaf only tests `if required:`; None and False are both falsy, so a missing timer still returns None and every other path is identical; reviewed: no; diff fingerprint `1e01732b99127590`
-
-```diff
-# netdryrun.drivers.junos.x__adv_interval__mutmut_15: survived
---- src/netdryrun/drivers/junos.py
-+++ src/netdryrun/drivers/junos.py
-@@ -4,7 +4,7 @@
-     live, 26.2R1.7-EVO). Any other delay-like element or option flag is a shape not captured yet: an error,
-     never 0, which would keep settle and hold short while a leak may still be on its way."""
-     options = _one(NEIGHBORS_CMD, peer, "bgp-option-information") or {}
--    timer = _leaf(NEIGHBORS_CMD, options, "outbound-timer", required=False)
-+    timer = _leaf(NEIGHBORS_CMD, options, "outbound-timer", required=None)
-     others = [k for k in (*peer, *options) if _DELAY.search(str(k)) and k not in KNOWN_TIMERS]
-     flags = [_leaf(NEIGHBORS_CMD, options, k, required=False) or "" for k in options if k.startswith("bgp-options")]
-     if others or any(_DELAY.search(f) for f in flags):
-```
-
-`netdryrun.drivers.junos.x__adv_interval__mutmut_33`: survived (accepted, equivalent: required=None instead of required=False for the bgp-options flag leaves); argument: _leaf only tests `if required:`; None and False are both falsy, so the flag read is identical; reviewed: no; diff fingerprint `99b4e6cba348092c`
-
-```diff
-# netdryrun.drivers.junos.x__adv_interval__mutmut_33: survived
---- src/netdryrun/drivers/junos.py
-+++ src/netdryrun/drivers/junos.py
-@@ -6,7 +6,7 @@
-     options = _one(NEIGHBORS_CMD, peer, "bgp-option-information") or {}
-     timer = _leaf(NEIGHBORS_CMD, options, "outbound-timer", required=False)
-     others = [k for k in (*peer, *options) if _DELAY.search(str(k)) and k not in KNOWN_TIMERS]
--    flags = [_leaf(NEIGHBORS_CMD, options, k, required=False) or "" for k in options if k.startswith("bgp-options")]
-+    flags = [_leaf(NEIGHBORS_CMD, options, k, required=None) or "" for k in options if k.startswith("bgp-options")]
-     if others or any(_DELAY.search(f) for f in flags):
-         raise DriverError(f"peer {addr}: an advertisement delay in a form this driver doesn't read "
-                           f"({', '.join(others) or 'an option flag'}); unexpected output, never read as no delay")
-```
-
-`netdryrun.drivers.junos.x__adv_interval__mutmut_39`: survived (accepted, equivalent: an absent/empty option flag defaults to 'XXXX' instead of ''); argument: the default is only searched with _DELAY (delay|timer); neither '' nor 'XXXX' matches, so the refusal decision and the returned interval are unchanged; reviewed: no; diff fingerprint `4016d0da0846fcce`
-
-```diff
-# netdryrun.drivers.junos.x__adv_interval__mutmut_39: survived
---- src/netdryrun/drivers/junos.py
-+++ src/netdryrun/drivers/junos.py
-@@ -6,7 +6,7 @@
-     options = _one(NEIGHBORS_CMD, peer, "bgp-option-information") or {}
-     timer = _leaf(NEIGHBORS_CMD, options, "outbound-timer", required=False)
-     others = [k for k in (*peer, *options) if _DELAY.search(str(k)) and k not in KNOWN_TIMERS]
--    flags = [_leaf(NEIGHBORS_CMD, options, k, required=False) or "" for k in options if k.startswith("bgp-options")]
-+    flags = [_leaf(NEIGHBORS_CMD, options, k, required=False) or "XXXX" for k in options if k.startswith("bgp-options")]
-     if others or any(_DELAY.search(f) for f in flags):
-         raise DriverError(f"peer {addr}: an advertisement delay in a form this driver doesn't read "
-                           f"({', '.join(others) or 'an option flag'}); unexpected output, never read as no delay")
-```
-
 ## `verify.engine.config_lines_changed` (3)
 
 `netdryrun.verify.engine.x_config_lines_changed__mutmut_27`: survived (accepted, equivalent: equivalent: the zip runs only when added and removed are both empty, i.e. a and b are equal multisets of the same length, so strict=True never raises and every strict value zips identically); argument: the listed order changes are identical; nothing is compared differently; reviewed: no; diff fingerprint `ab95bcfa5af7b547`
@@ -42576,372 +43107,6 @@ Each mutant below is a deliberate change to the code that no test noticed. In ve
              cmds = v["setup"] if isinstance(v["setup"], list) else [v["setup"]]
 ```
 
-## `drivers.base.Driver.bgp_neighbors` (2)
-
-`netdryrun.drivers.base.xǁDriverǁbgp_neighbors__mutmut_1`: survived (accepted, equivalent: equivalent: default argument of an abstract base-class method that only raises NotImplementedError); diff fingerprint `6e942bf8e1424cf9`
-
-```diff
-# netdryrun.drivers.base.xǁDriverǁbgp_neighbors__mutmut_1: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -1,2 +1,2 @@
--def bgp_neighbors(self, vrf: str = "default") -> Observation:
-+def bgp_neighbors(self, vrf: str = "XXdefaultXX") -> Observation:
-     raise NotImplementedError
-```
-
-`netdryrun.drivers.base.xǁDriverǁbgp_neighbors__mutmut_2`: survived (accepted, equivalent: equivalent: default argument of an abstract base-class method that only raises NotImplementedError); diff fingerprint `c26c7c2807e89202`
-
-```diff
-# netdryrun.drivers.base.xǁDriverǁbgp_neighbors__mutmut_2: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -1,2 +1,2 @@
--def bgp_neighbors(self, vrf: str = "default") -> Observation:
-+def bgp_neighbors(self, vrf: str = "DEFAULT") -> Observation:
-     raise NotImplementedError
-```
-
-## `drivers.base.Driver.bgp_paths` (2)
-
-`netdryrun.drivers.base.xǁDriverǁbgp_paths__mutmut_1`: survived (accepted, equivalent: equivalent: default argument of an abstract base-class method that only raises NotImplementedError); diff fingerprint `776c1657b3950962`
-
-```diff
-# netdryrun.drivers.base.xǁDriverǁbgp_paths__mutmut_1: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -1,3 +1,3 @@
--def bgp_paths(self, prefix: str, vrf: str = "default") -> Observation:
-+def bgp_paths(self, prefix: str, vrf: str = "XXdefaultXX") -> Observation:
-     """Every path for exactly `prefix` in the BGP table (list[BgpPath]), best path flagged."""
-     raise NotImplementedError
-```
-
-`netdryrun.drivers.base.xǁDriverǁbgp_paths__mutmut_2`: survived (accepted, equivalent: equivalent: default argument of an abstract base-class method that only raises NotImplementedError); diff fingerprint `bd8a7d5890fc4a72`
-
-```diff
-# netdryrun.drivers.base.xǁDriverǁbgp_paths__mutmut_2: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -1,3 +1,3 @@
--def bgp_paths(self, prefix: str, vrf: str = "default") -> Observation:
-+def bgp_paths(self, prefix: str, vrf: str = "DEFAULT") -> Observation:
-     """Every path for exactly `prefix` in the BGP table (list[BgpPath]), best path flagged."""
-     raise NotImplementedError
-```
-
-## `drivers.base.Driver.ping` (2)
-
-`netdryrun.drivers.base.xǁDriverǁping__mutmut_1`: survived (accepted, equivalent: equivalent: default argument of an abstract base-class method that only raises NotImplementedError); diff fingerprint `f9d238998e6c2f11`
-
-```diff
-# netdryrun.drivers.base.xǁDriverǁping__mutmut_1: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -1,2 +1,2 @@
--def ping(self, target: str, source: str | None, count: int, vrf: str = "default") -> Observation:
-+def ping(self, target: str, source: str | None, count: int, vrf: str = "XXdefaultXX") -> Observation:
-     raise NotImplementedError
-```
-
-`netdryrun.drivers.base.xǁDriverǁping__mutmut_2`: survived (accepted, equivalent: equivalent: default argument of an abstract base-class method that only raises NotImplementedError); diff fingerprint `2478a27511284922`
-
-```diff
-# netdryrun.drivers.base.xǁDriverǁping__mutmut_2: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -1,2 +1,2 @@
--def ping(self, target: str, source: str | None, count: int, vrf: str = "default") -> Observation:
-+def ping(self, target: str, source: str | None, count: int, vrf: str = "DEFAULT") -> Observation:
-     raise NotImplementedError
-```
-
-## `drivers.base.Driver.routes` (2)
-
-`netdryrun.drivers.base.xǁDriverǁroutes__mutmut_1`: survived (accepted, equivalent: equivalent: default argument of an abstract base-class method that only raises NotImplementedError); diff fingerprint `ed45c173dbf42783`
-
-```diff
-# netdryrun.drivers.base.xǁDriverǁroutes__mutmut_1: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -1,2 +1,2 @@
--def routes(self, prefix: str, vrf: str = "default") -> Observation:
-+def routes(self, prefix: str, vrf: str = "XXdefaultXX") -> Observation:
-     raise NotImplementedError
-```
-
-`netdryrun.drivers.base.xǁDriverǁroutes__mutmut_2`: survived (accepted, equivalent: equivalent: default argument of an abstract base-class method that only raises NotImplementedError); diff fingerprint `dca49e257c250c95`
-
-```diff
-# netdryrun.drivers.base.xǁDriverǁroutes__mutmut_2: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -1,2 +1,2 @@
--def routes(self, prefix: str, vrf: str = "default") -> Observation:
-+def routes(self, prefix: str, vrf: str = "DEFAULT") -> Observation:
-     raise NotImplementedError
-```
-
-## `drivers.base.check_vrf_name` (2)
-
-`netdryrun.drivers.base.x_check_vrf_name__mutmut_6`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `ef55333e2827e4a0`
-
-```diff
-# netdryrun.drivers.base.x_check_vrf_name__mutmut_6: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -1,7 +1,7 @@
- def check_vrf_name(vrf: object) -> str:
-     """The VRF name if a driver can ask for exactly that one VRF; DriverError otherwise."""
-     if not isinstance(vrf, str) or not _VRF_NAME.fullmatch(vrf):
--        raise DriverError(f"bad VRF name {str(vrf)[:70]!r}: use letters, digits and . _ : - (at most 64)")
-+        raise DriverError(f"bad VRF name {str(None)[:70]!r}: use letters, digits and . _ : - (at most 64)")
-     if vrf.lower() in SPECIAL_VRF_NAMES:
-         raise DriverError(f"VRF {vrf!r} means every VRF on the device, not one VRF; name the VRF to check")
-     return vrf
-```
-
-`netdryrun.drivers.base.x_check_vrf_name__mutmut_7`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `62658c245f999e7c`
-
-```diff
-# netdryrun.drivers.base.x_check_vrf_name__mutmut_7: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -1,7 +1,7 @@
- def check_vrf_name(vrf: object) -> str:
-     """The VRF name if a driver can ask for exactly that one VRF; DriverError otherwise."""
-     if not isinstance(vrf, str) or not _VRF_NAME.fullmatch(vrf):
--        raise DriverError(f"bad VRF name {str(vrf)[:70]!r}: use letters, digits and . _ : - (at most 64)")
-+        raise DriverError(f"bad VRF name {str(vrf)[:71]!r}: use letters, digits and . _ : - (at most 64)")
-     if vrf.lower() in SPECIAL_VRF_NAMES:
-         raise DriverError(f"VRF {vrf!r} means every VRF on the device, not one VRF; name the VRF to check")
-     return vrf
-```
-
-## `drivers.frr._bgp_paths_for_route_check` (2)
-
-`netdryrun.drivers.frr.x__bgp_paths_for_route_check__mutmut_16`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `b75b25d3e782aff0`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_for_route_check__mutmut_16: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -6,4 +6,4 @@
-         return []
-     if isinstance(data, dict) and isinstance(data.get("warning"), str) and _NO_INSTANCE.search(data["warning"]):
-         return []
--    return _bgp_paths_raw(BGP_PATHS_CMD, text, prefix)
-+    return _bgp_paths_raw(None, text, prefix)
-```
-
-`netdryrun.drivers.frr.x__bgp_paths_for_route_check__mutmut_2`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `4c4930aaf5f9fa46`
-
-```diff
-# netdryrun.drivers.frr.x__bgp_paths_for_route_check__mutmut_2: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -1,7 +1,7 @@
- def _bgp_paths_for_route_check(text: str, prefix: str) -> list[dict]:
-     """The BGP side of a route check. No BGP instance in the VRF means no BGP paths (the VRF itself is
-     confirmed separately); any other warning or shape is an error."""
--    data = load_json(BGP_PATHS_CMD, text)
-+    data = load_json(None, text)
-     if isinstance(data, dict) and data.get("bgpNoSuchInstance"):
-         return []
-     if isinstance(data, dict) and isinstance(data.get("warning"), str) and _NO_INSTANCE.search(data["warning"]):
-```
-
-## `drivers.frr.parse_config_load_errors` (2)
-
-`netdryrun.drivers.frr.x_parse_config_load_errors__mutmut_67`: survived (accepted, equivalent: equivalent: a vtysh line with no daemon is never cleared, so its stored daemon is never read); argument: The daemon stored here is read only by `explained`, which is reached only when every reported line was cleared. A vtysh line with no daemon (Unknown command, Warning) can't be cleared: clearing needs the daemon among the running configs read, and those are keyed by the daemon names communicate_daemons returns, never None. So `explained` never sees this value and the returned list is the same for every input.; reviewed: adversarial (fresh Opus agent), 2026-10-30: equivalent, no input differs; diff fingerprint `cbd7135846c5d28b`
-
-```diff
-# netdryrun.drivers.frr.x_parse_config_load_errors__mutmut_67: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -29,7 +29,7 @@
-             done = (daemon in applied and daemon != "mgmtd" and 0 <= i < len(file) and file[i][1] == cmd.strip()
-                     and applied[daemon][file[i]] >= in_file[file[i]] and not _is_header(config, i)
-                     and _block_applied(config, i, running[daemon]))
--            lines.setdefault((int(n), ""), (done, daemon or "", f"line {n}: {cmd.strip()} ({why})"))
-+            lines.setdefault((int(n), ""), (done, daemon or "XXXX", f"line {n}: {cmd.strip()} ({why})"))
-             continue
-         d = _DAEMON_LINE.match(raw.strip())
-         if d:   # the daemon's own file, numbered on its own: kept apart from frr.conf's line N
-```
-
-`netdryrun.drivers.frr.x_parse_config_load_errors__mutmut_79`: survived (accepted, equivalent: equivalent: a per-daemon line is never cleared, so its stored daemon is never read); argument: The daemon stored here is read only by `explained`, which is reached only when every reported line was cleared. A per-daemon file line is always stored as not cleared, so when one exists the kept lines are returned first. So `explained` never sees this value and the returned list is the same for every input.; reviewed: adversarial (fresh Opus agent), 2026-10-30: equivalent, no input differs; diff fingerprint `70ef05d8d58c1c69`
-
-```diff
-# netdryrun.drivers.frr.x_parse_config_load_errors__mutmut_79: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -35,7 +35,7 @@
-         if d:   # the daemon's own file, numbered on its own: kept apart from frr.conf's line N
-             daemon, why, n, cmd = d.groups()
-             lines.setdefault((int(n), daemon.lower()),
--                             (False, "", f"line {n}: {cmd.strip()} ({why.strip()}, {daemon.lower()})"))
-+                             (False, "XXXX", f"line {n}: {cmd.strip()} ({why.strip()}, {daemon.lower()})"))
-             continue
-         f = _LOAD_FAILURE.match(raw.strip())
-         if f:
-```
-
-## `drivers.junos._afi` (2)
-
-`netdryrun.drivers.junos.x__afi__mutmut_16`: survived (accepted, equivalent: rib.rsplit('.') without maxsplit instead of rsplit('.', 2)); argument: only the last two components ([-2:]) are compared; rsplit from the right yields the same last two components whatever the maxsplit (>=1); reviewed: no; diff fingerprint `ca9182bf20ab462c`
-
-```diff
-# netdryrun.drivers.junos.x__afi__mutmut_16: survived
---- src/netdryrun/drivers/junos.py
-+++ src/netdryrun/drivers/junos.py
-@@ -5,6 +5,6 @@
-     own = rib if instance == "master" else rib[len(instance) + 1:] if rib.startswith(f"{instance}.") else None
-     if own in _UNICAST_RIBS:
-         return _UNICAST_RIBS[own]
--    if rib.rsplit(".", 2)[-2:] in (["inet", "0"], ["inet6", "0"]):
-+    if rib.rsplit(".", )[-2:] in (["inet", "0"], ["inet6", "0"]):
-         raise unexpected(command, f"RIB {rib!r} is not in instance {instance!r}")
-     return None
-```
-
-`netdryrun.drivers.junos.x__afi__mutmut_19`: survived (accepted, equivalent: rib.rsplit('.', 3) instead of rsplit('.', 2)); argument: only the last two components ([-2:]) are compared; any maxsplit >= 1 from the right yields the same last two; reviewed: no; diff fingerprint `cd5c102f9125e63a`
-
-```diff
-# netdryrun.drivers.junos.x__afi__mutmut_19: survived
---- src/netdryrun/drivers/junos.py
-+++ src/netdryrun/drivers/junos.py
-@@ -5,6 +5,6 @@
-     own = rib if instance == "master" else rib[len(instance) + 1:] if rib.startswith(f"{instance}.") else None
-     if own in _UNICAST_RIBS:
-         return _UNICAST_RIBS[own]
--    if rib.rsplit(".", 2)[-2:] in (["inet", "0"], ["inet6", "0"]):
-+    if rib.rsplit(".", 3)[-2:] in (["inet", "0"], ["inet6", "0"]):
-         raise unexpected(command, f"RIB {rib!r} is not in instance {instance!r}")
-     return None
-```
-
-## `drivers.junos._destination` (2)
-
-`netdryrun.drivers.junos.x__destination__mutmut_14`: survived (accepted, equivalent: required=None instead of required=False for the optional rt-prefix-length leaf); argument: _leaf only tests `if required:`; None and False are both falsy; reviewed: no; diff fingerprint `089b241a5cf6005e`
-
-```diff
-# netdryrun.drivers.junos.x__destination__mutmut_14: survived
---- src/netdryrun/drivers/junos.py
-+++ src/netdryrun/drivers/junos.py
-@@ -1,7 +1,7 @@
- def _destination(command: str, rt: dict):
-     """`rt-destination` plus `rt-prefix-length` (extensive), or a destination with its length (terse)."""
-     dest = _leaf(command, rt, "rt-destination")
--    length = _leaf(command, rt, "rt-prefix-length", required=False)
-+    length = _leaf(command, rt, "rt-prefix-length", required=None)
-     text = f"{dest}/{length}" if length is not None else dest
-     if "/" not in text:
-         raise unexpected(command, f"not a prefix: {text[:80]!r}")
-```
-
-`netdryrun.drivers.junos.x__destination__mutmut_34`: survived (accepted, equivalent: ip_network(text, strict=None) instead of strict=False); argument: ipaddress only tests `if strict:`; None is falsy, so host bits are masked exactly as with False (strict=True is killed by test_destination_with_host_bits_is_its_network); reviewed: no; diff fingerprint `7a232795c9643f4e`
-
-```diff
-# netdryrun.drivers.junos.x__destination__mutmut_34: survived
---- src/netdryrun/drivers/junos.py
-+++ src/netdryrun/drivers/junos.py
-@@ -6,6 +6,6 @@
-     if "/" not in text:
-         raise unexpected(command, f"not a prefix: {text[:80]!r}")
-     try:
--        return ipaddress.ip_network(text, strict=False)
-+        return ipaddress.ip_network(text, strict=None)
-     except ValueError:
-         raise unexpected(command, f"not a prefix: {text[:80]!r}") from None
-```
-
-## `drivers.junos._hidden` (2)
-
-`netdryrun.drivers.junos.x__hidden__mutmut_14`: survived (accepted, equivalent: absent rt-entry-state defaults to 'XXXX' instead of ''); argument: the default is only split and searched for the word 'Hidden'; neither '' nor 'XXXX' contains it, so the hidden verdict is identical; reviewed: no; diff fingerprint `ba184bd8ae17c909`
-
-```diff
-# netdryrun.drivers.junos.x__hidden__mutmut_14: survived
---- src/netdryrun/drivers/junos.py
-+++ src/netdryrun/drivers/junos.py
-@@ -1,3 +1,3 @@
- def _hidden(command: str, e: dict) -> bool:
--    state = _leaf(command, e, "rt-entry-state", required=False) or ""
-+    state = _leaf(command, e, "rt-entry-state", required=False) or "XXXX"
-     return "Hidden" in state.split() or "hidden-reason" in e
-```
-
-`netdryrun.drivers.junos.x__hidden__mutmut_6`: survived (accepted, equivalent: required=None instead of required=False for the optional rt-entry-state leaf); argument: _leaf only tests `if required:`; None and False are both falsy; reviewed: no; diff fingerprint `51cfe30771655279`
-
-```diff
-# netdryrun.drivers.junos.x__hidden__mutmut_6: survived
---- src/netdryrun/drivers/junos.py
-+++ src/netdryrun/drivers/junos.py
-@@ -1,3 +1,3 @@
- def _hidden(command: str, e: dict) -> bool:
--    state = _leaf(command, e, "rt-entry-state", required=False) or ""
-+    state = _leaf(command, e, "rt-entry-state", required=None) or ""
-     return "Hidden" in state.split() or "hidden-reason" in e
-```
-
-## `drivers.junos._strip_port` (2)
-
-`netdryrun.drivers.junos.x__strip_port__mutmut_4`: survived (accepted, equivalent: addr.split('+') without maxsplit instead of split('+', 1)); argument: only [0] is used; the first piece of a left split is the text before the first '+' whatever the maxsplit; reviewed: no; diff fingerprint `717045e1c363557f`
-
-```diff
-# netdryrun.drivers.junos.x__strip_port__mutmut_4: survived
---- src/netdryrun/drivers/junos.py
-+++ src/netdryrun/drivers/junos.py
-@@ -1,3 +1,3 @@
- def _strip_port(addr: str) -> str:
-     """`10.0.1.2+179` (the TCP port of an established session) -> `10.0.1.2`."""
--    return addr.split("+", 1)[0]
-+    return addr.split("+", )[0]
-```
-
-`netdryrun.drivers.junos.x__strip_port__mutmut_7`: survived (accepted, equivalent: addr.split('+', 2) instead of split('+', 1)); argument: only [0] is used; it is the text before the first '+' for any maxsplit >= 1 (rsplit is killed by test_peer_address_port_is_cut_at_the_first_plus); reviewed: no; diff fingerprint `d753e4fa3b3219ab`
-
-```diff
-# netdryrun.drivers.junos.x__strip_port__mutmut_7: survived
---- src/netdryrun/drivers/junos.py
-+++ src/netdryrun/drivers/junos.py
-@@ -1,3 +1,3 @@
- def _strip_port(addr: str) -> str:
-     """`10.0.1.2+179` (the TCP port of an established session) -> `10.0.1.2`."""
--    return addr.split("+", 1)[0]
-+    return addr.split("+", 2)[0]
-```
-
-## `drivers.srlinux.parse_instance_state` (2)
-
-`netdryrun.drivers.srlinux.x_parse_instance_state__mutmut_7`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `c6a54b8cac4636ba`
-
-```diff
-# netdryrun.drivers.srlinux.x_parse_instance_state__mutmut_7: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -1,4 +1,4 @@
- def parse_instance_state(text: str) -> str | None:
-     """`info from state /network-instance X oper-state`: the oper-state, None when the instance is absent."""
--    state = _find(_json(text, INSTANCE_CMD), "oper-state")
-+    state = _find(_json(text, None), "oper-state")
-     return state if isinstance(state, str) and state else None
-```
-
-`netdryrun.drivers.srlinux.x_parse_instance_state__mutmut_9`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `ec5a68db6b855afe`
-
-```diff
-# netdryrun.drivers.srlinux.x_parse_instance_state__mutmut_9: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -1,4 +1,4 @@
- def parse_instance_state(text: str) -> str | None:
-     """`info from state /network-instance X oper-state`: the oper-state, None when the instance is absent."""
--    state = _find(_json(text, INSTANCE_CMD), "oper-state")
-+    state = _find(_json(text, ), "oper-state")
-     return state if isinstance(state, str) and state else None
-```
-
 ## `runner._sonic_config_bind` (2)
 
 `netdryrun.runner.x__sonic_config_bind__mutmut_14`: survived (accepted, equivalent: bind.split(":")[1] equals bind.split(":", 2)[1] for every string: a maxsplit of 1 or more never changes the second field); argument: the destination parsed is the same string for every bind, so the same binds are flagged and _startup_load returns the same error list; a SONiC node can't become clean through it; reviewed: no; diff fingerprint `784048f40d19dadc`
@@ -43287,164 +43452,6 @@ Each mutant below is a deliberate change to the code that no test noticed. In ve
      raise ValueError(f"bad community {text!r}: use 65000:100 (standard), 65000:1:2 (large) or a well-known name "
 -                     f"({', '.join(sorted(WELL_KNOWN_COMMUNITIES))})")
 +                     f"({'XX, XX'.join(sorted(WELL_KNOWN_COMMUNITIES))})")
-```
-
-## `drivers.base.RepeatedKey.__init__` (1)
-
-`netdryrun.drivers.base.xǁRepeatedKeyǁ__init____mutmut_1`: survived (accepted, message-text: message text only: the exception's args; load_json reads e.key, never str(e), and still raises); diff fingerprint `8ef5833dd03ef609`
-
-```diff
-# netdryrun.drivers.base.xǁRepeatedKeyǁ__init____mutmut_1: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -1,3 +1,3 @@
- def __init__(self, key: str):
--    super().__init__(key)
-+    super().__init__(None)
-     self.key = key
-```
-
-## `drivers.base.no_repeated_keys` (1)
-
-`netdryrun.drivers.base.x_no_repeated_keys__mutmut_3`: survived (accepted, message-text: message text only: RepeatedKey is still raised and load_json still raises DriverError; only the key it names changes); diff fingerprint `2aedb6d65b6471ec`
-
-```diff
-# netdryrun.drivers.base.x_no_repeated_keys__mutmut_3: survived
---- src/netdryrun/drivers/base.py
-+++ src/netdryrun/drivers/base.py
-@@ -4,6 +4,6 @@
-     out: dict = {}
-     for k, v in pairs:
-         if k in out:
--            raise RepeatedKey(k)
-+            raise RepeatedKey(None)
-         out[k] = v
-     return out
-```
-
-## `drivers.eos.EosDriver.all_routes` (1)
-
-`netdryrun.drivers.eos.xǁEosDriverǁall_routes__mutmut_3`: survived (accepted, equivalent: equivalent: family default 4 vs 5: only family == 6 selects IPv6, every other value reads IPv4); diff fingerprint `1aeb2f2755355f04`
-
-```diff
-# netdryrun.drivers.eos.xǁEosDriverǁall_routes__mutmut_3: survived
---- src/netdryrun/drivers/eos.py
-+++ src/netdryrun/drivers/eos.py
-@@ -1,4 +1,4 @@
--def all_routes(self, vrf: str = "default", family: int = 4) -> Observation:
-+def all_routes(self, vrf: str = "default", family: int = 5) -> Observation:
-     vrf = check_vrf_name(vrf)
-     ev: list[dict] = []
-     fam = "ipv6" if family == 6 else "ip"
-```
-
-## `drivers.frr.FrrDriver.all_routes` (1)
-
-`netdryrun.drivers.frr.xǁFrrDriverǁall_routes__mutmut_3`: survived (accepted, equivalent: equivalent: family default 4 vs 5: only family == 6 selects IPv6, every other value reads IPv4); diff fingerprint `f5868264b0c0342c`
-
-```diff
-# netdryrun.drivers.frr.xǁFrrDriverǁall_routes__mutmut_3: survived
---- src/netdryrun/drivers/frr.py
-+++ src/netdryrun/drivers/frr.py
-@@ -1,4 +1,4 @@
--def all_routes(self, vrf: str = "default", family: int = 4) -> Observation:
-+def all_routes(self, vrf: str = "default", family: int = 5) -> Observation:
-     vrf = check_vrf_name(vrf)
-     ev: list[dict] = []
-     fam = "ipv6" if family == 6 else "ip"
-```
-
-## `drivers.junos.JunosDriver.all_routes` (1)
-
-`netdryrun.drivers.junos.xǁJunosDriverǁall_routes__mutmut_3`: survived (accepted, equivalent: default family 5 instead of 4); argument: family is used only by _table, which returns inet6.0 for 6 and inet.0 for anything else; 4 and 5 both give inet.0 (the IPv6 branch is pinned by test_table_names and test_default_vrf_queries); reviewed: no; diff fingerprint `ee04149d13da9aa0`
-
-```diff
-# netdryrun.drivers.junos.xǁJunosDriverǁall_routes__mutmut_3: survived
---- src/netdryrun/drivers/junos.py
-+++ src/netdryrun/drivers/junos.py
-@@ -1,4 +1,4 @@
--def all_routes(self, vrf: str = "default", family: int = 4) -> Observation:
-+def all_routes(self, vrf: str = "default", family: int = 5) -> Observation:
-     vrf = self._vrf(vrf)
-     ev: list[dict] = []
-     table = _table(vrf, family)
-```
-
-## `drivers.junos._active` (1)
-
-`netdryrun.drivers.junos.x__active__mutmut_5`: survived (accepted, equivalent: required=None instead of required=False for the optional active-tag leaf); argument: _leaf only tests `if required:`; None and False are both falsy (required=True and the default are killed by test_entry_without_active_tag_is_inactive_not_an_error); reviewed: no; diff fingerprint `4191014952b34f05`
-
-```diff
-# netdryrun.drivers.junos.x__active__mutmut_5: survived
---- src/netdryrun/drivers/junos.py
-+++ src/netdryrun/drivers/junos.py
-@@ -1,2 +1,2 @@
- def _active(command: str, e: dict) -> bool:
--    return _leaf(command, e, "active-tag", required=False) == "*" and not _hidden(command, e)
-+    return _leaf(command, e, "active-tag", required=None) == "*" and not _hidden(command, e)
-```
-
-## `drivers.junos._filtered` (1)
-
-`netdryrun.drivers.junos.x__filtered__mutmut_5`: survived (accepted, equivalent: required=None instead of required=False for the optional hidden-reason leaf); argument: _leaf only tests `if required:`; None and False are both falsy; reviewed: no; diff fingerprint `a0aae80a2dc56ca5`
-
-```diff
-# netdryrun.drivers.junos.x__filtered__mutmut_5: survived
---- src/netdryrun/drivers/junos.py
-+++ src/netdryrun/drivers/junos.py
-@@ -1,4 +1,4 @@
- def _filtered(command: str, e: dict) -> bool:
-     """A hidden route rejected by import policy: never accepted, never usable (see the module docstring)."""
--    reason = _leaf(command, e, "hidden-reason", required=False)
-+    reason = _leaf(command, e, "hidden-reason", required=None)
-     return _hidden(command, e) and reason is not None and reason.strip().lower() == REJECTED
-```
-
-## `drivers.junos._protocol` (1)
-
-`netdryrun.drivers.junos.x__protocol__mutmut_3`: survived (accepted, equivalent: _leaf(None, e, 'protocol-name') in _protocol); argument: every caller (parse_routes, parse_all_routes, parse_bgp_paths) reaches _protocol only after _entries has read the same protocol-name leaf of the same entry with the real command; every raise condition (missing, repeated, not text) fires there first, so the None command is never printed; reviewed: no; diff fingerprint `c921ee43f832492f`
-
-```diff
-# netdryrun.drivers.junos.x__protocol__mutmut_3: survived
---- src/netdryrun/drivers/junos.py
-+++ src/netdryrun/drivers/junos.py
-@@ -1,3 +1,3 @@
- def _protocol(command: str, e: dict) -> str:
--    name = _leaf(command, e, "protocol-name").strip().lower()
-+    name = _leaf(None, e, "protocol-name").strip().lower()
-     return PROTOCOLS.get(name, name)
-```
-
-## `drivers.srlinux.SrlDriver.all_routes` (1)
-
-`netdryrun.drivers.srlinux.xǁSrlDriverǁall_routes__mutmut_3`: survived (accepted, equivalent: equivalent: family default 4 vs 5: only family == 6 selects IPv6, every other value reads IPv4); diff fingerprint `2b21f88e9018806f`
-
-```diff
-# netdryrun.drivers.srlinux.xǁSrlDriverǁall_routes__mutmut_3: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -1,4 +1,4 @@
--def all_routes(self, vrf: str = "default", family: int = 4) -> Observation:
-+def all_routes(self, vrf: str = "default", family: int = 5) -> Observation:
-     vrf = check_vrf_name(vrf)
-     ev: list[dict] = []
-     table, key = ("ipv6-unicast", "ipv6-prefix") if family == 6 else ("ipv4-unicast", "ipv4-prefix")
-```
-
-## `drivers.srlinux._bgp_learned` (1)
-
-`netdryrun.drivers.srlinux.x__bgp_learned__mutmut_10`: survived (accepted, equivalent: equivalent: the default origin-protocol is lower-cased before the comparison); diff fingerprint `97bbe3c55120e82f`
-
-```diff
-# netdryrun.drivers.srlinux.x__bgp_learned__mutmut_10: survived
---- src/netdryrun/drivers/srlinux.py
-+++ src/netdryrun/drivers/srlinux.py
-@@ -2,4 +2,4 @@
-     """SR Linux lists the router's own static and interface routes in its BGP local-RIB as locally
-     originated paths (neighbor 0.0.0.0, origin-protocol static, ...), whether or not an export policy
-     advertises them. Only paths with origin-protocol bgp were learned over BGP."""
--    return str(row.get("origin-protocol", "bgp")).lower() == "bgp"
-+    return str(row.get("origin-protocol", "BGP")).lower() == "bgp"
 ```
 
 ## `runner._sessions_over_links` (1)
