@@ -88,6 +88,32 @@ VERDICT_MODULES = {
 # The runner's deploy, scenario and gate paths run on a fake lab and a fake clock (tests/test_verdict_runner.py).
 # verify.engine and verify.intent joined in 0.4 at the coverage measured then (Python 3.10, rounded down):
 # engine 95.9, intent 93.3.
+# Verdict modules gated on the functions that decide what verify compares, refuses or reports (coordinator, 0.4):
+# a survivor there, or a mutant in code no test runs anywhere in the module, is a BLOCKER; the other survivors
+# (parsers that fail closed, rendering) are counted and named, and their full zero is a 0.4.1 gate item. A function
+# found on that path joins the list (a floor, not a ceiling).
+SCOPED_FUNCTIONS = {
+    "verify.frr": {"_boot_free", "parse_link_local", "link_local_names", "configured_link_locals",
+                   "link_local_owners", "parse_running_config", "qualified", "cond_adv_timer"},
+    "verify.run": {"check_sides", "check_changed_binds", "bind_reach", "is_router_config", "classify_nodes",
+                   "check_config_loaded", "collect", "unobserved_reasons"},
+    "verify.converge": {"stable_snapshot", "_not_ready"},
+    "verify.snapshot": {"ItemKey.__post_init__", "NodeSnapshot.__post_init__", "value_matches_kind",
+                        "Snapshot.stability_view", "Snapshot.items"},
+    "verify.report": {"to_dict", "VerifyResult.verdict", "VerifyResult.exit_code"},
+}
+SCOPED_KNOWN_LABEL = "parsers that fail closed and rendering; their full zero is a 0.4.1 gate item"
+
+
+def gated(module: str, name: str, status: str) -> bool:
+    """Whether a surviving mutant blocks the release: always in a fully gated module; in a scoped one, when its
+    function is on the verdict path or no test runs its code (no untested code in a verdict module ships)."""
+    if module not in SCOPED_FUNCTIONS or status == "no tests":
+        return True
+    fn = mutant_function(name).removeprefix(f"{module}.")
+    return fn in SCOPED_FUNCTIONS[module]
+
+
 # verify.* raised or set on 2026-10-30 (0.4 release gate) to the coverage measured then, rounded down, minus one
 COVERAGE_FLOORS = {"checks": 99, "config": 99, "runner": 98, "drivers": 99, "verify.engine": 98, "verify.intent": 97,
                    "verify.frr": 88, "verify.snapshot": 90, "verify.converge": 96, "verify.run": 83, "verify.report": 88}
@@ -667,7 +693,9 @@ def layer_mutation(args) -> Layer:
         mine = {n: s for n, s in status.items() if n.startswith(prefix)}
         checked = {n: s for n, s in mine.items() if s != "not checked"}
         survived = sorted(n for n, s in checked.items() if s not in CAUGHT)
-        open_ = [n for n in survived if not accepted_now(accepted, n, diffs)]
+        unaccepted = [n for n in survived if not accepted_now(accepted, n, diffs)]
+        open_ = [n for n in unaccepted if gated(module, n, checked[n])]
+        known = [n for n in unaccepted if n not in open_]
         stale = [n for n in survived if n in accepted and not accepted_now(accepted, n, diffs)]
         survivors_all[module] = survived
         caught = len(checked) - len(survived)
@@ -680,7 +708,15 @@ def layer_mutation(args) -> Layer:
                       + ", ".join(f"{v} {k}" for k, v in sorted(by_class.items())) + ")"
                       if len(survived) != len(open_) else "")
                    + (f"; {len(stale)} accepted entries don't accept their mutant (diff moved, no class, or no reviewed argument): see the notes"
-                      if stale else ""))
+                      if stale else "")
+                   + (f"; {len(known)} outside the gated functions ({SCOPED_KNOWN_LABEL})" if known else ""))
+        if known:
+            by_fn: dict[str, int] = {}
+            for n in known:
+                by_fn[mutant_function(n)] = by_fn.get(mutant_function(n), 0) + 1
+            layer.sections.append(f"**{VERDICT_MODULES[module]}: {len(known)} survivors outside the gated functions** "
+                                  f"({SCOPED_KNOWN_LABEL}): " + ", ".join(f"`{f}` {c}" for f, c in
+                                                                         sorted(by_fn.items(), key=lambda x: -x[1])))
         if not checked:
             layer.add(f"mutants-{module}", f"no surviving mutants in {VERDICT_MODULES[module]}", BLOCKER, False,
                       "no mutants were checked", tail(out), p.seconds)

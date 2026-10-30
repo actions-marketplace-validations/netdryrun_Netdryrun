@@ -218,3 +218,28 @@ def test_a_harmful_nondeterministic_case_approved_in_every_run_is_shown():
     assert not gate.nd_always_approved({"expected": "safe"}, _nd_row(("safe", "safe", "safe"),))
     assert not gate.nd_always_approved({"expected": "unsafe"}, {})
     assert gate.nd_always_approved({}, {"expected": "unsafe", **_nd_row(("safe", "safe", "safe"))})   # new case
+
+
+# ------------------------------------------------- scoped verdict modules (coordinator decision, 0.4, 2026-10-30)
+
+def test_a_scoped_module_blocks_on_its_verdict_path_and_on_untested_code_only():
+    assert gate.gated("verify.engine", "netdryrun.verify.engine.x_match__mutmut_3", "survived")      # fully gated
+    assert gate.gated("verify.frr", "netdryrun.verify.frr.x__boot_free__mutmut_1", "survived")
+    assert not gate.gated("verify.frr", "netdryrun.verify.frr.x_parse_attrs__mutmut_9", "survived")
+    assert gate.gated("verify.frr", "netdryrun.verify.frr.x_parse_attrs__mutmut_9", "no tests")       # untested code
+    assert gate.gated("verify.snapshot", "netdryrun.verify.snapshot.xǁItemKeyǁ__post_init____mutmut_2", "survived")
+
+
+def test_every_scoped_function_exists():
+    import ast
+    src = ROOT / "src" / "netdryrun"
+    for module, fns in gate.SCOPED_FUNCTIONS.items():
+        assert module in gate.VERDICT_MODULES, module
+        tree = ast.parse((src / (module.replace(".", "/") + ".py")).read_text(encoding="utf-8"))
+        found = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ClassDef):
+                found |= {f"{node.name}.{f.name}" for f in node.body if isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef))}
+            elif isinstance(node, ast.FunctionDef):
+                found.add(node.name)
+        assert fns <= found, (module, sorted(fns - found))
