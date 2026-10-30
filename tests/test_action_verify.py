@@ -390,3 +390,11 @@ def test_a_workflow_change_alone_is_refused_too(repo):
     head = commit(repo, {".github/workflows/verify.yml": "intent-file: other.yml\n"})
     rc, out, _, _ = check_intent(repo, base, head)
     assert rc == 1 and "separate" in out
+
+
+def test_cold_2_a_local_composite_action_is_refused_in_mode_verify(repo):
+    base = git(repo, "rev-parse", "HEAD").strip()
+    (repo / ".github" / "actions" / "ndr").mkdir(parents=True)
+    head = commit(repo, {".github/actions/ndr/action.yml": "allow-intent-edit: true\n"})
+    rc, out, _, _ = check_intent(repo, base, head)
+    assert rc == 1 and ".github/actions/ndr/action.yml" in out

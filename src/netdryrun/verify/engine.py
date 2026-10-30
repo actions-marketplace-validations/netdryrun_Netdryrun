@@ -134,6 +134,15 @@ def diff(before: Snapshot, after: Snapshot) -> list[DiffItem]:
 FORWARDING = ("gateway", "interface")   # next-hop kinds that forward; blackhole, reject and unreachable drop
 
 
+def forwards(nh) -> bool:
+    """A next hop that carries traffic: a gateway or interface, active and in the FIB, and when it is recursive,
+    resolved by at least one next hop that forwards (an iBGP next hop resolved over a Null0 route drops it:
+    cold review of the gauntlet fixes, 1)."""
+    if nh.kind not in FORWARDING or not nh.active or not nh.fib:
+        return False
+    return not nh.recursive or any(forwards(r) for r in nh.resolved_via)
+
+
 @dataclass
 class RouteView:
     rib: dict = field(default_factory=dict)        # protocol -> tuple[RibEntry]
@@ -144,7 +153,7 @@ class RouteView:
     def presence(self) -> str:
         entries = [e for es in self.rib.values() for e in es]
         installed = [e for e in entries if e.selected and e.fib]
-        if any(nh.kind in FORWARDING for e in installed for nh in e.nexthops):
+        if any(forwards(nh) for e in installed for nh in e.nexthops):
             return "installed"
         if installed:   # every next hop drops the traffic: never "installed" (gauntlet 0.4, R5)
             return "discard"
@@ -590,7 +599,10 @@ def config_lines_changed(d: DiffItem) -> dict[str, list[str]]:
                 out.append(x)
         return out
     b, a = qualified(d.before or ()), qualified(d.after or ())
-    return {"added": minus(a, b), "removed": minus(b, a)}
+    added, removed = minus(a, b), minus(b, a)
+    if not added and not removed:   # the same lines in another order: FRR's order is the config's (cold review 8)
+        added = [f"(the order of the lines changed: {ln})" for ln, old in zip(a, b, strict=True) if ln != old]
+    return {"added": added, "removed": removed}
 
 
 # ---------------------------------------------------------------------------------------------------------
@@ -624,7 +636,9 @@ def match(before: Snapshot, after: Snapshot, intent: Intent) -> Match:
     # A node's running-config change is accepted (and listed as untested) where a declared change explains some
     # of that node's behaviour, or a config_change_on line declares it; anywhere else it is undeclared: a change
     # with no observable effect in the lab (gauntlet 0.4, R4)
-    behaving = {k.node for k in explained if k.kind != "config"}
+    # the nodes a happened line names (not every node whose item a line explains: a node that only advertises
+    # the declared route is not named, and a config change on it must be declared; cold review 3)
+    behaving = {n for r in results if r.happened and r.line.form != "config_change_on" for n in r.line.nodes}
     untested = {}
     for d in items:
         if d.key.kind == "config" and (d.key in explained or d.key.node in behaving):

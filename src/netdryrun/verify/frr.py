@@ -110,7 +110,8 @@ LINK_LOCAL = "fe80::"
 LINK_LOCAL_SUBNET = "fe80::/64"
 
 
-_LL_OWNERS: ContextVar[dict[str, str] | None] = ContextVar("link_local_owners", default=None)
+_LL_OWNERS: ContextVar[tuple[dict[str, str], frozenset] | None] = ContextVar("link_local_owners", default=None)
+_LL_TOKEN = re.compile(r"(?<![0-9A-Fa-f:])[Ff][Ee]80:[0-9A-Fa-f:]*")
 _LL_IFACE = re.compile(r"^\d+:\s+([^:@\s]+)(?:@\S+)?:", re.M)
 
 
@@ -128,7 +129,9 @@ def parse_link_local(text: str, node: str) -> dict[str, str]:
             addr = parts[1].split("/")[0]
             try:
                 if ipaddress.ip_address(addr).is_link_local:
-                    out[str(ipaddress.ip_address(addr))] = f"{node}:{iface}"
+                    a = str(ipaddress.ip_address(addr))
+                    # one address on two interfaces of the node: which one is meant depends on the link
+                    out[a] = "" if a in out and out[a] != f"{node}:{iface}" else f"{node}:{iface}"
             except ValueError:
                 continue
     return out
@@ -141,12 +144,24 @@ def link_local_names(per_node: dict[str, dict[str, str]]) -> dict[str, str]:
     for owners in per_node.values():
         for addr, owner in owners.items():
             seen.setdefault(addr, []).append(owner)
-    return {addr: f"{LINK_LOCAL}%{o[0]}" for addr, o in seen.items() if len(o) == 1}
+    return {addr: f"{LINK_LOCAL}%{o[0]}" for addr, o in seen.items() if len(o) == 1 and o[0]}
+
+
+def configured_link_locals(lines: tuple[str, ...]) -> frozenset:
+    """The link-local addresses a node's running config names (a route-map's next hop, a static route)."""
+    out = set()
+    for ln in lines:
+        for tok in _LL_TOKEN.findall(ln):
+            try:
+                out.add(str(ipaddress.ip_address(tok.rstrip(":"))))
+            except ValueError:
+                continue
+    return frozenset(out)
 
 
 @contextmanager
-def link_local_owners(names: dict[str, str] | None):
-    token = _LL_OWNERS.set(names)
+def link_local_owners(names: dict[str, str] | None, configured: frozenset | set = frozenset()):
+    token = _LL_OWNERS.set(None if names is None else (names, frozenset(configured)))
     try:
         yield
     finally:
@@ -157,10 +172,15 @@ def _boot_free(ip: str) -> str:
     a = ipaddress.ip_address(ip.split("%")[0])
     if a.version != 6 or not a.is_link_local:
         return ip
-    names = _LL_OWNERS.get()
-    if names is None:
+    ctx = _LL_OWNERS.get()
+    if ctx is None:
         return LINK_LOCAL
-    return names.get(str(a), str(a))
+    names, configured = ctx
+    if str(a) in names:
+        return names[str(a)]
+    # one the config names (a typo shows); any other is a neighbour's random per-boot address whose interface
+    # verify couldn't read (an SR Linux namespace): compared as fe80:: as before (cold review 6)
+    return str(a) if str(a) in configured else LINK_LOCAL
 
 
 def _mgmt_address(vrf: str, entry: RibEntry) -> bool:
@@ -754,14 +774,20 @@ class FrrCollector:
     def collect(self) -> NodeSnapshot:
         raw: list[dict] = []
         try:
-            with link_local_owners(self.ll_owners):
-                return self._collect(raw)
+            return self._collect(raw)
         except CommandFailed:
             raise
         except SnapshotError as e:
             raise SnapshotError(f"{self.node}: {e}") from None
 
     def _collect(self, raw: list[dict]) -> NodeSnapshot:
+        config = parse_running_config(self._vtysh(CONFIG_CMD, raw))
+        if self.ll_owners is None:
+            return self._collect_items(raw, config)
+        with link_local_owners(self.ll_owners, configured_link_locals(config)):
+            return self._collect_items(raw, config)
+
+    def _collect_items(self, raw: list[dict], config: tuple[str, ...]) -> NodeSnapshot:
         node = self.node
         vrfs_conf = parse_vrfs(self._vtysh(VRF_CMD, raw))
         for v in vrfs_conf:
@@ -819,7 +845,6 @@ class FrrCollector:
                         for (prefix, pid), attrs in listing.items():
                             kind = "adj_out" if d == "out" else "adj_in"
                             items[ItemKey(kind, node, vrf, afi, "unicast", prefix, neighbor=nbr, path_id=pid)] = attrs
-        config = parse_running_config(self._vtysh(CONFIG_CMD, raw))
         vrfs = tuple(sorted(active | bgp_vrfs))
         return NodeSnapshot(node, self.driver, vrfs, items, raw, adv_interval=adv_interval, config=config,
                             cond_adv_timer=cond_adv_timer(config))

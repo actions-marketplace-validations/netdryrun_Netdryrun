@@ -136,9 +136,9 @@ def test_link_local_addresses_are_read_per_interface():
 def test_a_link_local_next_hop_is_named_by_its_owner_and_anything_else_kept():
     from netdryrun.verify import frr
     owners = frr.link_local_names({"peer1": frr.parse_link_local(IP_ADDR, "peer1")})
-    with frr.link_local_owners(owners):
+    with frr.link_local_owners(owners, configured={"fe80::dead"}):
         assert frr._boot_free("fe80::a8c1:abff:feb5:4b08") == "fe80::%peer1:eth1"
-        assert frr._boot_free("fe80::dead") == "fe80::dead"              # no lab node owns it: a typo shows
+        assert frr._boot_free("fe80::dead") == "fe80::dead"              # the config names it, no node owns it
         assert frr._boot_free("10.0.0.1") == "10.0.0.1"
     assert frr._boot_free("fe80::a8c1:abff:feb5:4b08") == "fe80::"        # without the lab's addresses (fixtures)
 
@@ -148,7 +148,7 @@ def test_a_link_local_address_two_nodes_share_is_kept_as_written():
     configured, so it is the same on every boot)."""
     from netdryrun.verify import frr
     owners = frr.link_local_names({"r1": {"fe80::1": "r1:eth1"}, "r3": {"fe80::1": "r3:eth2"}})
-    with frr.link_local_owners(owners):
+    with frr.link_local_owners(owners, configured={"fe80::1"}):
         assert frr._boot_free("fe80::1") == "fe80::1"
 
 
@@ -341,3 +341,142 @@ def test_the_live_running_config_parses_and_keeps_every_command():
     lines = frr.parse_running_config(text.split("\n", 1)[1])
     assert lines[0] == "frr version 10.4.1_git" and "route-map CUSTOMER-IN permit 10" in lines
     assert " set local-preference 200" in lines and frr.cond_adv_timer(lines) == 0.0
+
+
+
+# ===================================== Layer 6 cold review of the gauntlet fixes (2026-10-30) =====================
+
+def _hop(kind="gateway", ip="192.0.2.99", active=True, fib=True, recursive=False, resolved=()):
+    from netdryrun.verify.snapshot import NextHop, canon_set
+    return NextHop(ip=ip if kind == "gateway" else None, interface="eth1" if kind != "blackhole" else None, vrf=None,
+                   active=active, fib=fib, directly_connected=False, on_link=False, recursive=recursive,
+                   duplicate=False, kind=kind, weight=1, labels=(), src=None, resolved_via=canon_set(resolved))
+
+
+def _presence(*hops):
+    from netdryrun.verify.engine import RouteView
+    from netdryrun.verify.snapshot import RibEntry, canon_set
+    e = RibEntry(protocol="bgp", instance=None, selected=True, fib=True, distance=200, metric=0, tag=None, table=254,
+                 failed=False, nexthops=canon_set(hops))
+    return RouteView(rib={"bgp": (e,)}).presence()
+
+
+def test_cold_1_a_next_hop_resolved_through_a_discard_route_is_a_discard():
+    """iBGP next hop 192.0.2.99 resolved over `ip route 192.0.2.0/24 Null0`: zebra lists a gateway next hop,
+    recursive, whose resolver is a blackhole. The route drops traffic: not "installed"."""
+    via_null = _hop(recursive=True, resolved=(_hop("blackhole"),))
+    assert _presence(via_null) == "discard"
+    via_gw = _hop(recursive=True, resolved=(_hop(ip="10.0.2.2"),))
+    assert _presence(via_gw) == "installed"
+
+
+def test_cold_1_an_inactive_gateway_next_to_an_active_blackhole_is_a_discard():
+    assert _presence(_hop(active=False, fib=False), _hop("blackhole")) == "discard"
+    assert _presence(_hop(fib=False), _hop("blackhole")) == "discard"
+    assert _presence(_hop(), _hop("blackhole")) == "installed"          # one forwarding path is enough (ECMP)
+
+
+def test_cold_3_only_nodes_the_intent_names_may_carry_untested_config():
+    """A node that only advertises the declared route (its adj_out is explained) is not a node the intent names:
+    a config change on it with no observable effect fails."""
+    from verify_helpers import add_new_customer_block, base
+    after = add_new_customer_block(base())
+    after.configure("edge1", " neighbor 10.0.2.2 maximum-prefix 5")
+    m = _m(base(), after, [{"prefix": "10.101.0.0/24", "appears_on": ["up1", "peer1"]},
+                           {"prefix": "10.101.0.0/24", "appears_on": ["edge1"]}])
+    assert m.status == "matched"                                      # edge1 is named: listed
+    after2 = add_new_customer_block(base(), nodes=("up1", "peer1"))
+    after2.configure("edge1", " neighbor 10.0.2.2 maximum-prefix 5")
+    m = _m(base(), after2, [{"prefix": "10.101.0.0/24", "appears_on": ["up1", "peer1"]}])
+    assert ("config", "edge1") in {(d.key.kind, d.key.node) for d in m.undeclared}
+
+
+def test_cold_8_an_order_only_change_is_still_listed():
+    from netdryrun.verify.engine import DiffItem, config_lines_changed
+    from netdryrun.verify.snapshot import ItemKey
+    d = DiffItem(ItemKey("config", "edge1", "default"), ("a", " x", " y", "b"), ("a", " y", " x", "b"))
+    ch = config_lines_changed(d)
+    assert ch["added"] or ch["removed"]
+
+
+def test_cold_9_untested_lines_are_only_reported_with_an_approval():
+    from netdryrun.verify.engine import Match
+    from netdryrun.verify.report import VerifyResult, to_dict
+    from verify_helpers import base, intent
+    m = Match("matched", [], [], [], {}, {"edge1": {"added": ["x"], "removed": []}})
+    res = VerifyResult(status="failed", match=m, before=base().snap(), after=base().snap(), intent=intent([]))
+    assert to_dict(res)["untested_config"] == []
+
+
+def test_cold_4_long_untested_listings_say_how_many_more():
+    from netdryrun.verify.engine import Match
+    from netdryrun.verify.report import VerifyResult, markdown, to_dict
+    from verify_helpers import base, intent
+    lines = [f"router bgp 65000 > neighbor 10.0.2.2 description d{i}" for i in range(60)]
+    m = Match("matched", [], [], [], {}, {"edge1": {"added": lines, "removed": []}})
+    res = VerifyResult(status="matched", match=m, before=base().snap(), after=base().snap(), intent=intent([]))
+    assert "20 more" in markdown(res)
+    from netdryrun.mcp_server import _verify_summary
+    u = _verify_summary(res, None)["untested_config"][0]
+    assert u["added_total"] == 60 and len(u["added"]) <= 50 and u["removed_total"] == 0
+    assert len(to_dict(res)["untested_config"][0]["added"]) == 60          # the JSON report keeps every line
+
+
+# --- binds reach the nodes they apply to (cold review 5 and 7) ------------------------------------------------
+
+SCOPED = """name: t
+topology:
+  defaults: {kind: linux, image: quay.io/frrouting/frr:10.4.1}
+  kinds:
+    linux: {binds: [shared/frr.conf:/etc/frr/frr.conf]}
+  groups:
+    core: {binds: [shared/core.conf:/etc/frr/bgpd.conf]}
+  nodes:
+    r1: {group: core}
+    s1: {kind: sonic-vs, image: docker-sonic-vs:x}
+    br: {kind: bridge}
+"""
+
+
+def test_cold_5_kind_and_group_binds_reach_only_their_nodes(tmp_path):
+    topo = tmp_path / "t.clab.yml"
+    topo.write_text(SCOPED)
+    reach = vrun.bind_reach(topo)
+    assert reach["shared/frr.conf"] == [("r1", "/etc/frr/frr.conf")]
+    assert reach["shared/core.conf"] == [("r1", "/etc/frr/bgpd.conf")]
+    from netdryrun import runner
+
+    class Lab:
+        topology = topo
+    assert runner._bound_files(Lab(), "s1") == []                        # a linux kind bind never reaches sonic-vs
+
+
+def test_cold_7_a_bridge_does_not_stop_a_changed_defaults_bind(tmp_path):
+    topo = tmp_path / "t.clab.yml"
+    topo.write_text("name: t\ntopology:\n  defaults: {kind: linux, image: quay.io/frrouting/frr:10.4.1, "
+                    "binds: [c/frr.conf:/etc/frr/frr.conf]}\n  nodes:\n    r1: {}\n    br: {kind: bridge}\n")
+    vrun.check_changed_binds(topo, ["c/frr.conf"], {"r1": "frr", "br": ""})   # no error
+
+
+# --- link-local addresses (cold review 6) ----------------------------------------------------------------------
+
+def test_cold_6_an_unowned_link_local_is_kept_only_when_the_config_names_it():
+    """A neighbour whose interfaces verify can't read (an unobserved SR Linux keeps them in another namespace) has
+    random link-locals per boot: collapsed to fe80:: as before. One the node's own config names is kept."""
+    from netdryrun.verify import frr
+    with frr.link_local_owners({}, configured={"fe80::dead"}):
+        assert frr._boot_free("fe80::a8c1:abff:fe00:1") == "fe80::"
+        assert frr._boot_free("fe80::dead") == "fe80::dead"
+
+
+def test_cold_6_one_address_on_two_interfaces_of_a_node_is_not_named():
+    from netdryrun.verify import frr
+    text = ("3: eth1@if7: <UP>\n    inet6 fe80::1/64 scope link\n4: eth2@if8: <UP>\n    inet6 fe80::1/64 scope link\n")
+    assert frr.link_local_names({"r1": frr.parse_link_local(text, "r1")}) == {}
+
+
+def test_cold_6_the_collector_reads_the_link_locals_its_config_names():
+    from netdryrun.verify import frr
+    cfg = ("route-map IN permit 10\n set ipv6 next-hop local fe80::dead\nexit\n"
+           "ipv6 route 2001:db8:5::/48 fe80::BEEF eth1\n")
+    assert frr.configured_link_locals(frr.parse_running_config(cfg)) == {"fe80::dead", "fe80::beef"}

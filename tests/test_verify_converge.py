@@ -101,7 +101,7 @@ def test_a_timed_out_command_is_a_cut_not_a_failure():
         return 124, "", "timed out after 120s"
     with pytest.raises(CommandTimedOut) as e:
         FrrCollector("edge1", exec_fn).collect()
-    assert "show vrf" in str(e.value) and "edge1" in str(e.value)
+    assert "show running-config" in str(e.value) and "edge1" in str(e.value)   # the first command it runs
 
 
 def test_a_stale_path_means_the_lab_has_not_converged():

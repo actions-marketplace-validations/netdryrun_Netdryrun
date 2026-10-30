@@ -96,5 +96,25 @@ def test_a_workflow_changed_with_the_configs_is_refused(repo):
     head = change(repo, {".github/workflows/ci.yml": "allow-check-edit: true\n", "lab/configs/r1.conf": "! leak\n"})
     rc, out, summary = check(repo, base, head, allow="true")
     assert rc == 1 and ".github/workflows/ci.yml" in out and "workflow" in summary
+    for left in ("netdryrun-summary.md", "gh-output.txt"):   # the first check's outputs: not part of the next PR
+        (repo / left).unlink(missing_ok=True)
     head = change(repo, {".github/workflows/ci.yml": "only the workflow\n"})
     assert check(repo, git(repo, "rev-parse", "HEAD~1").strip(), head)[0] == 0   # no lab change: runs as before
+
+
+def test_cold_2_a_workflow_that_moves_path_away_from_the_changed_lab_is_refused(repo):
+    """The PR repoints `path:` to an untouched lab and changes the real one: the guard keyed on `path` saw no lab
+    change. Any workflow change together with a change outside .github/workflows is refused."""
+    base = git(repo, "rev-parse", "HEAD").strip()
+    (repo / ".github" / "workflows").mkdir(parents=True)
+    (repo / "demo").mkdir()
+    head = change(repo, {".github/workflows/ci.yml": "path: demo\n", "lab/configs/r1.conf": "! leak\n"})
+    rc, out, _ = check(repo, base, head, path="demo")
+    assert rc == 1 and "workflow" in out
+
+
+def test_cold_2_a_local_composite_action_counts_as_the_workflow(repo):
+    base = git(repo, "rev-parse", "HEAD").strip()
+    (repo / ".github" / "actions" / "ndr").mkdir(parents=True)
+    head = change(repo, {".github/actions/ndr/action.yml": "allow-check-edit: true\n", "lab/configs/r1.conf": "! x\n"})
+    assert check(repo, base, head)[0] == 1

@@ -191,7 +191,8 @@ def to_dict(r: VerifyResult) -> dict:
         "declared": declared,
         "allowed": allowed,
         # running-config lines of an approved change that verify did not see exercised (gauntlet 0.4, R4)
-        "untested_config": [{"node": n, **ch} for n, ch in sorted((m.untested if m is not None else {}).items())],
+        "untested_config": [{"node": n, **ch} for n, ch in sorted((m.untested if m is not None else {}).items())]
+        if r.status in ("matched", "no_change") else [],
         "unobserved": dict(sorted((r.before or r.after).unobserved.items())) if (r.before or r.after) else {},
         "guards": r.guards,
         "guards_source": r.guards_source,
@@ -313,6 +314,9 @@ def markdown(r: VerifyResult, max_items: int = 40) -> str:
         for u in d["untested_config"]:
             tail += [f"- {_md_cell(u['node'])}: + {_md_code(x)}" for x in u["added"][:max_items]]
             tail += [f"- {_md_cell(u['node'])}: − {_md_code(x)}" for x in u["removed"][:max_items]]
+            more = max(0, len(u["added"]) - max_items) + max(0, len(u["removed"]) - max_items)
+            if more:
+                tail.append(f"- … and {more} more on {_md_cell(u['node'])} (see the JSON report)")
         tail.append("")
     if r.guards is not None:
         tail += [f"**Standing guards** ({_md_cell(r.guards.get('source'))}): {_md_cell(r.guards.get('status'))}, "

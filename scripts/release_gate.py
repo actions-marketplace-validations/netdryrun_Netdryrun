@@ -717,7 +717,8 @@ VERDICT_FUNCTIONS = frozenset({
     "runner._bgp_convergence_gate", "runner._wait_fault_visible", "runner._link_sessions",
     "runner._sessions_over_links", "runner._reach_then_hold", "runner.run_scenario",
     "runner.RunReport.passed", "runner.RunReport.failed", "runner.RunReport.status",
-    "runner.RunReport.inconclusive_reason", "runner.RunReport.exit_code", "runner.rejected_config",
+    "runner.RunReport.inconclusive_reason", "runner.RunReport.exit_code",
+    "runner.config_load_by_node", "runner._startup_load", "runner.rejected_config_message",
 })
 
 

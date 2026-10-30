@@ -276,12 +276,12 @@ def _driver_of(config: Config):
 
 def _bound_files(lab, name: str) -> list[str]:
     """The binds and startup-config the topology gives a node (in its node entry, defaults, kinds or groups)."""
-    from .verify.run import bind_targets
+    from .verify.run import bind_reach
     try:
-        targets = bind_targets(Path(lab.topology))
+        targets = bind_reach(Path(lab.topology))
     except Exception:   # unreadable here: verify's and the run's own topology checks report it
         return ["(the topology's binds could not be read)"]
-    return [f"{src}:{dest}" for src, where in targets.items() for node, dest in where if node in (None, name)]
+    return [f"{src}:{dest}" for src, where in targets.items() for node, dest in where if node == name]
 
 
 SONIC_CONFIG_DIRS = ("/etc/sonic", "/etc/frr")

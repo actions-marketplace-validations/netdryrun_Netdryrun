@@ -260,8 +260,10 @@
           "properties": {"pattern": {"type": "string"}, "vrf": {"type": "string"},
                          "routes": {"type": "integer", "minimum": 0}}}},
         "untested_config": {"type": "array", "description": "Running-config lines of an approved change that verify did not see exercised in the lab (not tested if the lab doesn't exercise them), per node (from 0.4)",
-          "items": {"type": "object", "required": ["node", "added", "removed"],
+          "items": {"type": "object", "required": ["node", "added", "removed", "added_total", "removed_total"],
                     "properties": {"node": {"type": "string"},
+                                   "added_total": {"type": "integer", "minimum": 0, "description": "Lines added, all of them (added lists at most 50)"},
+                                   "removed_total": {"type": "integer", "minimum": 0, "description": "Lines removed, all of them (removed lists at most 50)"},
                                    "added": {"type": "array", "maxItems": 50, "items": {"$ref": "#/$defs/lab_text"}},
                                    "removed": {"type": "array", "maxItems": 50, "items": {"$ref": "#/$defs/lab_text"}}}}},
         "guards": {

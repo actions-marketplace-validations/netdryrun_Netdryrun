@@ -28,3 +28,41 @@ Main's new rule "the Action is green only on exit 0 AND status passed" made ever
 
 ## Mutation layer
 `verify.engine` and `verify.intent`: every survivor killed by a test (each kill proved with mutmut's per-mutant switch) or accepted in `accepted.json` with a reason and its diff fingerprint; acceptances are message wording or proven equivalent, never a mutant that can change a verdict. The engine changes from this review add mutants: the mutation layer runs again in the full gate.
+
+## Merge with main (0.3.3, a38addc)
+
+0.3.3's rejected-config reader (boot log since the container started, the "Failure to communicate" comparison with each daemon's running config, no sign of a load is an error) is the one reader for `run` and both sides of `verify` (`runner.config_load_by_node`); 0.4's duplicate parser, `Lab.logs` and `Driver.config_load_errors` were removed. `record` keeps 0.3.3's prefix ranges and guards with 0.4's per-VRF recording (guards in the default VRF only). In `mode: verify` the PR comment's header is read from the verify report.
+
+## Expert gauntlet (fixed roster, 2026-10-30)
+
+Batfish and Forward pointed at `verify_change`, plus Cisco, Juniper, NVIDIA, NTT Data/CDW, Starlink/Google Fiber and AWS/OpenAI/Anthropic, played by ChatGPT and Grok, and a code-reading agent. Eight false approvals and one timing gap, each fixed test-first and pinned in `tests/test_verify_gauntlet.py`:
+
+| # | False approval | Fix |
+|---|---|---|
+| R1 | A link-local next hop set in config was compared as `fe80::`, so a typo was invisible | Named by the lab interface that owns it; one the node's config names keeps its address |
+| R2 | A changed `daemons`, `vtysh.conf` or script could rewrite what FRR runs | Only an observed node's `/etc/frr/*.conf` may differ (exit 2 otherwise) |
+| R3 | No bound file differed, and verify approved after four boots | "nothing to verify" (exit 2) |
+| R4 | Config acting only on routes or events the lab never produces left no trace | The running config is in the snapshot; a change with no observable effect fails unless `config_change_on` declares it; approvals list untested lines |
+| R5 | `appears_on` accepted a discard route | `state: discard`; installed needs a next hop that forwards |
+| R6 | `send-community` / `local-as` toward an unobserved peer | Caught by R4 |
+| R7 | A PR could edit the workflow that judged it | The Action refuses workflow edits (see the cold review) |
+| R8 | `--unobserved` took an FRR router | Refused |
+| S2 | A conditional-advertisement scan could land after both snapshots | `--settle` covers the timer |
+
+Also from the coordinator: startup config a NOS rejects is detected on cEOS (`show startup-config errors`, live captures), relied on for SR Linux (containerlab's deploy fails), and a config bound into SONiC is an error.
+
+## Cold review of the gauntlet fixes (fresh agent, 2026-10-30)
+
+| # | Severity | Finding | Fix |
+|---|---|---|---|
+| 1 | BLOCKER | A BGP route whose next hop resolves over Null0, or an inactive gateway next to an active blackhole, still read "installed" | A next hop forwards only if active, in the FIB, and (recursive) resolved by one that forwards |
+| 2 | BLOCKER | In `mode: run` the workflow guard was keyed on `path`, which the PR's workflow sets | Any change to `.github/workflows` or `.github/actions` together with anything else is refused; `mode: verify` also guards `.github/actions` |
+| 3 | MAJOR | A node that only advertised the declared route counted as "behaving", so its config change was only listed | Only nodes a happened line names may carry untested config |
+| 4 | MAJOR | The untested listing was cut silently in Markdown and MCP | "… and N more"; `added_total`/`removed_total` in the MCP result |
+| 5 | MAJOR | `kinds:`/`groups:` binds were treated as reaching every node (a linux kind bind made a SONiC node an error) | `bind_reach` resolves containerlab's inheritance per node |
+| 6 | MAJOR | A neighbour's random link-local (an unobserved SR Linux) kept its per-boot address | Kept only when the node's config names it; otherwise `fe80::` as in 0.3.3; one address on two interfaces is not named |
+| 7 | MINOR | A bridge made a changed `defaults` bind an error | Bridges are left out of the reach |
+| 8 | MINOR | An order-only config change listed nothing | Listed as an order change |
+| 9 | MINOR | Untested lines were reported with a failed or inconclusive verdict | Only with an approval |
+
+Not changed: `is_router_config` accepts any `/etc/frr/*.conf` (a `bgpd.conf` FRR ignores under an integrated `frr.conf` changes nothing in the lab or in production); rated MINOR by the reviewer.

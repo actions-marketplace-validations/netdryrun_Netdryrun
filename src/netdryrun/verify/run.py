@@ -87,29 +87,33 @@ def bind_sources(topology: Path) -> list[str]:
     return list(dict.fromkeys(out))
 
 
-def bind_targets(topology: Path) -> dict[str, list[tuple[str | None, str]]]:
-    """Each host path the topology references -> where it lands: (node, path in the container), the node None
-    for a bind in `defaults`, `kinds` or `groups` (it can reach any node). A startup-config lands at
-    "startup-config"."""
+def bind_reach(topology: Path) -> dict[str, list[tuple[str, str]]]:
+    """Each host path the topology references -> the (node, path in the container) it reaches: a `nodes` bind its
+    node, a `kinds` bind the nodes of that kind, a `groups` bind the nodes of that group, a `defaults` bind every
+    node (containerlab's inheritance; cold review 5). Bridges have no container and are left out."""
     data = load_yaml(topology.read_text(encoding="utf-8"), str(topology)) or {}
     t = data.get("topology") or {}
-    blocks: list[tuple[str | None, dict]] = [(None, t.get("defaults") or {})]
-    for section in ("kinds", "groups", "nodes"):
-        sec = t.get(section) or {}
-        if isinstance(sec, dict):
-            blocks += [(k if section == "nodes" else None, v or {}) for k, v in sec.items()]
-    out: dict[str, list[tuple[str | None, str]]] = {}
-    for node, b in blocks:
-        if not isinstance(b, dict):
+    defaults = t.get("defaults") if isinstance(t.get("defaults"), dict) else {}
+    kinds = t.get("kinds") if isinstance(t.get("kinds"), dict) else {}
+    groups = t.get("groups") if isinstance(t.get("groups"), dict) else {}
+    nodes = t.get("nodes") if isinstance(t.get("nodes"), dict) else {}
+    out: dict[str, list[tuple[str, str]]] = {}
+    for name, nd in nodes.items():
+        nd = nd if isinstance(nd, dict) else {}
+        grp = groups.get(nd.get("group")) if isinstance(groups.get(nd.get("group")), dict) else {}
+        kind = nd.get("kind") or grp.get("kind") or defaults.get("kind")
+        if kind in BRIDGE_KINDS:
             continue
-        for bind in b.get("binds") or []:
-            if isinstance(bind, str) and ":" in bind:
-                src, dest = bind.split(":", 2)[:2]
-                out.setdefault(src, []).append((node, dest))
-        sc = b.get("startup-config")
-        if isinstance(sc, str) and "\n" not in sc:
-            out.setdefault(sc, []).append((node, "startup-config"))
-    return out
+        knd = kinds.get(kind) if isinstance(kinds.get(kind), dict) else {}
+        for block in (defaults, knd, grp, nd):
+            for bind in block.get("binds") or []:
+                if isinstance(bind, str) and ":" in bind:
+                    src, dest = bind.split(":", 2)[:2]
+                    out.setdefault(src, []).append((str(name), dest))
+            sc = block.get("startup-config")
+            if isinstance(sc, str) and "\n" not in sc:
+                out.setdefault(sc, []).append((str(name), "startup-config"))
+    return {k: list(dict.fromkeys(v)) for k, v in out.items()}
 
 
 def is_router_config(dest: str) -> bool:
@@ -400,19 +404,15 @@ def check_changed_binds(topology: Path, differ: list[str], nodes: dict[str, str]
     """Every bound file that differs must be the FRR config of a node verify snapshots: anything else (FRR's
     `daemons`, a script, vtysh.conf, a startup-config of a node not observed) can change what runs without
     the snapshot judging it, so it is an error (gauntlet 0.4, R2)."""
-    targets = bind_targets(topology)
-    everyone = all(drv == "frr" for drv in nodes.values() if drv != "")
-    observed_all = everyone and all(drv for drv in nodes.values()) if nodes else False
+    targets = bind_reach(topology)
     bad = []
     for key in differ:
         src = next((s for s in sorted(targets, key=len, reverse=True) if key == s or key.startswith(s + "/")), None)
         suffix = key[len(src):] if src else ""
-        for node, dest in targets.get(src, [(None, "?")]):
+        for node, dest in targets.get(src, [("?", "?")]):
             full = dest + suffix if dest != "startup-config" else dest
-            ok = is_router_config(full) and (nodes.get(node) == "frr" if node else observed_all)
-            if not ok:
-                where = f"on {node}" if node else "on every node it reaches"
-                bad.append(f"{key} ({full} {where})")
+            if not (is_router_config(full) and nodes.get(node) == "frr"):
+                bad.append(f"{key} ({full} on {node})")
     if bad:
         raise VerifyInputError(f"changed bound file(s) that are not a router config of a node verify observes: "
                                f"{'; '.join(dict.fromkeys(bad))}. verify judges a change by what the observed FRR "

@@ -263,8 +263,9 @@ def _verify_summary(res, evidence_path: str | None) -> dict:
         "declared": [{"intent": x["intent"], "line": _text(x["line"], 300), "items": len(x["items"])}
                      for x in d["declared"]],
         "allowed": [{"pattern": a["pattern"], "vrf": a["vrf"], "routes": len(a["routes"])} for a in d["allowed"]],
-        "untested_config": [{"node": u["node"], **{k: [_text(x, 300) for x in u[k][:VERIFY_MAX_ITEMS]]
-                                                   for k in ("added", "removed")}} for u in d["untested_config"]],
+        "untested_config": [{"node": u["node"], "added_total": len(u["added"]), "removed_total": len(u["removed"]),
+                             **{k: [_text(x, 300) for x in u[k][:VERIFY_MAX_ITEMS]] for k in ("added", "removed")}}
+                            for u in d["untested_config"]],
         "guards": None if guards is None else {
             "status": guards["status"], "passed": guards["passed"], "failed": guards["failed"],
             "source": guards.get("source"),
