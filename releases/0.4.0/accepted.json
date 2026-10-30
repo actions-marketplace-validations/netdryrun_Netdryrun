@@ -3348,7 +3348,7 @@
     },
     "netdryrun.drivers.x_check_supported__mutmut_47": {
       "reason": "message text only: the key list in the unsupported-key error; the same exception is raised",
-      "diff": "180f0ddfb2212dd0",
+      "diff": "b0f4a07fcc19ec85",
       "class": "message-text"
     },
     "netdryrun.drivers.x_for_node__mutmut_2": {
