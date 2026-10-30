@@ -43,13 +43,34 @@ def unexpected(command: str, text: object) -> DriverError:
     return DriverError(f"unexpected output from `{command}`: {snippet}")
 
 
-def load_json(command: str, text: str):
+class RepeatedKey(ValueError):
+    def __init__(self, key: str):
+        super().__init__(key)
+        self.key = key
+
+
+def no_repeated_keys(pairs: list) -> dict:
+    """A JSON object whose keys are all different. A repeated key is never "the last one wins": json.loads would
+    keep one value and drop the other silently (0.4: Junos repeats `protocol-nh`)."""
+    out: dict = {}
+    for k, v in pairs:
+        if k in out:
+            raise RepeatedKey(k)
+        out[k] = v
+    return out
+
+
+def load_json(command: str, text: str, object_pairs_hook=no_repeated_keys):
     """JSON from a device command. Empty output is not an empty result: every supported NOS prints a
-    JSON document (at least `{}`) for a state query that succeeded."""
+    JSON document (at least `{}`) for a state query that succeeded. A repeated key in one object is an error,
+    unless the driver's hook knows what the repeat means (Junos)."""
     if not isinstance(text, str) or not text.strip():
         raise unexpected(command, "no output")
     try:
-        return json.loads(text)
+        return json.loads(text, object_pairs_hook=object_pairs_hook)
+    except RepeatedKey as e:
+        raise DriverError(f"`{command}`: repeated key {e.key!r} in one JSON object; refusing to read one of its "
+                          "values as the only one") from None
     except (json.JSONDecodeError, RecursionError):
         raise unexpected(command, text) from None
 

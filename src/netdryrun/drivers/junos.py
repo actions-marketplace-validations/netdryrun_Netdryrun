@@ -25,7 +25,7 @@ import ipaddress
 import re
 
 from .base import (BgpNeighbor, BgpPath, Driver, DriverError, NoSuchInstance, Observation, Route, as_int, canon_communities,
-                   check_vrf_name, load_json, parser, render_as_path, unexpected)
+                   RepeatedKey, check_vrf_name, load_json, parser, render_as_path, unexpected)
 from .frr import _canon_addr
 
 # The container's own SSH hop to the Junos VM (its `cli` wrapper uses the same key and address)
@@ -73,6 +73,25 @@ def _table(vrf: str, family: int) -> str:
 _ERROR_MESSAGE = re.compile(r'"message"\s*:\s*\[\s*\{\s*"data"\s*:\s*"([^"]*)"')
 
 
+def _join_repeats(pairs: list) -> dict:
+    """Junos's JSON repeats an element's key inside one object (live: `protocol-nh` at two indent levels of one
+    route entry). Every Junos element is a list, so the repeats are joined in order; a repeat that isn't a list
+    is not a Junos element and is refused."""
+    out: dict = {}
+    for k, v in pairs:
+        if k not in out:
+            out[k] = v
+        elif isinstance(out[k], list) and isinstance(v, list):
+            out[k] = out[k] + v
+        else:
+            raise RepeatedKey(k)
+    return out
+
+
+def load_junos_json(command: str, text: str):
+    return load_json(command, text, object_pairs_hook=_join_repeats)
+
+
 def _json(command: str, text: str) -> dict:
     if isinstance(text, str) and text.lstrip().lower().startswith("error:"):
         raise DriverError(f"Junos error from `{command}`: {' '.join(text.split())[:200]}")
@@ -80,7 +99,7 @@ def _json(command: str, text: str) -> dict:
         # e.g. "the routing subsystem is not running" while rpd starts: an error on that sample
         messages = "; ".join(dict.fromkeys(_ERROR_MESSAGE.findall(text))) or "xnm:error"
         raise DriverError(f"Junos error from `{command}`: {messages[:200]}")
-    data = load_json(command, text)
+    data = load_junos_json(command, text)
     if not isinstance(data, dict):
         raise unexpected(command, text)
     for key in data:
@@ -357,14 +376,17 @@ def _as_path(command: str, text: str) -> str:
 
 def _next_hop(command: str, e: dict) -> str | None:
     """The BGP next hop: the protocol next hop when Junos shows one (iBGP, resolved recursively), else the
-    selected forwarding next hop (eBGP: the neighbor), else the first one listed."""
+    forwarding next hop (eBGP: the neighbor): the selected one, or the one address all of them name. Several
+    different addresses with none selected is refused, never "the first listed" (0.4: repeated `protocol-nh`)."""
     for key in ("protocol-nh", "nh"):
         hops = _items(command, e, key)
-        chosen = next((h for h in hops if "selected-next-hop" in h), hops[0] if hops else None)
-        if chosen is not None:
-            to = _leaf(command, chosen, "to", required=False)
-            if to:
-                return _canon_addr(to)
+        chosen = [h for h in hops if "selected-next-hop" in h] or hops
+        tos = list(dict.fromkeys(_canon_addr(t) for t in (_leaf(command, h, "to", required=False) for h in chosen)
+                                 if t))
+        if len(tos) > 1:
+            raise unexpected(command, f"{key}: several next hops ({', '.join(tos[:4])}) and none selected")
+        if tos:
+            return tos[0]
     return None
 
 
