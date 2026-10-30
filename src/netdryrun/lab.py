@@ -24,6 +24,22 @@ class Node:
     image: str
 
 
+_EXEC_FAILED = re.compile(r"Failed to execute command\b.*?command=(\"[^\"]*\"|\S+).*?node=(\S+).*?rc=(\d+)")
+
+
+def _exec_failures(text: str) -> list[str]:
+    """containerlab's log lines for `exec:` commands that failed, as "node: `command` (rc N): output"."""
+    out = []
+    lines = [re.sub(r"\x1b\[[0-9;]*m", "", ln) for ln in text.splitlines()]
+    for i, ln in enumerate(lines):
+        m = _EXEC_FAILED.search(ln)
+        if m:
+            detail = " ".join(x.strip(" \u2502") for x in lines[i + 1:i + 4] if x.strip(" \u2502") and
+                              not x.strip().startswith(("stdout=", "stderr=")) and not re.match(r"^\d\d:\d\d", x))
+            out.append(f"{m.group(2)}: `{m.group(1).strip(chr(34))}` (rc {m.group(3)})" + (f": {detail}" if detail else ""))
+    return out
+
+
 @dataclass
 class ExecResult:
     cmd: list[str]
@@ -134,6 +150,13 @@ class Lab:
         r = _run([self.clab, "deploy", "-t", str(self.topology), "--reconfigure"], env=self._env())
         if r.rc != 0:
             raise LabError(f"containerlab deploy failed:\n{(r.stderr or r.stdout)[-3000:]}")
+        # A topology `exec:` command that fails is only logged: containerlab exits 0 and the node runs without what
+        # it configured (live, 0.81.1: a vtysh line FRR rejected). Never a lab to test on (multi-vendor audit F1).
+        failed = _exec_failures(f"{r.stdout}\n{r.stderr}")
+        if failed:
+            raise LabError(f"a topology exec command failed, so the lab doesn't run the config as written: "
+                           f"{'; '.join(failed)[:3000]}. Fix the command (or apply the config with `setup:`, "
+                           "which is checked), then run again")
         return r
 
     def destroy(self) -> ExecResult:

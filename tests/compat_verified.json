@@ -28,7 +28,8 @@
       "`bgp_route` reads routes received over BGP only. Junos doesn't list its own static, direct or aggregate routes as BGP routes, even when an export policy advertises them.",
       "`bgp_prefixes` reads Junos's `accepted-prefix-count`, which also leaves out received routes Junos can't use (an unusable next hop); FRR counts those.",
       "Link and node faults on a cJunosEvolved node and `inject_routes` from it are refused before deploying.",
-      "Every deploy installs Junos in the VM: about 4 minutes to a CLI on a quiet 20-thread host, up to 19 minutes with a CPU-heavy job beside it. Set `CPTX_NUM_IF` (see the example) and a check `timeout` that covers the boot."
+      "Every deploy installs Junos in the VM: about 4 minutes to a CLI on a quiet 20-thread host, up to 19 minutes with a CPU-heavy job beside it. Set `CPTX_NUM_IF` (see the example) and a check `timeout` that covers the boot.",
+      "startup config: Netdryrun doesn't verify that the startup config loaded on Junos yet (the report says `not verified on junos`). Mitigation: add a positive check for what each changed line creates. Fix scheduled: 0.4.1."
     ]
   }
 }

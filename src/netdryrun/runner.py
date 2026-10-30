@@ -284,11 +284,27 @@ def _bound_files(lab, name: str) -> list[str]:
     return [f"{src}:{dest}" for src, where in targets.items() for node, dest in where if node == name]
 
 
-SONIC_CONFIG_DIRS = ("/etc/sonic", "/etc/frr")
+# Where a file bound into docker-sonic-vs can change its config (CONFIG_DB, FRR, templates, supervisord's programs):
+# a bind into, or above, any of these (multi-vendor audit F6)
+SONIC_CONFIG_PLACES = ("/etc", "/usr", "/var/lib")
 
 
-def _startup_load(lab, name: str, driver: str, bound) -> list[str] | None:
-    """A non-FRR node's startup-config load ([]: clean, else why not), or None where no platform rule applies."""
+def _sonic_config_bind(bind: str) -> bool:
+    if bind.startswith("(") or bind.endswith(":startup-config"):
+        return True
+    dest = bind.split(":", 2)[1] if ":" in bind else bind
+    d = "/" + dest.strip("/")
+    return d == "/" or any(d == p or d.startswith(p + "/") or p.startswith(d + "/") for p in SONIC_CONFIG_PLACES)
+
+
+SRL_LOAD_FAILED = "Load of startup configuration failed"
+
+
+def _startup_load(lab, name: str, driver: str, bound, deployed: bool = True) -> list[str] | None:
+    """A non-FRR node's startup-config load ([]: clean, else why not), or None where no platform rule applies
+    (recorded "not verified on <driver>"). On a lab this run didn't deploy (`check`), SR Linux and SONiC are not
+    verified: SR Linux's deploy may have failed with the container still running, and no setup command ran on
+    SONiC (multi-vendor audit F2)."""
     if driver == "eos":
         # cEOS skips a startup-config line it rejects and loads the rest, like FRR; it lists them (live, 4.36.3M)
         from .drivers.eos import STARTUP_ERRORS_CMD, parse_startup_config_errors
@@ -300,16 +316,24 @@ def _startup_load(lab, name: str, driver: str, bound) -> list[str] | None:
             return parse_startup_config_errors(r.stdout)
         except DriverError as e:
             return [f"{e}; so whether its config loaded is unknown"]
+    if driver in ("srlinux", "sonic") and not deployed:
+        return None
     if driver == "srlinux":
-        # containerlab applies SR Linux's startup config as one commit at deploy: a line that doesn't parse, or a
-        # commit that fails, fails the deploy (live, 26.7.2), so a node that is running ran all of it
-        return []
+        # A CLI startup config is one commit containerlab applies at deploy: a line that doesn't parse, or a commit
+        # that fails, fails the deploy (live, 26.7.2). A JSON one SR Linux loads itself, and when it rejects it the
+        # deploy still succeeds and the node runs without it (live): its log says so (multi-vendor audit F3)
+        r = lab.exec(name, ["grep", "-h", SRL_LOAD_FAILED, "/var/log/messages"])
+        if r.rc == 1:   # grep: no such line
+            return []
+        if r.rc != 0:
+            return [f"its startup-config load log could not be read ({(r.stderr or r.stdout).strip()[-200:] or 'rc '}"
+                    f"{'' if (r.stderr or r.stdout).strip() else r.rc}), so whether its config loaded is unknown"]
+        why = " ".join(r.stdout.split())
+        return [f"it failed to load its startup config: {why[why.find(SRL_LOAD_FAILED):][:300]}"]
     if driver == "sonic":
         # docker-sonic-vs has no startup config: Netdryrun configures it with setup commands, each checked. A
         # config file bound into it is not checked: an error, never a silent pass
-        files = [b for b in bound(name) if b.startswith("(")
-                 or any(b.split(":", 2)[1].startswith(d) for d in SONIC_CONFIG_DIRS if ":" in b)
-                 or b.endswith(":startup-config")]
+        files = [b for b in bound(name) if _sonic_config_bind(b)]
         if files:
             return [f"a config bound into a SONiC node is not checked ({', '.join(files[:3])}): configure SONiC "
                     "with setup commands (nodes.<name>.setup), which are"]
@@ -317,7 +341,7 @@ def _startup_load(lab, name: str, driver: str, bound) -> list[str] | None:
     return None
 
 
-def config_load_by_node(lab, driver_of, bound=None) -> dict[str, list[str]]:
+def config_load_by_node(lab, driver_of, bound=None, deployed: bool = True) -> dict[str, list[str]]:
     """Each node whose config load was read -> why the lab didn't run its config as written ([]: it did). FRR
     applies its config line by line at boot and skips a line it rejects (a typo, a command this release doesn't
     have): the lab then runs without it, and the checks test a network the change never reached. Read when every
@@ -331,7 +355,7 @@ def config_load_by_node(lab, driver_of, bound=None) -> dict[str, list[str]]:
             continue
         driver = driver_of(name, node)
         if driver not in ("frr", None):
-            load = _startup_load(lab, name, driver, bound)
+            load = _startup_load(lab, name, driver, bound, deployed)
             if load is not None:
                 found[name] = load
             continue
@@ -488,7 +512,7 @@ def run(config: Config, *, deploy: bool = True, keep: bool = False, keep_on_fail
                 if sc is not config.scenarios[-1]:
                     log(f"The network did not recover after scenario '{sc.name}'; later scenarios skipped")
                 break
-        by_node = config_load_by_node(lab, _driver_of(config))
+        by_node = config_load_by_node(lab, _driver_of(config), deployed=deploy)
         _config_load(lab, driver_for, report, by_node)
         rejected = rejected_config_message(by_node)
         if rejected:
@@ -579,7 +603,11 @@ def _config_load(lab, driver_for, report: RunReport, by_node: dict[str, list[str
         try:
             drv = driver_for(node)
         except DriverError:
-            continue   # a node without a routing driver (a host)
+            # a host, or a router whose driver can't be detected: its load is read only if its log shows FRR's
+            # rejected lines (an error then); otherwise it is said, never "clean" (multi-vendor audit F7)
+            if lab.nodes[node].kind not in ("bridge", "ovs-bridge"):
+                nodes.setdefault(node, {})["config_load"] = "not verified (no routing driver)"
+            continue
         entry = nodes.setdefault(node, {})
         entry["nos_version"] = drv.nos_version()
         entry["image_digest"] = lab.image_digest(lab.nodes[node].image)

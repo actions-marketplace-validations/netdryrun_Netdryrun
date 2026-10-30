@@ -60,8 +60,10 @@ def test_verify_stops_when_an_frr_nodes_load_is_unknown():
         vrun.check_config_loaded(Lab({"r1": "watchfrr: all daemons up\n"}), {"r1": "frr"}, "before")
 
 
-def test_verify_does_not_read_a_node_of_another_platform():
+def test_verify_reads_another_platform_by_its_own_rule_not_by_frrs_log():
+    """An SR Linux node is read by SR Linux's rule (its startup-config load log), never by FRR's boot-log parser."""
     lab = Lab({"r1": CLEAN_LOG, "s1": LIVE_LOG}, {"s1": ("nokia_srlinux", "ghcr.io/nokia/srlinux:26.7.2")})
+    lab.exec = lambda node, cmd, timeout=60, input=None: ExecResult(cmd, 1, "", "")   # grep: no load failure
     vrun.check_config_loaded(lab, {"r1": "frr", "s1": "srlinux"}, "after")
     assert lab.read == ["r1"]
 

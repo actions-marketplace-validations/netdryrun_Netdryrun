@@ -66,3 +66,20 @@ Also from the coordinator: startup config a NOS rejects is detected on cEOS (`sh
 | 9 | MINOR | Untested lines were reported with a failed or inconclusive verdict | Only with an approval |
 
 Not changed: `is_router_config` accepts any `/etc/frr/*.conf` (a `bgpd.conf` FRR ignores under an integrated `frr.conf` changes nothing in the lab or in production); rated MINOR by the reviewer.
+
+## Multi-vendor audit (fresh agent, 2026-10-30)
+
+| # | Severity | Finding | Fix |
+|---|---|---|---|
+| F1 | BLOCKER | A topology `exec:` command that fails is only logged; containerlab exits 0 (live: a `vtysh` line FRR rejected) | `Lab.deploy` fails on containerlab's "Failed to execute command" lines, naming node, command and output |
+| F2 | BLOCKER | Under `check` (a lab Netdryrun didn't deploy), SR Linux and SONiC read "clean" with no evidence | `not verified on <driver>` there |
+| F3 | BLOCKER | A JSON startup config SR Linux rejects deploys with rc 0 and runs without it (live) | SR Linux's log "Load of startup configuration failed" is read; unreadable is an error |
+| F4 | MAJOR | verify passed `""` for unobserved nodes, so their load was never read | Read by detected driver, else by FRR's log |
+| F5 | MAJOR | SONiC "setup checked" is exit code only | Stated; `vtysh -c` recommended for routing |
+| F6 | MAJOR | SONiC bind scan missed `/etc`, `/usr`, `/var/lib` parents and inline startup configs | All flagged |
+| F7 | MINOR | A node without a driver wrote no `config_load` | `not verified (no routing driver)` |
+| F8 | MAJOR | A stale "Fix scheduled: 0.4" (file change time) | Moved to 0.4.1, in the CHANGELOG list |
+| F9 | MAJOR | CHANGELOG contradicted itself on which platforms are verified | Fixed |
+| F10 | MAJOR | The Juniper caveat was missing from the config reference, compatibility limits, junos.md and the advisories | Added (fix scheduled: 0.4.1) |
+| F11 | MINOR | "Fixed in 0.4" text didn't carry F1–F3's scope | Rewritten |
+| F12 | MINOR | cEOS errors are read at the end of the run, not at a known moment | Not changed: read after the checks, when the load has long finished |

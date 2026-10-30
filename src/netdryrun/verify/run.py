@@ -111,8 +111,9 @@ def bind_reach(topology: Path) -> dict[str, list[tuple[str, str]]]:
                     src, dest = bind.split(":", 2)[:2]
                     out.setdefault(src, []).append((str(name), dest))
             sc = block.get("startup-config")
-            if isinstance(sc, str) and "\n" not in sc:
-                out.setdefault(sc, []).append((str(name), "startup-config"))
+            if isinstance(sc, str):   # inline (several lines): no file, but config all the same (audit F6)
+                out.setdefault(sc if "\n" not in sc else "(inline startup-config)", []).append(
+                    (str(name), "startup-config"))
     return {k: list(dict.fromkeys(v)) for k, v in out.items()}
 
 
@@ -550,7 +551,16 @@ def check_config_loaded(lab, nodes: dict[str, str], label: str) -> None:
     (runner.config_load_by_node); a node not snapshotted counts when its log shows rejected lines."""
     from ..runner import config_load_by_node, rejected_config_message
 
-    rejected = rejected_config_message(config_load_by_node(lab, lambda name, _node: nodes.get(name)))
+    def driver_of(name: str, node) -> str | None:
+        # a node verify doesn't snapshot (--unobserved, a host) is read the way `run` reads it: by the driver it
+        # can be detected as, else by its log (multi-vendor audit F4)
+        if nodes.get(name):
+            return nodes[name]
+        try:
+            return detect(node)
+        except DriverError:
+            return None
+    rejected = rejected_config_message(config_load_by_node(lab, driver_of))
     if rejected:
         raise LabError(f"[{label}] {rejected} No verdict.")
 

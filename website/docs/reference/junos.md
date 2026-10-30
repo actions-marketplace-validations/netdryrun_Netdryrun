@@ -30,6 +30,7 @@ j1:
 - **Boot time:** every deploy installs Junos inside the VM and reboots it. Set `CPTX_NUM_IF` to the number of data links you connect: without it the container waits 5 minutes for 36 interfaces before it starts the VM. Measured on WSL2 (20 threads, 16 GB) with `CPTX_NUM_IF` set and nothing else running: Junos answered about 4 minutes after deploy, BGP was up after about 6, and the whole `netdryrun run` of `examples/junos-frr` took 398 s. Without `CPTX_NUM_IF`, and on a busy host, it took about 22 minutes to BGP.
 - **One VM at a time on a 16 GB host.** With a second vendor VM booting next to it, the Junos VM logged CPU soft lockups and the host stopped answering for minutes.
 - Set `timeout` high enough for the boot (the example uses `1800`). While the VM boots, every read is an error on that sample (the check keeps waiting); it is never read as "no sessions".
+- **Netdryrun doesn't verify the Junos config load yet** (the report says `not verified on junos`): add a positive check for what each changed line creates.
 - **A startup config Junos rejects fails quietly:** the hostname stays `re0`, the VM's console logs "Failed to start MGD initialization of schema and database", and the routing daemon never starts. We hit this with a config that had a `/* */` comment, no `## SECRET-DATA` marker and a mixed IPv4/IPv6 route filter (which of the three Junos rejected wasn't isolated). The example's `configs/j1.cfg` follows containerlab's sample format and loads.
 
 ## How state is read
