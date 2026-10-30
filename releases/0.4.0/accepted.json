@@ -82,31 +82,38 @@
     },
     "netdryrun.verify.engine.x__advertisement__mutmut_47": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "06172cd431ac4d22"
+      "diff": "06172cd431ac4d22",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__advertisement__mutmut_60": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "f6c7cea389005364"
+      "diff": "f6c7cea389005364",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__advertisement__mutmut_61": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "133f4d6a5580c26f"
+      "diff": "133f4d6a5580c26f",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__advertisement__mutmut_62": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "4edd23c814f0ce9e"
+      "diff": "4edd23c814f0ce9e",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__advertisement__mutmut_63": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "f0a9d82f3d65ce8d"
+      "diff": "f0a9d82f3d65ce8d",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__advertisement__mutmut_64": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "21e307bb5c36c287"
+      "diff": "21e307bb5c36c287",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__advertisement__mutmut_65": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "523e23f9bed53f20"
+      "diff": "523e23f9bed53f20",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__advertisement__mutmut_83": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
@@ -118,31 +125,38 @@
     },
     "netdryrun.verify.engine.x__best_path__mutmut_224": {
       "reason": "equivalent: ok is only read as a truth value, and None is falsy like False",
-      "diff": "5ab6e5fe56c682a2"
+      "diff": "5ab6e5fe56c682a2",
+      "class": "equivalent"
     },
     "netdryrun.verify.engine.x__best_path__mutmut_40": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "d36ba0dbedb0abed"
+      "diff": "d36ba0dbedb0abed",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__best_path__mutmut_41": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "eeb9d81d4fe84dfc"
+      "diff": "eeb9d81d4fe84dfc",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__best_path__mutmut_52": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "c549f4d3e5af9b62"
+      "diff": "c549f4d3e5af9b62",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__best_path__mutmut_70": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "0d627b6f3d921f7f"
+      "diff": "0d627b6f3d921f7f",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__best_path__mutmut_71": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "e8fe87c5fa4eccd0"
+      "diff": "e8fe87c5fa4eccd0",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__best_path__mutmut_83": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "759f5ffed67adc82"
+      "diff": "759f5ffed67adc82",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__disappears__mutmut_38": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
@@ -186,131 +200,163 @@
     },
     "netdryrun.verify.engine.x__flat__mutmut_17": {
       "reason": "equivalent: only one-entry tuples of RibEntry reach this line (changed_fields returns 'entries' for other tuples; every other value is a dataclass handled above)",
-      "diff": "021b271fe6688efa"
+      "diff": "021b271fe6688efa",
+      "class": "equivalent"
     },
     "netdryrun.verify.engine.x__flat__mutmut_18": {
       "reason": "equivalent: only one-entry tuples of RibEntry reach this line (changed_fields returns 'entries' for other tuples; every other value is a dataclass handled above)",
-      "diff": "70a37615b14cb926"
+      "diff": "70a37615b14cb926",
+      "class": "equivalent"
     },
     "netdryrun.verify.engine.x__flat__mutmut_23": {
       "reason": "equivalent: no snapshot value falls through to the {'value': ...} form (every kind is a dataclass or a tuple of RibEntry)",
-      "diff": "d377116dbd545275"
+      "diff": "d377116dbd545275",
+      "class": "equivalent"
     },
     "netdryrun.verify.engine.x__flat__mutmut_24": {
       "reason": "equivalent: no snapshot value falls through to the {'value': ...} form (every kind is a dataclass or a tuple of RibEntry)",
-      "diff": "02c830bf8ee18038"
+      "diff": "02c830bf8ee18038",
+      "class": "equivalent"
     },
     "netdryrun.verify.engine.x__pins_ok__mutmut_18": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "32e81f16b84c422d"
+      "diff": "32e81f16b84c422d",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__pins_ok__mutmut_19": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "4f59b6231b8a42e5"
+      "diff": "4f59b6231b8a42e5",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__pins_ok__mutmut_47": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "fa433ae91f54067d"
+      "diff": "fa433ae91f54067d",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__pins_ok__mutmut_48": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "0e50ec0af4281bb2"
+      "diff": "0e50ec0af4281bb2",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__pins_ok__mutmut_49": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "c2020a77ffe22b75"
+      "diff": "c2020a77ffe22b75",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__pins_ok__mutmut_59": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "7ad1008b25ec2361"
+      "diff": "7ad1008b25ec2361",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__pins_ok__mutmut_60": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "96358b0e3c7dd661"
+      "diff": "96358b0e3c7dd661",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__pins_ok__mutmut_64": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "8e5d9e2560913eac"
+      "diff": "8e5d9e2560913eac",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__pins_ok__mutmut_65": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "71396d5365f91793"
+      "diff": "71396d5365f91793",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__pins_ok__mutmut_66": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "0612d624801a7489"
+      "diff": "0612d624801a7489",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__pins_ok__mutmut_67": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "24a2e0a47d2e7231"
+      "diff": "24a2e0a47d2e7231",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__pins_ok__mutmut_68": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "70216b49e8afd98f"
+      "diff": "70216b49e8afd98f",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__pins_ok__mutmut_69": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "2ea0633a6d8dfdf5"
+      "diff": "2ea0633a6d8dfdf5",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__pins_ok__mutmut_70": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "5b6bae61aae09274"
+      "diff": "5b6bae61aae09274",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__pins_ok__mutmut_71": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "3271921033abacf3"
+      "diff": "3271921033abacf3",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__pins_ok__mutmut_72": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "90bb3e9a842c768a"
+      "diff": "90bb3e9a842c768a",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__pins_ok__mutmut_73": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "18b2fbc724211e48"
+      "diff": "18b2fbc724211e48",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__pins_ok__mutmut_78": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "0d909e911d9230a5"
+      "diff": "0d909e911d9230a5",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__pins_ok__mutmut_79": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "1e35f113d5c631a6"
+      "diff": "1e35f113d5c631a6",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__propagated__mutmut_17": {
       "reason": "equivalent: an equal-length pair is the same path, so the after pair returned early (got == want) and an empty before head can only equal an empty after head, impossible here",
-      "diff": "3305f7856e6fd2ca"
+      "diff": "3305f7856e6fd2ca",
+      "class": "equivalent"
     },
     "netdryrun.verify.engine.x__session__mutmut_28": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "8beb30196cd612b1"
+      "diff": "8beb30196cd612b1",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__session__mutmut_30": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "75f9cff14f392eb4"
+      "diff": "75f9cff14f392eb4",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__session__mutmut_31": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "b14a32de34e34079"
+      "diff": "b14a32de34e34079",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__session__mutmut_32": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "6eb7410f86abff52"
+      "diff": "6eb7410f86abff52",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__session__mutmut_55": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "342a4b8fbbed8178"
+      "diff": "342a4b8fbbed8178",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__session__mutmut_56": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "595ec40f3ceccd8b"
+      "diff": "595ec40f3ceccd8b",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__session__mutmut_57": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "95b8bc8859bec3ab"
+      "diff": "95b8bc8859bec3ab",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__session__mutmut_58": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "e1b3edad4c2114ee"
+      "diff": "e1b3edad4c2114ee",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x__session__mutmut_91": {
       "reason": "equivalent: session keys have afi '' (never in afis), so the afi test already skips them",
@@ -338,39 +384,48 @@
     },
     "netdryrun.verify.engine.x_attrs_view__mutmut_30": {
       "reason": "equivalent: atomic_aggregate, aggregator and extra are neither pinnable nor listable in to:, and the renamed key is the same on both sides of every comparison",
-      "diff": "f385ab12bdde7646"
+      "diff": "f385ab12bdde7646",
+      "class": "equivalent"
     },
     "netdryrun.verify.engine.x_attrs_view__mutmut_31": {
       "reason": "equivalent: atomic_aggregate, aggregator and extra are neither pinnable nor listable in to:, and the renamed key is the same on both sides of every comparison",
-      "diff": "a919c579900f7aff"
+      "diff": "a919c579900f7aff",
+      "class": "equivalent"
     },
     "netdryrun.verify.engine.x_baseline_problems__mutmut_1": {
       "reason": "message text only: the wording of an unhealthy-baseline problem; the same sessions are listed, same verdict",
-      "diff": "a7089f58bfbdd6b9"
+      "diff": "a7089f58bfbdd6b9",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x_baseline_problems__mutmut_2": {
       "reason": "message text only: the wording of an unhealthy-baseline problem; the same sessions are listed, same verdict",
-      "diff": "0a069da8326c8ead"
+      "diff": "0a069da8326c8ead",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x_baseline_problems__mutmut_3": {
       "reason": "message text only: the wording of an unhealthy-baseline problem; the same sessions are listed, same verdict",
-      "diff": "288431da64a594df"
+      "diff": "288431da64a594df",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x_baseline_problems__mutmut_4": {
       "reason": "message text only: the wording of an unhealthy-baseline problem; the same sessions are listed, same verdict",
-      "diff": "e0bd8574f965795e"
+      "diff": "e0bd8574f965795e",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x_baseline_problems__mutmut_5": {
       "reason": "message text only: the wording of an unhealthy-baseline problem; the same sessions are listed, same verdict",
-      "diff": "99621e8540444361"
+      "diff": "99621e8540444361",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x_baseline_problems__mutmut_6": {
       "reason": "message text only: the wording of an unhealthy-baseline problem; the same sessions are listed, same verdict",
-      "diff": "377f268d4b9ea96f"
+      "diff": "377f268d4b9ea96f",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.x_changed_fields__mutmut_15": {
       "reason": "equivalent: both values of one item have the same type, so the same field names",
-      "diff": "91c3164f5229e47a"
+      "diff": "91c3164f5229e47a",
+      "class": "equivalent"
     },
     "netdryrun.verify.engine.x_diff__mutmut_6": {
       "reason": "message text only: the VerifyError (exit 2) is raised either way, only its wording changes",
@@ -394,19 +449,23 @@
     },
     "netdryrun.verify.engine.x_path_view__mutmut_10": {
       "reason": "equivalent: valid and flags are neither pinnable nor listable in to:, and the renamed key is the same on both sides of every comparison",
-      "diff": "861fe7a7994627d0"
+      "diff": "861fe7a7994627d0",
+      "class": "equivalent"
     },
     "netdryrun.verify.engine.x_path_view__mutmut_11": {
       "reason": "equivalent: valid and flags are neither pinnable nor listable in to:, and the renamed key is the same on both sides of every comparison",
-      "diff": "db196dd625165eb7"
+      "diff": "db196dd625165eb7",
+      "class": "equivalent"
     },
     "netdryrun.verify.engine.x_path_view__mutmut_12": {
       "reason": "equivalent: valid and flags are neither pinnable nor listable in to:, and the renamed key is the same on both sides of every comparison",
-      "diff": "ee6bafc2da3ccf20"
+      "diff": "ee6bafc2da3ccf20",
+      "class": "equivalent"
     },
     "netdryrun.verify.engine.x_path_view__mutmut_13": {
       "reason": "equivalent: valid and flags are neither pinnable nor listable in to:, and the renamed key is the same on both sides of every comparison",
-      "diff": "c5dd0eafda47181f"
+      "diff": "c5dd0eafda47181f",
+      "class": "equivalent"
     },
     "netdryrun.verify.engine.x_route_state__mutmut_2": {
       "reason": "equivalent: unreachable; route_state's only caller (report.item_json) never passes a session or vrf key",
@@ -430,255 +489,318 @@
     },
     "netdryrun.verify.engine.xǁRouteViewǁbest__mutmut_4": {
       "reason": "message text only: the VerifyError (exit 2) is raised either way, only its wording changes",
-      "diff": "dce8c9b97328f813"
+      "diff": "dce8c9b97328f813",
+      "class": "message-text"
     },
     "netdryrun.verify.engine.xǁRouteViewǁbest__mutmut_6": {
       "reason": "message text only: the VerifyError (exit 2) is raised either way, only its wording changes",
-      "diff": "864874a46b80629e"
+      "diff": "864874a46b80629e",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__allow__mutmut_1": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "358111fa69080186"
+      "diff": "358111fa69080186",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__allow__mutmut_15": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "00fb497a00c08eb9"
+      "diff": "00fb497a00c08eb9",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__allow__mutmut_17": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "7d388d1579b76f6e"
+      "diff": "7d388d1579b76f6e",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__allow__mutmut_30": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "cb27868931def943"
+      "diff": "cb27868931def943",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__allow__mutmut_36": {
       "reason": "equivalent: an entry with ? [ ] { } is refused anyway, by the glob pattern (only [0-9A-Fa-f:.*]) or by ipaddress, the same IntentError",
-      "diff": "d805039a0294e155"
+      "diff": "d805039a0294e155",
+      "class": "equivalent"
     },
     "netdryrun.verify.intent.x__allow__mutmut_37": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "956076d2568a7159"
+      "diff": "956076d2568a7159",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__allow__mutmut_42": {
       "reason": "equivalent: Allow.glob is only read as a truth value (None and False both mean an exact entry)",
-      "diff": "8b643210af05654a"
+      "diff": "8b643210af05654a",
+      "class": "equivalent"
     },
     "netdryrun.verify.intent.x__allow__mutmut_46": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "2946c8bcd73056cf"
+      "diff": "2946c8bcd73056cf",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__allow__mutmut_51": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "21a092be9f062016"
+      "diff": "21a092be9f062016",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__attr__mutmut_104": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "a13cd24292cd57f5"
+      "diff": "a13cd24292cd57f5",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__attr__mutmut_11": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "90dcf3c3ec90a92e"
+      "diff": "90dcf3c3ec90a92e",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__attr__mutmut_111": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "7351f296d9aaa77d"
+      "diff": "7351f296d9aaa77d",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__attr__mutmut_112": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "711e7e3921498fbf"
+      "diff": "711e7e3921498fbf",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__attr__mutmut_113": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "12990f4f3d1664d2"
+      "diff": "12990f4f3d1664d2",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__attr__mutmut_118": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "0371b4ac4d29a04e"
+      "diff": "0371b4ac4d29a04e",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__attr__mutmut_119": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "681ff8ba7b1379b7"
+      "diff": "681ff8ba7b1379b7",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__attr__mutmut_12": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "f65189db18879a3f"
+      "diff": "f65189db18879a3f",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__attr__mutmut_24": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "7b2e45393cf4e847"
+      "diff": "7b2e45393cf4e847",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__attr__mutmut_27": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "375c36c7e7d34f0b"
+      "diff": "375c36c7e7d34f0b",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__attr__mutmut_28": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "557fa34125e69cd4"
+      "diff": "557fa34125e69cd4",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__attr__mutmut_41": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "be348530f2d560aa"
+      "diff": "be348530f2d560aa",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__attr__mutmut_43": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "f9d274e57b32c1d3"
+      "diff": "f9d274e57b32c1d3",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__attr__mutmut_51": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "ba8c60a491f679f0"
+      "diff": "ba8c60a491f679f0",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__attr__mutmut_52": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "7fb120e6ba03458d"
+      "diff": "7fb120e6ba03458d",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__attr__mutmut_65": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "985376ede0de973d"
+      "diff": "985376ede0de973d",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__attr__mutmut_80": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "4cdb01e3a97f8d58"
+      "diff": "4cdb01e3a97f8d58",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__attr__mutmut_82": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "f9ce61b8b34aef38"
+      "diff": "f9ce61b8b34aef38",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__attr__mutmut_83": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "6187b8b59e1d3612"
+      "diff": "6187b8b59e1d3612",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__attr__mutmut_94": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "010102fcfb2fb2f6"
+      "diff": "010102fcfb2fb2f6",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__attr__mutmut_95": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "5b31a6845a157c92"
+      "diff": "5b31a6845a157c92",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__attrs__mutmut_10": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "9a23e7ccb949dd07"
+      "diff": "9a23e7ccb949dd07",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__attrs__mutmut_12": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "1aa32d74ec7f6e81"
+      "diff": "1aa32d74ec7f6e81",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__attrs__mutmut_18": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "e3eec9e48c32d7f7"
+      "diff": "e3eec9e48c32d7f7",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__attrs__mutmut_19": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "1b4aa2e777427c86"
+      "diff": "1b4aa2e777427c86",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__attrs__mutmut_4": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "e0d4123940d87d37"
+      "diff": "e0d4123940d87d37",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__bool__mutmut_2": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "fa589a2ea1a8f500"
+      "diff": "fa589a2ea1a8f500",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__glob__mutmut_1": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "e9f94fbb59769d91"
+      "diff": "e9f94fbb59769d91",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__glob__mutmut_100": {
       "reason": "equivalent: an IPv4 length over 32 is refused by ipaddress.ip_network below, the same IntentError",
-      "diff": "7f1efb91ae6c1444"
+      "diff": "7f1efb91ae6c1444",
+      "class": "equivalent"
     },
     "netdryrun.verify.intent.x__glob__mutmut_102": {
       "reason": "equivalent: /33 is refused by ipaddress.ip_network below, the same IntentError",
-      "diff": "c2a77fbe1473bbd9"
+      "diff": "c2a77fbe1473bbd9",
+      "class": "equivalent"
     },
     "netdryrun.verify.intent.x__glob__mutmut_104": {
       "reason": "equivalent: an IPv4 length over 32 is refused by ipaddress.ip_network below, the same IntentError",
-      "diff": "50986bd732e940ee"
+      "diff": "50986bd732e940ee",
+      "class": "equivalent"
     },
     "netdryrun.verify.intent.x__glob__mutmut_105": {
       "reason": "equivalent: /129 is refused by ipaddress.ip_network below, the same IntentError",
-      "diff": "94c72dc36d3fd7d8"
+      "diff": "94c72dc36d3fd7d8",
+      "class": "equivalent"
     },
     "netdryrun.verify.intent.x__glob__mutmut_106": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "52eacbfc0871124b"
+      "diff": "52eacbfc0871124b",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__glob__mutmut_113": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "881ec58c72e69658"
+      "diff": "881ec58c72e69658",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__glob__mutmut_114": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "71682c347dd6d593"
+      "diff": "71682c347dd6d593",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__glob__mutmut_115": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "0854c2d1c0006cd5"
+      "diff": "0854c2d1c0006cd5",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__glob__mutmut_116": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "f2701dec7597186b"
+      "diff": "f2701dec7597186b",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__glob__mutmut_117": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "98f6fe33f4964f2b"
+      "diff": "98f6fe33f4964f2b",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__glob__mutmut_118": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "b69d2bd8840782b3"
+      "diff": "b69d2bd8840782b3",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__glob__mutmut_119": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "38c48388f2a855fe"
+      "diff": "38c48388f2a855fe",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__glob__mutmut_120": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "468144c5e7a7fe4c"
+      "diff": "468144c5e7a7fe4c",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__glob__mutmut_121": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "f78b789d2069c75b"
+      "diff": "f78b789d2069c75b",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__glob__mutmut_122": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "37e4b6570c73355b"
+      "diff": "37e4b6570c73355b",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__glob__mutmut_125": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "04072cf77c463fb6"
+      "diff": "04072cf77c463fb6",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__glob__mutmut_13": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "9e82228b78884cf5"
+      "diff": "9e82228b78884cf5",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__glob__mutmut_159": {
       "reason": "equivalent: strict=True is ipaddress.ip_network's default",
-      "diff": "a813d7a45852b33f"
+      "diff": "a813d7a45852b33f",
+      "class": "equivalent"
     },
     "netdryrun.verify.intent.x__glob__mutmut_161": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "9023bd1cd90f745c"
+      "diff": "9023bd1cd90f745c",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__glob__mutmut_2": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "3616bb29728e39be"
+      "diff": "3616bb29728e39be",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__glob__mutmut_3": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "5eabdfd6ef0bbadc"
+      "diff": "5eabdfd6ef0bbadc",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__glob__mutmut_43": {
       "reason": "equivalent: an octet 256 passes this check but ipaddress.ip_network refuses it below, the same IntentError",
-      "diff": "7b9620d0b6917a53"
+      "diff": "7b9620d0b6917a53",
+      "class": "equivalent"
     },
     "netdryrun.verify.intent.x__glob__mutmut_51": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "f737bc7555e8df35"
+      "diff": "f737bc7555e8df35",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__glob__mutmut_98": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "2625d13b20dfd723"
+      "diff": "2625d13b20dfd723",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__identity__mutmut_10": {
       "reason": "equivalent: the identity tag is only compared for equality, and advertisement identities (5-tuples) never equal route (4-tuple) or session ones",
@@ -706,27 +828,33 @@
     },
     "netdryrun.verify.intent.x__int_or_null__mutmut_10": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "b85bb81dbe80f374"
+      "diff": "b85bb81dbe80f374",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__ip__mutmut_2": {
       "reason": "message text only: canon_ip's own error text is replaced by the IntentError's; same error, same address",
-      "diff": "712f3be950455c29"
+      "diff": "712f3be950455c29",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__ip__mutmut_4": {
       "reason": "message text only: canon_ip's own error text is replaced by the IntentError's; same error, same address",
-      "diff": "1594f15ed82b39c9"
+      "diff": "1594f15ed82b39c9",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__ip__mutmut_5": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "54d7cbd5b44a7221"
+      "diff": "54d7cbd5b44a7221",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_1": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "147ec0cb37eaf78a"
+      "diff": "147ec0cb37eaf78a",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_10": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "377742ae05c574f1"
+      "diff": "377742ae05c574f1",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_109": {
       "reason": "equivalent: afi is required and non-empty by then, so the condition is always true",
@@ -738,11 +866,13 @@
     },
     "netdryrun.verify.intent.x__line__mutmut_12": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "30c9f087694f2579"
+      "diff": "30c9f087694f2579",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_13": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "cfaa9e7d7acfd78d"
+      "diff": "cfaa9e7d7acfd78d",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_134": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
@@ -754,7 +884,8 @@
     },
     "netdryrun.verify.intent.x__line__mutmut_14": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "4d7d712f778926b3"
+      "diff": "4d7d712f778926b3",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_143": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
@@ -762,7 +893,8 @@
     },
     "netdryrun.verify.intent.x__line__mutmut_15": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "d5da64c253312155"
+      "diff": "d5da64c253312155",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_161": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
@@ -798,7 +930,8 @@
     },
     "netdryrun.verify.intent.x__line__mutmut_2": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "15896dbbe6bc37e1"
+      "diff": "15896dbbe6bc37e1",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_210": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
@@ -830,11 +963,13 @@
     },
     "netdryrun.verify.intent.x__line__mutmut_26": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "b1bebf5119191a15"
+      "diff": "b1bebf5119191a15",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_28": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "dd46ac938a9204f2"
+      "diff": "dd46ac938a9204f2",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_293": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
@@ -850,7 +985,8 @@
     },
     "netdryrun.verify.intent.x__line__mutmut_30": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "d1a5c2f3d5e9635b"
+      "diff": "d1a5c2f3d5e9635b",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_300": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
@@ -910,7 +1046,8 @@
     },
     "netdryrun.verify.intent.x__line__mutmut_4": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "a6b516d29cf1fe3e"
+      "diff": "a6b516d29cf1fe3e",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_402": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
@@ -934,243 +1071,303 @@
     },
     "netdryrun.verify.intent.x__line__mutmut_46": {
       "reason": "message text only: a session with exactly node and neighbor has no afi and is refused either way (IntentError), only the message differs",
-      "diff": "50fb9389fba6227a"
+      "diff": "50fb9389fba6227a",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_5": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "227afbd142b77e94"
+      "diff": "227afbd142b77e94",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_51": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "b46e08ea2c9d9a0d"
+      "diff": "b46e08ea2c9d9a0d",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_58": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "250918452bba465d"
+      "diff": "250918452bba465d",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_64": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "860c766b44ad8405"
+      "diff": "860c766b44ad8405",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_72": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "c8abef2a95ba06dc"
+      "diff": "c8abef2a95ba06dc",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_73": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "d819e03f3d976429"
+      "diff": "d819e03f3d976429",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_74": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "081c35164d60e7c4"
+      "diff": "081c35164d60e7c4",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_75": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "c75c6df4a0523b4b"
+      "diff": "c75c6df4a0523b4b",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_77": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "96146dceadd6795b"
+      "diff": "96146dceadd6795b",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_79": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "68efe5ed1d7d9169"
+      "diff": "68efe5ed1d7d9169",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_81": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "cf8ba3280fc6206b"
+      "diff": "cf8ba3280fc6206b",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_82": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "1eddc31a46998fd7"
+      "diff": "1eddc31a46998fd7",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_87": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "e8f465233fb33d11"
+      "diff": "e8f465233fb33d11",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_88": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "865adc6e92eedbc9"
+      "diff": "865adc6e92eedbc9",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_92": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "8bbda303794c3665"
+      "diff": "8bbda303794c3665",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__nodes__mutmut_11": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "cfdab75be96bacd1"
+      "diff": "cfdab75be96bacd1",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__nodes__mutmut_13": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "aa07a2ad07e7dfbe"
+      "diff": "aa07a2ad07e7dfbe",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__prefix__mutmut_12": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "97f1e0cc2a6d0b92"
+      "diff": "97f1e0cc2a6d0b92",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__prefix__mutmut_2": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "c216536c843d6625"
+      "diff": "c216536c843d6625",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__prefix__mutmut_7": {
       "reason": "equivalent: strict=True is ipaddress.ip_network's default",
-      "diff": "9eb09a10776c93e1"
+      "diff": "9eb09a10776c93e1",
+      "class": "equivalent"
     },
     "netdryrun.verify.intent.x__prefix__mutmut_9": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "6190beb1358c46c0"
+      "diff": "6190beb1358c46c0",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__vrf__mutmut_13": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "8e01bbb2382fd42c"
+      "diff": "8e01bbb2382fd42c",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_check_nodes__mutmut_10": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "63b2bb5a6db620d5"
+      "diff": "63b2bb5a6db620d5",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_check_nodes__mutmut_11": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "8f641df6aeb31c1a"
+      "diff": "8f641df6aeb31c1a",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_check_nodes__mutmut_2": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "53578887fb16a54d"
+      "diff": "53578887fb16a54d",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_check_nodes__mutmut_3": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "ac56970a40899ddf"
+      "diff": "ac56970a40899ddf",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_check_nodes__mutmut_5": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "b41ea6f999fcec2e"
+      "diff": "b41ea6f999fcec2e",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_check_nodes__mutmut_8": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "de3297fb5b1574da"
+      "diff": "de3297fb5b1574da",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_check_nodes__mutmut_9": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "095961d807722a3b"
+      "diff": "095961d807722a3b",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_load_intent__mutmut_4": {
       "reason": "not verdict: the locale encoding (UTF-8 in the supported Linux/WSL setups) only changes how a non-ASCII file decodes; a bad decode is an IntentError or an unknown node (exit 2)",
-      "diff": "70ee065c17d90d0a"
+      "diff": "70ee065c17d90d0a",
+      "class": "safety"
     },
     "netdryrun.verify.intent.x_load_intent__mutmut_6": {
       "reason": "equivalent: 'UTF-8' and 'utf-8' name the same codec",
-      "diff": "6b3ac8d0d163a295"
+      "diff": "6b3ac8d0d163a295",
+      "class": "equivalent"
     },
     "netdryrun.verify.intent.x_load_intent__mutmut_7": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "22584b38e05cf06b"
+      "diff": "22584b38e05cf06b",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_parse_intent__mutmut_14": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "66d49055eabd03df"
+      "diff": "66d49055eabd03df",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_parse_intent__mutmut_16": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "c5bd9111c6a6b566"
+      "diff": "c5bd9111c6a6b566",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_parse_intent__mutmut_18": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "4be5992d47a81462"
+      "diff": "4be5992d47a81462",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_parse_intent__mutmut_22": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "7127cb7057984905"
+      "diff": "7127cb7057984905",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_parse_intent__mutmut_29": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "8d2c70f1acdd1fab"
+      "diff": "8d2c70f1acdd1fab",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_parse_intent__mutmut_4": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "7986e9d4e64fb92c"
+      "diff": "7986e9d4e64fb92c",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_parse_intent__mutmut_44": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "464569587ef69777"
+      "diff": "464569587ef69777",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_parse_intent__mutmut_46": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "109335432c30599c"
+      "diff": "109335432c30599c",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_parse_intent__mutmut_55": {
       "reason": "equivalent: session lines always carry afi (required), so the exact-identity branch clashes on the same lines as the session branch",
-      "diff": "0c8e8be02136e2ec"
+      "diff": "0c8e8be02136e2ec",
+      "class": "equivalent"
     },
     "netdryrun.verify.intent.x_parse_intent__mutmut_56": {
       "reason": "equivalent: session lines always carry afi (required), so the exact-identity branch clashes on the same lines as the session branch",
-      "diff": "5df08f8df2d96298"
+      "diff": "5df08f8df2d96298",
+      "class": "equivalent"
     },
     "netdryrun.verify.intent.x_parse_intent__mutmut_63": {
       "reason": "equivalent: afi is never None (required), so both forms reduce to k[4] == ident[4]",
-      "diff": "390b8a6eb0108bb5"
+      "diff": "390b8a6eb0108bb5",
+      "class": "equivalent"
     },
     "netdryrun.verify.intent.x_parse_intent__mutmut_75": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "5b69a26151a9fd4d"
+      "diff": "5b69a26151a9fd4d",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_parse_intent__mutmut_76": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "adc2ddaaa3a68726"
+      "diff": "adc2ddaaa3a68726",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_parse_intent__mutmut_77": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "8f6b1f8b3a145e4c"
+      "diff": "8f6b1f8b3a145e4c",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_parse_intent__mutmut_80": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "4bf35e90cea1a44d"
+      "diff": "4bf35e90cea1a44d",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_parse_intent__mutmut_81": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "8f9931b814681e5c"
+      "diff": "8f9931b814681e5c",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_parse_intent__mutmut_82": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "2f6307a8baa90b14"
+      "diff": "2f6307a8baa90b14",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_parse_intent__mutmut_83": {
       "reason": "message text only: the stored line index is read only for the error text; clashes are found by the keys",
-      "diff": "85e920e341b11d47"
+      "diff": "85e920e341b11d47",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_parse_intent__mutmut_86": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "da9d5a9a6dc6d6ea"
+      "diff": "da9d5a9a6dc6d6ea",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_parse_intent_text__mutmut_5": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "666edada78987cda"
+      "diff": "666edada78987cda",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_parse_intent_text__mutmut_7": {
       "reason": "message text only: the argument is used only to build error messages (where/key/source); the error (exit 2) and every accepted value are unchanged",
-      "diff": "8696edd3a6326b09"
+      "diff": "8696edd3a6326b09",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_parse_intent_text__mutmut_8": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "f98a076a7806e51c"
+      "diff": "f98a076a7806e51c",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x_parse_intent_text__mutmut_9": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
-      "diff": "d942acee167058c7"
+      "diff": "d942acee167058c7",
+      "class": "message-text"
     },
     "netdryrun.verify.intent.xǁAllowǁmatches__mutmut_22": {
       "reason": "equivalent: zip's strict only matters for unequal lengths; the version check above makes both 4 (IPv4) or 8 (IPv6) groups",
-      "diff": "b74e8de238efe096"
+      "diff": "b74e8de238efe096",
+      "class": "equivalent"
     },
     "netdryrun.verify.intent.xǁAllowǁmatches__mutmut_25": {
       "reason": "equivalent: zip's strict only matters for unequal lengths; the version check above makes both 4 (IPv4) or 8 (IPv6) groups",
-      "diff": "241841c61e5e4227"
+      "diff": "241841c61e5e4227",
+      "class": "equivalent"
     },
     "netdryrun.verify.intent.xǁAllowǁmatches__mutmut_27": {
       "reason": "equivalent: zip's strict only matters for unequal lengths; the version check above makes both 4 (IPv4) or 8 (IPv6) groups",
-      "diff": "801dccf1c9c53da0"
+      "diff": "801dccf1c9c53da0",
+      "class": "equivalent"
     },
     "netdryrun.verify.intent.xǁAllowǁmatches__mutmut_9": {
       "reason": "equivalent: strict=True is ipaddress.ip_network's default",
-      "diff": "36611692ea70ad0a"
+      "diff": "36611692ea70ad0a",
+      "class": "equivalent"
     },
     "netdryrun.checks.x__bgp_route__mutmut_129": {
       "reason": "message text only: the text of a failure detail, the verdict is unchanged",
