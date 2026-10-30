@@ -105,6 +105,11 @@ only_mutate = [
   "src/netdryrun/drivers/*",
   "src/netdryrun/verify/engine.py",
   "src/netdryrun/verify/intent.py",
+  "src/netdryrun/verify/frr.py",
+  "src/netdryrun/verify/snapshot.py",
+  "src/netdryrun/verify/converge.py",
+  "src/netdryrun/verify/run.py",
+  "src/netdryrun/verify/report.py",
 ]
 pytest_add_cli_args_test_selection = ["tests/"]
 also_copy = [

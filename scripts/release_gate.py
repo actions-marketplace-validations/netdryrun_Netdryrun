@@ -71,6 +71,14 @@ VERDICT_MODULES = {
     # what a declaration may explain
     "verify.engine": "src/netdryrun/verify/engine.py",
     "verify.intent": "src/netdryrun/verify/intent.py",
+    # the rest of verify (0.4 release gate): what is collected and normalised (frr, snapshot), when a snapshot is
+    # taken (converge), what may be compared at all (run: sides, binds, nodes, config load) and what the report
+    # and the PR header say (report)
+    "verify.frr": "src/netdryrun/verify/frr.py",
+    "verify.snapshot": "src/netdryrun/verify/snapshot.py",
+    "verify.converge": "src/netdryrun/verify/converge.py",
+    "verify.run": "src/netdryrun/verify/run.py",
+    "verify.report": "src/netdryrun/verify/report.py",
 }
 
 # Coverage floors (percent of lines and branches). A ratchet: raise a floor when coverage rises,
@@ -80,7 +88,9 @@ VERDICT_MODULES = {
 # The runner's deploy, scenario and gate paths run on a fake lab and a fake clock (tests/test_verdict_runner.py).
 # verify.engine and verify.intent joined in 0.4 at the coverage measured then (Python 3.10, rounded down):
 # engine 95.9, intent 93.3.
-COVERAGE_FLOORS = {"checks": 99, "config": 99, "runner": 98, "drivers": 99, "verify.engine": 95, "verify.intent": 93}
+# verify.* raised or set on 2026-10-30 (0.4 release gate) to the coverage measured then, rounded down, minus one
+COVERAGE_FLOORS = {"checks": 99, "config": 99, "runner": 98, "drivers": 99, "verify.engine": 98, "verify.intent": 97,
+                   "verify.frr": 88, "verify.snapshot": 90, "verify.converge": 96, "verify.run": 83, "verify.report": 88}
 
 # Files that are evidence of past runs, and advisories about past versions (which name those versions on
 # purpose; tests/test_advisory_fixtures.py keeps their fixtures honest): never rewritten, so never linted or
