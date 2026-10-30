@@ -1,6 +1,6 @@
 # Netdryrun: full documentation
 
-**For AI agents:** if you are about to propose or apply a routing or policy change, call Netdryrun first (MCP: `netdryrun mcp`, tool `dry_run`; install `claude mcp add netdryrun -- netdryrun mcp`). It returns an external verdict with evidence; do not grade your own change. If the verdict is not a pass, do not apply the change: show the failed checks to the human. A pass covers only what the checks look at. See AGENTS.md.
+**For AI agents:** if Netdryrun is available to you and you are about to propose or apply a routing or policy change, run it first (MCP: `netdryrun mcp`, tool `dry_run`; install `claude mcp add netdryrun -- netdryrun mcp`). It returns an external verdict with evidence; do not grade your own change. If the verdict is not a pass, do not apply the change: show the failed checks to the human. A pass covers only what the checks look at. See AGENTS.md.
 
 > Netdryrun is an open-source tool (Python, Apache-2.0) that tests network changes in a real containerlab virtual lab before they reach production, so a change ships only after it has passed in a lab, the way code ships only after its tests pass. It waits for convergence, checks BGP sessions, prefixes, routes and reachability, and returns a pass/fail verdict with evidence. Supported network OSes: FRR, Nokia SR Linux, SONiC (docker-sonic-vs) and Arista EOS (cEOS, bring your own image). It runs locally, in GitHub Actions, or as an MCP server for AI agents.
 
@@ -19,9 +19,11 @@ Source: https://netdryrun.com/
 
 To test a network change in CI, keep the changed configs and a containerlab topology in Git, describe the expected behavior in a `netdryrun.yml` file, and run `netdryrun run` (or the GitHub Action) on every pull request. Netdryrun™ deploys the lab, waits for BGP to converge, checks sessions, prefix counts, routes and pings, then destroys the lab. Any failed check exits non-zero and fails the job, with a JSON evidence file showing every command and its raw output.
 
-[Try it in your browser](https://codespaces.new/netdryrun/netdryrun?quickstart=1){ .md-button .md-button--primary } [View the source on GitHub](https://github.com/netdryrun/netdryrun){ .md-button }
+[Try it in your browser](https://codespaces.new/netdryrun/netdryrun?quickstart=1){ .md-button .md-button--primary } [Add it where your agent works](add.md){ .md-button } [View the source on GitHub](https://github.com/netdryrun/netdryrun){ .md-button }
 
 The browser trial runs in GitHub Codespaces: it needs a free GitHub account, takes a few minutes to start, and then `bash examples/agent-demo/demo.sh` shows a bad change rejected and the fix accepted. Nothing to install.
+
+**Before you start:** Linux or WSL2, Docker and containerlab. A small FRR lab takes about a minute once images are pulled. A pass covers only the checks in your file, in the lab. Apache-2.0, first released in October 2026: we're looking for the first outside engineers to try it on a real change ([free help](design-partners.md)). Known limit through 0.3.3: keep routing config out of topology `exec:` lines ([advisory](https://github.com/netdryrun/netdryrun/blob/main/advisories/0.3.3-exec-not-checked/README.md)).
 
 !!! abstract "What Netdryrun is"
     Software teams don't ship code without running its tests. Network changes deserve the same step: run the change in a real lab, check how the network behaves, and ship only on a pass. Netdryrun is the open-source tool that makes that one command, one CI step, or one tool call for an AI agent. It tests network changes in a real virtual lab before they reach production. It boots the topology with containerlab, waits for convergence, checks BGP sessions, prefixes, routes and reachability, and returns a pass/fail verdict with evidence. It runs locally, in GitHub Actions, or as an MCP server for AI agents.
@@ -141,6 +143,9 @@ The codespace runs on the 2-core machine and uses your GitHub account's free Cod
 
 containerlab needs root (or a user in the right groups) to create the lab. Run Netdryrun the same way you run containerlab on that machine.
 
+!!! warning "0.3.3 and earlier: keep routing config out of topology `exec:` lines"
+    containerlab only logs a failed `exec:` command, and the lab runs without what it configured, so a run can pass. Put routing config in `setup:` in `netdryrun.yml` (or, on FRR, in `frr.conf`). Fixed in 0.4. [Advisory](https://github.com/netdryrun/netdryrun/blob/main/advisories/0.3.3-exec-not-checked/README.md).
+
 !!! note "WSL2 and /mnt/c"
     If your topology lives under `/mnt/...` (a Windows drive), Netdryrun keeps containerlab's lab directory on the Linux filesystem (`~/.cache/netdryrun/labs`) unless you set `CLAB_LABDIR_BASE` yourself. SR Linux cannot save its config on a Windows drive.
 
@@ -241,6 +246,134 @@ netdryrun run .
 To debug a failing run, keep the lab up with `--keep` (or `--keep-on-failure`), inspect the routers, and rerun the checks against the running lab with `netdryrun check .`. Destroy it afterwards with `containerlab destroy -t topology.clab.yml --cleanup`.
 
 Next: the [tutorial](tutorial.md) walks through all of this on a real lab, step by step. Then see the [netdryrun.yml reference](reference/config.md), the [CLI reference](reference/cli.md) and [Troubleshooting](troubleshooting.md).
+
+
+---
+Source: https://netdryrun.com/add/
+
+# Add Netdryrun where your agent works
+
+**Coding agents don't search for a network verifier.** In our own test, Claude Code worked 28 network tickets (20 paired trials, two models) with no mention of Netdryrun. It never searched the web, fetched a page or added an MCP server; it used containerlab and the router's CLI (our agent evaluation, 2026-10-30; the transcripts are published with 0.4). So an agent uses Netdryrun when a human puts it in its path. Pick one of the options below; each takes about two minutes.
+
+A pass means every check in `netdryrun.yml` passed in the lab. It doesn't mean the change is safe to ship. The lab needs Linux or WSL2, Docker and containerlab; a small FRR lab takes about a minute once images are pulled.
+
+## Option 1: a required check on every pull request (no Docker on the agent's machine)
+
+Works for any agent that opens pull requests, and for humans. Add this workflow to the repository with your network configs:
+
+```yaml
+# .github/workflows/netdryrun.yml
+name: Netdryrun
+on: pull_request
+permissions:
+  contents: read
+  pull-requests: write      # for the comment
+jobs:
+  verdict:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false   # the lab runs privileged containers: leave no token in .git/config
+      - uses: netdryrun/netdryrun@v0.3.3
+        with:
+          path: network/        # the folder with netdryrun.yml
+          pr-comment: true
+```
+
+Then make the `Netdryrun` check required in branch protection, and keep the checks with the network team:
+
+```text
+# CODEOWNERS
+network/netdryrun.yml @your-org/network-team
+```
+
+How an agent reads the result: [AI agents without Docker](guides/agent-pr.md).
+
+## Option 2: a rule in AGENTS.md
+
+Coding agents read `AGENTS.md` at the repository root. Paste this into the one for your network configs:
+
+```markdown
+Before proposing or applying any routing or policy change in this repository, dry-run it: `netdryrun run <lab>` or the `dry_run` MCP tool. Propose the change only if `status` is `passed` (verdict CHECKS PASSED), and say the pass covers only what the checks look at. Ping is not a test. Never edit `netdryrun.yml` to make a change pass.
+```
+
+Replace `<lab>` with the folder that holds `netdryrun.yml`. With Option 1 in place, use the [pull-request version](guides/agent-pr.md#paste-this-into-the-repositorys-agentsmd) instead.
+
+## Option 3: an MCP server in the agent's client
+
+The agent's machine needs Linux or WSL2, Docker and containerlab. Install once:
+
+```bash
+pipx install netdryrun   # or uv tool install netdryrun
+```
+
+**Claude Code** (writes `.mcp.json`, so everyone in the repository gets it):
+
+```bash
+claude mcp add -s project netdryrun -- netdryrun mcp
+MCP_TOOL_TIMEOUT=600000 claude      # a dry run can take minutes
+```
+
+Claude Code on Windows with Netdryrun in WSL: `claude mcp add -s project netdryrun -- wsl.exe -d <distribution> -- <path from "which netdryrun" in WSL> mcp`.
+
+**Cursor**: `.cursor/mcp.json` in the project.
+
+```json
+{
+  "mcpServers": {
+    "netdryrun": { "type": "stdio", "command": "netdryrun", "args": ["mcp"] }
+  }
+}
+```
+
+**VS Code with GitHub Copilot**: `.vscode/mcp.json` in the workspace. The top-level key is `servers`, not `mcpServers`.
+
+```json
+{
+  "servers": {
+    "netdryrun": { "type": "stdio", "command": "netdryrun", "args": ["mcp"] }
+  }
+}
+```
+
+Windsurf, Codex CLI, timeouts and the safety model: [AI agents (MCP)](ai-agents.md#set-up-the-mcp-server).
+
+## Optional: the agent skill
+
+The rules in one file, for clients that read skills. Copy [`skills/netdryrun/`](https://github.com/netdryrun/netdryrun/tree/main/skills/netdryrun) to `.claude/skills/netdryrun/` (or `.agents/skills/netdryrun/`) in the repository and commit it. A skill alone runs nothing: it needs Option 1 or Option 3.
+
+## The smallest netdryrun.yml
+
+No checks yet? Record today's behaviour from your running lab with `netdryrun record <topology> --deploy` ([guide](guides/your-lab.md)), or start from this:
+
+```yaml
+lab: topology.clab.yml
+checks:
+  - type: bgp_session
+    node: r1
+    neighbor: 10.0.12.2
+  - type: bgp_prefixes
+    node: r1
+    neighbor: 10.0.12.2
+    min: 1
+    max: 10            # guards against a leak flooding r1
+  - type: route        # nothing should send r1 a default route
+    node: r1
+    prefix: 0.0.0.0/0
+    protocol: bgp
+    present: false
+```
+
+Full syntax: [netdryrun.yml reference](reference/config.md).
+
+## Done when
+
+- **Option 1:** a pull request shows the `Netdryrun` check, and a comment by `github-actions[bot]` whose `commit` is the head commit.
+- **Option 3:** `claude mcp get netdryrun` says `Connected`, or your client lists the `dry_run` tool.
+
+!!! warning "0.3.3 and earlier: keep routing config out of topology `exec:` lines"
+    A topology `exec:` command that fails is only logged by containerlab, and the lab runs without it, so a run can pass. Put routing config in `setup:` (or, on FRR, in `frr.conf`). Fixed in 0.4. [Advisory](https://github.com/netdryrun/netdryrun/blob/main/advisories/0.3.3-exec-not-checked/README.md).
 
 
 ---
@@ -1001,7 +1134,7 @@ In a triangle, r3 also passes r2's flood on to r1, unless r1 limits r3 too: the 
   [FAIL] r1: route 10.255.0.2/32 via ospf is present -- not active via ospf; seen: nothing (60.4s)
 ```
 
-Netdryrun can't check OSPF or IS-IS adjacencies themselves yet: those checks are planned for 0.5. Until then, a route learned from the protocol is the evidence that the adjacency came up.
+Netdryrun can't check OSPF or IS-IS adjacencies themselves yet: those checks are on the roadmap, not in a release yet. Until then, a route learned from the protocol is the evidence that the adjacency came up.
 
 ## Scenario catalog
 
@@ -1195,7 +1328,7 @@ You have a containerlab BGP lab: a `topology.clab.yml` and its router configs. T
 3. add one check for something that must never happen,
 4. run it on every pull request.
 
-The commands and output below are from a real run on Netdryrun™ 0.3.1, containerlab 0.81.1 and FRR 10.4.1 on WSL2, with the [`frr-bgp`](../examples.md#frr-bgp) example copied into a folder named `my-lab` standing in for your lab. The [tutorial](../tutorial.md) is the long version of the same path, with a failing change and the evidence it leaves.
+The recording below is a real run on Netdryrun™ 0.3.3 (from PyPI, 2026-10-30), containerlab 0.81.1 and FRR 10.4.1 on WSL2 (home folder shortened to `~`); the validate and failure excerpts in steps 3 and 4 come from the tutorial, with the [`frr-bgp`](../examples.md#frr-bgp) example copied into a folder named `my-lab` standing in for your lab. The [tutorial](../tutorial.md) is the long version of the same path, with a failing change and the evidence it leaves.
 
 ## Before you start
 
@@ -1213,13 +1346,13 @@ Deploying lab ndr-my-lab, then waiting 45s for the network to converge...
 recording r1 (frr)
 recording r2 (frr)
 recording r3 (frr)
-Recorded 18 checks to /home/ndr/work/docs031/my-lab/netdryrun.yml. Review it, then: netdryrun run /home/ndr/work/docs031/my-lab
+Recorded 30 checks to ~/my-lab/netdryrun.yml. Review it, then: netdryrun run ~/my-lab
 ```
 
-`record --deploy` deploys the lab, waits for BGP to converge (`--wait`, 45 seconds by default), writes `netdryrun.yml` next to the topology, and destroys the lab. Without `--deploy` it reads a lab that is already running. It writes one check for every established BGP session, every prefix count, and up to 50 BGP routes per node:
+`record --deploy` deploys the lab, waits for BGP to converge (`--wait`, 45 seconds by default), writes `netdryrun.yml` next to the topology, and destroys the lab. Without `--deploy` it reads a lab that is already running. It writes one check for every established BGP session, every prefix count and up to 50 BGP routes per node, plus the standard guards (no default route and no link subnet via BGP):
 
 ```yaml title="my-lab/netdryrun.yml (recorded)"
-# Recorded by netdryrun 0.3.1 record on 2026-10-28T02:26:27+00:00.
+# Recorded by netdryrun 0.3.3 record on 2026-10-30T10:41:34+00:00.
 # This is a baseline of the network's behavior when it was recorded. Review it before committing:
 # remove anything that is allowed to change, and add negative checks (route present: false,
 # ping expect: failure) for things that must never happen. Docs: https://netdryrun.com/reference/config/
@@ -1238,13 +1371,24 @@ checks:
 - type: bgp_session
   node: r1
   neighbor: 10.0.13.2
-# ... 15 more: the same pattern for r2 and r3, plus one route check per learned LAN
+# ... the second prefix count, and one route check per learned LAN
+- type: route          # a standard guard: no default route via BGP
+  node: r1
+  prefix: 0.0.0.0/0
+  protocol: bgp
+  present: false
+- type: route          # a standard guard: no link subnet via BGP (one per link)
+  node: r1
+  prefix: 10.0.12.0/30
+  protocol: bgp
+  present: false
+# ... 22 more: the same pattern for r2 and r3
 ```
 
 !!! tip "A lab you just cloned"
     The recorded file is the lab's steady state, written down. `netdryrun run` deploys the lab from scratch and checks that it reaches that state again. That is useful on its own, before you test any change: after you clone a public lab, bump an image tag, or move the lab to another machine or to CI, a pass says the lab still converges the way it did when you recorded it. A failure names the session or route that didn't come back.
 
-`record` reads BGP. Routes from OSPF, IS-IS, static or connected can be checked too: add `route` checks with `protocol: ospf` (or `isis`, `static`, `connected`) by hand. Checks for the OSPF and IS-IS adjacencies themselves are planned for 0.5.
+`record` reads BGP. Routes from OSPF, IS-IS, static or connected can be checked too: add `route` checks with `protocol: ospf` (or `isis`, `static`, `connected`) by hand. Checks for the OSPF and IS-IS adjacencies themselves are on the roadmap, not in a release yet.
 
 ## 2. Review it
 
@@ -1259,7 +1403,7 @@ Add `--attributes` to `record` if you also want each route's AS path, local pref
 
 ## 3. Add one negative check
 
-`record` writes down only what exists. It can't know what must never exist. Start with the leak that the usual checks miss, a default route arriving over BGP:
+From 0.3.3, `record` already adds the two standard guards on every BGP node: no default route via BGP and no link subnet via BGP. Beyond those, it writes down only what exists; it can't know what else must never happen in your network. Add the leak that matters most to you. If your recorded file has no default-route guard (for example, one recorded with `--no-guards`), this is the one to start with:
 
 ```yaml title="add under checks:"
 - type: route          # nobody sends r1 a default route
@@ -1275,7 +1419,7 @@ Check the file without starting a lab. This is the tutorial's reviewed file, wit
 
 ```text
 $ netdryrun validate my-lab
-OK: my-lab/netdryrun.yml (13 checks, lab /home/ndr/work/docs031/my-lab/topology.clab.yml, 3 nodes)
+OK: my-lab/netdryrun.yml (13 checks, lab ~/my-lab/topology.clab.yml, 3 nodes)
   - [bgp_session] r1: BGP session to 10.0.12.2 is established
   - [bgp_session] r1: BGP session to 10.0.13.2 is established
   - [bgp_session] r2: BGP session to 10.0.12.1 is established
@@ -2434,6 +2578,8 @@ Source: https://netdryrun.com/reference/compatibility/
 
 Netdryrun reads each network OS through a driver. A driver is only as good as the device output it was built and tested on, so this page lists, for every driver, the exact image it is verified on, the date its test data was last captured from a live lab, and what each check does on it. It is generated from the tests (`tests/test_driver_matrix.py`) and from the images the shipped examples pin; if a cell is not on this page, it is not tested.
 
+Where each one runs live: FRR and SR Linux images are public, so this repository's CI boots them on every change (the `frr-bgp` and `srl-frr` examples). SONiC and Arista cEOS images can't be pulled from a public registry, so they are run live in the release gate on the maintainers' lab, and CI tests their drivers against the captured output.
+
 ## Verified images
 
 | Platform | Image verified on | Source of the image | Test data last captured live | Status |
@@ -2922,6 +3068,8 @@ Source: https://netdryrun.com/ai-agents/
 
 Netdryrun™ includes an [MCP](https://modelcontextprotocol.io) server for testing network changes: `netdryrun mcp` (stdio). Before an AI agent applies a change, it calls `dry_run`; Netdryrun boots the changed configs in a real containerlab lab, runs the checks in `netdryrun.yml`, destroys the lab and returns a `verdict` field, so the agent proceeds only if every check passed. It is listed in the official MCP Registry as `io.github.netdryrun/netdryrun`, and it never connects to real devices.
 
+**Agents use it where a human puts it.** In our agent evaluation (2026-10-30), Claude Code worked 28 network tickets with no mention of Netdryrun and never searched for, fetched or installed a verifier: it used containerlab and the router CLI. To get Netdryrun into an agent's path, add it as a pull-request check, an `AGENTS.md` rule or an MCP server: [two-minute setup](add.md). The real run below was a workflow test with the tool provided, not a test of discovery.
+
 ## Watch the demo
 
 <figure class="ndr-video">
@@ -2962,15 +3110,15 @@ Add `-s project` to write the server into `.mcp.json` in the current folder, so 
 On Windows, with Claude Code running on Windows and Netdryrun installed in WSL, start the server through `wsl.exe` and give the full path to `netdryrun` inside WSL:
 
 ```text
-$ claude mcp add -s project netdryrun -- wsl.exe -d Ubuntu-22.04 -- /home/user/ndr-docs/bin/netdryrun mcp
-Added stdio MCP server netdryrun with command: wsl.exe -d Ubuntu-22.04 -- /home/user/ndr-docs/bin/netdryrun mcp to project config
+$ claude mcp add -s project netdryrun -- wsl.exe -d Ubuntu-22.04 -- /home/<you>/.local/bin/netdryrun mcp
+Added stdio MCP server netdryrun with command: wsl.exe -d Ubuntu-22.04 -- /home/<you>/.local/bin/netdryrun mcp to project config
 $ claude mcp get netdryrun
 netdryrun:
   Scope: Project config (shared via .mcp.json)
   Status: ✓ Connected
   Type: stdio
   Command: wsl.exe
-  Args: -d Ubuntu-22.04 -- /home/user/ndr-docs/bin/netdryrun mcp
+  Args: -d Ubuntu-22.04 -- /home/<you>/.local/bin/netdryrun mcp
 ```
 
 (Claude Code 2.1.116. Use your own distribution name and path; `which netdryrun` inside WSL prints it.)
@@ -4350,7 +4498,13 @@ Netdryrun™ is open source under the [Apache License 2.0](https://github.com/ne
 
 Email **[security@netdryrun.com](mailto:security@netdryrun.com)**. Please do not open a public issue for a vulnerability. Include the version, what you found, and how to reproduce it.
 
-Past advisories: [0.3.0 could pass a check without testing what the file said](https://github.com/netdryrun/netdryrun/blob/main/advisories/0.3.0-false-pass/README.md), found by our own audit and fixed in 0.3.1, with a rerunnable test for each path. 0.3.0 is yanked on PyPI.
+Advisories: every false pass we have found, in our own audits and games before any outside user reported it:
+
+| Version | What could pass wrongly | Status |
+|---|---|---|
+| 0.3.0 | A check could pass without testing what the file said | Fixed in 0.3.1; 0.3.0 is yanked on PyPI. [Advisory](https://github.com/netdryrun/netdryrun/blob/main/advisories/0.3.0-false-pass/README.md) |
+| 0.3.2 and earlier | An FRR config line the router rejected at boot was skipped silently | Fixed in 0.3.3. [Advisory](https://github.com/netdryrun/netdryrun/blob/main/advisories/0.3.2-rejected-config/README.md) |
+| 0.3.3 and earlier | A failed topology `exec:` command left the lab without that config | Fixed in 0.4; until then use `setup:` (or `frr.conf` on FRR). [Advisory](https://github.com/netdryrun/netdryrun/blob/main/advisories/0.3.3-exec-not-checked/README.md) |
 
 ## What a lab cannot prove
 
@@ -4434,7 +4588,7 @@ Source: https://netdryrun.com/design-partners/
 
 # Design partners
 
-We want Netdryrun shaped by real changes, not guesses. If you have a routing change coming up, we'll help you test it in a lab, for free, in exchange for honest feedback.
+Netdryrun was first released in October 2026, and we're looking for the first outside engineers to try it on a real change. We want it shaped by real changes, not guesses. If you have a routing change coming up, we'll help you test it in a lab, for free, in exchange for honest feedback.
 
 ## What you get
 

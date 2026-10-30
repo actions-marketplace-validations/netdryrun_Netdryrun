@@ -90,6 +90,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting started: getting-started.md
+  - Add it where your agent works: add.md
   - "Tutorial: test a change on your own lab": tutorial.md
   - Examples: examples.md
   - Guard recipes and scenarios: recipes.md

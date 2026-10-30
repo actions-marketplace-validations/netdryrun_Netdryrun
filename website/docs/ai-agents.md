@@ -7,6 +7,8 @@ description: Connect an AI agent to Netdryrun. MCP setup for Claude Code and oth
 
 Netdryrun™ includes an [MCP](https://modelcontextprotocol.io) server for testing network changes: `netdryrun mcp` (stdio). Before an AI agent applies a change, it calls `dry_run`; Netdryrun boots the changed configs in a real containerlab lab, runs the checks in `netdryrun.yml`, destroys the lab and returns a `verdict` field, so the agent proceeds only if every check passed. It is listed in the official MCP Registry as `io.github.netdryrun/netdryrun`, and it never connects to real devices.
 
+**Agents use it where a human puts it.** In our agent evaluation (2026-10-30), Claude Code worked 28 network tickets with no mention of Netdryrun and never searched for, fetched or installed a verifier: it used containerlab and the router CLI. To get Netdryrun into an agent's path, add it as a pull-request check, an `AGENTS.md` rule or an MCP server: [two-minute setup](add.md). The real run below was a workflow test with the tool provided, not a test of discovery.
+
 ## Watch the demo
 
 <figure class="ndr-video">
@@ -47,15 +49,15 @@ Add `-s project` to write the server into `.mcp.json` in the current folder, so 
 On Windows, with Claude Code running on Windows and Netdryrun installed in WSL, start the server through `wsl.exe` and give the full path to `netdryrun` inside WSL:
 
 ```text
-$ claude mcp add -s project netdryrun -- wsl.exe -d Ubuntu-22.04 -- /home/user/ndr-docs/bin/netdryrun mcp
-Added stdio MCP server netdryrun with command: wsl.exe -d Ubuntu-22.04 -- /home/user/ndr-docs/bin/netdryrun mcp to project config
+$ claude mcp add -s project netdryrun -- wsl.exe -d Ubuntu-22.04 -- /home/<you>/.local/bin/netdryrun mcp
+Added stdio MCP server netdryrun with command: wsl.exe -d Ubuntu-22.04 -- /home/<you>/.local/bin/netdryrun mcp to project config
 $ claude mcp get netdryrun
 netdryrun:
   Scope: Project config (shared via .mcp.json)
   Status: ✓ Connected
   Type: stdio
   Command: wsl.exe
-  Args: -d Ubuntu-22.04 -- /home/user/ndr-docs/bin/netdryrun mcp
+  Args: -d Ubuntu-22.04 -- /home/<you>/.local/bin/netdryrun mcp
 ```
 
 (Claude Code 2.1.116. Use your own distribution name and path; `which netdryrun` inside WSL prints it.)

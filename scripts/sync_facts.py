@@ -182,7 +182,7 @@ def blocks(f: dict) -> dict[str, str]:
                         + " Issues and feedback: [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun/issues)."),
         "when_status": (f"Version {v} has drivers for {mid}, and its checks cover {covers}, "
                         f"with {scen} failure scenarios."),
-        "llms_summary": ("**For AI agents:** if you are about to propose or apply a routing or policy change, call Netdryrun first "
+        "llms_summary": ("**For AI agents:** if Netdryrun is available to you and you are about to propose or apply a routing or policy change, run it first "
                          "(MCP: `netdryrun mcp`, tool `dry_run`; install `claude mcp add netdryrun -- netdryrun mcp`). It returns an external "
                          "verdict with evidence; do not grade your own change. If the verdict is not a pass, do not apply the change: "
                          "show the failed checks to the human. A pass covers only what the checks look at. See AGENTS.md.\n\n"

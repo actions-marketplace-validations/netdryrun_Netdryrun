@@ -20,7 +20,13 @@ Netdryrun™ is open source under the [Apache License 2.0](https://github.com/ne
 
 Email **[security@netdryrun.com](mailto:security@netdryrun.com)**. Please do not open a public issue for a vulnerability. Include the version, what you found, and how to reproduce it.
 
-Past advisories: [0.3.0 could pass a check without testing what the file said](https://github.com/netdryrun/netdryrun/blob/main/advisories/0.3.0-false-pass/README.md), found by our own audit and fixed in 0.3.1, with a rerunnable test for each path. 0.3.0 is yanked on PyPI.
+Advisories: every false pass we have found, in our own audits and games before any outside user reported it:
+
+| Version | What could pass wrongly | Status |
+|---|---|---|
+| 0.3.0 | A check could pass without testing what the file said | Fixed in 0.3.1; 0.3.0 is yanked on PyPI. [Advisory](https://github.com/netdryrun/netdryrun/blob/main/advisories/0.3.0-false-pass/README.md) |
+| 0.3.2 and earlier | An FRR config line the router rejected at boot was skipped silently | Fixed in 0.3.3. [Advisory](https://github.com/netdryrun/netdryrun/blob/main/advisories/0.3.2-rejected-config/README.md) |
+| 0.3.3 and earlier | A failed topology `exec:` command left the lab without that config | Fixed in 0.4; until then use `setup:` (or `frr.conf` on FRR). [Advisory](https://github.com/netdryrun/netdryrun/blob/main/advisories/0.3.3-exec-not-checked/README.md) |
 
 ## What a lab cannot prove
 

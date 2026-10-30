@@ -9,6 +9,8 @@ description: Which network operating systems Netdryrun is verified on, the exact
 
 Netdryrun reads each network OS through a driver. A driver is only as good as the device output it was built and tested on, so this page lists, for every driver, the exact image it is verified on, the date its test data was last captured from a live lab, and what each check does on it. It is generated from the tests (`tests/test_driver_matrix.py`) and from the images the shipped examples pin; if a cell is not on this page, it is not tested.
 
+Where each one runs live: FRR and SR Linux images are public, so this repository's CI boots them on every change (the `frr-bgp` and `srl-frr` examples). SONiC and Arista cEOS images can't be pulled from a public registry, so they are run live in the release gate on the maintainers' lab, and CI tests their drivers against the captured output.
+
 ## Verified images
 
 | Platform | Image verified on | Source of the image | Test data last captured live | Status |
