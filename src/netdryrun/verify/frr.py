@@ -27,6 +27,9 @@ from __future__ import annotations
 
 import ipaddress
 import json
+import re
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import replace
 
 from ..drivers.base import DriverError, check_vrf_name, load_json
@@ -95,8 +98,10 @@ PEER_TYPES = {"external", "internal", "confed-external", "confed-internal"}
 # Facts of the boot, not of the configs (two boots of one lab with the same configs differed in both, live):
 # - Docker gives each node its management address on eth0 per boot, so the `local` (host) routes of eth0 in the
 #   default VRF are not part of the snapshot; the management subnet and kernel routes still are.
-# - containerlab gives interfaces random MAC addresses, so an IPv6 link-local next hop is compared as `fe80::`
-#   with its interface (RIB) or its path's source (BGP), never by address. The raw output keeps the address.
+# - containerlab gives interfaces random MAC addresses, so an IPv6 link-local next hop is named by the lab node and
+#   interface that own it (`fe80::%peer1:eth1`, the same on every boot); one no lab node owns, or two nodes share,
+#   keeps its address (gauntlet 0.4, R1: a link-local next hop set in config is configuration, and a typo in it
+#   must show). Without the lab's addresses (parsing a fixture) it is `fe80::`. The raw output keeps the address.
 # - Every interface has a connected fe80::/64, and which one zebra marks selected follows interface creation order:
 #   those entries are compared by interface and FIB state, not by the selected flag.
 MGMT_INTERFACE = "eth0"
@@ -104,8 +109,57 @@ LINK_LOCAL = "fe80::"
 LINK_LOCAL_SUBNET = "fe80::/64"
 
 
+_LL_OWNERS: ContextVar[dict[str, str] | None] = ContextVar("link_local_owners", default=None)
+_LL_IFACE = re.compile(r"^\d+:\s+([^:@\s]+)(?:@\S+)?:", re.M)
+
+
+def parse_link_local(text: str, node: str) -> dict[str, str]:
+    """`ip -6 addr show scope link` in a node: link-local address -> "node:interface"."""
+    out: dict[str, str] = {}
+    iface = None
+    for line in text.splitlines():
+        m = _LL_IFACE.match(line)
+        if m:
+            iface = m.group(1)
+            continue
+        parts = line.split()
+        if iface and len(parts) >= 2 and parts[0] == "inet6":
+            addr = parts[1].split("/")[0]
+            try:
+                if ipaddress.ip_address(addr).is_link_local:
+                    out[str(ipaddress.ip_address(addr))] = f"{node}:{iface}"
+            except ValueError:
+                continue
+    return out
+
+
+def link_local_names(per_node: dict[str, dict[str, str]]) -> dict[str, str]:
+    """Each link-local address exactly one lab interface owns -> its name; an address two interfaces share is
+    left out (which one a next hop means depends on the link), so it is kept as written."""
+    seen: dict[str, list[str]] = {}
+    for owners in per_node.values():
+        for addr, owner in owners.items():
+            seen.setdefault(addr, []).append(owner)
+    return {addr: f"{LINK_LOCAL}%{o[0]}" for addr, o in seen.items() if len(o) == 1}
+
+
+@contextmanager
+def link_local_owners(names: dict[str, str] | None):
+    token = _LL_OWNERS.set(names)
+    try:
+        yield
+    finally:
+        _LL_OWNERS.reset(token)
+
+
 def _boot_free(ip: str) -> str:
-    return LINK_LOCAL if ipaddress.ip_address(ip).version == 6 and ipaddress.ip_address(ip).is_link_local else ip
+    a = ipaddress.ip_address(ip.split("%")[0])
+    if a.version != 6 or not a.is_link_local:
+        return ip
+    names = _LL_OWNERS.get()
+    if names is None:
+        return LINK_LOCAL
+    return names.get(str(a), str(a))
 
 
 def _mgmt_address(vrf: str, entry: RibEntry) -> bool:
@@ -639,9 +693,10 @@ class FrrCollector:
 
     driver = "frr"
 
-    def __init__(self, node: str, exec_fn):
+    def __init__(self, node: str, exec_fn, ll_owners: dict[str, str] | None = None):
         self.node = node
         self.exec_fn = exec_fn
+        self.ll_owners = ll_owners   # link_local_names() of the lab; None: link-locals compare as fe80::
 
     def _vtysh(self, command: str, raw: list[dict]) -> str:
         rc, out, err = self.exec_fn(self.node, ["vtysh", "-c", command])
@@ -656,7 +711,8 @@ class FrrCollector:
     def collect(self) -> NodeSnapshot:
         raw: list[dict] = []
         try:
-            return self._collect(raw)
+            with link_local_owners(self.ll_owners):
+                return self._collect(raw)
         except CommandFailed:
             raise
         except SnapshotError as e:

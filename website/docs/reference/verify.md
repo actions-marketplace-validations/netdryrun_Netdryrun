@@ -39,7 +39,7 @@ The same engine runs in three places: this command, the MCP tool [`verify_change
 - an update that arrives after the stretched `--settle` (several peers with long advertisement intervals in a row, `update-delay`);
 - the data plane beyond what a standing guard's ping checks.
 
-A lab that gives a different snapshot on a second boot approves nothing (INCONCLUSIVE). Changes that only a boot makes (management addresses, link-local addresses) are not configuration changes and are not compared.
+A lab that gives a different snapshot on a second boot approves nothing (INCONCLUSIVE). Changes that only a boot makes (management addresses, the random link-local addresses containerlab's MACs give) are not configuration changes and are not compared: an IPv6 link-local next hop is named by the lab node and interface that own it (`fe80::%peer1:eth1`), the same on every boot. A link-local next hop no lab node owns (a typo in a route-map or a static route), or one two nodes share, keeps its address, so a change to it is a difference.
 
 **The intent must come from outside the change**: the ticket, the operator, or the base branch. A pass is never earned by copying the undeclared items into the intent. The report says who supplied it (`intent.supplied_by`: `cli` from the command line, `mcp` from an MCP caller, `action` from the GitHub Action). When the intent file itself differs between `--before` and `--after` (the change edits its own intent), every report carries the warning "intent edited in the same change: needs a code-owner review".
 

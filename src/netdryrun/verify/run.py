@@ -33,7 +33,7 @@ from ..drivers import DRIVERS, DriverError, detect
 from ..lab import Lab, LabError
 from .converge import Inconclusive, stable_snapshot
 from .engine import VerifyError, baseline_problems, diff, match
-from .frr import FrrCollector
+from .frr import FrrCollector, link_local_names, parse_link_local
 from .intent import IntentError, check_nodes, load_intent, parse_intent_text
 from .report import ALLOW_WARNING, INTENT_EDITED_WARNING, NO_GUARDS_WARNING, VerifyResult
 from .snapshot import Snapshot, SnapshotError
@@ -489,7 +489,17 @@ def collect(lab: Lab, nodes: dict[str, str], cmd_timeout: float = 60) -> Snapsho
     def exec_fn(node, argv):
         r = lab.exec(node, argv, timeout=cmd_timeout)
         return r.rc, r.stdout, r.stderr
-    snaps = {n: FrrCollector(n, exec_fn).collect() for n, drv in sorted(nodes.items()) if drv == "frr"}
+    # every lab interface's link-local addresses, so a link-local next hop is named by its owner (gauntlet R1);
+    # a node whose addresses can't be read leaves its addresses as written
+    per_node = {}
+    for n, nd in sorted(lab.nodes.items()):
+        if nd.kind in BRIDGE_KINDS:
+            continue
+        rc, out, _err = exec_fn(n, ["ip", "-6", "addr", "show", "scope", "link"])
+        if rc == 0:
+            per_node[n] = parse_link_local(out, n)
+    owners = link_local_names(per_node)
+    snaps = {n: FrrCollector(n, exec_fn, owners).collect() for n, drv in sorted(nodes.items()) if drv == "frr"}
     return Snapshot(snaps, unobserved_reasons(lab, nodes))
 
 
