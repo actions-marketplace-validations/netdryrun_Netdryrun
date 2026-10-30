@@ -1344,7 +1344,8 @@ def main_version_problems(version: str, texts: dict[str, str]) -> tuple[list[str
     else:
         problems.append(f"{PUBLISHED_ACTION}: no RELEASE pin")
     for path, text in sorted(texts.items()):
-        if not path.startswith(RETIRED_HISTORY_PATHS):
+        # tests/ holds old refs on purpose (this check's own fixtures); users never read them
+        if not path.startswith(RETIRED_HISTORY_PATHS + ("tests/",)):
             found += [(f"{path}:{line_of(text, m)} {m.group(0)}", m.group(1)) for m in ACTION_REF.finditer(text)]
     problems += [where for where, v in found if v != version]
     return [where for where, _ in found], problems
