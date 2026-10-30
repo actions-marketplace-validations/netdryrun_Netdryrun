@@ -2477,7 +2477,7 @@ The same engine runs in three places: this command, the MCP tool [`verify_change
 - what a config change would do to routes or events this lab never produces (a prefix-list for prefixes the lab doesn't carry, `maximum-prefix`, dampening, timers, BFD, a password). The change itself is never silent: a config change with no observable effect fails, and an approval lists every changed config line "not tested if the lab doesn't exercise them" (see [config_change_on](#config_change_on));
 - the data plane beyond what a standing guard's ping checks.
 
-A lab that gives a different snapshot on a second boot approves nothing (INCONCLUSIVE). Changes that only a boot makes (management addresses, the random link-local addresses containerlab's MACs give) are not configuration changes and are not compared: an IPv6 link-local next hop is named by the lab node and interface that own it (`fe80::%peer1:eth1`), the same on every boot. A link-local next hop no lab node owns (a typo in a route-map or a static route), or one two nodes share, keeps its address, so a change to it is a difference.
+A lab that gives a different snapshot on a second boot approves nothing (INCONCLUSIVE). Changes that only a boot makes (management addresses, the random link-local addresses containerlab's MACs give) are not configuration changes and are not compared: an IPv6 link-local next hop is named by the lab node and interface that own it (`fe80::%peer1:eth1`), the same on every boot. A link-local next hop the node's own config names (a route-map's `set ipv6 next-hop local`, a static route) and no single lab interface owns keeps its address, so a typo in it is a difference; any other (a neighbour whose interfaces verify can't read, such as an unobserved SR Linux) is compared as `fe80::` with its interface.
 
 **The intent must come from outside the change**: the ticket, the operator, or the base branch. A pass is never earned by copying the undeclared items into the intent. The report says who supplied it (`intent.supplied_by`: `cli` from the command line, `mcp` from an MCP caller, `action` from the GitHub Action). When the intent file itself differs between `--before` and `--after` (the change edits its own intent), every report carries the warning "intent edited in the same change: needs a code-owner review".
 
@@ -2544,7 +2544,7 @@ allow_anywhere: ["10.200.*.0/24"]
 
 ### appears_on
 
-The route is absent on each listed node before (no RIB entry, BGP path or received route), and after the change it is **selected and installed in the FIB** (`state: installed`, the default). `state: selected` accepts a selected route that isn't in the FIB; `state: received` expects it received but not selected. **A discard route is never `installed`:** a route whose every next hop drops the traffic (blackhole, reject, unreachable: `ip route X Null0`, an anchor for a `network` statement) is declared `state: discard`, so the reviewer sees that the node drops traffic for the prefix.
+The route is absent on each listed node before (no RIB entry, BGP path or received route), and after the change it is **selected and installed in the FIB** (`state: installed`, the default). `state: selected` accepts a selected route that isn't in the FIB; `state: received` expects it received but not selected. **A discard route is never `installed`:** a route with no next hop that forwards (a gateway or interface, active, in the FIB, and when recursive resolved by one that forwards) drops the traffic: a blackhole, reject or unreachable route (`ip route X Null0`, an anchor for a `network` statement), or a BGP route whose next hop resolves over one. It is declared `state: discard`, so the reviewer sees that the node drops traffic for the prefix.
 
 The report shows, per node, where the new route was learned from, its next hop and AS path. `with:` pins any of them:
 
@@ -2639,7 +2639,7 @@ intent:
 
 Each FRR node's running config is in the snapshot (see below), so a config change whose effect the lab can't show (a description, a policy for routes the lab doesn't carry, `maximum-prefix`, a timer) is still a difference: with nothing else declared on that node, it fails with "this change has no observable effect in the lab; test it with checks". `config_change_on` declares it for the listed nodes, when you accept that it is not tested. It explains only those nodes' config changes, and it didn't happen if a listed node's config is unchanged.
 
-A config change on a node where a declared line explains some of the node's behaviour needs no `config_change_on`. **Every approval lists each changed config line** (with the section headers above it, `router bgp 65000 > address-family ipv4 unicast > neighbor 10.0.2.2 maximum-prefix 5`) under "not tested if the lab doesn't exercise them": in the report (`untested_config`), the console, the PR comment and its header (`untested_config_lines`), and the MCP result. Read that list: a line there changed nothing this lab could observe.
+A config change on a node that a declared line names (and that happened) needs no `config_change_on`; a node a line doesn't name, such as one that only advertises the declared route, does. **Every approval lists each changed config line** (with the section headers above it, `router bgp 65000 > address-family ipv4 unicast > neighbor 10.0.2.2 maximum-prefix 5`) under "not tested if the lab doesn't exercise them": in the report (`untested_config`), the console, the PR comment and its header (`untested_config_lines`), and the MCP result. Read that list: a line there changed nothing this lab could observe.
 
 ## What is compared: the snapshot
 
@@ -3182,7 +3182,7 @@ jobs:
 - Merge the intent from the ticket first, in its own reviewed PR, then open the change against it.
 - Or let one PR carry both, with `allow-intent-edit: true`, **only if branch protection requires a code-owner review** on the intent file. Then a human from the network team approves every intent, and the job prints a warning that the intent was edited.
 
-**The workflow itself is part of the verdict.** Under `pull_request` GitHub runs the workflow from the PR merged into its base, so a PR that edits it sets the inputs that judge it (`allow-intent-edit`, `intent-file`, `topology`, `path`, `allow-check-edit`). So `mode: verify` fails on a PR that changes anything under `.github/workflows/`, and `mode: run` fails on one that changes a workflow together with the lab, before any lab boots: change the workflow in its own reviewed PR.
+**The workflow itself is part of the verdict.** Under `pull_request` GitHub runs the workflow from the PR merged into its base, so a PR that edits it sets the inputs that judge it (`allow-intent-edit`, `intent-file`, `topology`, `path`, `allow-check-edit`). So `mode: verify` fails on a PR that changes anything under `.github/workflows/` or `.github/actions/` (a local action the workflow wraps), and `mode: run` fails on one that changes them together with anything else (it could point `path` at a lab it didn't touch), before any lab boots: change the workflow in its own reviewed PR.
 
 Either way, list the intent file, `netdryrun.yml` and the workflows in `CODEOWNERS` and turn on "Require review from Code Owners" for the default branch:
 
@@ -3190,6 +3190,7 @@ Either way, list the intent file, `netdryrun.yml` and the workflows in `CODEOWNE
 network/netdryrun-intent.yml  @your-org/network-team
 network/netdryrun.yml         @your-org/network-team
 .github/workflows/            @your-org/network-team
+.github/actions/              @your-org/network-team
 ```
 
 The PR comment (with `pr-comment: true`) and the job summary show the verdict, the declared intent echoed for the reviewer, every undeclared difference with the read-only command that shows it on its node, the declarations that didn't happen and the standing guards. The same protections as in `mode: run` apply: report files already in the workspace are deleted before the run, the `status` and `verdict` outputs come from this run's report only (and must match its exit code), and lab text in the comment and outputs is made inert.
