@@ -18,6 +18,13 @@ spec.loader.exec_module(gate)
 V = "0.3.3"
 NAME = "io.github.netdryrun/netdryrun"
 ACTION = ".github/workflows/published-action.yml"
+NOTES = ("**The agent runtime.** 0.3.3 lets an AI agent get a verdict without local Docker.\n\n"
+         "**Full Changelog**: https://github.com/netdryrun/netdryrun/compare/v0.3.2...v0.3.3")
+# what `gh release create --generate-notes` (release.yml) writes before the notes are pasted
+GENERATED = ("## What's Changed\n* Agent runtime by @someone in https://github.com/netdryrun/netdryrun/pull/12\n\n"
+             "## New Contributors\n* @someone made their first contribution in "
+             "https://github.com/netdryrun/netdryrun/pull/12\n\n"
+             "**Full Changelog**: https://github.com/netdryrun/netdryrun/compare/v0.3.2...v0.3.3")
 
 
 def registry(latest, listed=("0.3.2",)):
@@ -32,7 +39,8 @@ def sources(v=V, *, pypi=None, github=None, home=None, llms=None, reg=None):
     return {
         "https://pypi.org/pypi/netdryrun/json": (200, json.dumps({"info": {"version": pypi or v}})),
         "https://api.github.com/repos/netdryrun/netdryrun/releases/latest":
-            github if isinstance(github, tuple) else (200, json.dumps({"tag_name": f"v{github or v}"})),
+            github if isinstance(github, tuple) else (200, json.dumps({"tag_name": f"v{github or v}",
+                                                                       "body": NOTES})),
         "https://netdryrun.com/": home or (200, f'<script>{{"softwareVersion": "{v}"}}</script>'
                                                 f"<p>Version {v}.</p><code>uses: netdryrun/netdryrun@v{v}</code>"),
         "https://netdryrun.com/llms.txt": llms or (200, f"current version {v}). Facts: version {v};"),
@@ -78,6 +86,13 @@ def test_github_latest_release_behind_is_named():
 def test_no_github_release_marked_latest_fails():
     c = check(sources(github=(404, '{"message": "Not Found"}')))["latest-github"]
     assert c.status == gate.FAIL and "no release" in c.summary
+
+
+@pytest.mark.parametrize("body", [None, "", "  \n", GENERATED])
+def test_a_latest_release_with_only_generated_notes_fails(body):
+    release = json.dumps({"tag_name": f"v{V}", "body": body})
+    c = check(sources(github=(200, release)))["latest-github"]
+    assert c.status == gate.FAIL and "notes" in c.summary
 
 
 def test_registry_latest_must_be_the_release_not_just_listed():
