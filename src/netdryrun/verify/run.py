@@ -466,16 +466,14 @@ FRR_CONFIGS = ("/etc/frr/frr.conf", "/etc/frr/bgpd.conf")
 
 
 def check_config_loaded(lab, nodes: dict[str, str], label: str) -> None:
-    """Every snapshotted node loaded its config without a rejected line, or LabError (exit 2). FRR skips a line it
-    rejects and loads the rest: a changed line it rejected on the after side would read as no change at all."""
-    from ..drivers.frr import parse_config_load_errors
+    """Every node loaded its config as written, or LabError (exit 2). FRR skips a line it rejects and loads the
+    rest: a changed line it rejected on the after side would read as no change at all. The same reading as a run's
+    (runner.config_load_by_node); a node not snapshotted counts when its log shows rejected lines."""
+    from ..runner import config_load_by_node, rejected_config_message
 
-    rejected = [f"{n}: {e}" for n, drv in sorted(nodes.items()) if drv == "frr"
-                for e in parse_config_load_errors(lab.logs(n))]
+    rejected = rejected_config_message(config_load_by_node(lab, lambda name, _node: nodes.get(name)))
     if rejected:
-        raise LabError(f"[{label}] the config did not load cleanly, so the lab didn't run the {label} side as written: "
-                       f"{'; '.join(rejected)}. No verdict: fix the lines the device rejected, then run again")
-
+        raise LabError(f"[{label}] {rejected} No verdict.")
 
 def expects_bgp(exec_fn, node: str) -> bool:
     """Whether an FRR node is configured to run BGP: `router bgp` in its config file, read inside the

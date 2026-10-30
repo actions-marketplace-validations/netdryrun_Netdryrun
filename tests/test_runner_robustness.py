@@ -93,6 +93,9 @@ class FakeLab:
     def running_containers(self):
         return {n.container for n in self.nodes.values()}
 
+    def boot_log(self, node):   # a clean FRR boot: every config line loaded
+        return ExecResult([], 0, "[45|bgpd] done", "")
+
     def run_setup(self, *a, **k):
         pass
 
@@ -125,9 +128,6 @@ class FakeDriver:
         self.world, self._neighbors, self._routes = world, neighbors, routes
         self.neighbors_error, self._ping = neighbors_error, ping
         self.name = "frr"
-
-    def config_load_errors(self):
-        return []   # the config loaded cleanly (tests/test_config_apply.py covers a rejected line)
 
     def nos_version(self):
         return None

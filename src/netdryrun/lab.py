@@ -32,9 +32,10 @@ class ExecResult:
     stderr: str
 
 
-def _run(cmd: list[str], timeout: float = 600, env: dict | None = None, input: str | None = None) -> ExecResult:
+def _run(cmd: list[str], timeout: float = 600, env: dict | None = None, input: str | None = None,
+         errors: str | None = None) -> ExecResult:
     try:
-        p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=env, input=input)
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=env, input=input, errors=errors)
     except subprocess.TimeoutExpired:
         return ExecResult(cmd, 124, "", f"timed out after {timeout}s")
     return ExecResult(cmd, p.returncode, p.stdout, p.stderr)
@@ -287,10 +288,15 @@ class Lab:
             return None
         return digests[0] if isinstance(digests, list) and digests and isinstance(digests[0], str) else None
 
-    def logs(self, node: str, tail: int = 5000) -> str:
-        """The node container's log (stdout and stderr): where a NOS reports the config lines it rejected at boot."""
-        r = _run(["docker", "logs", "--tail", str(tail), self.nodes[node].container], timeout=60)
-        return r.stdout + r.stderr
+    def boot_log(self, node: str) -> ExecResult:
+        """The container's log since it last started (stdout and stderr), where the NOS reports config it rejected.
+        Only the current boot: a line rejected before a restart, and fixed since, doesn't count."""
+        c = self.nodes[node].container
+        s = _run(["docker", "inspect", "-f", "{{.State.StartedAt}}", c], timeout=60, errors="replace")
+        if s.rc != 0 or not s.stdout.strip():
+            return ExecResult(s.cmd, s.rc or 1, "", s.stderr or "no start time")
+        r = _run(["docker", "logs", "--since", s.stdout.strip(), c], timeout=120, errors="replace")
+        return ExecResult(r.cmd, r.rc, f"{r.stdout}\n{r.stderr}", r.stderr)
 
     def exec(self, node: str, cmd: list[str], timeout: float = 60, input: str | None = None) -> ExecResult:
         flags = ["-i"] if input is not None else []

@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.netdryrun/netdryrun",
   "title": "Netdryrun",
-  "description": "Netdryrun dry-runs a network change in a real lab before it reaches production.",
+  "description": "Validate BGP and routing changes in a real containerlab lab: pass/fail verdict with evidence.",
   "repository": {
     "url": "https://github.com/netdryrun/netdryrun",
     "source": "github"

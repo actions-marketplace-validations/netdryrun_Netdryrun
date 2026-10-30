@@ -100,6 +100,9 @@ class FakeLab:
             return set(self.running)
         return {n.container for n in self.nodes.values()}
 
+    def boot_log(self, node):   # a clean FRR boot: every config line loaded
+        return ExecResult([], 0, "[45|bgpd] done", "")
+
     def run_setup(self, node, cmds, log=None):
         self.events.append(("setup", node, tuple(cmds), log is not None))
 
@@ -141,11 +144,7 @@ class Drv:
         self.paths_ = paths or {}
         self.ping_, self.neighbors_error, self.on_call = ping, neighbors_error, on_call
         self.calls: list[tuple] = []
-        self.load_errors: list[str] | None = []   # what the NOS rejected at load; None: the driver can't tell
         self.name = "frr"
-
-    def config_load_errors(self):
-        return self.load_errors
 
     def nos_version(self):
         return "FRRouting 10.4.1_git"
@@ -1828,18 +1827,21 @@ def test_a_rejected_config_line_makes_the_run_an_error_never_a_pass(monkeypatch)
     check passing on a node whose config didn't load cleanly is status error (exit 2), naming the node and
     the line."""
     e = make(monkeypatch, r1={"neighbors": up("10.0.12.2"), "routes": {"default": never}})
-    e.drivers["r2"].load_errors = ["line 18: % Unknown command: neighbor 10.0.12.1 default-orignate"]
+    clean = e.lab.boot_log
+    log = "[45|bgpd] sending configuration\nline 18: % Unknown command[31]:   neighbor 10.0.12.1 default-orignate\n"
+    e.lab.boot_log = lambda node: ExecResult([], 0, log, "") if node == "r2" else clean(node)
     rep = e.run([leak("neg")], settle=10, hold=10)
     assert rep.status == "error" and rep.exit_code == 2
     assert "r2" in rep.error and "default-orignate" in rep.error
     assert by_name(rep)["neg"].passed                       # the results are kept as evidence
-    assert rep.environment["nodes"]["r2"]["config_load"] == ["line 18: % Unknown command: neighbor 10.0.12.1 default-orignate"]
+    assert rep.environment["nodes"]["r2"]["config_load"] == [
+        "line 18: neighbor 10.0.12.1 default-orignate (Unknown command)"]
     assert rep.environment["nodes"]["r1"]["config_load"] == "clean"
 
 
 def test_a_driver_that_cannot_verify_the_load_says_so(monkeypatch):
     e = make(monkeypatch, r1={"neighbors": up("10.0.12.2"), "routes": {"default": never}})
-    e.drivers["r3"].load_errors = None
+    e.lab.nodes["r3"] = Node("r3", "clab-t-r3", "ceos", "ceos:4.33")
     e.drivers["r3"].name = "eos"
     rep = e.run([leak("neg")], settle=10, hold=10)
     assert rep.status == "passed"
@@ -1856,3 +1858,16 @@ def test_the_report_names_each_nodes_image_digest_and_nos_version(monkeypatch):
     nodes = rep.environment["nodes"]
     assert nodes["r1"]["nos_version"] == "FRRouting 10.4.1_git" and nodes["r3"]["nos_version"] is None
     assert all(n["image_digest"] is None for n in nodes.values())
+def test_the_fault_wait_names_every_session_still_up_even_after_an_unreadable_node(monkeypatch):
+    """0.3.3 adversarial review (mutant _wait_fault_visible_20): an unreadable node must not stop the scan, so
+    the error names a later node whose session over the downed link is still established."""
+    clock = Clock()
+    monkeypatch.setattr(runner, "_clock", clock)
+    monkeypatch.setattr(runner, "_sleep", clock.sleep)
+    a = Drv(clock, neighbors_error=DriverError("vtysh timed out"))
+    b = Drv(clock, neighbors={"default": {"10.0.12.1": "established"}})
+    sc = Scenario("s", [Fault("link_down", "r1", "eth1")], [route("x")])
+    with pytest.raises(LabError) as e:
+        runner._wait_fault_visible([("r1", "default", "10.0.12.2"), ("r2", "default", "10.0.12.1")],
+                                   {"r1": a, "r2": b}.__getitem__, 9, sc)
+    assert "r1: BGP state unreadable" in str(e.value) and "r2 -> 10.0.12.1" in str(e.value)

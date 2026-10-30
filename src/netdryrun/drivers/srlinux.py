@@ -11,10 +11,16 @@ import ipaddress
 
 from .base import (BgpNeighbor, BgpPath, Driver, DriverError, NoSuchInstance, Observation, Route, as_int, canon_communities,
                    check_vrf_name, load_json, network, parser, render_as_path, unexpected)
-from .frr import _canon_addr, parse_ping
+from .frr import _canon_addr, _keep_down, parse_ping
 
 # SR Linux route-type names -> the shared vocabulary used in netdryrun.yml (FRR's names)
 PROTOCOLS = {"local": "connected", "host": "local", "ospfv2": "ospf", "ospfv3": "ospf6"}
+
+
+def _protocol(rtype: str) -> str:
+    """Every BGP route type (bgp, bgp-evpn, bgp-vpn, bgp-label, ...) was learned via BGP, so `protocol: bgp`
+    (and its guards) match it."""
+    return "bgp" if rtype.startswith("bgp") else PROTOCOLS.get(rtype, rtype)
 
 NEIGHBORS_CMD = "info from state /network-instance <vrf> protocols bgp neighbor *"
 ROUTE_CMD = "info from state /network-instance <vrf> route-table <afi> route <prefix>"
@@ -65,7 +71,7 @@ def parse_bgp_neighbors(text: str) -> dict[str, BgpNeighbor]:
         # SR Linux's minimum-advertisement-interval, 5 s by default where the state doesn't list it
         timers = n.get("timers") if isinstance(n.get("timers"), dict) else {}
         adv = float(as_int(NEIGHBORS_CMD, timers.get("minimum-advertisement-interval", SRL_DEFAULT_ADV_INTERVAL)))
-        out[_canon_addr(addr)] = BgpNeighbor(addr, state.lower(), prefixes, adv_interval=adv)
+        _keep_down(out, _canon_addr(addr), BgpNeighbor(addr, state.lower(), prefixes, adv_interval=adv))
     return out
 
 
@@ -103,7 +109,7 @@ def parse_routes(text: str, prefix: str, bgp_rib_text: str | None = None) -> lis
         if network(ROUTE_CMD, r[key]) != want:
             continue
         rtype = str(r.get("route-type", "")).lower()
-        out.append(Route(prefix, PROTOCOLS.get(rtype, rtype), bool(r.get("active"))))
+        out.append(Route(prefix, _protocol(rtype), bool(r.get("active"))))
     if bgp_rib_text is not None and not any(r.protocol == "bgp" and r.active for r in out):
         if any(_bgp_learned(r) for r in _rib_rows(bgp_rib_text, prefix)):
             out.append(Route(prefix, "bgp", False))
@@ -131,7 +137,7 @@ def parse_attr_set(text: str, row: dict, default_local_pref: int | None = None) 
         as_path=render_as_path(segs),
         next_hop=_canon_addr(str(nh)) if nh else None,
         local_pref=as_int(ATTR_CMD, a["local-pref"]) if "local-pref" in a else default_local_pref,
-        med=as_int(ATTR_CMD, a.get("med", 0)),
+        med=as_int(ATTR_CMD, a["med"]) if "med" in a else None,   # no MED attribute: unknown, not 0
         communities=canon_communities(comms.get("community")),
         large_communities=canon_communities(comms.get("large-community")),
         neighbor=row.get("neighbor"),
@@ -292,5 +298,5 @@ def parse_all_routes(text: str, key: str = "ipv4-prefix") -> list[Route]:
         if key not in r:
             raise unexpected(cmd, str(r)[:150])
         rtype = str(r.get("route-type", "")).lower()
-        out.append(Route(str(network(cmd, r[key])), PROTOCOLS.get(rtype, rtype), bool(r.get("active"))))
+        out.append(Route(str(network(cmd, r[key])), _protocol(rtype), bool(r.get("active"))))
     return out

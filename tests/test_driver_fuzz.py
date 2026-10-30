@@ -356,8 +356,6 @@ FAIL_SAFE = [
     ("frr.parse_ping", frr.parse_ping, ["frr_ping.txt", "srl_ping.txt", "eos_ping.txt"], _ping_ok),
     ("frr.parse_version", frr.parse_version, ["frr_route.txt", "frr_ping.txt"],
      lambda r: r is None or (isinstance(r, str) and r.startswith("FRRouting "))),
-    ("frr.parse_config_load_errors", frr.parse_config_load_errors, ["frr_route.txt", "frr_ping.txt"],
-     lambda r: isinstance(r, list) and all(isinstance(x, str) and x.startswith("line ") for x in r)),
     ("frr.parse_default_local_pref", lambda t: frr.parse_default_local_pref(t), ["frr_bgp_table_header.txt"],
      lambda r: r is None or isinstance(r, int)),
     ("srlinux.parse_instance_state", lambda t: srlinux.parse_instance_state(t), ["srl_neighbor_local_pref.txt"],
@@ -368,6 +366,9 @@ FAIL_SAFE = [
      lambda r: isinstance(r, list) and all(isinstance(x, str) for x in r)),
     ("junos.parse_instance", lambda t: junos.parse_instance(t, "RED"), ["junos_instance_red.txt"],
      lambda r: r is None or (isinstance(r, list) and all(isinstance(x, str) for x in r))),
+    # reads a whole boot log: it finds vtysh's error lines or nothing, and never crashes
+    ("frr.parse_config_load_errors", frr.parse_config_load_errors,
+     ["frr_boot_log_rejected.txt", "frr_boot_log_clean.txt"], lambda r: isinstance(r, list) and all(isinstance(x, str) for x in r)),
 ]
 FS_IDS = [c[0] for c in FAIL_SAFE]
 

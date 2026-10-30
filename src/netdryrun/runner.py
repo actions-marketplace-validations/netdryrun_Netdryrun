@@ -23,6 +23,7 @@ from .checks import (Result, Unready, _sample, hold_together, inconclusive_reaso
                      never_ready_nodes, run_round_robin)
 from .config import Check, Config, ConfigError, Scenario, load
 from .drivers import DriverError, check_supported, detect, for_node
+from .drivers.frr import LOAD_RAN, communicate_daemons, parse_config_load_errors
 from .drivers.base import NoSuchInstance
 from .faults import RouteInjection
 from .lab import Lab, LabError
@@ -263,6 +264,75 @@ def check_topology(config: Config) -> Lab:
     return lab
 
 
+def _driver_of(config: Config):
+    """The driver a node runs as: the config's override, else detected from its kind and image; None: unknown."""
+    def driver_of(name: str, node) -> str | None:
+        try:
+            return config.drivers.get(name) or detect(node)
+        except DriverError:
+            return None   # FRR in an image not named for it is still FRR: its rejected lines still count
+    return driver_of
+
+
+def config_load_by_node(lab, driver_of) -> dict[str, list[str]]:
+    """Each node whose config load was read -> why the lab didn't run its config as written ([]: it did). FRR
+    applies its config line by line at boot and skips a line it rejects (a typo, a command this release doesn't
+    have): the lab then runs without it, and the checks test a network the change never reached. Read when every
+    node has booted; a boot log that can't be read is no proof either. FRR nodes are always listed; a node whose
+    driver is unknown only when its log shows rejected lines. (Other NOSes: see the config reference, "Config
+    that fails to load".)"""
+    found: dict[str, list[str]] = {}
+    for name, node in lab.nodes.items():
+        if node.kind in ("bridge", "ovs-bridge"):   # no container, no config
+            continue
+        driver = driver_of(name, node)
+        if driver not in ("frr", None):
+            continue
+        r = lab.boot_log(name)
+        if r.rc != 0:
+            if driver == "frr":
+                found[name] = [f"its boot log could not be read ({(r.stderr or r.stdout).strip()[-200:]}), "
+                               "so whether its config loaded is unknown"]
+            continue
+        errors = parse_config_load_errors(r.stdout)
+        daemons = communicate_daemons(r.stdout)
+        if errors and daemons:
+            # a line a daemon answered with "Failure to communicate" can still have been applied: one in the same
+            # section of that daemon's own running config doesn't count. What can't be read counts (fail closed)
+            conf = lab.exec(name, ["cat", "/etc/frr/frr.conf"])
+            reads = {d: lab.exec(name, ["vtysh", "-d", d, "-c", "show running-config"]) for d in daemons}
+            if conf.rc == 0:
+                errors = parse_config_load_errors(r.stdout, {d: x.stdout for d, x in reads.items() if x.rc == 0},
+                                                  conf.stdout)
+            bad = [x for x in (conf, *reads.values()) if x.rc != 0]
+            if bad and errors:
+                why = (bad[0].stderr or "").strip()[-200:]
+                errors = [*errors, f"(not checked against the running config: {why or 'it could not be read'})"]
+        if errors:
+            found[name] = errors
+        elif driver == "frr" and not LOAD_RAN.search(r.stdout):
+            found[name] = ["its boot log shows no sign of a config load (no vtysh boot output, no daemon config "
+                           "line), so whether its config loaded is unknown. Netdryrun reads the config load FRR's "
+                           "image runs at boot (frr.conf, vtysh -b)"]
+        elif driver == "frr":
+            found[name] = []
+    return found
+
+
+def rejected_config_message(by_node: dict[str, list[str]]) -> str:
+    """The error for nodes that didn't run their config as written, or "" when every one did."""
+    found = [f"{name}: {'; '.join(errors)}" for name, errors in by_node.items() if errors]
+    if not found:
+        return ""
+    return ("FRR rejected configuration lines at boot, so the lab ran without them and the checks did not test the "
+            f"change as written: {' | '.join(found)}. Fix the config and run again.")
+
+
+def rejected_config(lab, config: Config) -> str:
+    """Why the lab did not run the config as written, or "" (config_load_by_node, as one error)."""
+    return rejected_config_message(config_load_by_node(lab, _driver_of(config)))
+
+
 def run(config: Config, *, deploy: bool = True, keep: bool = False, keep_on_failure: bool = False,
         settle: float = 10.0, hold: float = 10.0,
         on_result: Callable[[Result], None] | None = None, log: Callable[[str], None] = lambda _: None) -> RunReport:
@@ -376,10 +446,11 @@ def run(config: Config, *, deploy: bool = True, keep: bool = False, keep_on_fail
                 if sc is not config.scenarios[-1]:
                     log(f"The network did not recover after scenario '{sc.name}'; later scenarios skipped")
                 break
-        rejected = _config_load(lab, driver_for, report)
+        by_node = config_load_by_node(lab, _driver_of(config))
+        _config_load(lab, driver_for, report, by_node)
+        rejected = rejected_config_message(by_node)
         if rejected:
-            report.error = (f"the config did not load cleanly, so the lab didn't run the config as written: "
-                            f"{'; '.join(rejected)}. No verdict: fix the lines the device rejected, then run again")
+            report.error = rejected
     except KeyboardInterrupt as e:
         interrupted = e
         report.error = f"interrupted by {signal_name(getattr(e, 'signum', signal.SIGINT))}: no verdict"
@@ -457,32 +528,23 @@ def _with_warnings(warnings: dict[int, str], on_result=None):
     return add
 
 
-def _config_load(lab, driver_for, report: RunReport) -> list[str]:
-    """Each node's config-load result in the report (environment.nodes.<node>.config_load: "clean", the rejected
-    lines, or "not verified on <driver>"), with its image digest and NOS version; returns the rejections, as
-    "node: line", that make the run an error.
-    A NOS that skips a line it rejects (FRR does, line by line) runs a config other than the file: checks that
-    pass there say nothing about the file (live repro, FRR 10.4.1: a misspelled change line, every check passed)."""
-    rejected: list[str] = []
+def _config_load(lab, driver_for, report: RunReport, by_node: dict[str, list[str]]) -> None:
+    """Each node's config load in the report (environment.nodes.<node>.config_load: "clean", why it didn't load
+    as written, or "not verified on <driver>"), with its image digest and NOS version, so a verdict is tied to
+    what ran."""
     nodes = report.environment.setdefault("nodes", {})
     for node in sorted(lab.nodes):
         try:
             drv = driver_for(node)
         except DriverError:
             continue   # a node without a routing driver (a host)
-        errors = drv.config_load_errors()
         entry = nodes.setdefault(node, {})
-        # what ran, so the verdict is tied to it: the image by digest and the version the NOS reports
         entry["nos_version"] = drv.nos_version()
         entry["image_digest"] = lab.image_digest(lab.nodes[node].image)
-        if errors is None:
+        if node not in by_node:
             entry["config_load"] = f"not verified on {drv.name}"
-        elif errors:
-            entry["config_load"] = list(errors)
-            rejected += [f"{node}: {e}" for e in errors]
         else:
-            entry["config_load"] = "clean"
-    return rejected
+            entry["config_load"] = list(by_node[node]) or "clean"
 
 
 ADV_MARGIN = 2.0   # seconds beyond the longest advertisement interval

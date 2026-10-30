@@ -1,61 +1,69 @@
-"""A config the NOS rejected, wholly or in part, is never a pass (0.4; expert war game, 2026-10-29).
+"""A config the NOS rejected, wholly or in part, is never a pass (expert war game, 2026-10-29).
 
 Reproduced live on FRR 10.4.1 (examples/frr-bgp, r2 adds `neighbor 10.0.12.1 default-orignate`, a typo): FRR's
 boot apply skipped that line, logged `line 18: % Unknown command`, loaded the rest, and 0.3.2 said PASSED (exit
-0) on a config whose changed line never ran. Now every node's driver reports what it rejected at load, and any
-rejection makes the run an error (exit 2) naming the node and the line; a driver that can't tell says so in the
-report, never silently."""
-from netdryrun.drivers.frr import FrrDriver, parse_config_load_errors
-from netdryrun.drivers.sonic import SonicDriver
+0) on a config whose changed line never ran. `run` reads the boot log from 0.3.3 (tests/test_frr_config_load.py);
+0.4 reads it the same way on each side of `verify`, and records every node's load in the report (a driver that
+can't tell says so, never silently)."""
+import pytest
+
+from netdryrun.drivers.frr import FrrDriver
+from netdryrun.lab import ExecResult, LabError, Node
+from netdryrun.verify import run as vrun
 
 # the container log of r2 in the live repro (FRR's vtysh -b prints each rejected line once per daemon)
 LIVE_LOG = """\
-2026/10/29 23:05:11 [...] watchfrr: all daemons up
+[38|mgmtd] sending configuration
+[45|bgpd] sending configuration
 line 18: % Unknown command[31]:   neighbor 10.0.12.1 default-orignate
 line 18: % Unknown command[31]:   neighbor 10.0.12.1 default-orignate
 line 18: % Unknown command[31]:   neighbor 10.0.12.1 default-orignate
-% Error 16 from MGMTD for vty-mgmtd-25 with no pending command: Lock already taken on datastore by session: 0
-% Can't enter config; running datastore locked by another session
+[45|bgpd] Configuration file[/etc/frr/frr.conf] processing failure: 2
 """
+CLEAN_LOG = "[38|mgmtd] sending configuration\n[45|bgpd] sending configuration\n"
 
 
-def test_frr_reads_each_rejected_line_once():
-    assert parse_config_load_errors(LIVE_LOG) == ["line 18: % Unknown command: neighbor 10.0.12.1 default-orignate"]
-    assert parse_config_load_errors("watchfrr: all daemons up\n") == []
-    for kind in ("% Invalid input", "% Ambiguous command", "% Command incomplete", "% Command failed"):
-        assert parse_config_load_errors(f"line 4: {kind}:  router bgp 1 2\n") == [f"line 4: {kind}: router bgp 1 2"]
+class Lab:
+    def __init__(self, logs: dict, kinds: dict | None = None):
+        self.logs, self.read = logs, []
+        kinds = kinds or {}
+        self.nodes = {n: Node(n, f"clab-t-{n}", *kinds.get(n, ("linux", "quay.io/frrouting/frr:10.4.1")))
+                      for n in logs}
 
-
-class LogLab:
-    def __init__(self, log):
-        self.log = log
-
-    def logs(self, node):
-        return self.log
-
-
-def test_the_frr_driver_reads_the_nodes_log_and_sonic_says_it_cannot():
-    assert FrrDriver(LogLab(LIVE_LOG), "r2").config_load_errors() == [
-        "line 18: % Unknown command: neighbor 10.0.12.1 default-orignate"]
-    assert FrrDriver(LogLab(""), "r2").config_load_errors() == []
-    assert SonicDriver(LogLab(LIVE_LOG), "s1").config_load_errors() is None   # its boot log is not known yet
+    def boot_log(self, node):
+        self.read.append(node)
+        return ExecResult([], 0, self.logs[node], "")
 
 
 def test_verify_stops_on_a_side_whose_config_did_not_load():
     """verify_change: a changed line FRR rejected on the after side would read as NO BEHAVIOR CHANGE. Each side's
-    FRR nodes are checked after the snapshot: any rejected line stops the run (exit 2), naming the side."""
-    import pytest
-
-    from netdryrun.lab import LabError
-    from netdryrun.verify import run as vrun
-
-    class Lab:
-        def logs(self, node):
-            return LIVE_LOG if node == "r2" else "watchfrr: all daemons up\n"
+    nodes are checked after the snapshot: any rejected line stops the run (exit 2), naming the side, the node and
+    the line."""
+    lab = Lab({"r1": CLEAN_LOG, "r2": LIVE_LOG, "h1": CLEAN_LOG}, {"h1": ("linux", "alpine:3")})
     with pytest.raises(LabError) as e:
-        vrun.check_config_loaded(Lab(), {"r1": "frr", "r2": "frr", "h1": ""}, "after")
-    assert "after" in str(e.value) and "r2" in str(e.value) and "default-orignate" in str(e.value)
-    vrun.check_config_loaded(Lab(), {"r1": "frr", "h1": ""}, "before")      # clean: no error
+        vrun.check_config_loaded(lab, {"r1": "frr", "r2": "frr"}, "after")
+    assert "[after]" in str(e.value) and "r2: line 18: neighbor 10.0.12.1 default-orignate" in str(e.value)
+    vrun.check_config_loaded(Lab({"r1": CLEAN_LOG, "h1": CLEAN_LOG}), {"r1": "frr"}, "before")   # clean: no error
+
+
+def test_verify_reads_a_node_it_did_not_snapshot_when_its_log_shows_rejected_lines():
+    """A node verify doesn't snapshot (a host, a node run as --unobserved) whose log shows FRR's rejected lines
+    still stops the side: fail closed, as `run` does for a node whose driver it can't detect."""
+    lab = Lab({"r1": CLEAN_LOG, "x1": LIVE_LOG}, {"x1": ("linux", "registry.local/edge:7")})
+    with pytest.raises(LabError, match="x1: line 18"):
+        vrun.check_config_loaded(lab, {"r1": "frr"}, "after")
+
+
+def test_verify_stops_when_an_frr_nodes_load_is_unknown():
+    """No sign of a config load in an FRR node's log is no proof it loaded: exit 2, as in `run`."""
+    with pytest.raises(LabError, match="no sign of a config load"):
+        vrun.check_config_loaded(Lab({"r1": "watchfrr: all daemons up\n"}), {"r1": "frr"}, "before")
+
+
+def test_verify_does_not_read_a_node_of_another_platform():
+    lab = Lab({"r1": CLEAN_LOG, "s1": LIVE_LOG}, {"s1": ("nokia_srlinux", "ghcr.io/nokia/srlinux:26.7.2")})
+    vrun.check_config_loaded(lab, {"r1": "frr", "s1": "srlinux"}, "after")
+    assert lab.read == ["r1"]
 
 
 def test_frr_reports_its_version():
@@ -67,23 +75,19 @@ def test_frr_reports_its_version():
 
 
 def test_driver_defaults_never_claim_what_they_do_not_read():
-    import pytest
-
     from netdryrun.drivers.base import Driver, DriverError
     d = Driver(None, "x1")
-    assert d.nos_version() is None and d.config_load_errors() is None
+    assert d.nos_version() is None
     with pytest.raises(DriverError):
         d.vrfs()
 
 
 def test_frr_reads_its_version_from_the_node_and_none_when_it_cannot():
-    from netdryrun.lab import ExecResult
-
-    class Lab:
+    class ExecLab:
         def __init__(self, rc, out):
             self.rc, self.out = rc, out
 
         def exec(self, node, cmd, timeout=60, input=None):
             return ExecResult(cmd, self.rc, self.out, "")
-    assert FrrDriver(Lab(0, "FRRouting 10.4.1_git (r1) on Linux.\n"), "r1").nos_version() == "FRRouting 10.4.1_git"
-    assert FrrDriver(Lab(1, ""), "r1").nos_version() is None
+    assert FrrDriver(ExecLab(0, "FRRouting 10.4.1_git (r1) on Linux.\n"), "r1").nos_version() == "FRRouting 10.4.1_git"
+    assert FrrDriver(ExecLab(1, ""), "r1").nos_version() is None

@@ -125,7 +125,7 @@ def facts() -> dict:
     import sync_facts
 
     f = sync_facts.facts()
-    mcp = _module(SRC / "mcp_server.py")
+    mcp = _module(SRC / "agent_result.py")
     run_verdicts = [ast.literal_eval(_assigned(mcp, n)) for n in ("CHECKS_PASSED", "DO_NOT_APPLY", "INCONCLUSIVE")]
     verify_verdicts = list(ast.literal_eval(_assigned(_module(SRC / "verify" / "report.py"), "VERDICTS")).values())
     return {**f, "run_verdicts": run_verdicts, "verify_verdicts": verify_verdicts}
