@@ -20,7 +20,7 @@ Netdryrun 0.3.3 checks containerlab's exit code, and on FRR it reads the boot lo
 
 ## What to do until 0.4
 
-- **Put routing config in the node's startup config (`frr.conf`, or the NOS's `startup-config`), or in `setup:` in `netdryrun.yml`, never in topology `exec:` lines.**
+- **Put routing config in `setup:` in `netdryrun.yml`, or, on FRR, in `frr.conf`; never in topology `exec:` lines.** On Arista cEOS, SR Linux and SONiC, 0.3.3 doesn't check the startup config either (a [published limit](https://netdryrun.com/trust/), fixed in 0.4), so `setup:` is the only checked route there.
 - Keep `exec:` for lab plumbing. To check a lab once, deploy it by hand with `containerlab deploy -t topology.clab.yml` and look for `Failed to execute command` in its output.
 
 ## What 0.4 does
