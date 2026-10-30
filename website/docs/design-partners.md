@@ -14,6 +14,8 @@ We want Netdryrun shaped by real changes, not guesses. If you have a routing cha
 - The verdict with evidence, before your change goes anywhere real. You keep everything.
 - Help wiring it into your CI, if you want it there.
 
+Run Cisco IOS XE or IOS XR under your own Cisco licence? Help us verify the upcoming Cisco drivers on your image, and get the verdicts first.
+
 ## What we ask
 
 - One real upcoming change, and sanitized configs for the routers involved: replace public addresses and AS numbers with documentation ranges and remove secrets. We'll help you check.
