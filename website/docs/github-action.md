@@ -52,7 +52,7 @@ It needs a Linux runner with Docker. GitHub-hosted `ubuntu-latest` runners work.
 | Output | Meaning |
 |---|---|
 | `status` | `passed`, `failed`, `error` or `inconclusive` (the lab never reached a testable state, so the run says nothing about the change; the job still fails). With `mode: verify`: `matched`, `no_change`, `failed`, `error`, `inconclusive` or `unhealthy_baseline` |
-| `verdict` | `CHECKS PASSED (only what the checks cover)`, `DO NOT APPLY THIS CHANGE` or `INCONCLUSIVE` (decide on `status`, not on the text). With `mode: verify`: `INTENT MATCHED`, `NO BEHAVIOR CHANGE`, `UNDECLARED CHANGES: DO NOT APPLY`, `INCONCLUSIVE`, `INCONCLUSIVE: UNHEALTHY BASELINE` or `ERROR: NO VERDICT` (never `SAFE TO PROCEED`) |
+| `verdict` | `CHECKS PASSED (only what the checks cover)`, `DO NOT APPLY THIS CHANGE` or `INCONCLUSIVE` (decide on `status`, not on the text). With `mode: verify`: `INTENT MATCHED`, `NO BEHAVIOR CHANGE`, `UNDECLARED CHANGES: DO NOT APPLY`, `INCONCLUSIVE`, `INCONCLUSIVE: UNHEALTHY BASELINE` or `ERROR: NO VERDICT` (never a pass of checks) |
 | `inconclusive-reason` | Why the run was inconclusive; empty otherwise |
 | `passed` | Number of passed checks (`mode: verify`: declared intent lines observed, plus standing guards passed) |
 | `failed` | Number of failed checks (`mode: verify`: undeclared differences, declared lines that didn't happen, plus standing guards failed) |
@@ -134,7 +134,7 @@ jobs:
 
 ### Verify a change against its intent (mode: verify)
 
-New in 0.4, FRR only. Instead of running checks, the Action boots the topology twice, with the base branch (the first parent of the PR's merge commit) and with the PR merged into it (the merge commit, `github.sha`: what lands, not the PR head alone), and fails on every difference in routing behavior that the intent file doesn't declare. It runs [`netdryrun verify`](reference/verify.md): the verdict is `INTENT MATCHED`, `NO BEHAVIOR CHANGE`, `UNDECLARED CHANGES: DO NOT APPLY` or `INCONCLUSIVE`, never `SAFE TO PROCEED`. The standing guards are the `netdryrun.yml` next to the topology **in the base commit**, never the PR's copy, so a PR can't weaken them.
+New in 0.4, FRR only. Instead of running checks, the Action boots the topology twice, with the base branch (the first parent of the PR's merge commit) and with the PR merged into it (the merge commit, `github.sha`: what lands, not the PR head alone), and fails on every difference in routing behavior that the intent file doesn't declare. It runs [`netdryrun verify`](reference/verify.md): the verdict is `INTENT MATCHED`, `NO BEHAVIOR CHANGE`, `UNDECLARED CHANGES: DO NOT APPLY` or `INCONCLUSIVE`, never a pass of checks. The standing guards are the `netdryrun.yml` next to the topology **in the base commit**, never the PR's copy, so a PR can't weaken them.
 
 ```yaml title=".github/workflows/network-verify.yml"
 name: Network verify

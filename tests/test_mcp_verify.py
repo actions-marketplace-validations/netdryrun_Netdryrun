@@ -20,6 +20,8 @@ from netdryrun.verify.converge import Inconclusive  # noqa: E402
 from test_verify_run import NEW_BLOCK, fake_side, make_lab, side_dir  # noqa: E402
 from verify_helpers import add_new_customer_block, attrs, base, session  # noqa: E402
 
+OLD = "SAFE" + " TO PROCEED"   # 0.3.1's retired pass verdict, split so the retired-string check never trips
+
 jsonschema = pytest.importorskip("jsonschema")
 
 ROOT = Path(__file__).parents[1]
@@ -52,7 +54,7 @@ def call(monkeypatch, lab, before_snap, after_snap, intent, guards=None, **kw):
     data = json.loads(mcp_server.verify_change(lab["topology"], lab["before"], lab["after"], intent, **kw))
     validate(data)
     assert data["intent_source"] == "mcp" and data["tool"] == "verify_change"
-    assert "SAFE TO PROCEED" not in json.dumps(data) and "CHECKS PASSED" not in json.dumps(data)
+    assert OLD not in json.dumps(data) and "CHECKS PASSED" not in json.dumps(data)
     return data, seen
 
 

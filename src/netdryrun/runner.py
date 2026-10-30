@@ -375,11 +375,6 @@ def rejected_config_message(by_node: dict[str, list[str]]) -> str:
             f"change as written: {' | '.join(found)}. Fix the config and run again.")
 
 
-def rejected_config(lab, config: Config) -> str:
-    """Why the lab did not run the config as written, or "" (config_load_by_node, as one error)."""
-    return rejected_config_message(config_load_by_node(lab, _driver_of(config)))
-
-
 def run(config: Config, *, deploy: bool = True, keep: bool = False, keep_on_failure: bool = False,
         settle: float = 10.0, hold: float = 10.0,
         on_result: Callable[[Result], None] | None = None, log: Callable[[str], None] = lambda _: None) -> RunReport:

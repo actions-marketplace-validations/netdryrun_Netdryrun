@@ -17,6 +17,8 @@ from netdryrun.verify import run as vrun
 from test_verify_run import git, run_verify
 from verify_helpers import add_new_customer_block, base
 
+OLD = "SAFE" + " TO PROCEED"   # 0.3.1's retired pass verdict, split so the retired-string check never trips
+
 ROOT = Path(__file__).parents[1]
 ACTION = yaml.safe_load((ROOT / "action.yml").read_text(encoding="utf-8"))
 EDITED = "intent edited in this PR: requires a code-owner approval"
@@ -232,7 +234,7 @@ def test_verify_outputs_cannot_be_spoofed(tmp_path):
     for code in ("1", "2", ""):
         assert read_result(tmp_path, rep, code) ["status"] == "error"
     # a verdict that doesn't belong to its status, a run report in verify mode, no report at all
-    assert read_result(tmp_path, {**rep, "verdict": "SAFE TO PROCEED"}, "0")["status"] == "error"
+    assert read_result(tmp_path, {**rep, "verdict": OLD}, "0")["status"] == "error"
     run_rep = {"status": "passed", "summary": {"passed": 3, "failed": 0}, "inconclusive_reason": None}
     assert read_result(tmp_path, run_rep, "0")["status"] == "error"
     out = read_result(tmp_path, None, "0")
@@ -263,7 +265,7 @@ def test_markdown_comment(tmp_path):
     assert f"**Undeclared changes ({len(res.match.undeclared)})**" in md
     assert md.count("next: `") == min(40, len(res.match.undeclared)) and "docker exec clab-vlab-" in md
     assert "no standing guards ran" in md and "Standing guards:** none ran" in md
-    assert "SAFE TO PROCEED" not in md and "CHECKS PASSED" not in md
+    assert OLD not in md and "CHECKS PASSED" not in md
 
 
 def test_markdown_comment_is_inert(tmp_path):

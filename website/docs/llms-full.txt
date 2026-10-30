@@ -3072,7 +3072,7 @@ It needs a Linux runner with Docker. GitHub-hosted `ubuntu-latest` runners work.
 | Output | Meaning |
 |---|---|
 | `status` | `passed`, `failed`, `error` or `inconclusive` (the lab never reached a testable state, so the run says nothing about the change; the job still fails). With `mode: verify`: `matched`, `no_change`, `failed`, `error`, `inconclusive` or `unhealthy_baseline` |
-| `verdict` | `CHECKS PASSED (only what the checks cover)`, `DO NOT APPLY THIS CHANGE` or `INCONCLUSIVE` (decide on `status`, not on the text). With `mode: verify`: `INTENT MATCHED`, `NO BEHAVIOR CHANGE`, `UNDECLARED CHANGES: DO NOT APPLY`, `INCONCLUSIVE`, `INCONCLUSIVE: UNHEALTHY BASELINE` or `ERROR: NO VERDICT` (never `SAFE TO PROCEED`) |
+| `verdict` | `CHECKS PASSED (only what the checks cover)`, `DO NOT APPLY THIS CHANGE` or `INCONCLUSIVE` (decide on `status`, not on the text). With `mode: verify`: `INTENT MATCHED`, `NO BEHAVIOR CHANGE`, `UNDECLARED CHANGES: DO NOT APPLY`, `INCONCLUSIVE`, `INCONCLUSIVE: UNHEALTHY BASELINE` or `ERROR: NO VERDICT` (never a pass of checks) |
 | `inconclusive-reason` | Why the run was inconclusive; empty otherwise |
 | `passed` | Number of passed checks (`mode: verify`: declared intent lines observed, plus standing guards passed) |
 | `failed` | Number of failed checks (`mode: verify`: undeclared differences, declared lines that didn't happen, plus standing guards failed) |
@@ -3154,7 +3154,7 @@ jobs:
 
 ### Verify a change against its intent (mode: verify)
 
-New in 0.4, FRR only. Instead of running checks, the Action boots the topology twice, with the base branch (the first parent of the PR's merge commit) and with the PR merged into it (the merge commit, `github.sha`: what lands, not the PR head alone), and fails on every difference in routing behavior that the intent file doesn't declare. It runs [`netdryrun verify`](reference/verify.md): the verdict is `INTENT MATCHED`, `NO BEHAVIOR CHANGE`, `UNDECLARED CHANGES: DO NOT APPLY` or `INCONCLUSIVE`, never `SAFE TO PROCEED`. The standing guards are the `netdryrun.yml` next to the topology **in the base commit**, never the PR's copy, so a PR can't weaken them.
+New in 0.4, FRR only. Instead of running checks, the Action boots the topology twice, with the base branch (the first parent of the PR's merge commit) and with the PR merged into it (the merge commit, `github.sha`: what lands, not the PR head alone), and fails on every difference in routing behavior that the intent file doesn't declare. It runs [`netdryrun verify`](reference/verify.md): the verdict is `INTENT MATCHED`, `NO BEHAVIOR CHANGE`, `UNDECLARED CHANGES: DO NOT APPLY` or `INCONCLUSIVE`, never a pass of checks. The standing guards are the `netdryrun.yml` next to the topology **in the base commit**, never the PR's copy, so a PR can't weaken them.
 
 ```yaml title=".github/workflows/network-verify.yml"
 name: Network verify
@@ -3617,7 +3617,7 @@ New in 0.4, FRR only. Checks cover what someone thought of; an agent asked to ma
 - `intent` is the [intent](reference/verify.md#the-intent-file) as YAML or JSON text, or the path of an intent file. **It comes from the ticket or the operator**: never write it from the diff, and never widen it (or add `allow_anywhere`) to make a change pass. The result records `intent_source: "mcp"`.
 - `guards` is an optional `netdryrun.yml` run on the *after* lab. With a git ref as `before`, the `netdryrun.yml` next to the topology in that ref runs by default, so the base branch's leak guards fail a change even when the intent declares the leak.
 
-The `verdict` is `INTENT MATCHED`, `UNDECLARED CHANGES: DO NOT APPLY` or `INCONCLUSIVE`, plus `NO BEHAVIOR CHANGE` (nothing changed and nothing was declared), `INCONCLUSIVE: UNHEALTHY BASELINE` and `ERROR: NO VERDICT`. It never says `CHECKS PASSED` (nor 0.3.1's `SAFE TO PROCEED`): explained is not the same as safe, so show the echoed `intent` to the human with the verdict. On `UNDECLARED CHANGES`, `undeclared` lists each difference nobody declared (up to 50; `undeclared_total` counts them) with one read-only `next_diagnostic` command, and `not_happened` the declarations that didn't happen. Fix the change, not the intent. The full report, both snapshots included, is in `evidence_file`. The result format is `$defs/verify_result` in [`mcp-result-v1.json`](https://netdryrun.com/schemas/mcp-result-v1.json).
+The `verdict` is `INTENT MATCHED`, `UNDECLARED CHANGES: DO NOT APPLY` or `INCONCLUSIVE`, plus `NO BEHAVIOR CHANGE` (nothing changed and nothing was declared), `INCONCLUSIVE: UNHEALTHY BASELINE` and `ERROR: NO VERDICT`. It never says `CHECKS PASSED`: explained is not the same as safe, so show the echoed `intent` to the human with the verdict. On `UNDECLARED CHANGES`, `undeclared` lists each difference nobody declared (up to 50; `undeclared_total` counts them) with one read-only `next_diagnostic` command, and `not_happened` the declarations that didn't happen. Fix the change, not the intent. The full report, both snapshots included, is in `evidence_file`. The result format is `$defs/verify_result` in [`mcp-result-v1.json`](https://netdryrun.com/schemas/mcp-result-v1.json).
 
 ## Result and verdict
 

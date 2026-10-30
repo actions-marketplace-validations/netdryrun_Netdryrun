@@ -114,3 +114,23 @@ def test_the_report_records_each_platforms_load():
     runner._config_load(lab, lambda n: Drv({"ceos1": "eos", "srl1": "srlinux"}[n]), rep, by_node(lab))
     assert rep.environment["nodes"]["ceos1"]["config_load"] == "clean"
     assert rep.environment["nodes"]["srl1"]["config_load"] == "clean"
+
+
+def test_ceos_output_it_can_not_read_is_named():
+    found = by_node(Lab({"ceos1": CEOS}, {"ceos1": (0, "% Invalid input\n")}))
+    assert "unexpected output" in found["ceos1"][0] and "unknown" in found["ceos1"][0]
+
+
+def test_the_binds_a_sonic_node_gets_are_read_from_the_topology(tmp_path):
+    topo = tmp_path / "t.clab.yml"
+    topo.write_text("name: t\ntopology:\n  defaults: {binds: [shared/a:/etc/x]}\n  nodes:\n"
+                    "    sonic1: {kind: sonic-vs, binds: [configs/frr.conf:/etc/frr/frr.conf]}\n"
+                    "    sonic2: {kind: sonic-vs}\n")
+    lab = Lab({"sonic1": SONIC, "sonic2": SONIC})
+    lab.topology = topo
+    assert runner._bound_files(lab, "sonic1") == ["shared/a:/etc/x", "configs/frr.conf:/etc/frr/frr.conf"]
+    found = runner.config_load_by_node(lab, runner._driver_of(runner.Config(path=Path("t.yml"), lab=topo, timeout=60,
+                                                                            checks=[])))
+    assert found["sonic2"] == [] and "not checked" in found["sonic1"][0]
+    lab.topology = tmp_path / "missing.clab.yml"           # unreadable: an error, never clean
+    assert "could not be read" in runner._bound_files(lab, "sonic1")[0]
