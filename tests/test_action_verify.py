@@ -64,7 +64,8 @@ def test_before_is_the_pr_base_and_after_the_head():
 def test_verify_removes_stale_reports_before_anything_is_written():
     for name, cmd in (("Check the intent file", "python - <<'EOF'"), ("Run Netdryrun", "netdryrun verify")):
         run = step(name)["run"]
-        rm = run.index("rm -f")
+        # a plain `rm -f <files>`, or 0.3.3's loop over them (which also removes a directory at a report path)
+        rm = run.index("for f in ") if "for f in " in run else run.index("rm -f")
         assert rm < run.index(cmd)
         for f in ('"$NDR_JSON"', '"$NDR_JUNIT"', "netdryrun-summary.md", "netdryrun-comment.json"):
             assert f in run[rm:run.index("\n", rm)], (name, f)
@@ -72,7 +73,8 @@ def test_verify_removes_stale_reports_before_anything_is_written():
 
 def test_the_comment_step_is_shared_by_both_modes():
     c = step("Comment on the pull request")
-    assert "mode" not in c["if"] and "netdryrun-summary.md" in c["run"]
+    assert "mode" not in c["if"] and c["env"]["NDR_SUMMARY"] == "netdryrun-summary.md"
+    assert c["env"]["NDR_MODE"] == "${{ inputs.mode }}"   # the header follows the mode (tests/test_action_comment.py)
 
 
 # --- the intent rule ---------------------------------------------------------------------------------------

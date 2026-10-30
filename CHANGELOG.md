@@ -35,6 +35,8 @@
 
 - **`record` beyond the default VRF** (0.3.3 cross-platform review): on FRR and SONiC it records every active VRF, each check with its `vrf:`; a VRF without BGP is skipped. On SR Linux and Arista EOS it still records the default VRF only, and now says so in a warning instead of silently.
 
+- **Moved to 0.4.1** (were scheduled for 0.4): reading the graceful-restart stale flag on SR Linux, Arista EOS and SONiC (until then: leave graceful restart off in the lab, or give the checks a `timeout` above the stale timer); counting only usable routes in SR Linux prefix counts (until then: pair the count with `route` checks); comparing FRR `Warning` and `mgmtd` lines with the running config (until then such a line makes the run an error, never a pass).
+
 ### Release gate
 
 - `verify.engine` and `verify.intent` join the verdict modules: mutation testing attacks them (`scripts/release_gate.py`, `[tool.mutmut] only_mutate`), and their coverage has floors at the coverage measured when they joined, rounded down: engine 95 (95.9), intent 93 (93.3), lines and branches. A first mutation run of `verify.engine` (1,353 mutants) left 442 survivors; new tests on every way a declaration can fail to happen, what each form may explain and the report of each declared line brought that to 211, most of them in message text and report wording (the remaining ones are listed for the release review).
