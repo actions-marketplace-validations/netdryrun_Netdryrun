@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.3 (2026-10-31)
+## 0.3.3 (2026-10-30)
 
 The agent runtime: an agent with no local Docker gets a verdict through a pull request, MCP calls answer within seconds, and `record` writes baselines that survive normal growth.
 
