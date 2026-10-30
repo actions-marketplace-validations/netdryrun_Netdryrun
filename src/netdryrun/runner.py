@@ -336,7 +336,7 @@ def _startup_load(lab, name: str, driver: str, bound, deployed: bool = True) -> 
         files = [b for b in bound(name) if _sonic_config_bind(b)]
         if files:
             return [f"a config bound into a SONiC node is not checked ({', '.join(files[:3])}): configure SONiC "
-                    "with setup commands (nodes.<name>.setup), which are"]
+                    "with setup commands (nodes.<name>.setup), which are checked"]
         return []
     return None
 

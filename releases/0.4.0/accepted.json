@@ -857,12 +857,16 @@
       "class": "message-text"
     },
     "netdryrun.verify.intent.x__line__mutmut_109": {
-      "reason": "equivalent: afi is required and non-empty by then, so the condition is always true",
-      "diff": "ffa9b8b49c8e493e"
+      "reason": "equivalent: afi is required and must be one of AFI_SAFIS (both non-empty) before this line, so the conditional always takes the ' {afi}' branch",
+      "diff": "b1283214a61f3eea",
+      "class": "equivalent",
+      "argument": "only the echo text of a session line could change, and it cannot change since the branch is never taken"
     },
     "netdryrun.verify.intent.x__line__mutmut_110": {
-      "reason": "equivalent: afi is required and non-empty by then, so the else branch never runs",
-      "diff": "8172ad87caea5109"
+      "reason": "equivalent: afi is required and must be one of AFI_SAFIS (both non-empty) before this line, so the conditional always takes the ' {afi}' branch",
+      "diff": "22816c4beefd204d",
+      "class": "equivalent",
+      "argument": "only the echo text of a session line could change, and it cannot change since the branch is never taken"
     },
     "netdryrun.verify.intent.x__line__mutmut_12": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
@@ -4879,9 +4883,10 @@
       "class": "logging"
     },
     "netdryrun.runner.x_run__mutmut_87": {
-      "reason": "equivalent: report.results is still empty here, so assigning the positive results equals appending them",
-      "diff": "599a5df6ec16c320",
-      "class": "equivalent"
+      "reason": "report.results = run_round_robin(...) instead of +=: nothing has been added to report.results before this line (a fresh RunReport, no earlier append), so assigning the positive results equals appending them",
+      "diff": "af44920cbb493329",
+      "class": "equivalent",
+      "argument": "report.results is the RunReport's empty default list at this point on every path (only lines after 460 append to it), so the results list, its order and every verdict derived from it are identical; no failure can become a pass"
     },
     "netdryrun.runner.x_run_scenario__mutmut_105": {
       "reason": "equivalent: results is still empty here, so binding it to pos_results equals extending it (same items returned)",
@@ -5288,9 +5293,10 @@
       "class": "message-text"
     },
     "netdryrun.runner.x_run__mutmut_260": {
-      "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it",
-      "diff": "cfe4996601a0373e",
-      "class": "logging"
+      "reason": "traceback.print_exc(file=None) prints to sys.stderr, the same stream as file=sys.stderr (the traceback module resolves None to the current sys.stderr)",
+      "diff": "203a02246fb059d7",
+      "class": "equivalent",
+      "argument": "only under --debug, after report.error is already set to the internal error (status error, exit 2); the traceback goes to the same stream either way and nothing in the report, status or exit code reads it"
     },
     "netdryrun.runner.x_run__mutmut_268": {
       "reason": "message text only: the signal name in report.error of an interrupted run; status stays error and the exit code comes from the exception's signum",
@@ -5308,14 +5314,16 @@
       "class": "equivalent"
     },
     "netdryrun.drivers.eos.x__summary__mutmut_53": {
-      "reason": "equivalent: only the first field of the split is used, and it is the same for any maxsplit",
-      "diff": "4f22711f95de4dbe",
-      "class": "equivalent"
+      "reason": "dropping maxsplit=1 from the peerState split: only element [0] is used, and the first field of re.split is the same for any maxsplit",
+      "diff": "3e375af80b6df06d",
+      "class": "equivalent",
+      "argument": "re.split(p, s)[0] == re.split(p, s, maxsplit=1)[0] for every string s, so the parsed state is identical on every input"
     },
     "netdryrun.drivers.eos.x__summary__mutmut_59": {
-      "reason": "equivalent: only the first field of the split is used, and it is the same for any maxsplit",
-      "diff": "aa28774e519531df",
-      "class": "equivalent"
+      "reason": "maxsplit=1 -> maxsplit=2 on the peerState split: only element [0] is used, which does not depend on maxsplit (>=1)",
+      "diff": "26542544118646ac",
+      "class": "equivalent",
+      "argument": "re.split(p, s, maxsplit=k)[0] is the text before the first separator for every k >= 1, so the parsed state is identical on every input"
     },
     "netdryrun.drivers.eos.x__summary__mutmut_82": {
       "reason": "equivalent: the mutated test only adds the case where the new state is established too, and then 'established' is written over 'established'",
@@ -5385,6 +5393,270 @@
       "class": "equivalent",
       "argument": "The daemon stored here is read only by `explained`, which is reached only when every reported line was cleared. A per-daemon file line is always stored as not cleared, so when one exists the kept lines are returned first. So `explained` never sees this value and the returned list is the same for every input.",
       "reviewed": "adversarial (fresh Opus agent), 2026-10-30: equivalent, no input differs"
+    },
+    "netdryrun.verify.engine.x__session__mutmut_102": {
+      "reason": "equivalent: session ItemKeys have afi '' (snapshot.ItemKey), which is never in afis ({'ipv4'} or {'ipv6'}), so the `k.afi not in afis` clause skips them whether or not the kind test does",
+      "diff": "8d423b01b154c1ba",
+      "class": "equivalent",
+      "argument": "the same items are skipped either way, so the explained set and the verdict are identical"
+    },
+    "netdryrun.verify.engine.x__session__mutmut_103": {
+      "reason": "equivalent: session ItemKeys have afi '' (snapshot.ItemKey), which is never in afis ({'ipv4'} or {'ipv6'}), so the `k.afi not in afis` clause skips them whether or not the kind test does",
+      "diff": "275d6f1587980ec6",
+      "class": "equivalent",
+      "argument": "the same items are skipped either way, so the explained set and the verdict are identical"
+    },
+    "netdryrun.verify.engine.x__session__mutmut_85": {
+      "reason": "equivalent: change is never None here: the near end was established before and is not after (or the line returned early), and a far end is paired only from an established session that, unless still established after (early return), is down or removed after, so its key is always in the diff",
+      "diff": "1e666185589223a6",
+      "class": "equivalent",
+      "argument": "the default is unreachable; were it reached, the mutant raises StopIteration (verify errors out) rather than explaining anything"
+    },
+    "netdryrun.verify.engine.x_match__mutmut_24": {
+      "reason": "equivalent: a happened config_change_on line already explains the config key of every node it names, so adding those nodes to `behaving` explains nothing more; lines that did not happen stay excluded by r.happened",
+      "diff": "7c120b2579565827",
+      "class": "equivalent",
+      "argument": "the explained set is identical, so undeclared items and the status are unchanged"
+    },
+    "netdryrun.verify.engine.x_match__mutmut_25": {
+      "reason": "equivalent: a happened config_change_on line already explains the config key of every node it names, so adding those nodes to `behaving` explains nothing more; lines that did not happen stay excluded by r.happened",
+      "diff": "4878dcb6b1bc2249",
+      "class": "equivalent",
+      "argument": "the explained set is identical, so undeclared items and the status are unchanged"
+    },
+    "netdryrun.verify.engine.x_match__mutmut_48": {
+      "reason": "equivalent: session, vrf and config ItemKeys have prefix '' (snapshot.ItemKey); Allow.matches('') is False for an exact entry (patterns are normalised prefixes) and for a glob (ip_network('') raises ValueError -> False)",
+      "diff": "17db6893a108cbf6",
+      "class": "equivalent",
+      "argument": "an allow entry can never match these keys, so dropping one kind from the exclusion lets nothing more be allowed"
+    },
+    "netdryrun.verify.engine.x_match__mutmut_49": {
+      "reason": "equivalent: session, vrf and config ItemKeys have prefix '' (snapshot.ItemKey); Allow.matches('') is False for an exact entry (patterns are normalised prefixes) and for a glob (ip_network('') raises ValueError -> False)",
+      "diff": "8905dbdbae87b885",
+      "class": "equivalent",
+      "argument": "an allow entry can never match these keys, so dropping one kind from the exclusion lets nothing more be allowed"
+    },
+    "netdryrun.verify.engine.x_match__mutmut_50": {
+      "reason": "equivalent: session, vrf and config ItemKeys have prefix '' (snapshot.ItemKey); Allow.matches('') is False for an exact entry (patterns are normalised prefixes) and for a glob (ip_network('') raises ValueError -> False)",
+      "diff": "a0488fb4498d88ce",
+      "class": "equivalent",
+      "argument": "an allow entry can never match these keys, so dropping one kind from the exclusion lets nothing more be allowed"
+    },
+    "netdryrun.verify.engine.x_match__mutmut_51": {
+      "reason": "equivalent: session, vrf and config ItemKeys have prefix '' (snapshot.ItemKey); Allow.matches('') is False for an exact entry (patterns are normalised prefixes) and for a glob (ip_network('') raises ValueError -> False)",
+      "diff": "09932aabc54cb523",
+      "class": "equivalent",
+      "argument": "an allow entry can never match these keys, so dropping one kind from the exclusion lets nothing more be allowed"
+    },
+    "netdryrun.verify.engine.x_match__mutmut_52": {
+      "reason": "equivalent: session, vrf and config ItemKeys have prefix '' (snapshot.ItemKey); Allow.matches('') is False for an exact entry (patterns are normalised prefixes) and for a glob (ip_network('') raises ValueError -> False)",
+      "diff": "8bcef0f9b5f0e115",
+      "class": "equivalent",
+      "argument": "an allow entry can never match these keys, so dropping one kind from the exclusion lets nothing more be allowed"
+    },
+    "netdryrun.verify.engine.x_match__mutmut_53": {
+      "reason": "equivalent: session, vrf and config ItemKeys have prefix '' (snapshot.ItemKey); Allow.matches('') is False for an exact entry (patterns are normalised prefixes) and for a glob (ip_network('') raises ValueError -> False)",
+      "diff": "4404dc0c50c0fb69",
+      "class": "equivalent",
+      "argument": "an allow entry can never match these keys, so dropping one kind from the exclusion lets nothing more be allowed"
+    },
+    "netdryrun.verify.engine.x_config_lines_changed__mutmut_27": {
+      "reason": "equivalent: the zip runs only when added and removed are both empty, i.e. a and b are equal multisets of the same length, so strict=True never raises and every strict value zips identically",
+      "diff": "ab95bcfa5af7b547",
+      "class": "equivalent",
+      "argument": "the listed order changes are identical; nothing is compared differently"
+    },
+    "netdryrun.verify.engine.x_config_lines_changed__mutmut_30": {
+      "reason": "equivalent: the zip runs only when added and removed are both empty, i.e. a and b are equal multisets of the same length, so strict=True never raises and every strict value zips identically",
+      "diff": "08dafad1ea64d9d2",
+      "class": "equivalent",
+      "argument": "the listed order changes are identical; nothing is compared differently"
+    },
+    "netdryrun.verify.engine.x_config_lines_changed__mutmut_31": {
+      "reason": "equivalent: the zip runs only when added and removed are both empty, i.e. a and b are equal multisets of the same length, so strict=True never raises and every strict value zips identically",
+      "diff": "b164ebd208416c88",
+      "class": "equivalent",
+      "argument": "the listed order changes are identical; nothing is compared differently"
+    },
+    "netdryrun.runner.x__stretch_for_advertisement_intervals__mutmut_19": {
+      "reason": "the initial `where` (\"\" vs \"XXXX\") is read only by the log line, which runs only when need > min(settle, hold) >= 0, i.e. longest > 0, and longest only becomes > 0 together with an assignment of where",
+      "diff": "12023ae4790e7fc9",
+      "class": "equivalent",
+      "argument": "settle and hold are refused below 0 by _check_duration before run() calls this, so the log (the only reader of the initial value) never runs with it; the returned (settle, hold) does not depend on where, so no window and no verdict changes"
+    },
+    "netdryrun.runner.x__sonic_config_bind__mutmut_14": {
+      "reason": "bind.split(\":\")[1] equals bind.split(\":\", 2)[1] for every string: a maxsplit of 1 or more never changes the second field",
+      "diff": "784048f40d19dadc",
+      "class": "equivalent",
+      "argument": "the destination parsed is the same string for every bind, so the same binds are flagged and _startup_load returns the same error list; a SONiC node can't become clean through it"
+    },
+    "netdryrun.runner.x__sonic_config_bind__mutmut_17": {
+      "reason": "bind.split(\":\", 3)[1] equals bind.split(\":\", 2)[1] for every string: a maxsplit of 1 or more never changes the second field",
+      "diff": "8bfee71a63c03b73",
+      "class": "equivalent",
+      "argument": "the destination parsed is the same string for every bind, so the same binds are flagged and _startup_load returns the same error list; a SONiC node can't become clean through it"
+    },
+    "netdryrun.drivers.junos.x__adv_interval__mutmut_15": {
+      "reason": "required=None instead of required=False for the optional outbound-timer leaf",
+      "diff": "1e01732b99127590",
+      "class": "equivalent",
+      "argument": "_leaf only tests `if required:`; None and False are both falsy, so a missing timer still returns None and every other path is identical"
+    },
+    "netdryrun.drivers.junos.x__adv_interval__mutmut_33": {
+      "reason": "required=None instead of required=False for the bgp-options flag leaves",
+      "diff": "99b4e6cba348092c",
+      "class": "equivalent",
+      "argument": "_leaf only tests `if required:`; None and False are both falsy, so the flag read is identical"
+    },
+    "netdryrun.drivers.junos.x__adv_interval__mutmut_39": {
+      "reason": "an absent/empty option flag defaults to 'XXXX' instead of ''",
+      "diff": "4016d0da0846fcce",
+      "class": "equivalent",
+      "argument": "the default is only searched with _DELAY (delay|timer); neither '' nor 'XXXX' matches, so the refusal decision and the returned interval are unchanged"
+    },
+    "netdryrun.drivers.junos.x__as_path__mutmut_22": {
+      "reason": "segment kind 'as-sequence' renamed 'XXas-sequenceXX'",
+      "diff": "083e3e20590fb588",
+      "class": "equivalent",
+      "argument": "render_as_path treats any kind that is not a set and not confed as a sequence (its else branch); 'xxas-sequencexx' takes that same branch, so the rendered AS path is identical"
+    },
+    "netdryrun.drivers.junos.x__as_path__mutmut_23": {
+      "reason": "segment kind 'as-sequence' upper-cased",
+      "diff": "c24880d3be9e7860",
+      "class": "equivalent",
+      "argument": "render_as_path lower-cases the kind before comparing, so 'AS-SEQUENCE' renders exactly as 'as-sequence'"
+    },
+    "netdryrun.drivers.junos.x__as_path__mutmut_28": {
+      "reason": "segment kind 'as-set' upper-cased",
+      "diff": "d32a778a115feb27",
+      "class": "equivalent",
+      "argument": "render_as_path lower-cases the kind before comparing, so 'AS-SET' renders as {a,b} exactly like 'as-set'"
+    },
+    "netdryrun.drivers.junos.x__as_path__mutmut_41": {
+      "reason": "segment kind 'as-confed-sequence' renamed 'XXas-confed-sequenceXX'",
+      "diff": "356b97c2202225e2",
+      "class": "equivalent",
+      "argument": "render_as_path checks only that 'confed' is in the kind and 'set' is not; 'xxas-confed-sequencexx' satisfies both the same way, rendering (a b) identically"
+    },
+    "netdryrun.drivers.junos.x__as_path__mutmut_42": {
+      "reason": "segment kind 'as-confed-sequence' upper-cased",
+      "diff": "2fd4c96f34e669d7",
+      "class": "equivalent",
+      "argument": "render_as_path lower-cases the kind before comparing, so the rendering is identical"
+    },
+    "netdryrun.drivers.junos.x__as_path__mutmut_6": {
+      "reason": "blank as-path text yields line 'XXXX' instead of ''",
+      "diff": "6b0ecb80320937e6",
+      "class": "equivalent",
+      "argument": "neither '' nor 'XXXX' starts with 'AS path:', so both raise the same unexpected error, whose message quotes `text`, not `line`"
+    },
+    "netdryrun.drivers.junos.x__destination__mutmut_14": {
+      "reason": "required=None instead of required=False for the optional rt-prefix-length leaf",
+      "diff": "089b241a5cf6005e",
+      "class": "equivalent",
+      "argument": "_leaf only tests `if required:`; None and False are both falsy"
+    },
+    "netdryrun.drivers.junos.x__destination__mutmut_34": {
+      "reason": "ip_network(text, strict=None) instead of strict=False",
+      "diff": "7a232795c9643f4e",
+      "class": "equivalent",
+      "argument": "ipaddress only tests `if strict:`; None is falsy, so host bits are masked exactly as with False (strict=True is killed by test_destination_with_host_bits_is_its_network)"
+    },
+    "netdryrun.drivers.junos.x__hidden__mutmut_6": {
+      "reason": "required=None instead of required=False for the optional rt-entry-state leaf",
+      "diff": "51cfe30771655279",
+      "class": "equivalent",
+      "argument": "_leaf only tests `if required:`; None and False are both falsy"
+    },
+    "netdryrun.drivers.junos.x__hidden__mutmut_14": {
+      "reason": "absent rt-entry-state defaults to 'XXXX' instead of ''",
+      "diff": "ba184bd8ae17c909",
+      "class": "equivalent",
+      "argument": "the default is only split and searched for the word 'Hidden'; neither '' nor 'XXXX' contains it, so the hidden verdict is identical"
+    },
+    "netdryrun.drivers.junos.x__afi__mutmut_16": {
+      "reason": "rib.rsplit('.') without maxsplit instead of rsplit('.', 2)",
+      "diff": "ca9182bf20ab462c",
+      "class": "equivalent",
+      "argument": "only the last two components ([-2:]) are compared; rsplit from the right yields the same last two components whatever the maxsplit (>=1)"
+    },
+    "netdryrun.drivers.junos.x__afi__mutmut_19": {
+      "reason": "rib.rsplit('.', 3) instead of rsplit('.', 2)",
+      "diff": "cd5c102f9125e63a",
+      "class": "equivalent",
+      "argument": "only the last two components ([-2:]) are compared; any maxsplit >= 1 from the right yields the same last two"
+    },
+    "netdryrun.drivers.junos.x__next_hop__mutmut_28": {
+      "reason": "required=None instead of required=False for the optional `to` leaf",
+      "diff": "cfbfac2b7274411d",
+      "class": "equivalent",
+      "argument": "_leaf only tests `if required:`; None and False are both falsy"
+    },
+    "netdryrun.drivers.junos.x__active__mutmut_5": {
+      "reason": "required=None instead of required=False for the optional active-tag leaf",
+      "diff": "4191014952b34f05",
+      "class": "equivalent",
+      "argument": "_leaf only tests `if required:`; None and False are both falsy (required=True and the default are killed by test_entry_without_active_tag_is_inactive_not_an_error)"
+    },
+    "netdryrun.drivers.junos.x__protocol__mutmut_3": {
+      "reason": "_leaf(None, e, 'protocol-name') in _protocol",
+      "diff": "c921ee43f832492f",
+      "class": "equivalent",
+      "argument": "every caller (parse_routes, parse_all_routes, parse_bgp_paths) reaches _protocol only after _entries has read the same protocol-name leaf of the same entry with the real command; every raise condition (missing, repeated, not text) fires there first, so the None command is never printed"
+    },
+    "netdryrun.drivers.junos.x__filtered__mutmut_5": {
+      "reason": "required=None instead of required=False for the optional hidden-reason leaf",
+      "diff": "a0aae80a2dc56ca5",
+      "class": "equivalent",
+      "argument": "_leaf only tests `if required:`; None and False are both falsy"
+    },
+    "netdryrun.drivers.junos.x__strip_port__mutmut_4": {
+      "reason": "addr.split('+') without maxsplit instead of split('+', 1)",
+      "diff": "717045e1c363557f",
+      "class": "equivalent",
+      "argument": "only [0] is used; the first piece of a left split is the text before the first '+' whatever the maxsplit"
+    },
+    "netdryrun.drivers.junos.x__strip_port__mutmut_7": {
+      "reason": "addr.split('+', 2) instead of split('+', 1)",
+      "diff": "d753e4fa3b3219ab",
+      "class": "equivalent",
+      "argument": "only [0] is used; it is the text before the first '+' for any maxsplit >= 1 (rsplit is killed by test_peer_address_port_is_cut_at_the_first_plus)"
+    },
+    "netdryrun.drivers.junos.xǁJunosDriverǁall_routes__mutmut_3": {
+      "reason": "default family 5 instead of 4",
+      "diff": "ee04149d13da9aa0",
+      "class": "equivalent",
+      "argument": "family is used only by _table, which returns inet6.0 for 6 and inet.0 for anything else; 4 and 5 both give inet.0 (the IPv6 branch is pinned by test_table_names and test_default_vrf_queries)"
+    },
+    "netdryrun.drivers.eos.x__summary__mutmut_85": {
+      "reason": "state != 'established' -> state != 'XXestablishedXX' in the down-wins merge: the only extra case is state == 'established', where n.state (already 'established') is reassigned the same value",
+      "diff": "40f055d5ef147262",
+      "class": "equivalent",
+      "argument": "the branch runs only when n.state == 'established'; with state == 'established' the mutant assigns 'established' to it, a no-op; any other state is assigned by both versions, so a down session still wins"
+    },
+    "netdryrun.drivers.eos.x__summary__mutmut_86": {
+      "reason": "state != 'established' -> state != 'ESTABLISHED' in the down-wins merge: state is lowercased, so the only extra case reassigns 'established' to a neighbor already 'established'",
+      "diff": "62bcd1173ccf6aec",
+      "class": "equivalent",
+      "argument": "state is .lower()ed so never equals 'ESTABLISHED'; the extra assignment happens only when n.state and state are both 'established', a no-op; a down state is still assigned by both versions"
+    },
+    "netdryrun.drivers.eos.x_parse_startup_config_errors__mutmut_42": {
+      "reason": "zip(strict=True) -> strict=None: the len(body) % 2 check just above raises on an odd body, so body[::2] and body[1::2] always have equal length",
+      "diff": "a5073bdbc2732ebe",
+      "class": "equivalent",
+      "argument": "strict only matters when the two slices differ in length, which the preceding odd-length raise makes impossible; every pair is still read and checked"
+    },
+    "netdryrun.drivers.eos.x_parse_startup_config_errors__mutmut_45": {
+      "reason": "zip(strict=True) -> zip() (strict dropped): the len(body) % 2 check just above guarantees equal-length slices",
+      "diff": "3027d18c53247d3d",
+      "class": "equivalent",
+      "argument": "with an even body the slices have equal length, so no pair can be silently dropped; an odd body already raised DriverError before the loop"
+    },
+    "netdryrun.drivers.eos.x_parse_startup_config_errors__mutmut_49": {
+      "reason": "zip(strict=True) -> strict=False: the len(body) % 2 check just above guarantees equal-length slices",
+      "diff": "07b9dcb32118e5e3",
+      "class": "equivalent",
+      "argument": "with an even body the slices have equal length, so no pair can be silently dropped; an odd body already raised DriverError before the loop; the final total == count == len(out) check also still runs"
     }
   },
   "checks": {
