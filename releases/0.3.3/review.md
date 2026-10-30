@@ -248,3 +248,9 @@ Checked clean: duplicate lines in a block, lines FRR prints by default, the same
 
 The reviewer checked line numbering against vtysh's fgets loop on an empty file, a file with no final newline, `
 ` endings and a trailing blank line. It found no way to clear a refused line through this diff. One contrived residue: vtysh reads into a 4096-byte buffer, so a longer line would count as several lines and shift N. Closed: if any line of `frr.conf` is that long, nothing is cleared (`test_a_line_longer_than_vtysh_reads_at_once_clears_nothing`).
+
+## Mutation follow-up on f8bbb0a (2026-10-30)
+
+46 new survivors, all in the running-config match (41 in `drivers/frr.py`, 5 in `runner.rejected_config`). 32 old acceptances no longer survive and were dropped. 44 survivors are killed by new tests in `tests/test_frr_config_load.py`: the 4094/4095-byte limit, line 1 and a line past the file, CRLF, blank and comment lines, tab and space indentation at both ends of a block, closing lines, line order on a shared line number, daemon names that differ only in case folding, no running-config read without a "Failure to communicate", and the exact "unreadable" message. Each mutant was applied by hand and the tests were run against it.
+
+A fresh Opus agent reviewed the 5 that the first round of tests missed. Three could differ (message order, a dropped line for non-ASCII daemon names, an extra "not checked" note), though none could change a run's status. All three are now killed. The other two (`parse_config_load_errors` `_mutmut_67` and `_mutmut_79`) are accepted as equivalent: the daemon they change is read only when every line was cleared, and those lines never are.

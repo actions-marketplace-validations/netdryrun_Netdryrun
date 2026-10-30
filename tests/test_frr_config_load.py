@@ -478,3 +478,107 @@ def test_a_line_longer_than_vtysh_reads_at_once_clears_nothing():
     assert frr.parse_config_load_errors(GR_LOG, running={"bgpd": GR_RUNNING}, config=GR_CONF) == []
     assert frr.parse_config_load_errors(GR_LOG, running={"bgpd": GR_RUNNING}, config=conf) == [
         "line 64: bgp graceful-restart (rejected by bgpd)"]
+
+
+# Mutation follow-up on f8bbb0a: the edges of the running-config match.
+
+@pytest.mark.parametrize("size, kept", [(4094, False), (4095, True)])
+def test_the_long_line_limit_is_exact(size, kept):
+    conf = "! " + "x" * (size - 2) + "\n" + GR_CONF.split("\n", 1)[1]
+    assert bool(frr.parse_config_load_errors(GR_LOG, running={"bgpd": GR_RUNNING}, config=conf)) is kept
+
+
+def test_a_line_the_file_has_twice_needs_it_twice_in_the_running_config():
+    conf = "router bgp 1\n a\nexit\nrouter bgp 1\n a\nexit\n"
+    log = "line 5: Failure to communicate[13] to bgpd, line:  a\n"
+    assert frr.parse_config_load_errors(log, running={"bgpd": "router bgp 1\n a\nexit\n"}, config=conf) == [
+        "line 5: a (rejected by bgpd)"]
+
+
+def test_line_1_can_be_cleared_and_a_line_past_the_file_cannot():
+    log = "line {}: Failure to communicate[13] to bgpd, line: bgp x\n"
+    assert frr.parse_config_load_errors(log.format(1), running={"bgpd": "bgp x\n"}, config="bgp x\n") == []
+    assert frr.parse_config_load_errors(log.format(2), running={"bgpd": "bgp x\n"}, config="bgp x\n") == [
+        "line 2: bgp x (rejected by bgpd)"]
+
+
+def test_lines_end_at_crlf_too():
+    assert frr._lines("a\r\nb\r\n") == ["a", "b"]
+
+
+def test_a_blank_line_keeps_its_section():
+    assert frr.config_sections("router bgp 1\n\n a\n") == [
+        ((), "router bgp 1"), (("router bgp 1",), ""), (("router bgp 1",), "a")]
+
+
+@pytest.mark.parametrize("close", ["exit", "end", "exit-vni", "! note"])
+def test_a_closing_line_is_never_a_header(close):
+    assert frr.config_sections(f"router bgp 1\n {close}\n  a\n")[2] == (("router bgp 1",), "a")
+
+
+def test_significant_lines_drop_blanks_and_comments():
+    assert frr._significant(["a", "", " ! c", " b"]) == ["a", "b"]
+
+
+@pytest.mark.parametrize("conf, i, header", [
+    ("router bgp 65000\n a\n", 0, True),   # deeper, though shorter
+    ("router bgp 1\n\n a\n", 0, True),     # a blank line between
+    ("router bgp 1\n! c\n a\n", 0, True),  # a comment between
+    (" a\n b\n", 0, False),                # the same depth
+])
+def test_is_header(conf, i, header):
+    assert frr._is_header(conf, i) is header
+
+
+RB = "router bgp 1\n a\n"
+
+
+@pytest.mark.parametrize("conf, i, running, applied", [
+    ("router bgp 1\n\ta\n", 1, RB, True),                         # a tab-indented line is under its header
+    ("router bgp 1\n a\n\tb\n", 1, RB, False),                    # a later tab-indented line is in the block
+    ("router bgp 1\n a\n b\n", 1, RB, False),                     # so is a later space-indented one
+    ("router bgp 1\n a\nrouter bgp 2\n", 1, RB, True),            # the next block is not
+    ("router bgp 1\n a\n b\nrouter bgp 2\n", 1, RB + " b\n", True),
+    ("router bgp 1\n x\n y\n a\n", 3, "router bgp 1\n x\n y\n a\n", True),
+    ("router bgp 0\n z\nrouter bgp 1\n a\n", 3, RB, True),        # nor the block before
+    (" a\n", 0, "a\n", True),
+    (" a\n b\n", 0, "a\n b\n", True),                            # a file that starts indented
+    (" a\n", 0, "router bgp 1\n\ta\n", False),                    # a running line under a tab is in its block
+    ("router bgp 1\n a\n", 1, "router bgp 1\n\ta\n", True),
+])
+def test_block_applied_edges(conf, i, running, applied):
+    assert frr._block_applied(conf, i, running) is applied
+
+
+def _unreadable(tmp_path, monkeypatch, stderr):
+    lab = BootLogLab(World(), {"r1": GR_LOG})
+    lab.running, lab.conf = {"r1": ExecResult([], 1, "", stderr)}, {"r1": GR_CONF}
+    return _run(tmp_path, monkeypatch, lab).error
+
+
+def test_an_unreadable_running_config_without_a_reason_says_so(tmp_path, monkeypatch):
+    assert "(not checked against the running config: it could not be read)" in _unreadable(tmp_path, monkeypatch, "")
+
+
+def test_the_reason_keeps_the_last_200_characters(tmp_path, monkeypatch):
+    err = _unreadable(tmp_path, monkeypatch, "y" + "x" * 200)
+    assert "(not checked against the running config: " + "x" * 200 + ")" in err
+
+
+def test_frr_conf_and_a_daemon_file_on_the_same_line_number_keep_their_order():
+    log = ("line 5: % Unknown command: foo\n"
+           "2026/10/30 10:00:00 1d: bad on config line 5: bar\n")
+    assert frr.parse_config_load_errors(log) == ["line 5: foo (Unknown command)", "line 5: bar (bad, 1d)"]
+
+
+def test_daemon_files_are_told_apart_by_their_lowercase_name():
+    log = ("2026/10/30 10:00:00 ss: bad on config line 3: foo\n"
+           "2026/10/30 10:00:00 ß: bad on config line 3: bar\n")
+    assert frr.parse_config_load_errors(log) == ["line 3: foo (bad, ss)", "line 3: bar (bad, ß)"]
+
+
+def test_no_running_config_is_read_without_a_failure_to_communicate(tmp_path, monkeypatch):
+    lab = BootLogLab(World(), {"r2": "line 3: % Unknown command: foo\n"})
+    lab.conf = {"r2": ExecResult([], 1, "", "No such file")}
+    rep = _run(tmp_path, monkeypatch, lab)
+    assert rep.status == "error" and "not checked" not in rep.error and lab.daemons_read == []

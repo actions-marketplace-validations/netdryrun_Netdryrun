@@ -145,13 +145,6 @@
    "argument": "Changes only text: the detail stays an Unready instance, only its text changes. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.",
    "reviewed": "adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2)"
   },
-  "netdryrun.checks.x__not_configured__mutmut_4": {
-   "reason": "message text only: the list of neighbors seen, in a detail",
-   "diff": "221753d5051d0675",
-   "class": "message-text",
-   "argument": "Changes only text: the list of neighbors seen, in a detail. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.",
-   "reviewed": "adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2)"
-  },
   "netdryrun.checks.x__ping__mutmut_37": {
    "reason": "equivalent: separator between evidence entries; no unreachable pattern contains a newline or 'XX', so no match can span or appear at a boundary",
    "diff": "c7591a1d795d5755",
@@ -3970,31 +3963,6 @@
    "diff": "dc9fee4a7ff13518",
    "class": "message-text"
   },
-  "netdryrun.drivers.frr.x_parse_config_load_errors__mutmut_21": {
-   "reason": "equivalent: the reason never contains 'Warning' (it is one of the three '% ...' kinds, 'rejected by <daemon>' or 'warning'), so the replace never changes it, whatever its arguments",
-   "diff": "877227534cee9fbe",
-   "class": "equivalent"
-  },
-  "netdryrun.drivers.frr.x_parse_config_load_errors__mutmut_22": {
-   "reason": "equivalent: the reason never contains 'Warning' (it is one of the three '% ...' kinds, 'rejected by <daemon>' or 'warning'), so the replace never changes it, whatever its arguments",
-   "diff": "6f20011e19b4d58d",
-   "class": "equivalent"
-  },
-  "netdryrun.drivers.frr.x_parse_config_load_errors__mutmut_23": {
-   "reason": "equivalent: the reason never contains 'Warning' (it is one of the three '% ...' kinds, 'rejected by <daemon>' or 'warning'), so the replace never changes it, whatever its arguments",
-   "diff": "2326ccd811543736",
-   "class": "equivalent"
-  },
-  "netdryrun.drivers.frr.x_parse_config_load_errors__mutmut_24": {
-   "reason": "equivalent: the reason never contains 'Warning' (it is one of the three '% ...' kinds, 'rejected by <daemon>' or 'warning'), so the replace never changes it, whatever its arguments",
-   "diff": "ccab7fa86213166d",
-   "class": "equivalent"
-  },
-  "netdryrun.drivers.frr.x_parse_config_load_errors__mutmut_25": {
-   "reason": "equivalent: the reason never contains 'Warning' (it is one of the three '% ...' kinds, 'rejected by <daemon>' or 'warning'), so the replace never changes it, whatever its arguments",
-   "diff": "a7f049306ad11327",
-   "class": "equivalent"
-  },
   "netdryrun.runner.x_run__mutmut_203": {
    "reason": "message text only: a progress or warning line passed to log(); nothing in the verdict, the report status or the exit code depends on it (the break after it runs either way)",
    "diff": "5fddb0a4e0fbbfd0",
@@ -4034,6 +4002,20 @@
    "reason": "message text only: the default check name shown in reports",
    "diff": "1d552928e18db97f",
    "class": "message-text"
+  },
+  "netdryrun.drivers.frr.x_parse_config_load_errors__mutmut_67": {
+   "reason": "equivalent: a vtysh line with no daemon is never cleared, so its stored daemon is never read",
+   "diff": "cbd7135846c5d28b",
+   "class": "equivalent",
+   "argument": "The daemon stored here is read only by `explained`, which is reached only when every reported line was cleared. A vtysh line with no daemon (Unknown command, Warning) can't be cleared: clearing needs the daemon among the running configs read, and those are keyed by the daemon names communicate_daemons returns, never None. So `explained` never sees this value and the returned list is the same for every input.",
+   "reviewed": "adversarial (fresh Opus agent), 2026-10-30: equivalent, no input differs"
+  },
+  "netdryrun.drivers.frr.x_parse_config_load_errors__mutmut_79": {
+   "reason": "equivalent: a per-daemon line is never cleared, so its stored daemon is never read",
+   "diff": "70ef05d8d58c1c69",
+   "class": "equivalent",
+   "argument": "The daemon stored here is read only by `explained`, which is reached only when every reported line was cleared. A per-daemon file line is always stored as not cleared, so when one exists the kept lines are returned first. So `explained` never sees this value and the returned list is the same for every input.",
+   "reviewed": "adversarial (fresh Opus agent), 2026-10-30: equivalent, no input differs"
   }
  },
  "checks": {
