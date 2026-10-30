@@ -25,7 +25,7 @@
 
 ### Fixes
 
-- **False approvals found by the 0.4 expert gauntlet** (`research/games` in the business repo; each pinned by a test in `tests/test_verify_gauntlet.py`):
+- **False approvals found by the 0.4 expert gauntlet** (outside experts played by AI models, and a code-reading agent; each pinned by a test in `tests/test_verify_gauntlet.py`):
   - **No bound file differs: nothing to verify** (exit `2`, before any boot). A change to a file the lab doesn't bind used to approve as NO BEHAVIOR CHANGE after four boots.
   - **Only an observed node's FRR config may differ.** A changed `daemons` file (shell FRR's start script runs), `vtysh.conf`, a script or the config of an unobserved node can change what runs unseen: exit `2`, naming the file.
   - **`--unobserved` refuses an FRR router**: it would leave any change on it uncompared.
