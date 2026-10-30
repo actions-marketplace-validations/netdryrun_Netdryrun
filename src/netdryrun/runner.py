@@ -274,19 +274,66 @@ def _driver_of(config: Config):
     return driver_of
 
 
-def config_load_by_node(lab, driver_of) -> dict[str, list[str]]:
+def _bound_files(lab, name: str) -> list[str]:
+    """The binds and startup-config the topology gives a node (in its node entry, defaults, kinds or groups)."""
+    from .verify.run import bind_targets
+    try:
+        targets = bind_targets(Path(lab.topology))
+    except Exception:   # unreadable here: verify's and the run's own topology checks report it
+        return ["(the topology's binds could not be read)"]
+    return [f"{src}:{dest}" for src, where in targets.items() for node, dest in where if node in (None, name)]
+
+
+SONIC_CONFIG_DIRS = ("/etc/sonic", "/etc/frr")
+
+
+def _startup_load(lab, name: str, driver: str, bound) -> list[str] | None:
+    """A non-FRR node's startup-config load ([]: clean, else why not), or None where no platform rule applies."""
+    if driver == "eos":
+        # cEOS skips a startup-config line it rejects and loads the rest, like FRR; it lists them (live, 4.36.3M)
+        from .drivers.eos import STARTUP_ERRORS_CMD, parse_startup_config_errors
+        r = lab.exec(name, ["Cli", "-p", "15", "-c", STARTUP_ERRORS_CMD])
+        if r.rc != 0:
+            return [f"its startup-config errors could not be read ({(r.stderr or r.stdout).strip()[-200:]}), so "
+                    "whether its config loaded is unknown"]
+        try:
+            return parse_startup_config_errors(r.stdout)
+        except DriverError as e:
+            return [f"{e}; so whether its config loaded is unknown"]
+    if driver == "srlinux":
+        # containerlab applies SR Linux's startup config as one commit at deploy: a line that doesn't parse, or a
+        # commit that fails, fails the deploy (live, 26.7.2), so a node that is running ran all of it
+        return []
+    if driver == "sonic":
+        # docker-sonic-vs has no startup config: Netdryrun configures it with setup commands, each checked. A
+        # config file bound into it is not checked: an error, never a silent pass
+        files = [b for b in bound(name) if b.startswith("(")
+                 or any(b.split(":", 2)[1].startswith(d) for d in SONIC_CONFIG_DIRS if ":" in b)
+                 or b.endswith(":startup-config")]
+        if files:
+            return [f"a config bound into a SONiC node is not checked ({', '.join(files[:3])}): configure SONiC "
+                    "with setup commands (nodes.<name>.setup), which are"]
+        return []
+    return None
+
+
+def config_load_by_node(lab, driver_of, bound=None) -> dict[str, list[str]]:
     """Each node whose config load was read -> why the lab didn't run its config as written ([]: it did). FRR
     applies its config line by line at boot and skips a line it rejects (a typo, a command this release doesn't
     have): the lab then runs without it, and the checks test a network the change never reached. Read when every
     node has booted; a boot log that can't be read is no proof either. FRR nodes are always listed; a node whose
     driver is unknown only when its log shows rejected lines. (Other NOSes: see the config reference, "Config
     that fails to load".)"""
+    bound = bound or (lambda name: _bound_files(lab, name))
     found: dict[str, list[str]] = {}
     for name, node in lab.nodes.items():
         if node.kind in ("bridge", "ovs-bridge"):   # no container, no config
             continue
         driver = driver_of(name, node)
         if driver not in ("frr", None):
+            load = _startup_load(lab, name, driver, bound)
+            if load is not None:
+                found[name] = load
             continue
         r = lab.boot_log(name)
         if r.rc != 0:
@@ -324,7 +371,7 @@ def rejected_config_message(by_node: dict[str, list[str]]) -> str:
     found = [f"{name}: {'; '.join(errors)}" for name, errors in by_node.items() if errors]
     if not found:
         return ""
-    return ("FRR rejected configuration lines at boot, so the lab ran without them and the checks did not test the "
+    return ("The NOS rejected configuration lines at boot, so the lab ran without them and the checks did not test the "
             f"change as written: {' | '.join(found)}. Fix the config and run again.")
 
 

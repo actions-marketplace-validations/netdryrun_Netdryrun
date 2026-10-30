@@ -32,7 +32,7 @@ To reproduce, add a misspelled line to a router's `frr.conf` in any FRR lab, for
 
 ## Limits that remain in 0.3.3
 
-- **Arista cEOS, Nokia SR Linux and SONiC startup config:** Netdryrun doesn't yet check that every line of a startup config loaded. Config applied with `setup:` commands is checked (a command that fails stops the run). Mitigation: for each changed line, add a positive check that holds only if the line loaded, for example the route or attribute the line creates. Fix scheduled: 0.4 (verify the applied config on every platform).
+- **Startup config on Arista cEOS, Nokia SR Linux and SONiC** (fixed in 0.4): a line the NOS rejected at boot makes the run an error. cEOS skips such a line and loads the rest, like FRR: Netdryrun reads `show startup-config errors` after the checks, and any listed line, or output it can't read, is an error (exit 2) naming the line. SR Linux applies its startup config as one commit at deploy, and a line that doesn't parse or a commit that fails fails containerlab's deploy, so the lab never runs part of it. SONiC (docker-sonic-vs) has no startup config: it is configured with `setup:` commands, each checked; a config file bound into a SONiC node is an error, never a silent pass.
 - The other limits are listed in the [0.3.0 advisory](../0.3.0-false-pass/README.md#limits-that-remain-in-031).
 
 ## Found another way it can pass without looking?

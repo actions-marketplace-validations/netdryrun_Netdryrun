@@ -178,6 +178,36 @@ def parse_bgp_paths(text: str, prefix: str, vrf: str = "default") -> list[BgpPat
     return out
 
 
+STARTUP_ERRORS_CMD = "show startup-config errors"
+_NO_STARTUP_ERRORS = "No errors were found in startup-config."
+_STARTUP_TOTAL = re.compile(r"^Total (\d+) errors found in startup-config\.$")
+_STARTUP_COUNT = re.compile(r"^errors in startup-config: (\d+)$")
+_STARTUP_REASON = re.compile(r"^% (.+?) at line (\d+)$")
+
+
+def parse_startup_config_errors(text: str) -> list[str]:
+    """`show startup-config errors` (cEOS 4.36.3M, live): [] when every startup-config line loaded, else each line
+    EOS rejected at boot ("line N: <line> (<reason>)"), in order. EOS skips such a line and loads the rest. Output
+    it can't account for (the count disagrees with the lines found, or a line it doesn't know) raises: never clean."""
+    lines = [ln.rstrip() for ln in text.splitlines() if ln.strip()]
+    if lines == [_NO_STARTUP_ERRORS]:
+        return []
+    if not lines or not _STARTUP_TOTAL.match(lines[0]) or not _STARTUP_COUNT.match(lines[-1]):
+        raise DriverError(f"{STARTUP_ERRORS_CMD}: unexpected output: {' '.join(text.split())[:200]!r}")
+    total, count = int(_STARTUP_TOTAL.match(lines[0]).group(1)), int(_STARTUP_COUNT.match(lines[-1]).group(1))
+    out, body = [], lines[1:-1]
+    if len(body) % 2:
+        raise DriverError(f"{STARTUP_ERRORS_CMD}: unexpected output: {' '.join(text.split())[:200]!r}")
+    for cmd, why in zip(body[::2], body[1::2], strict=True):
+        m = _STARTUP_REASON.match(why)
+        if not cmd.startswith(">") or not m:
+            raise DriverError(f"{STARTUP_ERRORS_CMD}: unexpected output: {cmd[:80]!r} {why[:80]!r}")
+        out.append(f"line {m.group(2)}: {cmd[1:].strip()} ({m.group(1)})")
+    if not total == count == len(out):
+        raise DriverError(f"{STARTUP_ERRORS_CMD}: says {total} and {count} errors, lists {len(out)}")
+    return out
+
+
 class EosDriver(Driver):
     name = "eos"
     # bgp_neighbors reads the IPv4 and IPv6 unicast summaries only: an EVPN count would always read 0

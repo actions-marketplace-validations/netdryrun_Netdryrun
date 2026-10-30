@@ -116,9 +116,10 @@ def diff(before: Snapshot, after: Snapshot) -> list[DiffItem]:
         raise VerifyError(f"the snapshots cover different nodes (before: {sorted(before.nodes)}, after: "
                           f"{sorted(after.nodes)}); verify compares configs on one topology")
     b, a = before.items(), after.items()
-    for snap, items in ((before, b), (after, a)):   # the VRFs each node has are items too
+    for snap, items in ((before, b), (after, a)):   # the VRFs each node has, and its running config, are items too
         for n, ns in snap.nodes.items():
             items.update({ItemKey("vrf", n, v): True for v in ns.vrfs})
+            items[ItemKey("config", n, "default")] = ns.config
     out = []
     for k in sorted(set(b) | set(a)):
         if b.get(k) != a.get(k):
@@ -559,8 +560,37 @@ def _afi(prefix: str) -> str:
     return "ipv6" if ":" in prefix else "ipv4"
 
 
+def _config_change(ctx: _Ctx, ln: Line) -> LineResult:
+    keys = {d.key.node: d.key for d in ctx.items if d.key.kind == "config"}
+    missing = [n for n in ln.nodes if n not in keys]
+    if missing:
+        return LineResult(ln, False, f"the running config of {', '.join(missing)} did not change")
+    return LineResult(ln, True, explained={keys[n] for n in ln.nodes})
+
+
 EVALUATORS = {"appears_on": _appears, "disappears_from": _disappears, "best_path_on": _best_path,
-              "session": _session, "advertisement": _advertisement}
+              "session": _session, "advertisement": _advertisement, "config_change_on": _config_change}
+
+NO_EFFECT = "this change has no observable effect in the lab; test it with checks"
+UNTESTED = "not tested if the lab doesn't exercise them"
+
+
+def config_lines_changed(d: DiffItem) -> dict[str, list[str]]:
+    """A config item's change as section-qualified lines: what the after config adds and removes."""
+    from collections import Counter
+
+    from .frr import qualified
+
+    def minus(xs: list[str], ys: list[str]) -> list[str]:   # xs without ys, as multisets, in xs's order
+        left, out = Counter(ys), []
+        for x in xs:
+            if left[x]:
+                left[x] -= 1
+            else:
+                out.append(x)
+        return out
+    b, a = qualified(d.before or ()), qualified(d.after or ())
+    return {"added": minus(a, b), "removed": minus(b, a)}
 
 
 # ---------------------------------------------------------------------------------------------------------
@@ -574,6 +604,9 @@ class Match:
     undeclared: list[DiffItem]
     lines: list[LineResult]
     allowed: dict[int, list[DiffItem]]          # allow entry index -> the items it explained
+    # node -> {"added": [...], "removed": [...]}: running-config lines of an approved change, which verify did
+    # not see exercised (UNTESTED); listed in every output
+    untested: dict[str, dict[str, list[str]]] = field(default_factory=dict)
 
     @property
     def not_happened(self) -> list[LineResult]:
@@ -588,13 +621,22 @@ def match(before: Snapshot, after: Snapshot, intent: Intent) -> Match:
     for r in results:
         if r.happened:
             explained |= r.explained
+    # A node's running-config change is accepted (and listed as untested) where a declared change explains some
+    # of that node's behaviour, or a config_change_on line declares it; anywhere else it is undeclared: a change
+    # with no observable effect in the lab (gauntlet 0.4, R4)
+    behaving = {k.node for k in explained if k.kind != "config"}
+    untested = {}
+    for d in items:
+        if d.key.kind == "config" and (d.key in explained or d.key.node in behaving):
+            explained.add(d.key)
+            untested[d.key.node] = config_lines_changed(d)
     allowed: dict[int, list[DiffItem]] = {}
     undeclared = []
     for d in items:
         if d.key in explained:
             continue
         hit = next((i for i, al in enumerate(intent.allow)
-                    if d.key.kind not in ("session", "vrf") and al.matches(d.key.prefix, d.key.vrf)), None)
+                    if d.key.kind not in ("session", "vrf", "config") and al.matches(d.key.prefix, d.key.vrf)), None)
         if hit is not None:
             allowed.setdefault(hit, []).append(d)
             continue
@@ -605,12 +647,14 @@ def match(before: Snapshot, after: Snapshot, intent: Intent) -> Match:
         status = "failed"
     else:
         status = "matched"
-    return Match(status, items, undeclared, results, allowed)
+    if status != "matched":
+        untested = {}
+    return Match(status, items, undeclared, results, allowed, untested)
 
 
 def route_state(index: Index, key: ItemKey) -> str:
     """The route's state on the item's node, for the report (absent, received, selected, in the FIB)."""
-    if key.kind in ("session", "vrf"):
+    if key.kind in ("session", "vrf", "config"):
         return ""
     return STATE_TEXT[index.route(key.node, key.vrf, key.afi, key.prefix).presence()]
 

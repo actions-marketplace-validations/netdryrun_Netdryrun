@@ -6,7 +6,7 @@ import shlex
 from dataclasses import dataclass, field
 
 from .converge import Inconclusive
-from .engine import Index, Match, _flat, route_state, show
+from .engine import NO_EFFECT, UNTESTED, Index, Match, _flat, config_lines_changed, route_state, show
 from .frr import show_command
 from .intent import Intent
 from .snapshot import Snapshot, _plain
@@ -77,6 +77,10 @@ def _diag(key, containers: dict) -> str:
 
 def _summary(d) -> str:
     where = d.key.where()
+    if d.key.kind == "config":
+        ch = config_lines_changed(d)
+        return (f"{where}: {len(ch['added'])} line(s) added, {len(ch['removed'])} removed; {NO_EFFECT} (or declare "
+                "it with config_change_on)")
     if d.kind == "session removed":
         return f"{where}: session removed (the neighbor is gone from the config)"
     if d.change != "changed":
@@ -89,6 +93,10 @@ def _summary(d) -> str:
 def item_json(d, ib: Index, ia: Index, containers: dict) -> dict:
     k = d.key
     out = {"kind": k.kind, "node": k.node, "vrf": k.vrf, "change": d.change}
+    if k.kind == "config":
+        out.update({"fields": [], "before": None, "after": None, "lines": config_lines_changed(d), "summary": _summary(d),
+                    "next_diagnostic": _diag(k, containers)})
+        return out
     if k.kind not in ("session", "vrf"):
         out.update({"afi": k.afi, "safi": k.safi, "prefix": k.prefix})
     if k.neighbor:
@@ -182,6 +190,8 @@ def to_dict(r: VerifyResult) -> dict:
         "not_happened": not_happened,
         "declared": declared,
         "allowed": allowed,
+        # running-config lines of an approved change that verify did not see exercised (gauntlet 0.4, R4)
+        "untested_config": [{"node": n, **ch} for n, ch in sorted((m.untested if m is not None else {}).items())],
         "unobserved": dict(sorted((r.before or r.after).unobserved.items())) if (r.before or r.after) else {},
         "guards": r.guards,
         "guards_source": r.guards_source,
@@ -232,6 +242,10 @@ def console(r: VerifyResult, max_items: int = 40) -> str:
         lines.append(f"Allowed by {a['pattern']} (allow_anywhere), {len(a['routes'])} route(s):")
         lines += [f"  - {x['node']}{'' if x['vrf'] == 'default' else ' vrf ' + x['vrf']} {x['prefix']}"
                   for x in a["routes"]]
+    if d["untested_config"]:
+        lines.append(f"Config lines changed, {UNTESTED}:")
+        for u in d["untested_config"]:
+            lines += [f"  {u['node']}: + {x}" for x in u["added"]] + [f"  {u['node']}: - {x}" for x in u["removed"]]
     if r.guards is not None:
         lines.append(f"Standing guards ({r.guards.get('source')}): {r.guards.get('status')}, "
                      f"{r.guards.get('passed', 0)} passed, {r.guards.get('failed', 0)} failed")
@@ -294,6 +308,12 @@ def markdown(r: VerifyResult, max_items: int = 40) -> str:
         tail.append("")
     for a in d["allowed"]:
         tail.append(f"- allowed by {_md_code(a['pattern'])}: {len(a['routes'])} route(s)")
+    if d["untested_config"]:
+        tail += [f"**Config lines changed, {UNTESTED}**", ""]
+        for u in d["untested_config"]:
+            tail += [f"- {_md_cell(u['node'])}: + {_md_code(x)}" for x in u["added"][:max_items]]
+            tail += [f"- {_md_cell(u['node'])}: − {_md_code(x)}" for x in u["removed"][:max_items]]
+        tail.append("")
     if r.guards is not None:
         tail += [f"**Standing guards** ({_md_cell(r.guards.get('source'))}): {_md_cell(r.guards.get('status'))}, "
                  f"{r.guards.get('passed', 0)} passed, {r.guards.get('failed', 0)} failed", ""]

@@ -75,6 +75,10 @@ class Lab:
 
     def __init__(self):
         self.items: dict[str, dict[ItemKey, object]] = {n: {} for n in self.NODES}
+        # each node's normalised running config (frr.parse_running_config)
+        self.configs: dict[str, tuple[str, ...]] = {n: ("frr version 10.4.1_git", f"hostname {n}", "router bgp 65000",
+                                                        " no bgp ebgp-requires-policy", "exit")
+                                                    for n in self.NODES}
         for n in self.NODES:   # every node has a connected route: it is ready
             self.rib(n, f"10.{self.NODES.index(n)}.255.0/24", rib("connected", hops=()))
 
@@ -117,7 +121,14 @@ class Lab:
         return hits[0]
 
     def snap(self) -> Snapshot:
-        return Snapshot({n: NodeSnapshot(n, "frr", ("default",), dict(items)) for n, items in self.items.items()})
+        return Snapshot({n: NodeSnapshot(n, "frr", ("default",), dict(items), config=self.configs.get(n, ()))
+                         for n, items in self.items.items()})
+
+    def configure(self, node, *lines, under="router bgp 65000"):
+        """Add config lines inside a section (after its header line), as FRR's running config shows them."""
+        c = list(self.configs[node])
+        i = c.index(under) + 1
+        self.configs[node] = tuple(c[:i] + list(lines) + c[i:])
 
     # --- a route originated by `origin_node` and learned over the given hops --------------------------------
     def learn(self, node, prefix, from_addr, as_path, next_hop=None, best=True, **kw):

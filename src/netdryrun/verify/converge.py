@@ -92,6 +92,12 @@ def stable_snapshot(collect: Callable[[], Snapshot], *, settle: float, timeout: 
         if interval > 0 and interval + ADV_MARGIN > settle:
             settle = interval + ADV_MARGIN
             log(f"  {where} has an advertisement interval of {interval:g}s: settle extended to {settle:g}s")
+        # an advertise-map is re-evaluated every `bgp conditional-advertisement timer` seconds: a change it makes can
+        # land later than that after the lab looks settled (gauntlet 0.4, S2)
+        timer, where = max(((ns.cond_adv_timer, n) for n, ns in cur.nodes.items()), default=(0.0, ""))
+        if timer > 0 and timer + ADV_MARGIN > settle:
+            settle = timer + ADV_MARGIN
+            log(f"  {where} has conditional advertisement every {timer:g}s: settle extended to {settle:g}s")
         waiting = _not_ready(cur, bgp_nodes)
         if waiting:
             prev, moving = None, waiting

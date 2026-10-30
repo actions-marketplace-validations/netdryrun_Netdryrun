@@ -32,7 +32,8 @@ from ..drivers.base import DriverError
 
 SNAPSHOT_SCHEMA = "netdryrun.snapshot/v1"
 KINDS = ("session", "rib", "path", "adj_out", "adj_in")
-DIFF_KINDS = KINDS + ("vrf",)    # "vrf": a VRF a node has (NodeSnapshot.vrfs); a diff item, never a stored item
+DIFF_KINDS = KINDS + ("vrf", "config")    # "vrf": a VRF a node has (NodeSnapshot.vrfs); "config": its running
+                                         # config (NodeSnapshot.config). Diff items, never stored items
 AFIS = ("ipv4", "ipv6")
 SAFIS = ("unicast",)
 AFI_SAFIS = ("ipv4-unicast", "ipv6-unicast")      # the session address families verify 0.4 snapshots
@@ -414,9 +415,9 @@ class ItemKey:
     def __post_init__(self):
         _require(self.kind in DIFF_KINDS, f"item key: unknown kind {self.kind!r}")
         _require(bool(self.node) and bool(self.vrf), "item key: node and vrf are required")
-        if self.kind == "vrf":
+        if self.kind in ("vrf", "config"):
             _require(not (self.afi or self.safi or self.prefix or self.neighbor or self.protocol or self.path_id),
-                     f"item key: bad vrf key {self!r}")
+                     f"item key: bad {self.kind} key {self!r}")
         elif self.kind == "session":
             _require(bool(self.neighbor) and not (self.afi or self.prefix or self.protocol),
                      f"item key: bad session key {self!r}")
@@ -430,6 +431,8 @@ class ItemKey:
         bits = [self.node]
         if self.kind == "vrf":
             return f"{self.node} vrf {self.vrf}"
+        if self.kind == "config":
+            return f"{self.node} running config"
         if self.vrf != "default":
             bits.append(f"vrf {self.vrf}")
         if self.kind == "session":
@@ -465,6 +468,12 @@ class NodeSnapshot:
     # the longest advertisement interval (MRAI, seconds) the node's sessions report: when a route can still arrive
     # after the lab looks settled. A timer, not behavior: never compared, never stored (the raw output has it).
     adv_interval: float = field(default=0.0, compare=False)
+    # the node's running config, normalised (frr.parse_running_config): compared, so a config change with no
+    # observable effect is still a difference (0.4 gauntlet, R4). () where it isn't read (an older stored snapshot)
+    config: tuple[str, ...] = ()
+    # the conditional-advertisement scan interval (s) when an advertise-map is configured, else 0: like
+    # adv_interval, how late an update can come after the lab looks settled. Never compared.
+    cond_adv_timer: float = field(default=0.0, compare=False)
 
     def __post_init__(self):
         for k, v in self.items.items():
@@ -492,6 +501,7 @@ class Snapshot:
             view[k] = (v, v.prefix_counts) if isinstance(v, Session) else v
         for n, ns in self.nodes.items():
             view[ItemKey("vrf", n, "default")] = ns.vrfs
+            view[ItemKey("config", n, "default")] = ns.config
         return view
 
     def sessions(self) -> dict[ItemKey, Session]:
@@ -501,6 +511,7 @@ class Snapshot:
         return {"schema": SNAPSHOT_SCHEMA,
                 "nodes": {n: {"driver": ns.driver, "vrfs": list(ns.vrfs),
                               "items": [{"key": _plain(k), "value": _plain(v)} for k, v in sorted(ns.items.items())],
+                              "config": list(ns.config),
                               **({"raw": ns.raw} if raw else {})}
                           for n, ns in sorted(self.nodes.items())},
                 "unobserved": dict(sorted(self.unobserved.items()))}
@@ -516,8 +527,9 @@ class Snapshot:
             raise SnapshotError("snapshot: nodes and unobserved must be mappings")
         nodes = {}
         for name, nd in data["nodes"].items():
-            if not isinstance(nd, dict) or not {"driver", "vrfs", "items"} <= set(nd) <= {"driver", "vrfs", "items", "raw"}:
-                raise SnapshotError(f"snapshot: node {name!r}: expected keys driver, vrfs, items (and raw)")
+            if not isinstance(nd, dict) or not {"driver", "vrfs", "items"} <= set(nd) <= {"driver", "vrfs", "items", "raw",
+                                                                                         "config"}:
+                raise SnapshotError(f"snapshot: node {name!r}: expected keys driver, vrfs, items (and raw, config)")
             items = {}
             if not isinstance(nd["items"], list):
                 raise SnapshotError(f"snapshot: node {name!r}: items must be a list")
@@ -534,7 +546,8 @@ class Snapshot:
             if not isinstance(raw, list):
                 raise SnapshotError(f"snapshot: node {name!r}: raw must be a list")
             nodes[name] = NodeSnapshot(str(name), _typed(str, nd["driver"], "driver"),
-                                       decode(tuple[str, ...], nd["vrfs"], "vrfs"), items, raw)
+                                       decode(tuple[str, ...], nd["vrfs"], "vrfs"), items, raw,
+                                       config=decode(tuple[str, ...], nd.get("config", []), "config"))
         unobserved = {str(k): _typed(str, v, f"unobserved {k}") for k, v in data["unobserved"].items()}
         return cls(nodes, unobserved)
 

@@ -207,7 +207,8 @@
       "description": "The netdryrun.verify/v1 report without its snapshots (the full report, snapshots included, is in evidence_file), lab text capped to one line.",
       "required": ["schema", "tool", "verdict", "status", "notice", "intent_source", "intent", "run_id", "failed_because",
                    "warnings", "error", "inconclusive", "baseline", "diff_items", "undeclared_total", "undeclared",
-                   "not_happened", "declared", "allowed", "guards", "guards_source", "timings", "evidence_file"],
+                   "not_happened", "declared", "allowed", "untested_config", "guards", "guards_source", "timings",
+                   "evidence_file"],
       "properties": {
         "schema": {"$ref": "#/$defs/schema_id"},
         "tool": {"const": "verify_change"},
@@ -258,6 +259,11 @@
           "type": "object", "required": ["pattern", "vrf", "routes"],
           "properties": {"pattern": {"type": "string"}, "vrf": {"type": "string"},
                          "routes": {"type": "integer", "minimum": 0}}}},
+        "untested_config": {"type": "array", "description": "Running-config lines of an approved change that verify did not see exercised in the lab (not tested if the lab doesn't exercise them), per node (from 0.4)",
+          "items": {"type": "object", "required": ["node", "added", "removed"],
+                    "properties": {"node": {"type": "string"},
+                                   "added": {"type": "array", "maxItems": 50, "items": {"$ref": "#/$defs/lab_text"}},
+                                   "removed": {"type": "array", "maxItems": 50, "items": {"$ref": "#/$defs/lab_text"}}}}},
         "guards": {
           "oneOf": [
             {"type": "null"},
@@ -297,17 +303,20 @@
       "description": "One undeclared difference, as in netdryrun.verify/v1 ($defs/item) without the raw before/after values.",
       "required": ["kind", "node", "vrf", "change", "fields", "summary", "next_diagnostic"],
       "properties": {
-        "kind": {"enum": ["session", "rib", "path", "adj_out", "adj_in", "vrf"]},
+        "kind": {"enum": ["session", "rib", "path", "adj_out", "adj_in", "vrf", "config"]},
         "node": {"type": "string"},
         "vrf": {"type": "string"},
         "afi": {"enum": ["ipv4", "ipv6"]},
         "prefix": {"type": "string"},
         "neighbor": {"type": "string"},
+        "lines": {"type": "object", "description": "kind config: the running-config lines the after side adds and removes",
+                  "properties": {"added": {"type": "array", "maxItems": 50, "items": {"$ref": "#/$defs/lab_text"}},
+                                 "removed": {"type": "array", "maxItems": 50, "items": {"$ref": "#/$defs/lab_text"}}}},
         "protocol": {"type": "string"},
         "change": {"enum": ["added", "removed", "changed"]},
         "fields": {"type": "array", "items": {"type": "string"}},
-        "route_before": {"enum": ["absent", "received (not selected)", "selected (not in the FIB)", "selected and in the FIB"]},
-        "route_after": {"enum": ["absent", "received (not selected)", "selected (not in the FIB)", "selected and in the FIB"]},
+        "route_before": {"enum": ["absent", "received (not selected)", "selected (not in the FIB)", "selected and in the FIB", "selected and in the FIB as a discard route (blackhole, reject or unreachable: traffic is dropped)"]},
+        "route_after": {"enum": ["absent", "received (not selected)", "selected (not in the FIB)", "selected and in the FIB", "selected and in the FIB as a discard route (blackhole, reject or unreachable: traffic is dropped)"]},
         "summary": {"$ref": "#/$defs/lab_text"},
         "next_diagnostic": {"type": "string", "minLength": 1, "description": "One read-only command that shows the item on its node (docker exec <container> vtysh -c '<show command>'). It needs a lab running the after configs."}
       }

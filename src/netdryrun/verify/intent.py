@@ -39,7 +39,7 @@ class IntentError(ValueError):
 
 
 TOP_KEYS = ("intent", "allow_anywhere")
-FORMS = ("appears_on", "disappears_from", "best_path_on", "session", "advertisement")
+FORMS = ("appears_on", "disappears_from", "best_path_on", "session", "advertisement", "config_change_on")
 STATES = ("installed", "selected", "received", "discard")
 # Attributes `to:` may set on a best path (or an advertisement), and `with:` may pin on a new route
 BGP_ATTRS = ("from", "next_hop", "as_path", "origin", "local_pref", "med", "weight", "communities",
@@ -51,6 +51,7 @@ LINE_KEYS = {
     "best_path_on": {"prefix", "vrf", "best_path_on", "to"},
     "session": {"session", "goes"},
     "advertisement": {"prefix", "vrf", "advertisement", "goes", "to", "with"},
+    "config_change_on": {"config_change_on"},
 }
 SESSION_KEYS = ("node", "neighbor", "vrf", "afi")
 ADVERTISEMENT_KEYS = ("node", "neighbor")
@@ -266,6 +267,16 @@ def _line(i: int, raw) -> Line:
                f"{f' {afi}' if afi else ''} goes down"
         return Line(i, form, text, vrf=vrf, nodes=(s["node"],), neighbor=nbr, afi=afi, goes="down")
 
+    if form == "config_change_on":
+        # a running-config change the lab doesn't exercise (a description, a policy for routes the lab doesn't
+        # carry): declared, never tested, and listed in every output (gauntlet 0.4, R4)
+        nodes = raw["config_change_on"]
+        if not isinstance(nodes, list) or not nodes or not all(isinstance(n, str) and n for n in nodes) \
+                or len(set(nodes)) != len(nodes):
+            raise IntentError(f"{where}: config_change_on must be a list of node names, each once")
+        return Line(i, form, f"the running config of {', '.join(nodes)} changes (not tested where the lab doesn't "
+                             "exercise it)", nodes=tuple(nodes))
+
     if "prefix" not in raw:
         raise IntentError(f"{where}: a {form} line needs a prefix")
     prefix = _prefix(where, raw["prefix"])
@@ -392,6 +403,8 @@ def _identity(ln: Line) -> list[tuple]:
         return [("session", ln.node, ln.vrf, ln.neighbor, ln.afi)]
     if ln.form == "advertisement":
         return [("advertisement", ln.node, ln.vrf, ln.prefix, ln.neighbor)]
+    if ln.form == "config_change_on":
+        return [("config", n) for n in ln.nodes]
     return [("route", n, ln.vrf, ln.prefix) for n in ln.nodes]
 
 

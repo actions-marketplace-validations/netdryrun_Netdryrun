@@ -1841,11 +1841,11 @@ def test_a_rejected_config_line_makes_the_run_an_error_never_a_pass(monkeypatch)
 
 def test_a_driver_that_cannot_verify_the_load_says_so(monkeypatch):
     e = make(monkeypatch, r1={"neighbors": up("10.0.12.2"), "routes": {"default": never}})
-    e.lab.nodes["r3"] = Node("r3", "clab-t-r3", "ceos", "ceos:4.33")
-    e.drivers["r3"].name = "eos"
+    e.lab.nodes["r3"] = Node("r3", "clab-t-r3", "juniper_cjunosevolved", "cjunosevolved:25.2R1.8-EVO")
+    e.drivers["r3"].name = "junos"
     rep = e.run([leak("neg")], settle=10, hold=10)
     assert rep.status == "passed"
-    assert rep.environment["nodes"]["r3"]["config_load"] == "not verified on eos"
+    assert rep.environment["nodes"]["r3"]["config_load"] == "not verified on junos"
 
 
 def test_the_report_names_each_nodes_image_digest_and_nos_version(monkeypatch):

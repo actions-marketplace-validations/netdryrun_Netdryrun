@@ -601,7 +601,7 @@ def test_every_kind_of_item_in_the_live_capture_fails_an_empty_intent_when_it_ch
             items[k] = dc_replace(v, attrs=dc_replace(v.attrs, med=(v.attrs.med or 0) + 1))
         else:
             items[k] = dc_replace(v, med=(v.med or 0) + 1)
-        after = Snapshot({"edge1": NodeSnapshot("edge1", "frr", ns.vrfs, items)})
+        after = Snapshot({"edge1": NodeSnapshot("edge1", "frr", ns.vrfs, items, config=ns.config)})
         m = match(Snapshot({"edge1": ns}), after, empty)
         assert m.status == "failed" and [d.key for d in m.undeclared] == [k], (change, k)
 

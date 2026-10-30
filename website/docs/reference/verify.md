@@ -23,7 +23,7 @@ The same engine runs in three places: this command, the MCP tool [`verify_change
 | Status | Verdict | Exit code | Meaning |
 |---|---|---|---|
 | `matched` | `INTENT MATCHED` | `0` | Every difference is declared, and every declaration happened. |
-| `no_change` | `NO BEHAVIOR CHANGE` | `0` | The snapshots are identical and the intent declares nothing. |
+| `no_change` | `NO BEHAVIOR CHANGE` | `0` | The snapshots are identical, running configs included, and the intent declares nothing. |
 | `failed` | `UNDECLARED CHANGES: DO NOT APPLY` | `1` | A difference nobody declared, a declared change that didn't happen, or a standing guard that failed (`failed_because` says which). |
 | `error` | `ERROR: NO VERDICT` | `2` | A bad intent, a different topology, a side that can't be read, an unreadable snapshot, or a lab problem. "Couldn't read" is never "nothing changed". |
 | `inconclusive` | `INCONCLUSIVE` | `3` | A lab's state never stopped moving within `--timeout`. Retry at most once, then escalate: this says nothing about the change. |
@@ -31,12 +31,13 @@ The same engine runs in three places: this command, the MCP tool [`verify_change
 
 **Explained is not the same as safe.** The report echoes the declared intent at the top, for a human to review: an intent that declares a leak explains the leak. None of its verdicts is a pass of checks. A verdict covers the observed control-plane state of this lab (sessions, RIB, BGP paths and advertisements), nothing else.
 
-**What "anything else fails" covers, exactly.** Declare what you intend to change; anything else that changes in the routing state that `verify` observes fails the run: on every FRR node, BGP sessions (established or not, remote AS, address families, soft-reconfiguration), the VRFs, routes of every protocol (selected, in the FIB, next hops, distance, metric), every BGP path with its attributes, and what each node advertises to and receives from each neighbor. Not covered, so an undeclared change there does not fail:
+**What "anything else fails" covers, exactly.** Declare what you intend to change; anything else that changes in the routing state that `verify` observes fails the run: on every FRR node, its running config, BGP sessions (established or not, remote AS, address families, soft-reconfiguration), the VRFs, routes of every protocol (selected, in the FIB, next hops, distance, metric), every BGP path with its attributes, and what each node advertises to and receives from each neighbor. Not covered, so an undeclared change there does not fail:
 
 - nodes passed with `--unobserved` (hosts without a routing stack);
 - communities on routes received before inbound policy (FRR doesn't list them there), and the attributes of a `default-originate` advertisement (its presence is compared);
 - IGP adjacency state (OSPF, IS-IS): their routes are compared, their adjacencies are not;
 - an update that arrives after the stretched `--settle` (several peers with long advertisement intervals in a row, `update-delay`);
+- what a config change would do to routes or events this lab never produces (a prefix-list for prefixes the lab doesn't carry, `maximum-prefix`, dampening, timers, BFD, a password). The change itself is never silent: a config change with no observable effect fails, and an approval lists every changed config line "not tested if the lab doesn't exercise them" (see [config_change_on](#config_change_on));
 - the data plane beyond what a standing guard's ping checks.
 
 A lab that gives a different snapshot on a second boot approves nothing (INCONCLUSIVE). Changes that only a boot makes (management addresses, the random link-local addresses containerlab's MACs give) are not configuration changes and are not compared: an IPv6 link-local next hop is named by the lab node and interface that own it (`fe80::%peer1:eth1`), the same on every boot. A link-local next hop no lab node owns (a typo in a route-map or a static route), or one two nodes share, keeps its address, so a change to it is a difference.
@@ -192,6 +193,17 @@ It never matches by containment: `10.0.0.0/8` doesn't cover `10.1.0.0/16`. The r
 
 `allow_anywhere` weakens the verdict, and every report that uses it carries a warning: a change that adds or widens it should need a second approver (CODEOWNERS). The CLI can't enforce that.
 
+### config_change_on
+
+```yaml
+intent:
+  - config_change_on: [edge1]
+```
+
+Each FRR node's running config is in the snapshot (see below), so a config change whose effect the lab can't show (a description, a policy for routes the lab doesn't carry, `maximum-prefix`, a timer) is still a difference: with nothing else declared on that node, it fails with "this change has no observable effect in the lab; test it with checks". `config_change_on` declares it for the listed nodes, when you accept that it is not tested. It explains only those nodes' config changes, and it didn't happen if a listed node's config is unchanged.
+
+A config change on a node where a declared line explains some of the node's behaviour needs no `config_change_on`. **Every approval lists each changed config line** (with the section headers above it, `router bgp 65000 > address-family ipv4 unicast > neighbor 10.0.2.2 maximum-prefix 5`) under "not tested if the lab doesn't exercise them": in the report (`untested_config`), the console, the PR comment and its header (`untested_config_lines`), and the MCP result. Read that list: a line there changed nothing this lab could observe.
+
 ## What is compared: the snapshot
 
 After convergence, for every FRR node, in every VRF:
@@ -213,7 +225,7 @@ FRR commands: `show vrf`, `show bgp vrf all neighbors json`, `show ip route vrf 
 
 A snapshot is taken when two full snapshots `--settle` seconds apart are identical: every configured session established, or stably not established, on both samples (compared as established or not), prefix counts stable, and every route and path unchanged. Until then a node isn't ready while its RIB is empty or, if its config has `router bgp`, while it has no BGP state at all (no session and no BGP path: bgpd is answering but hasn't loaded its config). A session that is not established in the *before* snapshot makes the baseline unhealthy (exit code `3`) unless `--allow-unhealthy-baseline`.
 
-**`--settle` stretches to the longest advertisement interval (MRAI) any node reports, plus 2 s, and must exceed any `update-delay` in the lab.** Two snapshots `settle` apart can't see an update that arrives later than that, so a shorter `settle` could take the snapshot before the last update; the log says when it was stretched. A route that crosses several slow peers can take one interval per hop: raise `--settle` for that. A command that fails while daemons start is retried until `--timeout`; then the snapshot is unreadable (exit code `2`). If the snapshots never match within `--timeout`, the result is `inconclusive`, naming what kept moving.
+**`--settle` stretches to the longest advertisement interval (MRAI) any node reports, plus 2 s, and to the conditional-advertisement timer plus 2 s where a node has an `advertise-map` (`bgp conditional-advertisement timer`, 60 s by default), and must exceed any `update-delay` in the lab.** Two snapshots `settle` apart can't see an update that arrives later than that, so a shorter `settle` could take the snapshot before the last update; the log says when it was stretched. A route that crosses several slow peers can take one interval per hop: raise `--settle` for that. A command that fails while daemons start is retried until `--timeout`; then the snapshot is unreadable (exit code `2`). If the snapshots never match within `--timeout`, the result is `inconclusive`, naming what kept moving.
 
 ## The report: netdryrun.verify/v1
 

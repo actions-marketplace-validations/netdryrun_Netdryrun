@@ -358,6 +358,10 @@ FAIL_SAFE = [
      lambda r: r is None or (isinstance(r, str) and r.startswith("FRRouting "))),
     ("frr.parse_default_local_pref", lambda t: frr.parse_default_local_pref(t), ["frr_bgp_table_header.txt"],
      lambda r: r is None or isinstance(r, int)),
+    # raises on anything it can't account for (never "clean"): a run with such output is an error
+    ("eos.parse_startup_config_errors", eos.parse_startup_config_errors,
+     ["eos_startup_config_errors_clean.txt", "eos_startup_config_errors_one.txt", "eos_startup_config_errors_two.txt"],
+     lambda r: isinstance(r, list) and all(isinstance(x, str) and x.startswith("line ") for x in r)),
     ("srlinux.parse_instance_state", lambda t: srlinux.parse_instance_state(t), ["srl_neighbor_local_pref.txt"],
      lambda r: r is None or isinstance(r, str)),
     ("junos.parse_ping", junos.parse_ping, ["junos_ping.txt", "junos_ping_noreply.txt", "junos_ping6.txt"], _ping_ok),

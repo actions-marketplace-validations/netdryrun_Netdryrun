@@ -6,7 +6,7 @@
   "type": "object",
   "required": ["schema", "verdict", "status", "notice", "intent", "run_id", "started", "finished", "topology", "before",
                "after", "failed_because", "warnings", "error", "inconclusive", "determinism", "baseline", "diff_items", "undeclared",
-               "not_happened", "declared", "allowed", "unobserved", "guards", "guards_source", "timings", "evidence"],
+               "not_happened", "declared", "allowed", "untested_config", "unobserved", "guards", "guards_source", "timings", "evidence"],
   "additionalProperties": false,
   "properties": {
     "schema": {"const": "netdryrun.verify/v1"},
@@ -78,6 +78,10 @@
                        "properties": {"node": {"type": "string"}, "vrf": {"type": "string"},
                                       "prefix": {"type": "string"}}}},
                      "items": {"type": "array", "items": {"type": "string"}}}}},
+    "untested_config": {"type": "array", "description": "Running-config lines of an approved change that verify did not see exercised in the lab (not tested if the lab doesn't exercise them), per node, each with the section headers above it (from 0.4)",
+      "items": {"type": "object", "required": ["node", "added", "removed"], "additionalProperties": false,
+                "properties": {"node": {"type": "string"}, "added": {"type": "array", "items": {"type": "string"}},
+                               "removed": {"type": "array", "items": {"type": "string"}}}}},
     "unobserved": {"type": "object", "additionalProperties": {"type": "string"}},
     "guards": {
       "oneOf": [
@@ -106,7 +110,7 @@
       "required": ["kind", "node", "vrf", "change", "fields", "before", "after", "summary", "next_diagnostic"],
       "additionalProperties": false,
       "properties": {
-        "kind": {"enum": ["session", "rib", "path", "adj_out", "adj_in", "vrf"]},
+        "kind": {"enum": ["session", "rib", "path", "adj_out", "adj_in", "vrf", "config"]},
         "node": {"type": "string"},
         "vrf": {"type": "string"},
         "afi": {"enum": ["ipv4", "ipv6"]},
@@ -122,7 +126,11 @@
         "before": {},
         "after": {},
         "summary": {"type": "string"},
-        "next_diagnostic": {"type": "string"}
+        "next_diagnostic": {"type": "string"},
+        "lines": {"type": "object", "description": "kind config: the running-config lines the after side adds and removes, each with its section headers",
+                  "required": ["added", "removed"], "additionalProperties": false,
+                  "properties": {"added": {"type": "array", "items": {"type": "string"}},
+                                 "removed": {"type": "array", "items": {"type": "string"}}}}
       }
     },
     "snapshot": {
@@ -132,6 +140,7 @@
         "nodes": {"type": "object", "additionalProperties": {
           "type": "object", "required": ["driver", "vrfs", "items"], "additionalProperties": false,
           "properties": {"driver": {"type": "string"}, "vrfs": {"type": "array", "items": {"type": "string"}},
+                         "config": {"type": "array", "items": {"type": "string"}},
                          "items": {"type": "array", "items": {"type": "object", "required": ["key", "value"],
                                                               "additionalProperties": false,
                                                               "properties": {"key": {"type": "object"}, "value": {}}}},

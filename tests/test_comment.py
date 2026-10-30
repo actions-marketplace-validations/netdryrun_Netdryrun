@@ -203,7 +203,7 @@ def test_a_verify_header_names_its_own_verdict_and_schema(tmp_path):
     h = agent_result.verify_comment_header(vreport("matched"), commit=SHA)
     data = header_json(h)
     assert data == {"schema": "netdryrun.verify/v1", "status": "matched", "verdict": "INTENT MATCHED",
-                    "undeclared": 0, "not_happened": 0, "commit": SHA}
+                    "undeclared": 0, "not_happened": 0, "untested_config_lines": 0, "commit": SHA}
     assert "**Netdryrun verify: INTENT MATCHED**" in h and "CHECKS PASSED" not in h
 
 
@@ -235,3 +235,11 @@ def test_the_verify_body_reads_the_report_held_to_the_checked_status(tmp_path):
     # no report at all: error
     assert header_json(comment.body(str(tmp_path / "none.json"), "", s, "lab", SHA, mode="verify").split("\n")[1])[
         "verdict"] == "ERROR: NO VERDICT"
+
+
+def test_a_verify_header_counts_the_config_lines_the_lab_did_not_exercise():
+    """Gauntlet 0.4, R4: an approval lists the running-config lines it did not see exercised; the header says how many."""
+    r = {**vreport("matched"), "untested_config": [{"node": "edge1", "added": ["router bgp 65000 > a", "b"],
+                                                     "removed": ["c"]}]}
+    h = agent_result.verify_comment_header(r)
+    assert header_json(h)["untested_config_lines"] == 3 and "3 config line(s) not tested" in h

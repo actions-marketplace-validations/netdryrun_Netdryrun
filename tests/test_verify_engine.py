@@ -684,6 +684,11 @@ DID_NOT_HAPPEN = [
      {**CUST, "advertisement": OUT, "to": {"med": None}}),
     ("advertisement changed in an unlisted attribute", _edit(_adv_out), _edit(lambda lab: _adv_out(lab, med=50, origin="incomplete")),
      {**CUST, "advertisement": OUT, "to": {"med": 50}}),
+    # config_change_on (gauntlet 0.4, R4)
+    ("config_change_on with no config change", base, base, {"config_change_on": ["edge1"]}),
+    ("config_change_on on one node of two that changed", base,
+     _edit(lambda lab: lab.configure("up1", " neighbor 10.0.2.1 description x")),
+     {"config_change_on": ["edge1", "up1"]}),
 ]
 
 

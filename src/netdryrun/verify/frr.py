@@ -42,6 +42,7 @@ VRF_CMD = "show vrf"
 NEIGHBORS_CMD = "show bgp vrf all neighbors json"
 ROUTE_CMDS = {"ipv4": "show ip route vrf all json", "ipv6": "show ipv6 route vrf all json"}
 BGP_CMDS = {"ipv4": "show bgp vrf all ipv4 unicast detail json", "ipv6": "show bgp vrf all ipv6 unicast detail json"}
+CONFIG_CMD = "show running-config"
 
 # FRR's address-family keys: the ones verify snapshots, and the ones it knows but refuses (a session that
 # carries one of them would have routes verify can't see)
@@ -588,6 +589,48 @@ def parse_bgp_table(text: str, afi: str) -> dict[str, dict[tuple[str, str, int],
     return out
 
 
+# The running config as FRR prints it, minus only what FRR adds around it: the "Building configuration..." and
+# "Current configuration:" header, the "!" separators, blank lines, the final "end" and trailing spaces. Every
+# command line is kept, in FRR's own order (gauntlet 0.4, R4: config that changes nothing observable in the lab
+# is still a change).
+_CONFIG_NOISE = ("Building configuration...", "Current configuration:")
+
+
+def parse_running_config(text: str) -> tuple[str, ...]:
+    out = []
+    for raw in text.split("\n"):
+        line = raw.rstrip()
+        if not line.strip() or line.strip() == "!" or line in _CONFIG_NOISE or line == "end":
+            continue
+        out.append(line)
+    return tuple(out)
+
+
+def qualified(lines: tuple[str, ...]) -> list[str]:
+    """Each config line with the section headers above it ("router bgp 65000 > address-family ipv4 unicast >
+    neighbor ..."), for listing what changed: FRR indents a section's body one space per level."""
+    out, stack = [], []
+    for line in lines:
+        depth = len(line) - len(line.lstrip(" "))
+        stack = stack[:depth]
+        out.append(" > ".join([*stack, line.strip()]))
+        if len(stack) == depth:
+            stack.append(line.strip())
+    return out
+
+
+DEFAULT_COND_ADV_TIMER = 60.0   # FRR's `bgp conditional-advertisement timer` default (seconds)
+
+
+def cond_adv_timer(lines: tuple[str, ...]) -> float:
+    """How often conditional advertisement is re-evaluated when an advertise-map is configured, else 0."""
+    if not any(" advertise-map " in f" {ln.strip()} " for ln in lines):
+        return 0.0
+    timers = [float(ln.split()[-1]) for ln in lines if ln.strip().startswith("bgp conditional-advertisement timer ")
+              and ln.split()[-1].isdigit()]
+    return max(timers, default=DEFAULT_COND_ADV_TIMER)
+
+
 def adj_command(vrf: str, afi: str, neighbor: str, direction: str) -> str:
     in_vrf = "" if vrf == "default" else f" vrf {check_vrf_name(vrf)}"
     which = "advertised-routes detail" if direction == "out" else "received-routes"
@@ -776,13 +819,17 @@ class FrrCollector:
                         for (prefix, pid), attrs in listing.items():
                             kind = "adj_out" if d == "out" else "adj_in"
                             items[ItemKey(kind, node, vrf, afi, "unicast", prefix, neighbor=nbr, path_id=pid)] = attrs
+        config = parse_running_config(self._vtysh(CONFIG_CMD, raw))
         vrfs = tuple(sorted(active | bgp_vrfs))
-        return NodeSnapshot(node, self.driver, vrfs, items, raw, adv_interval=adv_interval)
+        return NodeSnapshot(node, self.driver, vrfs, items, raw, adv_interval=adv_interval, config=config,
+                            cond_adv_timer=cond_adv_timer(config))
 
 
 def show_command(key: ItemKey) -> str:
     """One read-only vtysh command that shows an item on its node."""
     in_vrf = "" if key.vrf == "default" else f" vrf {key.vrf}"
+    if key.kind == "config":
+        return CONFIG_CMD
     if key.kind == "vrf":
         return "show vrf"
     if key.kind == "session":

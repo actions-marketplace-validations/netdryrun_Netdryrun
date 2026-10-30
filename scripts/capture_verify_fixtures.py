@@ -35,7 +35,8 @@ def exec_fn(node: str, argv: list[str]) -> tuple[int, str, str]:
 def file_name(cmd: str) -> str:
     fixed = {frr.VRF_CMD: "show_vrf.txt", frr.NEIGHBORS_CMD: "neighbors.txt",
              frr.ROUTE_CMDS["ipv4"]: "route_v4.txt", frr.ROUTE_CMDS["ipv6"]: "route_v6.txt",
-             frr.BGP_CMDS["ipv4"]: "bgp_v4_detail.txt", frr.BGP_CMDS["ipv6"]: "bgp_v6_detail.txt"}
+             frr.BGP_CMDS["ipv4"]: "bgp_v4_detail.txt", frr.BGP_CMDS["ipv6"]: "bgp_v6_detail.txt",
+             frr.CONFIG_CMD: "running_config.txt"}
     if cmd in fixed:
         return fixed[cmd]
     # show bgp [vrf V] <afi> unicast neighbors N advertised-routes|received-routes detail json
@@ -58,6 +59,8 @@ def main() -> int:
     ap.add_argument("--out", default=str(ROOT / "tests" / "fixtures" / "verify"))
     ap.add_argument("--timeout", type=float, default=240)
     ap.add_argument("--settle", type=float, default=15)
+    ap.add_argument("--only", action="append", default=[], metavar="CMD",
+                    help="write only this command's fixture (repeat for several): the others stay as captured")
     args = ap.parse_args()
     rc, ver, _ = exec_fn("edge1", ["vtysh", "-c", "show version"])
     version = next((" ".join(ln.split()[:2]) for ln in ver.splitlines() if ln.strip().startswith("FRRouting")), "")
@@ -88,7 +91,8 @@ def main() -> int:
             return 3
         last = ns if not why else None
         time.sleep(args.settle)
-    write(Path(args.out), ns.raw, version)
+    raw = [r for r in ns.raw if not args.only or r["cmd"].removeprefix("vtysh -c '").removesuffix("'") in args.only]
+    write(Path(args.out), raw, version)
     print(f"{len(ns.raw)} outputs from {version}; {len(ns.items)} snapshot items")
     return 0
 

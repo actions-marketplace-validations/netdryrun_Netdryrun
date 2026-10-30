@@ -331,10 +331,16 @@ def verify_comment_header(report: dict, commit: str | None = None) -> str:
     if not ok:
         status, verdict = "error", vreport.VERDICTS["error"]
     counts = (len(undeclared), len(missing)) if lists_ok else (0, 0)
+    # running-config lines of an approval that the lab didn't exercise (gauntlet 0.4, R4): never hidden
+    untested = r.get("untested_config") if isinstance(r.get("untested_config"), list) else []
+    lines = sum(len(u.get("added") or []) + len(u.get("removed") or []) for u in untested if isinstance(u, dict))
+    if status not in ("matched", "no_change"):
+        lines = 0
     data = {"schema": vreport.SCHEMA, "status": status, "verdict": verdict, "undeclared": counts[0],
-            "not_happened": counts[1]}
+            "not_happened": counts[1], "untested_config_lines": lines}
     words = (f"**Netdryrun verify: {verdict}** · status `{status}` · {counts[0]} undeclared, "
-             f"{counts[1]} not happened")
+             f"{counts[1]} not happened" + (f" · {lines} config line(s) not tested if the lab doesn't exercise them"
+                                            if lines else ""))
     if isinstance(commit, str) and re.fullmatch(r"[0-9a-f]{7,40}", commit):
         data["commit"] = commit
         words += f" · commit `{commit[:12]}`"
