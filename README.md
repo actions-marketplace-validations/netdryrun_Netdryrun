@@ -167,6 +167,8 @@ Listed in the [official MCP Registry](https://registry.modelcontextprotocol.io/v
 
 **AI can propose network changes. Netdryrun verifies the outcome.** Agents: read [AGENTS.md](https://github.com/netdryrun/netdryrun/blob/main/AGENTS.md).
 
+**Coding agents don't go looking for a verifier**: in our own test they never searched for one. Put Netdryrun in their path in two minutes, as a pull-request check, an `AGENTS.md` rule or an MCP server: [Add it where your agent works](https://netdryrun.com/add/?ref=gh).
+
 AI agents are starting to change networks. Netdryrun gives them a safety gate: an [MCP](https://modelcontextprotocol.io) server that lets an agent dry-run its change in a real lab and proceed only if every check passes.
 
 ```bash
