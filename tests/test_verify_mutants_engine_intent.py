@@ -298,3 +298,30 @@ def test_advertisement_changed_reason_lists_every_unlisted_change():
     after = _advertised(med=50, origin="incomplete", communities=["no-export"])
     assert reason(_advertised(), after, {**ADV, "to": {"med": 50}}) == \
         f"{WHERE}: attributes not listed in `to:` changed too: origin, communities"
+
+
+def test_a_received_pin_with_no_candidate_path_is_refused_never_a_crash():
+    """`state: received` with a BGP pin, on a route with no received-only path and no adj-in entry (its only BGP
+    path is the best one, not installed: FRR `table-map`): the line is refused, naming why (Layer 6 review, 0.4)."""
+    from netdryrun.verify.engine import RouteView, _pins_ok
+    assert _pins_ok({"as_path": "65002"}, RouteView(), "received") == "no received path matches every pinned attribute"
+
+
+def test_the_intent_file_is_read_as_utf8_whatever_the_locale(tmp_path, monkeypatch):
+    """Read under latin-1, UTF-8 byte 0x85 is NEL, a YAML line break: a commented-out `allow_anywhere` entry would
+    become live and widen what may change (Layer 6 review, 0.4). The file is always read as UTF-8."""
+    import codecs
+    from pathlib import Path
+
+    from netdryrun.verify.intent import load_intent
+    f = tmp_path / "intent.yml"
+    f.write_bytes("intent: []\nallow_anywhere:\n- 10.9.9.0/24\n#Å- 10.0.0.0/8\n".encode("utf-8"))
+    real = Path.read_text
+    seen = []
+
+    def read_text(self, *args, **kwargs):
+        seen.append(kwargs.get("encoding", args[0] if args else None))
+        return real(self, *args, **kwargs)
+    monkeypatch.setattr(Path, "read_text", read_text)
+    load_intent(f)
+    assert seen and all(e is not None and codecs.lookup(e).name == "utf-8" for e in seen)

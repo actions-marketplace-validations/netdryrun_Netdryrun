@@ -66,22 +66,22 @@
       "class": "message-text"
     },
     "netdryrun.verify.engine.x__flat__mutmut_17": {
-      "reason": "equivalent: only one-entry tuples of RibEntry reach this line (changed_fields returns 'entries' for other tuples; every other value is a dataclass handled above)",
+      "reason": "equivalent (reason corrected by the Layer 6 review): config 1-tuples (DiffItem.fields) and multi-entry RIB tuples (report._summary) do reach this line, but config fields are never read (skipped on afi; item_json returns early for config) and multi-entry RIB output is filtered to 'entries'; a crash would need an empty-string config line, which parse_running_config never produces",
       "diff": "021b271fe6688efa",
       "class": "equivalent"
     },
     "netdryrun.verify.engine.x__flat__mutmut_18": {
-      "reason": "equivalent: only one-entry tuples of RibEntry reach this line (changed_fields returns 'entries' for other tuples; every other value is a dataclass handled above)",
+      "reason": "equivalent (reason corrected by the Layer 6 review): config 1-tuples (DiffItem.fields) and multi-entry RIB tuples (report._summary) do reach this line, but config fields are never read (skipped on afi; item_json returns early for config) and multi-entry RIB output is filtered to 'entries'; a crash would need an empty-string config line, which parse_running_config never produces",
       "diff": "70a37615b14cb926",
       "class": "equivalent"
     },
     "netdryrun.verify.engine.x__flat__mutmut_23": {
-      "reason": "equivalent: no snapshot value falls through to the {'value': ...} form (every kind is a dataclass or a tuple of RibEntry)",
+      "reason": "equivalent (reason corrected by the Layer 6 review): config 1-tuples (DiffItem.fields) and multi-entry RIB tuples (report._summary) do reach this line, but config fields are never read (skipped on afi; item_json returns early for config) and multi-entry RIB output is filtered to 'entries'; a crash would need an empty-string config line, which parse_running_config never produces",
       "diff": "d377116dbd545275",
       "class": "equivalent"
     },
     "netdryrun.verify.engine.x__flat__mutmut_24": {
-      "reason": "equivalent: no snapshot value falls through to the {'value': ...} form (every kind is a dataclass or a tuple of RibEntry)",
+      "reason": "equivalent (reason corrected by the Layer 6 review): config 1-tuples (DiffItem.fields) and multi-entry RIB tuples (report._summary) do reach this line, but config fields are never read (skipped on afi; item_json returns early for config) and multi-entry RIB output is filtered to 'entries'; a crash would need an empty-string config line, which parse_running_config never produces",
       "diff": "02c830bf8ee18038",
       "class": "equivalent"
     },
@@ -108,11 +108,6 @@
     "netdryrun.verify.engine.x__pins_ok__mutmut_49": {
       "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
       "diff": "c2020a77ffe22b75",
-      "class": "message-text"
-    },
-    "netdryrun.verify.engine.x__pins_ok__mutmut_59": {
-      "reason": "message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict",
-      "diff": "7ad1008b25ec2361",
       "class": "message-text"
     },
     "netdryrun.verify.engine.x__pins_ok__mutmut_60": {
@@ -321,9 +316,9 @@
       "class": "message-text"
     },
     "netdryrun.verify.intent.x__allow__mutmut_36": {
-      "reason": "equivalent: an entry with ? [ ] { } is refused anyway, by the glob pattern (only [0-9A-Fa-f:.*]) or by ipaddress, the same IntentError",
+      "reason": "message text only (reclassed by the Layer 6 review: was 'equivalent'): the entry is still refused with an IntentError, by ipaddress or the glob pattern below; only the message differs. an entry with ? [ ] { } is refused anyway, by the glob pattern (only [0-9A-Fa-f:.*]) or by ipaddress, the same IntentError",
       "diff": "d805039a0294e155",
-      "class": "equivalent"
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__allow__mutmut_37": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
@@ -476,24 +471,24 @@
       "class": "message-text"
     },
     "netdryrun.verify.intent.x__glob__mutmut_100": {
-      "reason": "equivalent: an IPv4 length over 32 is refused by ipaddress.ip_network below, the same IntentError",
+      "reason": "message text only (reclassed by the Layer 6 review: was 'equivalent'): the entry is still refused with an IntentError, by ipaddress or the glob pattern below; only the message differs. an IPv4 length over 32 is refused by ipaddress.ip_network below, the same IntentError",
       "diff": "7f1efb91ae6c1444",
-      "class": "equivalent"
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__glob__mutmut_102": {
-      "reason": "equivalent: /33 is refused by ipaddress.ip_network below, the same IntentError",
+      "reason": "message text only (reclassed by the Layer 6 review: was 'equivalent'): the entry is still refused with an IntentError, by ipaddress or the glob pattern below; only the message differs. /33 is refused by ipaddress.ip_network below, the same IntentError",
       "diff": "c2a77fbe1473bbd9",
-      "class": "equivalent"
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__glob__mutmut_104": {
-      "reason": "equivalent: an IPv4 length over 32 is refused by ipaddress.ip_network below, the same IntentError",
+      "reason": "message text only (reclassed by the Layer 6 review: was 'equivalent'): the entry is still refused with an IntentError, by ipaddress or the glob pattern below; only the message differs. an IPv4 length over 32 is refused by ipaddress.ip_network below, the same IntentError",
       "diff": "50986bd732e940ee",
-      "class": "equivalent"
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__glob__mutmut_105": {
-      "reason": "equivalent: /129 is refused by ipaddress.ip_network below, the same IntentError",
+      "reason": "message text only (reclassed by the Layer 6 review: was 'equivalent'): the entry is still refused with an IntentError, by ipaddress or the glob pattern below; only the message differs. /129 is refused by ipaddress.ip_network below, the same IntentError",
       "diff": "94c72dc36d3fd7d8",
-      "class": "equivalent"
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__glob__mutmut_106": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
@@ -581,9 +576,9 @@
       "class": "message-text"
     },
     "netdryrun.verify.intent.x__glob__mutmut_43": {
-      "reason": "equivalent: an octet 256 passes this check but ipaddress.ip_network refuses it below, the same IntentError",
+      "reason": "message text only (reclassed by the Layer 6 review: was 'equivalent'): the entry is still refused with an IntentError, by ipaddress or the glob pattern below; only the message differs. an octet 256 passes this check but ipaddress.ip_network refuses it below, the same IntentError",
       "diff": "7b9620d0b6917a53",
-      "class": "equivalent"
+      "class": "message-text"
     },
     "netdryrun.verify.intent.x__glob__mutmut_51": {
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
@@ -801,11 +796,6 @@
       "reason": "message text only: the IntentError (exit 2) is raised either way, only its wording changes",
       "diff": "095961d807722a3b",
       "class": "message-text"
-    },
-    "netdryrun.verify.intent.x_load_intent__mutmut_4": {
-      "reason": "not verdict: the locale encoding (UTF-8 in the supported Linux/WSL setups) only changes how a non-ASCII file decodes; a bad decode is an IntentError or an unknown node (exit 2)",
-      "diff": "70ee065c17d90d0a",
-      "class": "safety"
     },
     "netdryrun.verify.intent.x_load_intent__mutmut_6": {
       "reason": "equivalent: 'UTF-8' and 'utf-8' name the same codec",
