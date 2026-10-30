@@ -704,9 +704,9 @@ def layer_mutation(args) -> Layer:
         by_class = accepted_by_class(accepted, survived, diffs)
         summary = (f"{len(mine)} generated, {caught}/{len(checked)} caught ({score:.1f}%); not caught: "
                    f"{len(survived) - untested} survived the tests, {untested} in code no test runs"
-                   + (f", {len(survived) - len(open_)} accepted ("
+                   + (f", {sum(by_class.values())} accepted ("
                       + ", ".join(f"{v} {k}" for k, v in sorted(by_class.items())) + ")"
-                      if len(survived) != len(open_) else "")
+                      if by_class else "")
                    + (f"; {len(stale)} accepted entries don't accept their mutant (diff moved, no class, or no reviewed argument): see the notes"
                       if stale else "")
                    + (f"; {len(known)} outside the gated functions ({SCOPED_KNOWN_LABEL})" if known else ""))

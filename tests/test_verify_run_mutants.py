@@ -494,3 +494,36 @@ def test_check_config_loaded_reads_each_node_by_its_snapshot_driver_else_by_dete
     assert drivers == {"r1": "frr", "s1": "srlinux", "h1": None}
     monkeypatch.setattr(runner, "rejected_config_message", lambda found: "")
     vrun.check_config_loaded(lab, {"r1": "frr"}, "before")
+
+
+def test_check_config_loaded_trusts_the_snapshot_driver_over_detection(monkeypatch):
+    """A node verify snapshots is read by the driver it was snapshotted with, even when its image alone wouldn't
+    detect as that driver (a custom FRR image): never by re-detection."""
+    lab = fake_lab(node("r1", image="registry.example/custom-router:1"))
+    drivers = {}
+
+    def by_node(lab_, driver_of):
+        drivers.update({n: driver_of(n, nd) for n, nd in lab_.nodes.items()})
+        return {}
+    monkeypatch.setattr(runner, "config_load_by_node", by_node)
+    monkeypatch.setattr(vrun, "detect", lambda nd: (_ for _ in ()).throw(AssertionError("re-detected")))
+    vrun.check_config_loaded(lab, {"r1": "frr"}, "before")
+    assert drivers == {"r1": "frr"}
+
+
+def test_bind_reach_reads_the_topology_as_utf8_on_every_platform(tmp_path, monkeypatch):
+    """The topology is read as UTF-8 whatever the platform's default encoding (Windows: cp1252), so a non-ASCII
+    path in a bind reads the same everywhere."""
+    import codecs
+    t = tmp_path / "t.clab.yml"
+    t.write_text(f"name: t\ntopology:\n  nodes:\n    r1: {{image: {FRR_IMAGE}, binds: ['café/r1.conf:/etc/frr/frr.conf']}}\n",
+                 encoding="utf-8")
+    real = Path.read_text
+    seen = []
+
+    def read_text(self, *args, **kwargs):
+        seen.append(kwargs.get("encoding", args[0] if args else None))
+        return real(self, *args, **kwargs)
+    monkeypatch.setattr(Path, "read_text", read_text)
+    assert vrun.bind_reach(t) == {"café/r1.conf": [("r1", "/etc/frr/frr.conf")]}
+    assert seen and all(e is not None and codecs.lookup(e).name == "utf-8" for e in seen)

@@ -48,6 +48,10 @@ def test_junos_joins_a_repeated_list_element():
 def test_junos_refuses_a_repeated_key_that_is_not_a_list():
     with pytest.raises(DriverError, match="repeated key"):
         junos.load_junos_json("show route", '{"a": [{"x": 1}], "b": {"y": 1}, "b": {"y": 2}}')
+    with pytest.raises(DriverError, match="repeated key 'b'"):      # a list repeated as an object: not joined
+        junos.load_junos_json("show route", '{"b": [{"y": 1}], "b": {"y": 2}}')
+    with pytest.raises(DriverError, match="repeated key 'b'"):
+        junos.load_junos_json("show route", '{"b": {"y": 1}, "b": [{"y": 2}]}')
 
 
 def _route_entry(*hops):

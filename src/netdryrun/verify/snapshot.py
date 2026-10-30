@@ -82,7 +82,6 @@ _WELL_KNOWN = {
     "blackhole": "65535:666", "no-export": "65535:65281", "no-advertise": "65535:65282",
     "no-export-subconfed": "65535:65283", "local-as": "65535:65283", "no-peer": "65535:65284",
 }
-_WELL_KNOWN_NAMES = {v: k for k, v in _WELL_KNOWN.items() if k != "local-as"}
 _UINT16 = 0xFFFF
 _UINT32 = 0xFFFFFFFF
 
@@ -99,11 +98,6 @@ def canon_community(token: object) -> str:
         n = int(t)
         return f"{n >> 16}:{n & _UINT16}"
     raise SnapshotError(f"not a standard community: {str(token)[:60]!r}")
-
-
-def community_label(canonical: str) -> str:
-    """How a canonical standard community is shown in a report: well-known ones by name."""
-    return _WELL_KNOWN_NAMES.get(canonical, canonical)
 
 
 def canon_large_community(token: object) -> str:
