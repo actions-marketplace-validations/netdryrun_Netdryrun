@@ -1217,8 +1217,8 @@ def test_the_report_shows_each_undeclared_routes_state_before_and_after():
     new = items[("rib", "10.101.0.0/24")]
     assert (new["route_before"], new["route_after"]) == ("absent", "selected and in the FIB")
     static = items[("rib", "192.0.2.0/24")]
-    assert static["fields"] == ["entries"] and (static["route_before"], static["route_after"]) == \
-        ("selected and in the FIB", "selected and in the FIB")
+    discard = "selected and in the FIB as a discard route (blackhole, reject or unreachable: traffic is dropped)"
+    assert static["fields"] == ["entries"] and (static["route_before"], static["route_after"]) == (discard, discard)
 
 
 def test_pins_on_the_reflection_attributes():

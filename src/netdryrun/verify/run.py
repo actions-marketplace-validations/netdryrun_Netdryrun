@@ -14,6 +14,7 @@ from __future__ import annotations
 import hashlib
 import io
 import os
+import posixpath
 import re
 import shutil
 import subprocess
@@ -84,6 +85,38 @@ def bind_sources(topology: Path) -> list[str]:
         if isinstance(sc, str) and "\n" not in sc:
             out.append(sc)
     return list(dict.fromkeys(out))
+
+
+def bind_targets(topology: Path) -> dict[str, list[tuple[str | None, str]]]:
+    """Each host path the topology references -> where it lands: (node, path in the container), the node None
+    for a bind in `defaults`, `kinds` or `groups` (it can reach any node). A startup-config lands at
+    "startup-config"."""
+    data = load_yaml(topology.read_text(encoding="utf-8"), str(topology)) or {}
+    t = data.get("topology") or {}
+    blocks: list[tuple[str | None, dict]] = [(None, t.get("defaults") or {})]
+    for section in ("kinds", "groups", "nodes"):
+        sec = t.get(section) or {}
+        if isinstance(sec, dict):
+            blocks += [(k if section == "nodes" else None, v or {}) for k, v in sec.items()]
+    out: dict[str, list[tuple[str | None, str]]] = {}
+    for node, b in blocks:
+        if not isinstance(b, dict):
+            continue
+        for bind in b.get("binds") or []:
+            if isinstance(bind, str) and ":" in bind:
+                src, dest = bind.split(":", 2)[:2]
+                out.setdefault(src, []).append((node, dest))
+        sc = b.get("startup-config")
+        if isinstance(sc, str) and "\n" not in sc:
+            out.setdefault(sc, []).append((node, "startup-config"))
+    return out
+
+
+def is_router_config(dest: str) -> bool:
+    """An FRR config file that verify's snapshot judges: /etc/frr/<name>.conf, except vtysh.conf (vtysh's own
+    settings). FRR's `daemons` is shell its init script sources, so it is not one."""
+    d = posixpath.normpath(dest)
+    return posixpath.dirname(d) == "/etc/frr" and d.endswith(".conf") and posixpath.basename(d) != "vtysh.conf"
 
 
 _VAR = re.compile(r"\$(?:\{([A-Za-z_][A-Za-z0-9_]*)(?:(:?[-=])([^}]*))?\}|([A-Za-z_][A-Za-z0-9_]*))")
@@ -356,9 +389,35 @@ def check_sides(before: Side, after: Side, log: Callable[[str], None]) -> list[s
         raise VerifyInputError(f"both sides resolved to the same configs: {', '.join(src_differ)} differ between "
                                f"{before.desc} and {after.desc}, but every bound file hashes the same in the two lab "
                                "folders; refusing to compare")
-    log(f"bound files that differ between the sides: {', '.join(differ)}" if differ
-        else "no bound file differs between the sides")
+    if not differ:
+        raise VerifyInputError(f"nothing to verify: no file the lab boots differs between {before.desc} and "
+                               f"{after.desc} (a change to a file the topology doesn't bind isn't in the lab)")
+    log(f"bound files that differ between the sides: {', '.join(differ)}")
     return differ
+
+
+def check_changed_binds(topology: Path, differ: list[str], nodes: dict[str, str]) -> None:
+    """Every bound file that differs must be the FRR config of a node verify snapshots: anything else (FRR's
+    `daemons`, a script, vtysh.conf, a startup-config of a node not observed) can change what runs without
+    the snapshot judging it, so it is an error (gauntlet 0.4, R2)."""
+    targets = bind_targets(topology)
+    everyone = all(drv == "frr" for drv in nodes.values() if drv != "")
+    observed_all = everyone and all(drv for drv in nodes.values()) if nodes else False
+    bad = []
+    for key in differ:
+        src = next((s for s in sorted(targets, key=len, reverse=True) if key == s or key.startswith(s + "/")), None)
+        suffix = key[len(src):] if src else ""
+        for node, dest in targets.get(src, [(None, "?")]):
+            full = dest + suffix if dest != "startup-config" else dest
+            ok = is_router_config(full) and (nodes.get(node) == "frr" if node else observed_all)
+            if not ok:
+                where = f"on {node}" if node else "on every node it reaches"
+                bad.append(f"{key} ({full} {where})")
+    if bad:
+        raise VerifyInputError(f"changed bound file(s) that are not a router config of a node verify observes: "
+                               f"{'; '.join(dict.fromkeys(bad))}. verify judges a change by what the observed FRR "
+                               "nodes do, and can't tell what this file changes; change it in a separate PR, "
+                               "tested with checks")
 
 # ---------------------------------------------------------------------------------------------------------
 # Nodes
@@ -372,7 +431,17 @@ def classify_nodes(lab: Lab, overrides: dict[str, str], unobserved: list[str]) -
         raise VerifyInputError(f"--unobserved names node(s) not in the topology: {', '.join(unknown)}")
     out = {}
     for name, node in lab.nodes.items():
-        if name in unobserved or node.kind in BRIDGE_KINDS:
+        if node.kind in BRIDGE_KINDS:
+            out[name] = ""
+            continue
+        if name in unobserved:
+            try:
+                runs = overrides.get(name) or detect(node)
+            except DriverError:
+                runs = None
+            if runs == "frr":
+                raise VerifyInputError(f"--unobserved {name}: {name} runs FRR, which verify observes; a change on "
+                                       "it would go uncompared")
             out[name] = ""
             continue
         if node.kind in HOST_KINDS and name not in overrides:
@@ -608,7 +677,7 @@ def verify(topology: str, before: str, after: str, intent_path: str, *, guards: 
         bside = materialize(before, "before", topo, work, config_dir_name)
         aside = materialize(after, "after", topo, work, config_dir_name)
         res.before_spec, res.after_spec = f"{before}: {bside.desc}", f"{after}: {aside.desc}"
-        check_sides(bside, aside, log)
+        differ = check_sides(bside, aside, log)
         if intent_text is None and intent_edited(Path(intent_path), bside, aside):
             res.warnings.append(INTENT_EDITED_WARNING)
         before_topo, after_topo = bside.topology, aside.topology
@@ -616,6 +685,7 @@ def verify(topology: str, before: str, after: str, intent_path: str, *, guards: 
         if gcfg is None:
             res.warnings.append(NO_GUARDS_WARNING)
         nodes = classify_nodes(lab, gcfg.drivers if gcfg else {}, list(unobserved))
+        check_changed_binds(bside.topology, differ, nodes)
         for name, why in unobserved_reasons(lab, nodes).items():
             if lab.nodes[name].kind not in BRIDGE_KINDS:
                 res.warnings.append(f"node {name} is not observed ({why})")

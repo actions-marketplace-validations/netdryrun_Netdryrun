@@ -40,7 +40,8 @@ from .snapshot import BgpAttrs, BgpPath, ItemKey, RibEntry, Session, Snapshot, S
 
 STATUSES = ("no_change", "matched", "failed")
 STATE_TEXT = {"absent": "absent", "received": "received (not selected)", "selected": "selected (not in the FIB)",
-              "installed": "selected and in the FIB"}
+              "installed": "selected and in the FIB",
+              "discard": "selected and in the FIB as a discard route (blackhole, reject or unreachable: traffic is dropped)"}
 # `to:` attribute -> the BgpAttrs fields it may change; listing next_hop also allows the next hop's
 # resolution to change, listing from allows the peer's own facts to change.
 ATTR_FIELDS = {"next_hop": ("next_hops",), "from": ()}
@@ -129,6 +130,9 @@ def diff(before: Snapshot, after: Snapshot) -> list[DiffItem]:
 # Views over one snapshot
 # ---------------------------------------------------------------------------------------------------------
 
+FORWARDING = ("gateway", "interface")   # next-hop kinds that forward; blackhole, reject and unreachable drop
+
+
 @dataclass
 class RouteView:
     rib: dict = field(default_factory=dict)        # protocol -> tuple[RibEntry]
@@ -138,8 +142,11 @@ class RouteView:
 
     def presence(self) -> str:
         entries = [e for es in self.rib.values() for e in es]
-        if any(e.selected and e.fib for e in entries):
+        installed = [e for e in entries if e.selected and e.fib]
+        if any(nh.kind in FORWARDING for e in installed for nh in e.nexthops):
             return "installed"
+        if installed:   # every next hop drops the traffic: never "installed" (gauntlet 0.4, R5)
+            return "discard"
         if any(e.selected for e in entries):
             return "selected"
         if entries or self.paths or self.adj_in:
@@ -329,7 +336,8 @@ def _appears(ctx: _Ctx, ln: Line) -> LineResult:
         bp, ap = b.presence(), a.presence()
         if bp != "absent":
             return LineResult(ln, False, f"{n}: the route was already there before ({STATE_TEXT[bp]})")
-        want = {"installed": ("installed",), "selected": ("selected", "installed"), "received": ("received",)}[ln.state]
+        want = {"installed": ("installed",), "selected": ("selected", "installed"), "received": ("received",),
+                "discard": ("discard",)}[ln.state]
         if ap not in want:
             return LineResult(ln, False, f"{n}: after the change the route is {STATE_TEXT[ap]}; declared: {ln.state}")
         why = _pins_ok(ln.pins, a, ln.state)
@@ -347,7 +355,7 @@ def _disappears(ctx: _Ctx, ln: Line) -> LineResult:
     for n in ln.nodes:
         b, a = ctx.before.route(n, ln.vrf, afi, ln.prefix), ctx.after.route(n, ln.vrf, afi, ln.prefix)
         bp = b.presence()
-        ok_before = ("selected", "installed") + (("received",) if ln.including_received_only else ())
+        ok_before = ("selected", "installed", "discard") + (("received",) if ln.including_received_only else ())
         if bp not in ok_before:
             hint = "" if bp == "absent" else " (a received-only route needs including_received_only: true)"
             return LineResult(ln, False, f"{n}: the route was {STATE_TEXT[bp]} before{hint}")

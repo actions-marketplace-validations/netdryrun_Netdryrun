@@ -345,6 +345,7 @@ def test_guards_are_read_from_the_before_ref(tmp_path, monkeypatch):
     lab = repo_lab(tmp_path)
     # the change weakens the guards in the working tree: verify must ignore that
     (lab / "netdryrun.yml").write_text("lab: topology.clab.yml\nchecks:\n  - {type: bgp_session, node: edge1, neighbor: 10.0.1.2}\n")
+    (lab / "configs" / "edge1.conf").write_text("! edge1 after\n")
     seen = {}
 
     def fake_guards(cfg, topology, settle, hold, log):
@@ -458,7 +459,7 @@ def test_parent_relative_binds_keep_each_side_on_its_own_configs(tmp_path):
     lab = nested_repo(tmp_path)
     side = capture_side(base().snap())
     res = vrun.verify(str(lab / "topo" / "t.clab.yml"), "HEAD~1", "HEAD", str(intent_file(tmp_path, "intent: []\n")),
-                      side_fn=side, unobserved=["r1", "r2"])
+                      side_fn=side)
     assert res.error == "" or "both sides" not in res.error
     assert side.calls["before"]["../configs/r1.conf"] == b"! r1 before\n"
     assert side.calls["after"]["../configs/r1.conf"] == b"! r1 after\n"
@@ -473,7 +474,7 @@ def test_parent_relative_binds_with_directory_sides(tmp_path):
         (d / "configs" / "r1.conf").write_text(text)
     side = capture_side(base().snap())
     vrun.verify(str(lab / "topo" / "t.clab.yml"), str(b), str(a), str(intent_file(tmp_path, "intent: []\n")),
-                side_fn=side, unobserved=["r1", "r2"])
+                side_fn=side)
     assert side.calls["before"]["../configs/r1.conf"] == b"! r1 before\n"
     assert side.calls["after"]["../configs/r1.conf"] == b"! r1 after\n"
 
@@ -506,8 +507,7 @@ def test_a_bind_outside_the_side_tree_is_exit_2(tmp_path, monkeypatch, bind):
     git(lab, "commit", "-q", "-m", "bind outside")
     git(lab, "tag", "b")
     side = capture_side(base().snap())
-    res = vrun.verify(str(topo), "b", "HEAD", str(intent_file(tmp_path, "intent: []\n")), side_fn=side,
-                      unobserved=["r1", "r2"])
+    res = vrun.verify(str(topo), "b", "HEAD", str(intent_file(tmp_path, "intent: []\n")), side_fn=side)
     assert res.exit_code == 2 and "resolves outside" in res.error and not side.calls
 
 
@@ -520,8 +520,7 @@ def test_env_and_parent_binds_inside_the_tree_resolve_per_side(tmp_path, monkeyp
     (lab / "configs" / "r1.conf").write_text("! r1 third\n")
     git(lab, "commit", "-q", "-am", "third")
     side = capture_side(base().snap())
-    vrun.verify(str(topo), "HEAD~1", "HEAD", str(intent_file(tmp_path, "intent: []\n")), side_fn=side,
-                unobserved=["r1", "r2"])
+    vrun.verify(str(topo), "HEAD~1", "HEAD", str(intent_file(tmp_path, "intent: []\n")), side_fn=side)
     assert side.calls["before"]["../${NDR_TEST_DIR}/r1.conf"] == b"! r1 after\n"   # captured as written
     assert side.calls["after"]["../${NDR_TEST_DIR}/r1.conf"] == b"! r1 third\n"
 
@@ -534,8 +533,8 @@ def test_self_check_both_sides_resolved_to_the_same_configs(tmp_path):
     same = {"configs/r1.conf": "aa", "configs/r2.conf": "bb"}
     with pytest.raises(vrun.VerifyInputError, match="both sides resolved to the same configs"):
         vrun.check_sides(mk("before", same, same), mk("after", same, {**same, "configs/r1.conf": "cc"}), logs.append)
-    vrun.check_sides(mk("before", same, same), mk("after", same, same), logs.append)
-    assert logs[-1].startswith("no bound file differs")
+    with pytest.raises(vrun.VerifyInputError, match="nothing to verify"):   # gauntlet 0.4, R3
+        vrun.check_sides(mk("before", same, same), mk("after", same, same), logs.append)
     other = {**same, "configs/r1.conf": "cc"}
     vrun.check_sides(mk("before", same, same), mk("after", other, other), logs.append)
     assert "configs/r1.conf" in logs[-1] and "configs/r2.conf" not in logs[-1]
@@ -548,11 +547,16 @@ def test_binds_outside_the_config_folder_come_from_each_ref(tmp_path):
     (lab / "shared" / "vtysh.conf").write_text("! vtysh after\n")
     git(lab, "commit", "-q", "-am", "after")
     (lab / "shared" / "vtysh.conf").write_text("! vtysh in the working tree\n")
+    topo, work = lab / "topology.clab.yml", tmp_path / "work"
+    bside = vrun.materialize("HEAD~1", "before", topo, work, "configs")
+    aside = vrun.materialize("HEAD", "after", topo, work, "configs")
+    assert bound_bytes(bside.topology)["shared/vtysh.conf"] == b"service integrated-vtysh-config\n"
+    assert bound_bytes(aside.topology)["shared/vtysh.conf"] == b"! vtysh after\n"
+    # and a changed vtysh.conf is not a router config: verify refuses it (gauntlet 0.4, R2)
     side = capture_side(base().snap())
-    vrun.verify(str(lab / "topology.clab.yml"), "HEAD~1", "HEAD", str(intent_file(tmp_path, "intent: []\n")),
-                config_dir_name="configs", side_fn=side)
-    assert side.calls["before"]["shared/vtysh.conf"] == b"service integrated-vtysh-config\n"
-    assert side.calls["after"]["shared/vtysh.conf"] == b"! vtysh after\n"
+    res = vrun.verify(str(topo), "HEAD~1", "HEAD", str(intent_file(tmp_path, "intent: []\n")),
+                      config_dir_name="configs", side_fn=side)
+    assert res.exit_code == 2 and "shared/vtysh.conf" in res.error and not side.calls
 
 
 def test_a_bound_file_left_out_by_export_ignore_is_exit_2(tmp_path):
@@ -622,6 +626,7 @@ def test_dishonest_intent_fails_through_guards_read_from_the_before_ref(tmp_path
     intent that declares the leak, even though the change deleted that guard in the working tree."""
     lab = repo_lab(tmp_path)
     (lab / "netdryrun.yml").write_text("lab: topology.clab.yml\nchecks:\n  - {type: bgp_session, node: edge1, neighbor: 10.0.1.2}\n")
+    (lab / "configs" / "edge1.conf").write_text("! edge1 leaks\n")
     after = leaked_after().snap()
     fake = guards_on(after)
     monkeypatch.setattr(vrun, "run_guards", fake)
@@ -705,10 +710,13 @@ def test_an_intent_edited_in_the_same_change_is_flagged(tmp_path):
     (lab / "netdryrun-intent.yml").write_text("intent: []\n")
     git(lab, "add", "netdryrun-intent.yml")
     git(lab, "commit", "-q", "-m", "intent")
+    (lab / "configs" / "edge1.conf").write_text("! edge1 second\n")
+    git(lab, "commit", "-q", "-am", "a config change alone")
     side = capture_side(base().snap())
-    res = vrun.verify(str(lab / "topology.clab.yml"), "HEAD", "HEAD", str(lab / "netdryrun-intent.yml"), side_fn=side)
-    assert vreport.INTENT_EDITED_WARNING not in res.warnings, res.error
+    res = vrun.verify(str(lab / "topology.clab.yml"), "HEAD~1", "HEAD", str(lab / "netdryrun-intent.yml"), side_fn=side)
+    assert res.status == "no_change" and vreport.INTENT_EDITED_WARNING not in res.warnings, res.error
     (lab / "netdryrun-intent.yml").write_text("intent: []\nallow_anywhere: ['10.200.*.0/24']\n")
+    (lab / "configs" / "edge1.conf").write_text("! edge1 third\n")
     git(lab, "commit", "-q", "-am", "widen")
     res = vrun.verify(str(lab / "topology.clab.yml"), "HEAD~1", "HEAD", str(lab / "netdryrun-intent.yml"), side_fn=side)
     assert vreport.INTENT_EDITED_WARNING in res.warnings
@@ -748,8 +756,9 @@ def test_a_node_verify_cannot_snapshot_is_refused_and_named_with_the_way_out(tmp
 
 def test_an_unobserved_node_is_stated_in_every_output(tmp_path, monkeypatch):
     """A node run as --unobserved: the console, the Markdown and the JSON report all say that changes on it
-    are not compared (never silently a smaller snapshot)."""
-    lab = make_lab(tmp_path)
+    are not compared (never silently a smaller snapshot). (An FRR router can't be unobserved: gauntlet R8.)"""
+    lab = make_lab(tmp_path, TOPO.replace("    peer1: {binds: [configs/peer1.conf:/etc/frr/frr.conf]}",
+                                          "    peer1: {binds: [configs/peer1.conf:/etc/frr/frr.conf], image: alpine:3}"))
     b, a = side_dir(tmp_path, lab, "before"), side_dir(tmp_path, lab, "after", edit="! edge1 after\n")
     snap_b, snap_a = base().snap(), base().snap()
     side = fake_side(snap_b, snap_a)

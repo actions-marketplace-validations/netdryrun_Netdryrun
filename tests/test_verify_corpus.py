@@ -38,11 +38,18 @@ def test_an_unsafe_change_fails_with_an_empty_intent(case, leak):
 def test_declared_growth_passes():
     d, before, after = load("06-customer-adds-prefix")
     assert d["verdict"] == "INTENT MATCHED"
-    m = match(before, after, parse_intent_text(d["intent"], "case 06"))
+    # ce1 originates the block from a Null0 anchor (`ip route 10.100.1.0/24 Null0`): on ce1 the route drops
+    # traffic, so from 0.4's gauntlet fix (R5) it is declared as a discard route, never as "installed"
+    m = match(before, after, parse_intent_text(d["intent"], "case 06 as run live"))
+    assert m.status == "failed" and any("ce1" in lr.reason and "discard" in lr.reason for lr in m.lines)
+    declared = d["intent"].replace("appears_on: [ce1, pe1, pe2, up1, peer1]",
+                                   "appears_on: [ce1]\n    state: discard\n  - prefix: 10.100.1.0/24\n"
+                                   "    appears_on: [pe1, pe2, up1, peer1]")
+    m = match(before, after, parse_intent_text(declared, "case 06"))
     assert m.status == "matched" and not m.undeclared
     # the same change undeclared fails, and declaring it on fewer nodes leaves the rest undeclared
     assert match(before, after, parse_intent_text(EMPTY, "empty")).status == "failed"
-    fewer = d["intent"].replace("ce1, pe1, pe2, up1, peer1", "ce1, pe1")
+    fewer = declared.replace("appears_on: [pe1, pe2, up1, peer1]", "appears_on: [pe1]")
     m = match(before, after, parse_intent_text(fewer, "fewer"))
     assert m.status == "failed" and {x.key.node for x in m.undeclared} >= {"up1", "peer1"}
 

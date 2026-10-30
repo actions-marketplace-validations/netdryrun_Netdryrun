@@ -54,7 +54,7 @@ A lab that gives a different snapshot on a second boot approves nothing (INCONCL
 | `--intent-source` | `cli` | Who supplied the intent, echoed next to it (`cli` or `action`; the Action passes `action`). |
 | `--guards FILE` | see below | The standing guards (a `netdryrun.yml`), run on the *after* lab; they must pass. Its `nodes:` settings (`driver`, `setup`) apply to both labs. See [Standing guards](#standing-guards). |
 | `--config-dir DIR` | | With directory sides: the folder each directory stands for, relative to the topology (for example `configs`), when the directories hold only that folder. Every bind must then resolve inside it. With a git ref, it is only checked to exist in the ref. |
-| `--unobserved NODE` | | A node without a routing stack (a host). Repeat for several. A node verify can't classify is an error, never silently skipped: a `linux` node with no known routing image, and the host kinds (`host`, `ext-container`, `k8s-kind`), are refused unless named here. Bridges are never observed. |
+| `--unobserved NODE` | | A node without a routing stack (a host). Repeat for several. A node that runs FRR is refused: verify observes it. A node verify can't classify is an error, never silently skipped: a `linux` node with no known routing image, and the host kinds (`host`, `ext-container`, `k8s-kind`), are refused unless named here. Bridges are never observed. |
 | `--settle` | `15` | Seconds between the two snapshots that must be identical. Stretched automatically to the longest advertisement interval (MRAI) a node reports, plus 2 s; must exceed any `update-delay` in the lab. |
 | `--timeout` | `300` | Seconds to reach a stable snapshot, per lab. |
 | `--hold` | `10` | The standing guards' hold window. |
@@ -81,6 +81,8 @@ Each side is built in its own temporary folder, never shared with the other side
 - **A bind that resolves outside the side's tree is an error** (exit code `2`): an absolute path, `~/...`, a variable pointing elsewhere, or a symlink leading out would be the same file on both sides.
 - A bound file missing from a side is an error. With a git ref, a bound file left out of `git archive` by `export-ignore` in `.gitattributes` is an error too, and the message says so.
 - **Self-check before booting:** verify hashes every bound file on each side, checks that it holds that side's own bytes, and prints which bound files differ between the sides. If the sides differ in bound files but every bound file hashes the same in the two lab folders, it stops with "both sides resolved to the same configs" (exit code `2`).
+- **No bound file differs: nothing to verify** (exit code `2`, before any boot). A change to a file the topology doesn't bind isn't in the lab, so there is nothing to compare.
+- **Only an observed node's FRR config may differ** (`/etc/frr/<name>.conf`, except `vtysh.conf`). Any other bound file that differs is an error (exit code `2`, before any boot), naming it: FRR's `daemons` (shell that FRR's start script runs), `vtysh.conf`, a script, or the config of a node verify doesn't observe can change what runs without the snapshot judging it. Change such a file in a separate pull request, tested with checks.
 
 ## The intent file
 
@@ -104,7 +106,7 @@ allow_anywhere: ["10.200.*.0/24"]
 
 ### appears_on
 
-The route is absent on each listed node before (no RIB entry, BGP path or received route), and after the change it is **selected and installed in the FIB** (`state: installed`, the default). `state: selected` accepts a selected route that isn't in the FIB; `state: received` expects it received but not selected.
+The route is absent on each listed node before (no RIB entry, BGP path or received route), and after the change it is **selected and installed in the FIB** (`state: installed`, the default). `state: selected` accepts a selected route that isn't in the FIB; `state: received` expects it received but not selected. **A discard route is never `installed`:** a route whose every next hop drops the traffic (blackhole, reject, unreachable: `ip route X Null0`, an anchor for a `network` statement) is declared `state: discard`, so the reviewer sees that the node drops traffic for the prefix.
 
 The report shows, per node, where the new route was learned from, its next hop and AS path. `with:` pins any of them:
 

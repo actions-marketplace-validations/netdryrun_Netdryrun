@@ -40,7 +40,7 @@ class IntentError(ValueError):
 
 TOP_KEYS = ("intent", "allow_anywhere")
 FORMS = ("appears_on", "disappears_from", "best_path_on", "session", "advertisement")
-STATES = ("installed", "selected", "received")
+STATES = ("installed", "selected", "received", "discard")
 # Attributes `to:` may set on a best path (or an advertisement), and `with:` may pin on a new route
 BGP_ATTRS = ("from", "next_hop", "as_path", "origin", "local_pref", "med", "weight", "communities",
              "ext_communities", "large_communities", "cluster_list", "originator_id")
