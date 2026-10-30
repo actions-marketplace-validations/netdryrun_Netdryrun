@@ -10,7 +10,7 @@ Written by `scripts/release_gate.py` (see [RELEASING.md](../../RELEASING.md)). D
 
 | Layer | Commit | Ran | Time | Result |
 |---|---|---|---|---|
-| [Layer 1: static](#layer-1-static) | `878ac81b42` | 2026-10-30 00:35:49 UTC | 1.3 s | 14 PASS |
+| [Layer 1: static](#layer-1-static) | `91b4820a78` | 2026-10-30 03:53:02 UTC | 0.9 s | 14 PASS |
 | [Layer 2: unit tests on every supported Python](#layer-2-unit-tests-on-every-supported-python) | `878ac81b42` | 2026-10-30 00:35:51 UTC | 4.0 min | 7 PASS |
 | [Layer 4: mutation testing](#layer-4-mutation-testing) | `878ac81b42` | 2026-10-30 00:45:03 UTC | 22.8 min | 4 PASS |
 | [Layer 5: live matrix on the built package](#layer-5-live-matrix-on-the-built-package) | `878ac81b42` | 2026-10-30 01:08:40 UTC | 156.9 min | 2 ACCEPTED, 50 PASS |
@@ -18,16 +18,16 @@ Written by `scripts/release_gate.py` (see [RELEASING.md](../../RELEASING.md)). D
 
 ## Layer 1: static
 
-Commit `878ac81b42c7822877b3f48b3c268d00ce4bdddd` on `ndr/agent-runtime`; 2026-10-30 00:35:49 UTC; 1.3 s; Linux 6.18.54.1-microsoft-standard-WSL2 (x86_64); Python 3.10.12; --strict.
+Commit `91b4820a7857e8b8af25a7be7e6ac66601011838` on `ndr/agent-runtime`; 2026-10-30 03:53:02 UTC; 0.9 s; Linux 6.18.54.1-microsoft-standard-WSL2 (x86_64); Python 3.10.12; --strict.
 
 Tools: actionlint 1.7.7; ruff 0.17.3; shellcheck 0.8.0.
 
 | Check | Severity | Result | Time | Notes |
 |---|---|---|---|---|
 | ruff (config in pyproject.toml) | BLOCKER | **PASS** | 0.0 s | All checks passed! |
-| actionlint on every workflow (with shellcheck) | BLOCKER | **PASS** | 0.2 s | clean |
+| actionlint on every workflow (with shellcheck) | BLOCKER | **PASS** | 0.1 s | clean |
 | shellcheck, error level, 18 scripts | BLOCKER | **PASS** | 0.2 s | clean |
-| shellcheck, warning level, 18 scripts | MAJOR | **PASS** | 0.2 s | clean |
+| shellcheck, warning level, 18 scripts | MAJOR | **PASS** | 0.1 s | clean |
 | no empty ${{ }} in action.yml or workflows | BLOCKER | **PASS** | 0.0 s | none |
 | public facts match the source (sync_facts.py --check) | BLOCKER | **PASS** | 0.2 s | facts: in sync (version 0.3.3, 0 problem(s)) |
 | every version reference says 0.3.3 | BLOCKER | **PASS** | 0.0 s | 39 references agree |
