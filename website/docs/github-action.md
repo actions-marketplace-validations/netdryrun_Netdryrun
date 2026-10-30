@@ -162,11 +162,14 @@ jobs:
 - Merge the intent from the ticket first, in its own reviewed PR, then open the change against it.
 - Or let one PR carry both, with `allow-intent-edit: true`, **only if branch protection requires a code-owner review** on the intent file. Then a human from the network team approves every intent, and the job prints a warning that the intent was edited.
 
-Either way, list the intent file and `netdryrun.yml` in `CODEOWNERS` and turn on "Require review from Code Owners" for the default branch:
+**The workflow itself is part of the verdict.** Under `pull_request` GitHub runs the workflow from the PR merged into its base, so a PR that edits it sets the inputs that judge it (`allow-intent-edit`, `intent-file`, `topology`, `path`, `allow-check-edit`). So `mode: verify` fails on a PR that changes anything under `.github/workflows/`, and `mode: run` fails on one that changes a workflow together with the lab, before any lab boots: change the workflow in its own reviewed PR.
+
+Either way, list the intent file, `netdryrun.yml` and the workflows in `CODEOWNERS` and turn on "Require review from Code Owners" for the default branch:
 
 ```text title=".github/CODEOWNERS"
 network/netdryrun-intent.yml  @your-org/network-team
 network/netdryrun.yml         @your-org/network-team
+.github/workflows/            @your-org/network-team
 ```
 
 The PR comment (with `pr-comment: true`) and the job summary show the verdict, the declared intent echoed for the reviewer, every undeclared difference with the read-only command that shows it on its node, the declarations that didn't happen and the standing guards. The same protections as in `mode: run` apply: report files already in the workspace are deleted before the run, the `status` and `verdict` outputs come from this run's report only (and must match its exit code), and lab text in the comment and outputs is made inert.

@@ -367,3 +367,24 @@ def test_verify_passes_its_timeout_and_the_default_is_the_clis():
     run = step("Run Netdryrun")
     assert run["env"]["NDR_TIMEOUT"] == "${{ inputs.timeout }}"
     assert '--timeout "$NDR_TIMEOUT"' in run["run"].split("netdryrun verify", 1)[1].split("code=$?", 1)[0]
+
+
+# --- gauntlet 0.4, R7: the PR edits the workflow that runs its own verdict ----------------------------------
+# Under pull_request the workflow comes from the merge commit, so a PR that edits it controls the inputs: it can set
+# allow-intent-edit: true together with its own intent, or point intent-file or topology elsewhere.
+
+def test_a_pr_that_changes_a_workflow_is_refused_in_mode_verify(repo):
+    base = git(repo, "rev-parse", "HEAD").strip()
+    (repo / ".github" / "workflows").mkdir(parents=True)
+    head = commit(repo, {".github/workflows/verify.yml": "allow-intent-edit: true\n",
+                         "netdryrun-intent.yml": "intent: []\nallow_anywhere: ['0.0.0.0/0']\n"})
+    rc, out, _, summary = check_intent(repo, base, head, allow="true")
+    assert rc == 1 and ".github/workflows/verify.yml" in out and "workflow" in summary
+
+
+def test_a_workflow_change_alone_is_refused_too(repo):
+    base = git(repo, "rev-parse", "HEAD").strip()
+    (repo / ".github" / "workflows").mkdir(parents=True)
+    head = commit(repo, {".github/workflows/verify.yml": "intent-file: other.yml\n"})
+    rc, out, _, _ = check_intent(repo, base, head)
+    assert rc == 1 and "separate" in out

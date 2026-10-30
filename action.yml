@@ -146,6 +146,13 @@ runs:
             fail("github.sha is not this pull request's merge commit (its parents must be the base branch and the PR "
                  "head): run mode: verify on the pull_request event, whose default checkout is that merge commit")
         base, head = parents[1], merge
+        # Under pull_request the workflow comes from the merge commit: a PR that edits it sets this step's own
+        # inputs (allow-intent-edit, intent-file, topology), so it would grant itself the exception (gauntlet R7)
+        wf = git("diff", "--name-only", "--no-renames", base, head, "--", ".github/workflows")
+        if wf.returncode != 0 or wf.stdout.strip():
+            fail(f"the PR changes the workflow that runs this verdict ({', '.join(wf.stdout.split()[:5]) or 'unreadable'}): "
+                 "the workflow sets allow-intent-edit, intent-file and topology, so the PR would choose how it is "
+                 "judged. Change the workflow in a separate reviewed PR.")
         changed = git("diff", "--name-only", "--no-renames", base, head, "--", intent)
         if changed.returncode != 0:
             fail(f"cannot compare the intent file between the base and the head: {' '.join(changed.stderr.split())[:300]}")
@@ -207,6 +214,12 @@ runs:
         if changed.returncode != 0:
             fail(f"cannot list what the PR changes: {' '.join(changed.stderr.split())[:300]}")
         files = [os.path.normpath(f) for f in changed.stdout.split()]
+        # the workflow sets path and allow-check-edit: changed with the lab, the PR picks which checks grade it
+        wf = git("diff", "--name-only", "--no-renames", parents[1], merge, "--", ".github/workflows")
+        if files and (wf.returncode != 0 or wf.stdout.strip()):
+            fail(f"the PR changes the workflow that runs the checks ({', '.join(wf.stdout.split()[:5]) or 'unreadable'}) "
+                 "together with the lab: the workflow sets path and allow-check-edit, so the PR would choose which "
+                 "checks grade it. Change the workflow in a separate reviewed PR.")
         checks_changed = os.path.normpath(checks) in files
         configs_changed = [f for f in files if f != os.path.normpath(checks)]
         if checks_changed and configs_changed:

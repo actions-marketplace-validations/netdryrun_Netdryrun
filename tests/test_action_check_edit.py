@@ -86,3 +86,15 @@ def test_a_merge_commit_that_is_not_this_prs_is_refused(repo):
     h = change(repo, {"lab/configs/r1.conf": "! r1 changed\n"})
     code, log, _ = check(repo, b, h, merge=b)
     assert code == 1 and "merge commit" in log
+
+
+def test_a_workflow_changed_with_the_configs_is_refused(repo):
+    """Gauntlet 0.4, R7: the workflow sets `path:` and allow-check-edit, so a PR that changes it with the configs
+    controls which checks grade it."""
+    base = git(repo, "rev-parse", "HEAD").strip()
+    (repo / ".github" / "workflows").mkdir(parents=True)
+    head = change(repo, {".github/workflows/ci.yml": "allow-check-edit: true\n", "lab/configs/r1.conf": "! leak\n"})
+    rc, out, summary = check(repo, base, head, allow="true")
+    assert rc == 1 and ".github/workflows/ci.yml" in out and "workflow" in summary
+    head = change(repo, {".github/workflows/ci.yml": "only the workflow\n"})
+    assert check(repo, git(repo, "rev-parse", "HEAD~1").strip(), head)[0] == 0   # no lab change: runs as before
