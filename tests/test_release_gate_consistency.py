@@ -123,6 +123,12 @@ def test_history_on_main_keeps_its_old_versions():
     assert check(main=files)["main-version"].status == gate.PASS
 
 
+def test_old_refs_in_test_fixtures_on_main_are_ignored():
+    # this very file holds old Action refs as fixtures; once on main it must not page the nightly
+    files = main_files(**{"tests/test_release_gate_consistency.py": "netdryrun/netdryrun@v0.3.1\n"})
+    assert check(main=files)["main-version"].status == gate.PASS
+
+
 def test_a_missing_status_line_or_release_pin_fails():
     files = main_files()
     files["README.md"] = "# Netdryrun\n"
