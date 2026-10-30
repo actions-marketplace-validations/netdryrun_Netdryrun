@@ -106,3 +106,14 @@ Every module passes on the gate commit. Fully gated, no survivor left unaccepted
 From the run on 1bf8693 to the gate commit: `snapshot.community_label`, never called, was removed (its 4 mutants were in code no test ran); new tests pin that a snapshotted node is read by its own driver, that the topology and the intent file are read as UTF-8, that a Junos key repeated as a list and as an object is refused, and that a received pin with no candidate path is refused.
 
 **Accepted MAJOR:** `live/chaos-docker-restart` (optional by RELEASING.md; the lab machine is shared, and a Docker restart stops every container on it). `live/pack` and `live/scale` as in 0.3.3.
+
+## Interop stress test, L1 (interop agent, 2026-10-31)
+
+A mixed lab (cJunosEvolved 26.2R1.7-EVO, cEOS 4.36.3M, SR Linux 26.7.2, FRR 10.4.1) with the same checks run against every receiver of one advertisement. Report: HQ `research/interop/REPORT.md`; regression tests from live captures: `tests/test_interop_04.py` (from `ndr/interop` 4c7f510).
+
+- **IOP-1, BLOCKER (Junos): a missing MED read as 0.** Junos omits `metric` when no MED was received; the driver defaulted it to 0, so `med: 0` passed on a route sent without a MED. **Fix:** absent is "not set", as on FRR and SR Linux.
+- **IOP-2, BLOCKER (EOS): cEOS prints `"med": 0` for a path received with no MED.** **Decision (coordinator): fail closed.** No cEOS field separating the two cases was found in the capture, so a `med: 0` check on EOS is refused before the lab boots (`ambiguous_bgp_values`, exit 2, "EOS output cannot tell MED 0 from no MED"), and a MED that reads 0 is parsed as not set, so a `med: 0` check that reached a check could only fail. Non-zero MEDs unchanged. Documented in `config.md` and the EOS limits (`compat_verified.json`).
+- **IOP-3, MAJOR (EOS): AS sets printed with spaces.** `{65004 65006}` is now `{65004,65006}`, as on every other driver (confederation sets `[a,b]` too).
+- **Deferred to 0.4.1 (coordinator):** IOP-4, one SR Linux sample that answered rc=1 and did not recur (the test is in `test_interop_04.py` as a strict xfail: today it fails closed); IOP-5, a hold window that gets one sample when one pass over the checks is longer than the hold.
+
+Gate rerun on the fix commit: static, unit, mutation on `drivers` (Junos and EOS included), live for the Junos and EOS cases.
