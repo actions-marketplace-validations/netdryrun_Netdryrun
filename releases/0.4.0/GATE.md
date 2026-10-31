@@ -2,35 +2,39 @@
 
 Written by `scripts/release_gate.py` (see [RELEASING.md](../../RELEASING.md)). Do not edit by hand: rerun a layer, or record a decision in `accepted.json` or `review.md`.
 
-**READY TO PUBLISH**: every layer before publishing ran on the same clean commit; no BLOCKER failed or was skipped; every MAJOR passed or was accepted. Tag it, then run `after-publish` to clear it.
+**INCOMPLETE**: no BLOCKER failed, but the gate is not complete (see below).
 
 **Layers not run yet:**
 
 - Layer 7: after-publish proof
 
+**Other gaps:**
+
+- the layers ran on different code: 3ca6145 (live) and d180ece (static) differ in .github/ISSUE_TEMPLATE/config.yml, .github/workflows/published-action.yml, .github/workflows/release.yml, .gitlab-ci.yml, corpus/render.py
+
 | Layer | Commit | Ran | Time | Result |
 |---|---|---|---|---|
-| [Layer 1: static](#layer-1-static) | `b4130ad38e` | 2026-10-30 21:19:14 UTC | 1.4 s | 11 PASS |
-| [Layer 2: unit tests on every supported Python](#layer-2-unit-tests-on-every-supported-python) | `b4130ad38e` | 2026-10-30 21:01:57 UTC | 8.1 min | 7 PASS |
-| [Layer 4: mutation testing](#layer-4-mutation-testing) | `b4130ad38e` | 2026-10-30 21:10:09 UTC | 8.9 min | 11 PASS |
+| [Layer 1: static](#layer-1-static) | `d180ece34b` | 2026-10-31 02:40:30 UTC | 2.2 s | 11 PASS |
+| [Layer 2: unit tests on every supported Python](#layer-2-unit-tests-on-every-supported-python) | `d180ece34b` | 2026-10-31 02:25:18 UTC | 14.7 min | 7 PASS |
+| [Layer 4: mutation testing](#layer-4-mutation-testing) | `a46138bd0f` | 2026-10-31 02:11:03 UTC | 13.2 min | 11 PASS |
 | [Layer 5: live matrix on the built package](#layer-5-live-matrix-on-the-built-package) | `3ca614523c` | 2026-10-30 18:21:10 UTC | 157.0 min | 3 ACCEPTED, 52 PASS |
 | Layer 7: after-publish proof | | not run | | |
 
 ## Layer 1: static
 
-Commit `b4130ad38e17818703cbb89f7ce6a06e75aae8f8` on `HEAD`; 2026-10-30 21:19:14 UTC; 1.4 s; Linux 6.18.54.1-microsoft-standard-WSL2 (x86_64); Python 3.10.12; --strict.
+Commit `d180ece34b50689c3107860128e6e3e503d41e20` on `HEAD`; 2026-10-31 02:40:30 UTC; 2.2 s; Linux 6.18.54.1-microsoft-standard-WSL2 (x86_64); Python 3.10.12; --strict.
 
 Tools: actionlint 1.7.7; ruff 0.17.3; shellcheck 0.8.0.
 
 | Check | Severity | Result | Time | Notes |
 |---|---|---|---|---|
-| ruff (config in pyproject.toml) | BLOCKER | **PASS** | 0.1 s | All checks passed! |
-| actionlint on every workflow (with shellcheck) | BLOCKER | **PASS** | 0.2 s | clean |
+| ruff (config in pyproject.toml) | BLOCKER | **PASS** | 0.2 s | All checks passed! |
+| actionlint on every workflow (with shellcheck) | BLOCKER | **PASS** | 0.4 s | clean |
 | shellcheck, error level, 18 scripts | BLOCKER | **PASS** | 0.3 s | clean |
 | shellcheck, warning level, 18 scripts | MAJOR | **PASS** | 0.3 s | clean |
 | no empty ${{ }} in action.yml or workflows | BLOCKER | **PASS** | 0.0 s | none |
-| public facts match the source (sync_facts.py --check) | BLOCKER | **PASS** | 0.4 s | facts: in sync (version 0.4.0, 0 problem(s)) |
-| every version reference says 0.4.0 | BLOCKER | **PASS** | 0.0 s | 43 references agree |
+| public facts match the source (sync_facts.py --check) | BLOCKER | **PASS** | 0.6 s | facts: in sync (version 0.4.0, 0 problem(s)) |
+| every version reference says 0.4.0 | BLOCKER | **PASS** | 0.1 s | 43 references agree |
 | pyproject.toml declares Python 3.10 to 3.14, the versions tested | MAJOR | **PASS** | 0.0 s | requires-python and classifiers agree |
 | every example has a documented expected result and exit code | MAJOR | **PASS** | 0.0 s | 10 examples |
 | every topology we ship is named ndr-* | BLOCKER | **PASS** | 0.0 s | 94 topologies |
@@ -38,19 +42,19 @@ Tools: actionlint 1.7.7; ruff 0.17.3; shellcheck 0.8.0.
 
 ## Layer 2: unit tests on every supported Python
 
-Commit `b4130ad38e17818703cbb89f7ce6a06e75aae8f8` on `HEAD`; 2026-10-30 21:01:57 UTC; 8.1 min; Linux 6.18.54.1-microsoft-standard-WSL2 (x86_64); Python 3.10.12; --strict.
+Commit `d180ece34b50689c3107860128e6e3e503d41e20` on `HEAD`; 2026-10-31 02:25:18 UTC; 14.7 min; Linux 6.18.54.1-microsoft-standard-WSL2 (x86_64); Python 3.10.12; --strict.
 
 Tools: docker 29.9.2; uv 0.13.6 (x86_64-unknown-linux-gnu).
 
 | Check | Severity | Result | Time | Notes |
 |---|---|---|---|---|
-| unit tests on Python 3.10.12 | BLOCKER | **PASS** | 65.4 s | 3664 passed, 61 skipped, 1 xfailed |
-| unit tests on Python 3.11.18 | BLOCKER | **PASS** | 64.9 s | 3664 passed, 61 skipped, 1 xfailed |
-| unit tests on Python 3.12.16 (with coverage) | BLOCKER | **PASS** | 2.2 min | 3664 passed, 61 skipped, 1 xfailed, 23 warnings |
+| unit tests on Python 3.10.12 | BLOCKER | **PASS** | 2.8 min | 3665 passed, 61 skipped, 1 xfailed |
+| unit tests on Python 3.11.18 | BLOCKER | **PASS** | 2.3 min | 3665 passed, 61 skipped, 1 xfailed |
+| unit tests on Python 3.12.16 (with coverage) | BLOCKER | **PASS** | 4.6 min | 3665 passed, 61 skipped, 1 xfailed, 23 warnings |
 | coverage of the verdict modules at or above the floors | MAJOR | **PASS** | 0.0 s | all at or above their floors |
-| unit tests on Python 3.13.18 | BLOCKER | **PASS** | 71.6 s | 3664 passed, 61 skipped, 1 xfailed, 23 warnings |
-| unit tests on Python 3.14.10 | BLOCKER | **PASS** | 65.2 s | 3664 passed, 61 skipped, 1 xfailed |
-| unit tests in a plain python:3.12-slim container (no containerlab, no Docker) | BLOCKER | **PASS** | 85.7 s | 3624 passed, 101 skipped, 1 xfailed |
+| unit tests on Python 3.13.18 | BLOCKER | **PASS** | 79.6 s | 3665 passed, 61 skipped, 1 xfailed, 23 warnings |
+| unit tests on Python 3.14.10 | BLOCKER | **PASS** | 1.5 min | 3665 passed, 61 skipped, 1 xfailed |
+| unit tests in a plain python:3.12-slim container (no containerlab, no Docker) | BLOCKER | **PASS** | 2.2 min | 3625 passed, 101 skipped, 1 xfailed |
 
 **Coverage of the verdict modules** (lines and branches, Python 3.12):
 
@@ -70,13 +74,13 @@ Tools: docker 29.9.2; uv 0.13.6 (x86_64-unknown-linux-gnu).
 
 ## Layer 4: mutation testing
 
-Commit `b4130ad38e17818703cbb89f7ce6a06e75aae8f8` on `HEAD`; 2026-10-30 21:10:09 UTC; 8.9 min; Linux 6.18.54.1-microsoft-standard-WSL2 (x86_64); Python 3.10.12; --strict.
+Commit `a46138bd0f41e2870f38cf9430332a1336fa8ce2` on `HEAD`; 2026-10-31 02:11:03 UTC; 13.2 min; Linux 6.18.54.1-microsoft-standard-WSL2 (x86_64); Python 3.10.12; --strict.
 
 Tools: mutmut python -m mutmut, version 3.8.0.
 
 | Check | Severity | Result | Time | Notes |
 |---|---|---|---|---|
-| no surviving mutants in src/netdryrun/drivers/ | BLOCKER | **PASS** | 8.5 min | 2996 generated, 2766/2996 caught (92.3%); not caught: 230 survived the tests, 0 in code no test runs, 230 accepted (48 equivalent, 182 message-text) |
+| no surviving mutants in src/netdryrun/drivers/ | BLOCKER | **PASS** | 12.4 min | 2996 generated, 2766/2996 caught (92.3%); not caught: 230 survived the tests, 0 in code no test runs, 230 accepted (48 equivalent, 182 message-text) |
 | no surviving mutants in src/netdryrun/checks.py | BLOCKER | **PASS** | 0.0 s | carried over from 81a49b3: src/netdryrun/checks.py is byte-identical at this commit. 1220 generated, 1138/1220 caught (93.3%); not caught: 82 survived the tests, 0 in code no test runs, 82 accepted (33 equivalent, 49 message-text) |
 | no surviving mutants in src/netdryrun/config.py | BLOCKER | **PASS** | 0.0 s | carried over from 81a49b3: src/netdryrun/config.py is byte-identical at this commit. 1480 generated, 1232/1480 caught (83.2%); not caught: 248 survived the tests, 0 in code no test runs, 248 accepted (25 equivalent, 223 message-text) |
 | no surviving mutants in src/netdryrun/runner.py | BLOCKER | **PASS** | 0.0 s | carried over from 81a49b3: src/netdryrun/runner.py is byte-identical at this commit. 1674 generated, 1513/1674 caught (90.4%); not caught: 161 survived the tests, 0 in code no test runs, 161 accepted (31 equivalent, 11 logging, 118 message-text, 1 timing-only) |
@@ -343,3 +347,5 @@ Gate rerun on the fix commit: static, unit, mutation on `drivers` (Junos and EOS
 Carried-over mutation records, each byte-identical to 81a49b3 (`git diff 81a49b3 3ca6145` is empty for its source): `checks` (src/netdryrun/checks.py), `config` (src/netdryrun/config.py), `runner` (src/netdryrun/runner.py), `verify.engine`, `verify.intent`, `verify.frr`, `verify.snapshot`, `verify.converge`, `verify.run` and `verify.report` (src/netdryrun/verify/). `drivers` was mutated fresh at 3ca6145, and it is the only module holding the EOS `med: 0` refusal (`check_supported` in drivers/__init__.py, its table in drivers/eos.py). That run left one survivor whose acceptance no longer matched: `drivers.x_check_supported__mutmut_47`, the same `', '` to `'XX, XX'` change in the unsupported-key message. Its diff context moved because the refusal lines follow it. It is still message text only, so its fingerprint is re-recorded (180f0dd… to b0f4a07…). This changes only `releases/`, not code or tests.
 
 **Live layer (coordinator: keep live).** Live on 3ca6145; b4130ad differs only in releases/0.4.0/accepted.json and review.md. Unit, mutation (drivers fresh, the ten modules above carried over) and static ran on b4130ad. The interop L1 rerun runs on 3ca6145 too, and src/ and tests/ are byte-identical between the two commits.
+
+**Repository rename (coordinator, 2026-10-31).** The repository is now github.com/netdryrun/Netdryrun. a46138b moves every current surface to the new name: docs, site, templates, examples, scripts, workflows, pyproject URLs and server.json `repository.url`. Some places keep the old spelling: the MCP Registry name `io.github.netdryrun/netdryrun`, the history (releases/0.3.x, advisories, older CHANGELOG sections) and the two `src/` links (cli.py FEEDBACK_URL, comment.py), which change in 0.4.1. The gate's Action-ref patterns accept either case, and a lowercase repo link in a public page is a stale phrase (fail-closed, tested). d180ece adds the Glama listing (prose only). `src/` is byte-identical to 3ca6145 at both commits. So the mutation record carries over: drivers was mutated fresh at a46138b and the ten other modules are carried from 81a49b3, each byte-identical. Unit and static ran on d180ece. Live stays on 3ca6145, which has the same `src/`, and so does the interop rerun.

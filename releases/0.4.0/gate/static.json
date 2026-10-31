@@ -2,10 +2,10 @@
  "layer": "static",
  "title": "Layer 1: static",
  "version": "0.4.0",
- "started": "2026-10-30 21:19:14 UTC",
- "seconds": 1.4,
+ "started": "2026-10-31 02:40:30 UTC",
+ "seconds": 2.2,
  "git": {
-  "sha": "b4130ad38e17818703cbb89f7ce6a06e75aae8f8",
+  "sha": "d180ece34b50689c3107860128e6e3e503d41e20",
   "dirty": false,
   "branch": "HEAD"
  },
@@ -23,7 +23,7 @@
    "title": "ruff (config in pyproject.toml)",
    "severity": "BLOCKER",
    "status": "PASS",
-   "seconds": 0.1,
+   "seconds": 0.2,
    "summary": "All checks passed!",
    "output": "All checks passed!",
    "command": "/home/ndr/.venvs/netdryrun/bin/python -m ruff check --output-format concise ."
@@ -33,7 +33,7 @@
    "title": "actionlint on every workflow (with shellcheck)",
    "severity": "BLOCKER",
    "status": "PASS",
-   "seconds": 0.2,
+   "seconds": 0.4,
    "summary": "clean",
    "output": "",
    "command": "actionlint -color=false -shellcheck=/usr/bin/shellcheck"
@@ -73,7 +73,7 @@
    "title": "public facts match the source (sync_facts.py --check)",
    "severity": "BLOCKER",
    "status": "PASS",
-   "seconds": 0.4,
+   "seconds": 0.6,
    "summary": "facts: in sync (version 0.4.0, 0 problem(s))",
    "output": "facts: in sync (version 0.4.0, 0 problem(s))",
    "command": "/home/ndr/.venvs/netdryrun/bin/python scripts/sync_facts.py --check"
@@ -83,9 +83,9 @@
    "title": "every version reference says 0.4.0",
    "severity": "BLOCKER",
    "status": "PASS",
-   "seconds": 0.0,
+   "seconds": 0.1,
    "summary": "43 references agree",
-   "output": "ok  0.4.0      pyproject.toml [project] version\nok  0.4.0      src/netdryrun/__init__.py __version__\nok  0.4.0      server.json version\nok  0.4.0      server.json packages[netdryrun] version\nok  0.4.0      CHANGELOG.md newest release heading\nok  0.4.0      README.md:157 netdryrun/netdryrun@v0.4.0\nok  0.4.0      examples/batfish-pipeline/github-workflow.yml:36 netdryrun/netdryrun@v0.4.0\nok  0.4.0      templates/README.md:72 netdryrun==0.4.0\nok  0.4.0      website/docs/ai-agents.md:241 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/batfish.md:57 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/capabilities.json:20 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/capabilities.json:45 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/faq.md:18 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/github-action.md:3 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/github-action.md:18 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/github-action.md:76 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/github-action.md:84 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/github-action.md:108 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/github-action.md:129 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/github-action.md:152 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/guides/agent-pr.md:26 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/guides/frr-ci.md:194 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/guides/sonic-ci.md:173 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/guides/your-lab.md:139 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/index.md:68 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:79 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:698 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:1327 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:1537 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:1751 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:1802 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:3041 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:3099 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:3107 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:3131 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:3152 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:3175 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:3276 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:3577 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:4135 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:4787 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/trust.md:17 netdryrun/netdryrun@v0.4.0\nok  0.4.0      website/docs/tutorial.md:455 netdryrun/netdryrun@v0.4.0",
+   "output": "ok  0.4.0      pyproject.toml [project] version\nok  0.4.0      src/netdryrun/__init__.py __version__\nok  0.4.0      server.json version\nok  0.4.0      server.json packages[netdryrun] version\nok  0.4.0      CHANGELOG.md newest release heading\nok  0.4.0      README.md:157 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      examples/batfish-pipeline/github-workflow.yml:36 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      templates/README.md:72 netdryrun==0.4.0\nok  0.4.0      website/docs/ai-agents.md:241 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/batfish.md:57 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/capabilities.json:20 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/capabilities.json:45 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/faq.md:18 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/github-action.md:3 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/github-action.md:18 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/github-action.md:76 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/github-action.md:84 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/github-action.md:108 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/github-action.md:129 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/github-action.md:152 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/guides/agent-pr.md:26 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/guides/frr-ci.md:194 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/guides/sonic-ci.md:173 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/guides/your-lab.md:139 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/index.md:68 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:79 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:698 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:1327 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:1537 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:1751 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:1802 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:3041 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:3099 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:3107 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:3131 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:3152 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:3175 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:3276 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:3577 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:4135 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/llms-full.txt:4787 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/trust.md:17 netdryrun/Netdryrun@v0.4.0\nok  0.4.0      website/docs/tutorial.md:455 netdryrun/Netdryrun@v0.4.0",
    "command": ""
   },
   {
