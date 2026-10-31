@@ -6,9 +6,10 @@ from types import SimpleNamespace
 
 import pytest
 
+from netdryrun.checks import EVALUATORS
 from netdryrun.config import Check
-from netdryrun.drivers import DriverError, check_supported, eos, junos
-from netdryrun.lab import Node
+from netdryrun.drivers import DriverError, check_supported, eos, junos, srlinux
+from netdryrun.lab import ExecResult, Node
 
 FIX = Path(__file__).parent / "fixtures"
 
@@ -89,3 +90,160 @@ def test_only_eos_refuses_med_0_and_an_unknown_driver_refuses_nothing():
     check_supported(eos_lab(), bgp_route(local_pref=0))
     with pytest.raises(DriverError, match="med: 0 can't be checked on eos"):
         check_supported(eos_lab(), bgp_route(med=0, as_path="65005"))
+
+
+# ---- IOP-6 (run 2): SR Linux keeps an import-rejected path in its local RIB. It is not received; any other
+# invalid reason is one the driver doesn't know, and gives an error, never a verdict.
+
+def _srl_rib(why) -> str:
+    row = json.loads((FIX / "srl_rib_rejected.txt").read_text())["route"][0]
+    if why is None:
+        row.pop("invalid-reason")
+    else:
+        row["invalid-reason"] = why
+    return json.dumps({"route": [row]})
+
+
+class _SrlLab:
+    def __init__(self, rib):
+        self.rib = rib
+
+    def exec(self, node, cmd, timeout=60, input=None):
+        if "local-rib" in cmd[-1]:
+            return ExecResult(cmd, 0, self.rib, "")
+        if "attr-set" in cmd[-1]:
+            return ExecResult(cmd, 0, (FIX / "srl_attr_set_rejected.txt").read_text(), "")
+        if "route-table" in cmd[-1]:
+            return ExecResult(cmd, 0, "{\n}", "")
+        return ExecResult(cmd, 0, json.dumps({"peer-address": "10.1.2.2", "local-preference": 100}), "")
+
+
+@pytest.mark.parametrize("why", [None, {}, {"rejected-route": False}])
+def test_srl_a_path_with_no_true_invalid_reason_is_still_received(why):
+    d = srlinux.SrlDriver(_SrlLab(_srl_rib(why)), "s1")
+    ok, detail, _ = EVALUATORS["bgp_route"](d, {"node": "s1", "prefix": "192.168.6.0/24", "present": False})
+    assert not ok and "unexpectedly in the BGP table" in detail
+    ok, detail, _ = EVALUATORS["route"](d, {"node": "s1", "prefix": "192.168.6.0/24", "protocol": "bgp",
+                                             "active": False})
+    assert ok, detail
+
+
+def test_srl_a_rejected_path_is_absent_and_its_failure_does_not_blame_the_next_hop():
+    d = srlinux.SrlDriver(_SrlLab(_srl_rib({"rejected-route": True})), "s1")
+    ok, detail, _ = EVALUATORS["bgp_route"](d, {"node": "s1", "prefix": "192.168.6.0/24", "as_path": "65005 65006"})
+    assert not ok and "unreachable" not in detail
+
+
+@pytest.mark.parametrize("why", [{"rejected-route": True, "next-hop-unresolved": True}, {"as-loop": True},
+                                 {"rejected-route": "true"}, ["rejected-route"], "rejected-route"])
+@pytest.mark.parametrize("check", [("bgp_route", {"present": False}),
+                                   ("route", {"protocol": "bgp", "active": False}),
+                                   ("route", {"present": False})])
+def test_srl_an_invalid_reason_the_driver_does_not_know_is_an_error_never_a_verdict(why, check):
+    d = srlinux.SrlDriver(_SrlLab(_srl_rib(why)), "s1")
+    kind, params = check
+    with pytest.raises(DriverError):
+        EVALUATORS[kind](d, {"node": "s1", "prefix": "192.168.6.0/24", **params})
+
+
+def test_srl_an_unknown_reason_on_another_prefix_is_not_read():
+    other = json.loads(_srl_rib({"as-loop": True}))
+    other["route"][0]["prefix"] = "192.168.7.0/24"
+    assert srlinux.parse_routes("{\n}", "192.168.6.0/24", json.dumps(other)) == []
+
+
+# ---- IOP-7 (run 2): Junos hides import-rejected routes and routes with an unusable next hop alike, so the
+# reference count lies from accepted to received. A bound is judged only when the whole range agrees.
+
+def _junos_lab(neighbors="junos_bgp_neighbor_hidden_nexthop.txt", hidden=None):
+    """A Junos node; without `hidden` the hidden-route read gets an answer it can't use (the neighbor output)."""
+    class Lab:
+        calls = []
+
+        def exec(self, node, cmd, timeout=60, input=None):
+            self.calls.append(cmd[-1])
+            if "receive-protocol" in cmd[-1] and hidden is not None:
+                return ExecResult(cmd, 0, hidden if hidden.startswith("{") else (FIX / hidden).read_text(), "")
+            return ExecResult(cmd, 0, (FIX / neighbors).read_text(), "")
+    return junos.JunosDriver(Lab(), "j1")
+
+
+@pytest.mark.parametrize("bound, passed, why", [
+    ({"min": 205}, True, None), ({"max": 206}, True, None), ({"min": 200, "max": 210}, True, None),
+    ({"max": 204}, False, None), ({"min": 207}, False, None), ({"exact": 204}, False, None),
+    ({"exact": 207}, False, None),
+    ({"max": 205}, False, "can't tell"), ({"exact": 205}, False, "can't tell"), ({"exact": 206}, False, "can't tell"),
+    ({"min": 206}, False, "can't tell"), ({"min": 206, "max": 206}, False, "can't tell"),
+])
+def test_junos_a_bound_is_judged_only_when_the_whole_count_range_agrees(bound, passed, why):
+    ok, detail, _ = EVALUATORS["bgp_prefixes"](_junos_lab(), {"node": "j1", "neighbor": "10.1.1.2", **bound})
+    assert ok is passed, detail
+    assert "205 to 206 ipv4-unicast prefixes accepted (1 received route(s) hidden" in detail
+    assert (why in detail) if why else "can't tell" not in detail
+
+
+@pytest.mark.parametrize("received, err", [(None, "received-prefix-count"), ("204", "more accepted than received")])
+def test_junos_a_missing_or_short_received_count_is_an_error(received, err):
+    doc = json.loads((FIX / "junos_bgp_neighbor_hidden_nexthop.txt").read_text())
+    for peer in doc["bgp-information"][0]["bgp-peer"]:
+        for rib in peer.get("bgp-rib", []):
+            if received is None:
+                rib.pop("received-prefix-count", None)
+            else:
+                rib["received-prefix-count"] = [{"data": received}]
+                rib["accepted-prefix-count"] = [{"data": "205"}]
+    with pytest.raises(DriverError, match=err):
+        junos.parse_bgp_neighbors(json.dumps(doc))
+
+
+# With the hidden routes' reasons read, the count is the reference count: received minus rejected by import policy.
+
+def test_junos_the_iop7_count_is_exact_once_the_hidden_reasons_are_read():
+    d = _junos_lab(hidden="junos_rp_hidden_iop7.txt")
+    n = d.bgp_neighbors().value["10.1.1.2"]
+    assert (n.prefixes, n.prefixes_upto) == ({"ipv4-unicast": 206}, {})
+    for bound, passed in (({"exact": 206}, True), ({"max": 205}, False), ({"min": 206}, True)):
+        ok, detail, _ = EVALUATORS["bgp_prefixes"](d, {"node": "j1", "neighbor": "10.1.1.2", **bound})
+        assert ok is passed and detail == "206 ipv4-unicast prefixes accepted", (bound, detail)
+
+
+def test_junos_live_policy_reject_and_unusable_next_hop_count_two():
+    # captured live: 3 received; 192.168.21.0/24 rejected by import policy, 192.168.22.0/24 with a next hop Junos
+    # can't use. The reference count is 2 (FRR, EOS and SR Linux count the second one).
+    d = _junos_lab("junos_bgp_neighbor_policy_and_nexthop.txt", "junos_rp_hidden.txt")
+    n = d.bgp_neighbors().value["10.0.100.2"]
+    assert (n.prefixes, n.prefixes_upto) == ({"ipv4-unicast": 2}, {})
+    assert d.lab.calls[-1].startswith("cli -c 'show route receive-protocol bgp 10.0.100.2 table inet.0 hidden "
+                                      "extensive")
+
+
+def _hidden_doc(edit) -> str:
+    doc = json.loads((FIX / "junos_rp_hidden.txt").read_text())
+    edit(doc["route-information"][0]["route-table"][0])
+    return json.dumps(doc)
+
+
+@pytest.mark.parametrize("edit", [
+    lambda t: t["rt"].pop(),                                        # fewer hidden routes than received - accepted
+    lambda t: t["rt"].append(t["rt"][0]),                           # more
+    lambda t: t["rt"][1]["rt-entry"][0].pop("hidden-reason"),       # a hidden route with no reason
+    lambda t: t.update({"table-name": [{"data": "inet6.0"}]}),      # an answer for another table
+], ids=["fewer", "more", "no-reason", "other-table"])
+def test_junos_hidden_routes_that_dont_add_up_keep_the_count_a_range(edit):
+    d = _junos_lab("junos_bgp_neighbor_policy_and_nexthop.txt", _hidden_doc(edit))
+    n = d.bgp_neighbors().value["10.0.100.2"]
+    assert (n.prefixes, n.prefixes_upto) == ({"ipv4-unicast": 1}, {"ipv4-unicast": 3})
+    ok, detail, _ = EVALUATORS["bgp_prefixes"](d, {"node": "j1", "neighbor": "10.0.100.2", "exact": 2})
+    assert not ok and "can't tell" in detail
+
+
+def test_junos_a_reason_other_than_policy_counts_as_received():
+    doc = _hidden_doc(lambda t: t["rt"][0]["rt-entry"][0].update({"hidden-reason": [{"data": "Looped"}]}))
+    n = _junos_lab("junos_bgp_neighbor_policy_and_nexthop.txt", doc).bgp_neighbors().value["10.0.100.2"]
+    assert n.prefixes == {"ipv4-unicast": 3}
+
+
+def test_junos_a_count_with_nothing_hidden_reads_no_hidden_routes():
+    d = _junos_lab("junos_bgp_neighbor_ibgp.txt", "junos_rp_hidden.txt")
+    d.bgp_neighbors()
+    assert not any("receive-protocol" in c for c in d.lab.calls)

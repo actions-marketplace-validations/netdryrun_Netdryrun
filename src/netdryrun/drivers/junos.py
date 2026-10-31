@@ -38,6 +38,7 @@ PROTOCOLS = {"bgp": "bgp", "direct": "connected", "local": "local", "static": "s
 
 NEIGHBORS_CMD = "show bgp neighbor instance <instance>"
 ROUTE_CMD = "show route <prefix> exact table <table> all extensive"
+HIDDEN_CMD = "show route receive-protocol bgp <peer> table <table> hidden extensive"
 ALL_ROUTES_CMD = "show route table <table>"
 INSTANCE_CMD = "show route instance <instance>"
 PING_CMD = "ping <target> count <n> rapid"
@@ -184,7 +185,9 @@ def _afi(command: str, rib: str, instance: str) -> str | None:
 def parse_bgp_neighbors(text: str, instance: str = "master") -> dict[str, BgpNeighbor]:
     """`show bgp neighbor instance <instance>`. A peer of another instance in the answer is unexpected
     (it would be read as one of this instance's). Prefix counts are Junos's accepted-prefix-count: received
-    minus routes rejected by import policy and routes it can't use."""
+    minus the routes it hides, whether import policy rejected them or it can't use their next hop. The output
+    doesn't tell those apart, so where they differ the received count is kept as the most the count can be
+    (prefixes_upto; interop IOP-7) until the hidden routes' reasons are read (JunosDriver.bgp_neighbors)."""
     info = _root(NEIGHBORS_CMD, _json(NEIGHBORS_CMD, text), "bgp-information", BGP_INFORMATION_KEYS)
     out = {}
     for peer in _items(NEIGHBORS_CMD, info, "bgp-peer"):
@@ -200,16 +203,36 @@ def parse_bgp_neighbors(text: str, instance: str = "master") -> dict[str, BgpNei
         if state == "established" and not ribs:
             # an established session lists its RIBs; without them every count would read 0
             raise unexpected(NEIGHBORS_CMD, f"{addr}: established without bgp-rib")
-        prefixes = {}
+        prefixes, upto = {}, {}
         for rib in ribs:
             afi = _afi(NEIGHBORS_CMD, _leaf(NEIGHBORS_CMD, rib, "name"), instance)
             if afi is not None:
                 prefixes[afi] = as_int(NEIGHBORS_CMD, _leaf(NEIGHBORS_CMD, rib, "accepted-prefix-count"))
+                received = as_int(NEIGHBORS_CMD, _leaf(NEIGHBORS_CMD, rib, "received-prefix-count"))
+                if received < prefixes[afi]:
+                    raise unexpected(NEIGHBORS_CMD, f"{addr}: {afi}: more accepted than received")
+                if received > prefixes[afi]:
+                    upto[afi] = received
         key = _canon_addr(addr)
         if key in out:
             raise unexpected(NEIGHBORS_CMD, f"peer {addr} listed twice")
-        out[key] = BgpNeighbor(addr, state, prefixes, adv_interval=_adv_interval(peer, addr))
+        out[key] = BgpNeighbor(addr, state, prefixes, upto, adv_interval=_adv_interval(peer, addr))
     return out
+
+
+@parser(HIDDEN_CMD)
+def parse_hidden_received(text: str, table: str) -> tuple[int, int] | None:
+    """`show route receive-protocol bgp <peer> table <table> hidden extensive`: (the peer's hidden routes, how
+    many of them import policy rejected), or None when a hidden route gives no reason."""
+    hidden = rejected = 0
+    for rt in _tables(HIDDEN_CMD, text, table):
+        for e in _items(HIDDEN_CMD, rt, "rt-entry"):
+            reason = _leaf(HIDDEN_CMD, e, "hidden-reason", required=False)
+            if reason is None:
+                return None
+            hidden += 1
+            rejected += reason.strip().lower() == REJECTED
+    return hidden, rejected
 
 
 _DELAY = re.compile(r"delay|timer", re.I)
@@ -492,7 +515,25 @@ class JunosDriver(Driver):
         neighbors = parse_bgp_neighbors(self._cli(f"show bgp neighbor instance {_instance(vrf)}", ev), _instance(vrf))
         if not neighbors and vrf != "default":
             self._confirm_instance(vrf, None, ev)
+        for n in neighbors.values():
+            for afi in list(n.prefixes_upto):
+                self._count_hidden(n, afi, vrf, ev)
         return Observation(neighbors, ev)
+
+    def _count_hidden(self, n: BgpNeighbor, afi: str, vrf: str, ev: list[dict]) -> None:
+        """The reference count, received minus rejected by import policy, from the reasons of the routes Junos
+        hid. When they can't all be read, the count stays the range from accepted to received (interop IOP-7)."""
+        try:
+            peer = str(ipaddress.ip_address(n.address))   # from device output, going back into a CLI string
+            table = _table(vrf, 6 if afi == "ipv6-unicast" else 4)
+            counts = parse_hidden_received(self._cli(f"show route receive-protocol bgp {peer} table {table} "
+                                                     "hidden extensive", ev), table)
+        except (ValueError, DriverError):
+            return
+        received = n.prefixes_upto[afi]
+        if counts is not None and counts[0] == received - n.prefixes[afi]:
+            n.prefixes[afi] = received - counts[1]
+            del n.prefixes_upto[afi]
 
     def _no_table(self, vrf: str, table: str, ev: list[dict]) -> list:
         """`route-table-error`: the instance must exist, and must not list the table; then it has no routes."""

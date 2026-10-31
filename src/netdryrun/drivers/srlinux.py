@@ -82,13 +82,30 @@ def _bgp_learned(row: dict) -> bool:
     return str(row.get("origin-protocol", "bgp")).lower() == "bgp"
 
 
+def _received(row: dict) -> bool:
+    """False for a path SR Linux keeps in its local RIB after import policy rejected it (`invalid-reason:
+    {rejected-route: true}`): FRR, EOS and Junos keep no such path and it can never be used, so it was not
+    received (interop IOP-6). Any other invalid reason is one this driver hasn't seen: an error, never a guess."""
+    why = row.get("invalid-reason")
+    if why is None:
+        return True
+    if not isinstance(why, dict) or not all(isinstance(v, bool) for v in why.values()):
+        raise unexpected(RIB_CMD, f"invalid-reason {str(why)[:100]}")
+    reasons = sorted(k for k, v in why.items() if v)
+    if any(k != "rejected-route" for k in reasons):
+        raise DriverError(f"{row.get('prefix')}: the path from {row.get('neighbor')} is invalid for "
+                          f"{', '.join(reasons)}, a reason the srlinux driver doesn't read yet")
+    return not reasons
+
+
 def _rib_rows(text: str, prefix: str) -> list[dict]:
+    """Local-RIB paths for exactly `prefix`, leaving out those import policy rejected (see _received)."""
     want = ipaddress.ip_network(prefix)
     rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
     for r in rows:
         if "prefix" not in r:
             raise unexpected(RIB_CMD, str(r)[:150])
-    return [r for r in rows if network(RIB_CMD, r["prefix"]) == want]
+    return [r for r in rows if network(RIB_CMD, r["prefix"]) == want and _received(r)]
 
 
 @parser(ROUTE_CMD)

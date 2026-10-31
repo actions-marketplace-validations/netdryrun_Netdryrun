@@ -32,7 +32,8 @@ def raises(fn, message: str) -> DriverError:
 def peer(**over) -> dict:
     p = {"peer-address": [{"data": "10.0.1.2+179"}], "peer-state": [{"data": "Established"}],
          "peer-cfg-rti": [{"data": "master"}],
-         "bgp-rib": [{"name": [{"data": "inet.0"}], "accepted-prefix-count": [{"data": "3"}]}]}
+         "bgp-rib": [{"name": [{"data": "inet.0"}], "accepted-prefix-count": [{"data": "3"}],
+                     "received-prefix-count": [{"data": "3"}]}]}
     p.update(over)
     return p
 

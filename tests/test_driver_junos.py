@@ -34,6 +34,8 @@ def test_neighbors_master():
     assert n["10.0.1.2"].state == "established"
     # 5 received; 10.30.0.0/24 rejected by import policy and 10.31.0.0/24 hidden (next hop) aren't accepted
     assert n["10.0.1.2"].prefixes == {"ipv4-unicast": 3}
+    # Junos's count can't tell those two apart: up to 5 until the hidden routes' reasons are read (interop IOP-7)
+    assert n["10.0.1.2"].prefixes_upto == {"ipv4-unicast": 5} and n["10.0.2.2"].prefixes_upto == {}
     assert n["10.0.2.2"].prefixes == {"ipv4-unicast": 1}
     assert n["2001:db8:1::2"].prefixes == {"ipv6-unicast": 1}
     assert n["10.0.9.9"].state == "idle" and n["10.0.9.9"].prefixes == {}
@@ -276,10 +278,15 @@ class Lab:
 
 
 def test_commands_go_through_the_vm_ssh_hop():
-    lab = Lab([("show bgp neighbor instance master", read("junos_bgp_neighbor.txt"))])
-    JunosDriver(lab, "j1").bgp_neighbors()
+    lab = Lab([("show bgp neighbor instance master", read("junos_bgp_neighbor.txt")),
+               ("receive-protocol bgp 10.0.1.2 table inet.0 hidden", read("junos_rp_hidden_lab1.txt"))])
+    n = JunosDriver(lab, "j1").bgp_neighbors().value
     assert lab.argv[0][:2] == ["ssh", "-q"] and "root@176.1.1.1" in lab.argv[0]
-    assert lab.calls == ["cli -c 'show bgp neighbor instance master | display json | no-more'"]
+    assert lab.calls == ["cli -c 'show bgp neighbor instance master | display json | no-more'",
+                         "cli -c 'show route receive-protocol bgp 10.0.1.2 table inet.0 hidden extensive "
+                         "| display json | no-more'"]
+    # 5 received, 1 rejected by import policy: the route hidden for its next hop was received (interop IOP-7)
+    assert n["10.0.1.2"].prefixes == {"ipv4-unicast": 4} and n["10.0.1.2"].prefixes_upto == {}
 
 
 def test_vm_not_reachable_is_an_error():
@@ -349,6 +356,7 @@ def test_ping_command():
 NEIGHBORS = read("junos_bgp_neighbor.txt")
 STATE = {
     "show bgp neighbor instance master": NEIGHBORS,
+    "receive-protocol bgp 10.0.1.2 table inet.0 hidden": read("junos_rp_hidden_lab1.txt"),
     "10.20.0.0/24 exact table inet.0": read("junos_route_paths.txt"),
     "0.0.0.0/0 exact table inet.0": read("junos_route_leak.txt"),
     "10.30.0.0/24 exact table inet.0": read("junos_route_hidden_policy.txt"),
@@ -383,8 +391,8 @@ MUST_FAIL = [
     ("session to a peer that isn't configured", {**S, "neighbor": "10.9.9.9"}, {}),
     ("session with an unreadable answer", {**S, "neighbor": "10.0.1.2"}, {"show bgp neighbor instance master": SYNTAX}),
     ("session in an unknown instance", {**S, "neighbor": "10.0.1.2", "vrf": "NOPE"}, {}),
-    ("prefixes over max", {**PX, "neighbor": "10.0.1.2", "max": 2}, {}),
-    ("prefixes under min", {**PX, "neighbor": "10.0.1.2", "min": 4}, {}),
+    ("prefixes over max", {**PX, "neighbor": "10.0.1.2", "max": 3}, {}),
+    ("prefixes under min", {**PX, "neighbor": "10.0.1.2", "min": 5}, {}),
     ("prefixes exact 0 but 3", {**PX, "neighbor": "10.0.1.2", "exact": 0}, {}),
     ("ipv6 prefixes on a v4 session", {**PX, "neighbor": "10.0.1.2", "afi": "ipv6-unicast", "min": 1}, {}),
     ("prefixes of an idle peer read as 0", {**PX, "neighbor": "10.0.9.9", "max": 100}, {}),
@@ -437,7 +445,7 @@ def test_must_fail_on_junos(raw, override):
 
 @pytest.mark.parametrize("raw", [
     {**S, "neighbor": "10.0.1.2"}, {**S, "neighbor": "10.0.9.9", "state": "down"},
-    {**PX, "neighbor": "10.0.1.2", "exact": 3}, {**PX, "neighbor": "2001:db8:1::2", "afi": "ipv6-unicast", "min": 1},
+    {**PX, "neighbor": "10.0.1.2", "exact": 4}, {**PX, "neighbor": "2001:db8:1::2", "afi": "ipv6-unicast", "min": 1},
     {**R, "prefix": "0.0.0.0/0", "protocol": "static"}, {**R, "prefix": "10.30.0.0/24", "present": False},
     {**R, "prefix": "0.0.0.0/0", "protocol": "bgp", "active": False},
     {**BR, "prefix": "10.20.0.0/24", "communities": ["65002:100", "65002:1:2"], "as_path": "65002", "med": 50,

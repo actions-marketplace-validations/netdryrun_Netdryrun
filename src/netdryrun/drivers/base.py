@@ -113,6 +113,10 @@ class BgpNeighbor:
     address: str
     state: str                                          # lower-case, e.g. "established"
     prefixes: dict[str, int] = field(default_factory=dict)  # afi -> accepted/received prefixes
+    # afi -> the most the count can be, where the device leaves received routes out of it for a reason its output
+    # doesn't give (Junos hides routes import policy rejected and routes whose next hop it can't use alike): the
+    # reference count, received minus rejected by import policy, is then from prefixes[afi] to this (interop IOP-7)
+    prefixes_upto: dict[str, int] = field(default_factory=dict)
     # seconds between advertisements to this neighbor (MRAI) as the device reports it, or the platform's default
     # where it reports none; None: not known. A route can arrive this late after the session looks settled.
     # A timer, not the session's identity: not part of equality.

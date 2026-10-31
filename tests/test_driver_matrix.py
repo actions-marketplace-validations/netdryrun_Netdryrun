@@ -127,7 +127,9 @@ def srl_rules():
 def junos_rules():
     """Junos CLI over the cJunosEvolved container's SSH hop; `default` is the master instance."""
     def neighbors(text):
-        return [("show bgp neighbor instance master", text)]
+        # 10.0.1.2's hidden routes: one rejected by import policy, one with an unusable next hop (interop IOP-7)
+        return [("show bgp neighbor instance master", text),
+                ("receive-protocol bgp 10.0.1.2 table inet.0 hidden", fx("junos_rp_hidden_lab1.txt"))]
 
     def routes(text):
         return [("exact table inet.0 all extensive", text)]
@@ -279,7 +281,7 @@ def _cells() -> list[Cell]:
 
     # ---- Juniper cJunosEvolved (beta) ----------------------------------------------------------------------
     neighbors, routes, paths, ping = junos_rules()
-    nbr, count = "10.0.1.2", 3
+    nbr, count = "10.0.1.2", 4   # 5 received, 1 rejected by import policy
     s = {"type": "bgp_session", "neighbor": nbr}
     px = {"type": "bgp_prefixes", "neighbor": nbr}
     add("junos", "pass", "session established", s, neighbors(fx("junos_bgp_neighbor.txt")))

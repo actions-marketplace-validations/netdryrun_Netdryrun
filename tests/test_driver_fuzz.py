@@ -344,6 +344,8 @@ def test_mutated_output(case, data):
 #   junos.parse_ping: (0, 0) -> "ping did not run", as frr.parse_ping
 #   junos.parse_instance: None -> the driver raises "routing-instance ... does not exist". It is read only
 #     after Junos said a table doesn't exist (route-table-error) or a neighbor list is empty
+#   junos.parse_hidden_received: (0, 0) or None -> the prefix count stays a range from accepted to received,
+#     judged only where the whole range agrees (interop IOP-7)
 # They are fuzzed for crashes (only DriverError may escape) and for a well-typed answer.
 
 def _ping_ok(r) -> bool:
@@ -368,6 +370,9 @@ FAIL_SAFE = [
     # junos.parse_vrfs: [] only narrows what `netdryrun record` reads (it warns "only the default VRF")
     ("junos.parse_vrfs", junos.parse_vrfs, ["junos_instance_red.txt", "junos_instance_master.txt"],
      lambda r: isinstance(r, list) and all(isinstance(x, str) for x in r)),
+    ("junos.parse_hidden_received", lambda t: junos.parse_hidden_received(t, "inet.0"), ["junos_rp_hidden.txt"],
+     lambda r: r is None or (isinstance(r, tuple) and len(r) == 2 and all(isinstance(x, int) for x in r)
+                             and 0 <= r[1] <= r[0])),
     ("junos.parse_instance", lambda t: junos.parse_instance(t, "RED"), ["junos_instance_red.txt"],
      lambda r: r is None or (isinstance(r, list) and all(isinstance(x, str) for x in r))),
     # reads a whole boot log: it finds vtysh's error lines or nothing, and never crashes
