@@ -51,6 +51,10 @@ theme:
 extra_css:
   - stylesheets/brand.css
 
+# Click-to-load YouTube embeds: nothing loads from YouTube before a click (see the file's header for usage)
+extra_javascript:
+  - javascripts/video-embed.js
+
 # Publish /.well-known/security.txt (MkDocs skips dot-folders by default)
 exclude_docs: |
   !.well-known/
