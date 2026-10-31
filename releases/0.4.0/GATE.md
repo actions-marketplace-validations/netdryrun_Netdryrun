@@ -2,39 +2,35 @@
 
 Written by `scripts/release_gate.py` (see [RELEASING.md](../../RELEASING.md)). Do not edit by hand: rerun a layer, or record a decision in `accepted.json` or `review.md`.
 
-**INCOMPLETE**: no BLOCKER failed, but the gate is not complete (see below).
+**READY TO PUBLISH**: every layer before publishing ran on the same clean commit; no BLOCKER failed or was skipped; every MAJOR passed or was accepted. Tag it, then run `after-publish` to clear it.
 
 **Layers not run yet:**
 
 - Layer 7: after-publish proof
 
-**Other gaps:**
-
-- the layers ran on different code: 3ca6145 (live) and d180ece (static) differ in .github/ISSUE_TEMPLATE/config.yml, .github/workflows/published-action.yml, .github/workflows/release.yml, .gitlab-ci.yml, corpus/render.py
-
 | Layer | Commit | Ran | Time | Result |
 |---|---|---|---|---|
-| [Layer 1: static](#layer-1-static) | `d180ece34b` | 2026-10-31 02:40:30 UTC | 2.2 s | 11 PASS |
-| [Layer 2: unit tests on every supported Python](#layer-2-unit-tests-on-every-supported-python) | `d180ece34b` | 2026-10-31 02:25:18 UTC | 14.7 min | 7 PASS |
-| [Layer 4: mutation testing](#layer-4-mutation-testing) | `a46138bd0f` | 2026-10-31 02:11:03 UTC | 13.2 min | 11 PASS |
-| [Layer 5: live matrix on the built package](#layer-5-live-matrix-on-the-built-package) | `3ca614523c` | 2026-10-30 18:21:10 UTC | 157.0 min | 3 ACCEPTED, 52 PASS |
+| [Layer 1: static](#layer-1-static) | `8e9a376832` | 2026-10-31 10:15:26 UTC | 1.3 s | 11 PASS |
+| [Layer 2: unit tests on every supported Python](#layer-2-unit-tests-on-every-supported-python) | `8e9a376832` | 2026-10-31 06:48:54 UTC | 8.0 min | 7 PASS |
+| [Layer 4: mutation testing](#layer-4-mutation-testing) | `8e9a376832` | 2026-10-31 06:57:09 UTC | 17.4 min | 11 PASS |
+| [Layer 5: live matrix on the built package](#layer-5-live-matrix-on-the-built-package) | `8e9a376832` | 2026-10-31 07:15:26 UTC | 163.1 min | 3 ACCEPTED, 1 FAIL, 51 PASS |
 | Layer 7: after-publish proof | | not run | | |
 
 ## Layer 1: static
 
-Commit `d180ece34b50689c3107860128e6e3e503d41e20` on `HEAD`; 2026-10-31 02:40:30 UTC; 2.2 s; Linux 6.18.54.1-microsoft-standard-WSL2 (x86_64); Python 3.10.12; --strict.
+Commit `8e9a376832a2bc8d1f4ca19b3340d3a22a453358` on `HEAD`; 2026-10-31 10:15:26 UTC; 1.3 s; Linux 6.18.54.1-microsoft-standard-WSL2 (x86_64); Python 3.10.12; --strict.
 
 Tools: actionlint 1.7.7; ruff 0.17.3; shellcheck 0.8.0.
 
 | Check | Severity | Result | Time | Notes |
 |---|---|---|---|---|
-| ruff (config in pyproject.toml) | BLOCKER | **PASS** | 0.2 s | All checks passed! |
-| actionlint on every workflow (with shellcheck) | BLOCKER | **PASS** | 0.4 s | clean |
-| shellcheck, error level, 18 scripts | BLOCKER | **PASS** | 0.3 s | clean |
-| shellcheck, warning level, 18 scripts | MAJOR | **PASS** | 0.3 s | clean |
+| ruff (config in pyproject.toml) | BLOCKER | **PASS** | 0.0 s | All checks passed! |
+| actionlint on every workflow (with shellcheck) | BLOCKER | **PASS** | 0.2 s | clean |
+| shellcheck, error level, 18 scripts | BLOCKER | **PASS** | 0.2 s | clean |
+| shellcheck, warning level, 18 scripts | MAJOR | **PASS** | 0.2 s | clean |
 | no empty ${{ }} in action.yml or workflows | BLOCKER | **PASS** | 0.0 s | none |
-| public facts match the source (sync_facts.py --check) | BLOCKER | **PASS** | 0.6 s | facts: in sync (version 0.4.0, 0 problem(s)) |
-| every version reference says 0.4.0 | BLOCKER | **PASS** | 0.1 s | 43 references agree |
+| public facts match the source (sync_facts.py --check) | BLOCKER | **PASS** | 0.3 s | facts: in sync (version 0.4.0, 0 problem(s)) |
+| every version reference says 0.4.0 | BLOCKER | **PASS** | 0.0 s | 43 references agree |
 | pyproject.toml declares Python 3.10 to 3.14, the versions tested | MAJOR | **PASS** | 0.0 s | requires-python and classifiers agree |
 | every example has a documented expected result and exit code | MAJOR | **PASS** | 0.0 s | 10 examples |
 | every topology we ship is named ndr-* | BLOCKER | **PASS** | 0.0 s | 94 topologies |
@@ -42,31 +38,31 @@ Tools: actionlint 1.7.7; ruff 0.17.3; shellcheck 0.8.0.
 
 ## Layer 2: unit tests on every supported Python
 
-Commit `d180ece34b50689c3107860128e6e3e503d41e20` on `HEAD`; 2026-10-31 02:25:18 UTC; 14.7 min; Linux 6.18.54.1-microsoft-standard-WSL2 (x86_64); Python 3.10.12; --strict.
+Commit `8e9a376832a2bc8d1f4ca19b3340d3a22a453358` on `HEAD`; 2026-10-31 06:48:54 UTC; 8.0 min; Linux 6.18.54.1-microsoft-standard-WSL2 (x86_64); Python 3.10.12; --strict.
 
 Tools: docker 29.9.2; uv 0.13.6 (x86_64-unknown-linux-gnu).
 
 | Check | Severity | Result | Time | Notes |
 |---|---|---|---|---|
-| unit tests on Python 3.10.12 | BLOCKER | **PASS** | 2.8 min | 3665 passed, 61 skipped, 1 xfailed |
-| unit tests on Python 3.11.18 | BLOCKER | **PASS** | 2.3 min | 3665 passed, 61 skipped, 1 xfailed |
-| unit tests on Python 3.12.16 (with coverage) | BLOCKER | **PASS** | 4.6 min | 3665 passed, 61 skipped, 1 xfailed, 23 warnings |
+| unit tests on Python 3.10.12 | BLOCKER | **PASS** | 87.5 s | 3723 passed, 61 skipped, 2 xfailed |
+| unit tests on Python 3.11.18 | BLOCKER | **PASS** | 69.2 s | 3723 passed, 61 skipped, 2 xfailed |
+| unit tests on Python 3.12.16 (with coverage) | BLOCKER | **PASS** | 1.9 min | 3723 passed, 61 skipped, 2 xfailed, 23 warnings |
 | coverage of the verdict modules at or above the floors | MAJOR | **PASS** | 0.0 s | all at or above their floors |
-| unit tests on Python 3.13.18 | BLOCKER | **PASS** | 79.6 s | 3665 passed, 61 skipped, 1 xfailed, 23 warnings |
-| unit tests on Python 3.14.10 | BLOCKER | **PASS** | 1.5 min | 3665 passed, 61 skipped, 1 xfailed |
-| unit tests in a plain python:3.12-slim container (no containerlab, no Docker) | BLOCKER | **PASS** | 2.2 min | 3625 passed, 101 skipped, 1 xfailed |
+| unit tests on Python 3.13.18 | BLOCKER | **PASS** | 63.8 s | 3723 passed, 61 skipped, 2 xfailed, 23 warnings |
+| unit tests on Python 3.14.10 | BLOCKER | **PASS** | 60.4 s | 3723 passed, 61 skipped, 2 xfailed |
+| unit tests in a plain python:3.12-slim container (no containerlab, no Docker) | BLOCKER | **PASS** | 83.9 s | 3683 passed, 101 skipped, 2 xfailed |
 
 **Coverage of the verdict modules** (lines and branches, Python 3.12):
 
 | Module | Lines | Branches | Covered | Floor |
 |---|---|---|---|---|
-| `src/netdryrun/checks.py` | 292/293 | 125/126 | 99.5% | 99% |
+| `src/netdryrun/checks.py` | 302/303 | 131/132 | 99.5% | 99% |
 | `src/netdryrun/config.py` | 446/449 | 263/266 | 99.2% | 99% |
 | `src/netdryrun/runner.py` | 662/669 | 274/278 | 98.8% | 98% |
-| `src/netdryrun/drivers/` | 1207/1207 | 426/428 | 99.9% | 99% |
+| `src/netdryrun/drivers/` | 1253/1256 | 448/450 | 99.7% | 99% |
 | `src/netdryrun/verify/engine.py` | 466/468 | 224/226 | 99.4% | 98% |
 | `src/netdryrun/verify/intent.py` | 349/352 | 169/172 | 98.9% | 97% |
-| `src/netdryrun/verify/frr.py` | 547/596 | 261/306 | 89.6% | 88% |
+| `src/netdryrun/verify/frr.py` | 548/596 | 262/306 | 89.8% | 88% |
 | `src/netdryrun/verify/snapshot.py` | 399/423 | 133/156 | 91.9% | 90% |
 | `src/netdryrun/verify/converge.py` | 71/73 | 29/30 | 97.1% | 96% |
 | `src/netdryrun/verify/run.py` | 483/542 | 177/212 | 87.5% | 83% |
@@ -74,14 +70,14 @@ Tools: docker 29.9.2; uv 0.13.6 (x86_64-unknown-linux-gnu).
 
 ## Layer 4: mutation testing
 
-Commit `a46138bd0f41e2870f38cf9430332a1336fa8ce2` on `HEAD`; 2026-10-31 02:11:03 UTC; 13.2 min; Linux 6.18.54.1-microsoft-standard-WSL2 (x86_64); Python 3.10.12; --strict.
+Commit `8e9a376832a2bc8d1f4ca19b3340d3a22a453358` on `HEAD`; 2026-10-31 06:57:09 UTC; 17.4 min; Linux 6.18.54.1-microsoft-standard-WSL2 (x86_64); Python 3.10.12; --strict.
 
 Tools: mutmut python -m mutmut, version 3.8.0.
 
 | Check | Severity | Result | Time | Notes |
 |---|---|---|---|---|
-| no surviving mutants in src/netdryrun/drivers/ | BLOCKER | **PASS** | 12.4 min | 2996 generated, 2766/2996 caught (92.3%); not caught: 230 survived the tests, 0 in code no test runs, 230 accepted (48 equivalent, 182 message-text) |
-| no surviving mutants in src/netdryrun/checks.py | BLOCKER | **PASS** | 0.0 s | carried over from 81a49b3: src/netdryrun/checks.py is byte-identical at this commit. 1220 generated, 1138/1220 caught (93.3%); not caught: 82 survived the tests, 0 in code no test runs, 82 accepted (33 equivalent, 49 message-text) |
+| no surviving mutants in src/netdryrun/drivers/ | BLOCKER | **PASS** | 16.9 min | 3077 generated, 2830/3077 caught (92.0%); not caught: 247 survived the tests, 0 in code no test runs, 247 accepted (49 equivalent, 198 message-text) |
+| no surviving mutants in src/netdryrun/checks.py | BLOCKER | **PASS** | 0.0 s | 1246 generated, 1164/1246 caught (93.4%); not caught: 82 survived the tests, 0 in code no test runs, 82 accepted (33 equivalent, 49 message-text) |
 | no surviving mutants in src/netdryrun/config.py | BLOCKER | **PASS** | 0.0 s | carried over from 81a49b3: src/netdryrun/config.py is byte-identical at this commit. 1480 generated, 1232/1480 caught (83.2%); not caught: 248 survived the tests, 0 in code no test runs, 248 accepted (25 equivalent, 223 message-text) |
 | no surviving mutants in src/netdryrun/runner.py | BLOCKER | **PASS** | 0.0 s | carried over from 81a49b3: src/netdryrun/runner.py is byte-identical at this commit. 1674 generated, 1513/1674 caught (90.4%); not caught: 161 survived the tests, 0 in code no test runs, 161 accepted (31 equivalent, 11 logging, 118 message-text, 1 timing-only) |
 | no surviving mutants in src/netdryrun/verify/engine.py | BLOCKER | **PASS** | 0.0 s | carried over from 81a49b3: src/netdryrun/verify/engine.py is byte-identical at this commit. 1521 generated, 1450/1521 caught (95.3%); not caught: 71 survived the tests, 0 in code no test runs, 71 accepted (27 equivalent, 44 message-text) |
@@ -102,18 +98,26 @@ Tools: mutmut python -m mutmut, version 3.8.0.
 
 **src/netdryrun/verify/report.py: 307 survivors outside the gated functions** (parsers that fail closed and rendering; their full zero is a 0.4.1 gate item): `verify.report.markdown` 142, `verify.report.console` 92, `verify.report._summary` 25, `verify.report.item_json` 25, `verify.report._intent_json` 6, `verify.report._plain_yaml` 6, `verify.report.to_json` 6, `verify.report._diag` 5
 
-**Surviving mutants by function** (230 in all; every diff is in [mutants.md](mutants.md)):
+**Accepted entries that no longer survive** (1; remove them from accepted.json): `netdryrun.drivers.srlinux.x__rib_rows__mutmut_25`
+
+**Surviving mutants by function** (329 in all; every diff is in [mutants.md](mutants.md)):
 
 | Function | Survivors |
 |---|---|
 | `drivers.frr._bgp_paths_raw` | 26 |
+| `checks._ping` | 23 |
+| `checks._route` | 20 |
 | `drivers.frr._route_table` | 18 |
 | `drivers.eos._summary` | 16 |
 | `drivers.eos._bgp_entries` | 15 |
+| `drivers.srlinux._received` | 15 |
 | `drivers.eos._vrf` | 12 |
+| `checks._describe_path` | 11 |
 | `drivers.srlinux._rib_rows` | 10 |
+| `checks._bgp_route` | 9 |
 | `drivers.srlinux.SrlDriver._read_path` | 9 |
 | `drivers.frr._bgp_json` | 7 |
+| `checks.is_post_convergence` | 6 |
 | `drivers.base.Driver._exec` | 6 |
 | `drivers.base.load_json` | 6 |
 | `drivers.eos._learned` | 6 |
@@ -122,10 +126,12 @@ Tools: mutmut python -m mutmut, version 3.8.0.
 | `drivers.srlinux._list` | 6 |
 | `drivers.base.network` | 5 |
 | `drivers.srlinux._json` | 5 |
+| `checks._evaluate_all` | 4 |
 | `drivers.eos._json` | 4 |
 | `drivers.eos._table` | 4 |
 | `drivers.frr.FrrDriver._confirm_vrf` | 4 |
 | `drivers.junos._next_hop` | 4 |
+| `checks.run_round_robin` | 3 |
 | `drivers.base.Driver.all_routes` | 3 |
 | `drivers.base.as_int` | 3 |
 | `drivers.base.unexpected` | 3 |
@@ -133,6 +139,8 @@ Tools: mutmut python -m mutmut, version 3.8.0.
 | `drivers.eos.parse_startup_config_errors` | 3 |
 | `drivers.for_node` | 3 |
 | `drivers.junos._adv_interval` | 3 |
+| `checks._reach_view` | 2 |
+| `checks.inconclusive_reason` | 2 |
 | `drivers.base.Driver.bgp_neighbors` | 2 |
 | `drivers.base.Driver.bgp_paths` | 2 |
 | `drivers.base.Driver.ping` | 2 |
@@ -140,11 +148,14 @@ Tools: mutmut python -m mutmut, version 3.8.0.
 | `drivers.base.check_vrf_name` | 2 |
 | `drivers.frr._bgp_paths_for_route_check` | 2 |
 | `drivers.frr.parse_config_load_errors` | 2 |
+| `drivers.junos.JunosDriver._count_hidden` | 2 |
 | `drivers.junos._afi` | 2 |
 | `drivers.junos._destination` | 2 |
 | `drivers.junos._hidden` | 2 |
 | `drivers.junos._strip_port` | 2 |
 | `drivers.srlinux.parse_instance_state` | 2 |
+| `checks._not_configured` | 1 |
+| `checks.converge_then_hold` | 1 |
 | `drivers.base.RepeatedKey.__init__` | 1 |
 | `drivers.base.no_repeated_keys` | 1 |
 | `drivers.eos.EosDriver.all_routes` | 1 |
@@ -158,65 +169,65 @@ Tools: mutmut python -m mutmut, version 3.8.0.
 
 ## Layer 5: live matrix on the built package
 
-Commit `3ca614523c2689d6cdc047085029dfa0a14216ad` on `HEAD`; 2026-10-30 18:21:10 UTC; 157.0 min; Linux 6.18.54.1-microsoft-standard-WSL2 (x86_64); Python 3.10.12; --strict.
+Commit `8e9a376832a2bc8d1f4ca19b3340d3a22a453358` on `HEAD`; 2026-10-31 07:15:26 UTC; 163.1 min; Linux 6.18.54.1-microsoft-standard-WSL2 (x86_64); Python 3.10.12; --strict.
 
 Tools: containerlab ⣴⡾⠛⠛⠖ ⢠⣶⠟⠛⢷⣦ ⢸⣿⣧ ⣿ ⠘⠛⢻⡟⠛⠛ ⣾⣿⡀ ⣿⡇ ⣿⣿⡄ ⢸⡇ ⣿⡟⠛⠛⠃⢸⣿⠛⠛⣷⡄ [38;2;0;201;255m⣿⡇[0m ; docker 29.9.2.
 
 | Check | Severity | Result | Time | Notes |
 |---|---|---|---|---|
 | build the wheel | BLOCKER | **PASS** | 0.5 s | netdryrun-0.4.0-py3-none-any.whl |
-| install netdryrun-0.4.0-py3-none-any.whl in a fresh venv | BLOCKER | **PASS** | 0.6 s |  |
-| runs the installed package, not the source tree | BLOCKER | **PASS** | 0.0 s | /tmp/ndr-gate-live-c2phzuon/venv/lib/python3.12/site-packages/netdryrun/__init__.py |
+| install netdryrun-0.4.0-py3-none-any.whl in a fresh venv | BLOCKER | **PASS** | 0.4 s |  |
+| runs the installed package, not the source tree | BLOCKER | **PASS** | 0.0 s | /tmp/ndr-gate-live-ikt_pw0_/venv/lib/python3.12/site-packages/netdryrun/__init__.py |
 | netdryrun --version says 0.4.0 | BLOCKER | **PASS** | 0.0 s | netdryrun 0.4.0 |
-| example agent-demo: `Demo OK`, exit 0 | BLOCKER | **PASS** | 75.8 s | exit 0: Demo OK: attempt 1 rejected by 5 leak guards with every other check passing; attempt 2 passed every check. |
+| example agent-demo: `Demo OK`, exit 0 | BLOCKER | **PASS** | 87.1 s | exit 0: Demo OK: attempt 1 rejected by 5 leak guards with every other check passing; attempt 2 passed every check. |
 | example agent-demo: no lab left running | BLOCKER | **PASS** | 0.0 s | none left |
-| example arista-frr: `PASSED: 10 passed, 0 failed`, exit 0 | BLOCKER | **PASS** | 1.7 min | exit 0: PASSED: 10 passed, 0 failed (10 checks) |
+| example arista-frr: `PASSED: 10 passed, 0 failed`, exit 0 | BLOCKER | **PASS** | 2.1 min | exit 0: PASSED: 10 passed, 0 failed (10 checks) |
 | example arista-frr: no lab left running | BLOCKER | **PASS** | 0.0 s | none left |
-| example batfish-pipeline: `PASSED: 10 passed, 0 failed`, exit 0 | BLOCKER | **PASS** | 1.7 min | exit 0: PASSED: 10 passed, 0 failed (10 checks) |
+| example batfish-pipeline: `PASSED: 10 passed, 0 failed`, exit 0 | BLOCKER | **PASS** | 1.8 min | exit 0: PASSED: 10 passed, 0 failed (10 checks) |
 | example batfish-pipeline: no lab left running | BLOCKER | **PASS** | 0.0 s | none left |
-| example frr-bgp: `PASSED: 11 passed, 0 failed`, exit 0 | BLOCKER | **PASS** | 1.7 min | exit 0: PASSED: 11 passed, 0 failed (11 checks) |
+| example frr-bgp: `PASSED: 11 passed, 0 failed`, exit 0 | BLOCKER | **PASS** | 1.8 min | exit 0: PASSED: 11 passed, 0 failed (11 checks) |
 | example frr-bgp: no lab left running | BLOCKER | **PASS** | 0.0 s | none left |
-| example frr-bgp-broken: `FAILED: 5 passed, 1 failed`, exit 1 | BLOCKER | **PASS** | 40.0 s | exit 1: FAILED: 5 passed, 1 failed (6 checks) |
+| example frr-bgp-broken: `FAILED: 5 passed, 1 failed`, exit 1 | BLOCKER | **PASS** | 45.4 s | exit 1: FAILED: 5 passed, 1 failed (6 checks) |
 | example frr-bgp-broken: no lab left running | BLOCKER | **PASS** | 0.0 s | none left |
-| example junos-frr: `PASSED: 13 passed, 0 failed`, exit 0 | BLOCKER | **PASS** | 4.9 min | exit 0: PASSED: 13 passed, 0 failed (13 checks) |
+| example junos-frr: `PASSED: 13 passed, 0 failed`, exit 0 | BLOCKER | **PASS** | 9.7 min | exit 0: PASSED: 13 passed, 0 failed (13 checks) |
 | example junos-frr: no lab left running | BLOCKER | **PASS** | 0.0 s | none left |
-| example leak-pattern: `PASSED: 8 passed, 0 failed`, exit 0 | BLOCKER | **PASS** | 41.7 s | exit 0: PASSED: 8 passed, 0 failed (8 checks) |
+| example leak-pattern: `PASSED: 8 passed, 0 failed`, exit 0 | BLOCKER | **PASS** | 49.4 s | exit 0: PASSED: 8 passed, 0 failed (8 checks) |
 | example leak-pattern: no lab left running | BLOCKER | **PASS** | 0.0 s | none left |
-| example sonic-frr: `PASSED: 8 passed, 0 failed`, exit 0 | BLOCKER | **PASS** | 1.6 min | exit 0: PASSED: 8 passed, 0 failed (8 checks) |
+| example sonic-frr: `PASSED: 8 passed, 0 failed`, exit 0 | BLOCKER | **PASS** | 1.8 min | exit 0: PASSED: 8 passed, 0 failed (8 checks) |
 | example sonic-frr: no lab left running | BLOCKER | **PASS** | 0.0 s | none left |
-| example srl-frr: `PASSED: 7 passed, 0 failed`, exit 0 | BLOCKER | **PASS** | 60.7 s | exit 0: PASSED: 7 passed, 0 failed (7 checks) |
+| example srl-frr: `PASSED: 7 passed, 0 failed`, exit 0 | BLOCKER | **PASS** | 1.5 min | exit 0: PASSED: 7 passed, 0 failed (7 checks) |
 | example srl-frr: no lab left running | BLOCKER | **PASS** | 0.0 s | none left |
-| example srl-hidden-leak: `PASSED: 9 passed, 0 failed`, exit 0 | BLOCKER | **PASS** | 60.2 s | exit 0: PASSED: 9 passed, 0 failed (9 checks) |
+| example srl-hidden-leak: `PASSED: 9 passed, 0 failed`, exit 0 | BLOCKER | **PASS** | 87.4 s | exit 0: PASSED: 9 passed, 0 failed (9 checks) |
 | example srl-hidden-leak: no lab left running | BLOCKER | **PASS** | 0.0 s | none left |
-| example srl-hidden-leak with leaks/frr1.conf: `FAILED: 8 passed, 1 failed`, exit 1 | BLOCKER | **PASS** | 59.4 s | exit 1: FAILED: 8 passed, 1 failed (9 checks) |
+| example srl-hidden-leak with leaks/frr1.conf: `FAILED: 8 passed, 1 failed`, exit 1 | BLOCKER | **PASS** | 86.8 s | exit 1: FAILED: 8 passed, 1 failed (9 checks) |
 | example srl-hidden-leak with leaks/frr1.conf: no lab left running | BLOCKER | **PASS** | 0.0 s | none left |
-| example srl-hidden-leak with leaks/srl1.cli: `FAILED: 8 passed, 1 failed`, exit 1 | BLOCKER | **PASS** | 60.3 s | exit 1: FAILED: 8 passed, 1 failed (9 checks) |
+| example srl-hidden-leak with leaks/srl1.cli: `FAILED: 8 passed, 1 failed`, exit 1 | BLOCKER | **PASS** | 88.7 s | exit 1: FAILED: 8 passed, 1 failed (9 checks) |
 | example srl-hidden-leak with leaks/srl1.cli: no lab left running | BLOCKER | **PASS** | 0.0 s | none left |
 | example times match the docs (within 2x) | MAJOR | **PASS** | 0.0 s | all within 2x |
-| Verdict Corpus v1: every verdict matches the committed results.json | BLOCKER | **PASS** | 67.1 min | all verdicts match |
+| Verdict Corpus v1: every verdict matches the committed results.json | BLOCKER | **PASS** | 68.4 min | all verdicts match |
 | Verdict Corpus v1: no harmful change approved beyond the published known misses | BLOCKER | **PASS** | 0.0 s | harmful changes approved: 5 (12-ibgp-send-community-dropped, 18-redistribute-connected, 21-customer-max-prefix-removed, 23-fat-finger-third-party-origin, 30-peer-import-filter-removed); published known misses: 12-ibgp-send-community-dropped, 18-redistribute-connected, 21-customer-max-prefix-removed, 23-fat-finger-third-party-origin, 30-peer-import-filter-removed |
 | Verdict Corpus v1: no lab left running | BLOCKER | **PASS** | 0.0 s | none left |
-| Verdict Corpus v2: every verdict matches the committed results.json | BLOCKER | **PASS** | 69.1 min | all verdicts match |
+| Verdict Corpus v2: every verdict matches the committed results.json | BLOCKER | **PASS** | 66.0 min | all verdicts match |
 | Verdict Corpus v2: the nondeterministic exemption holds (pinned list, repeats ran, no error) | BLOCKER | **PASS** | 0.0 s | 18-aggregate-discard-route-removed |
-| Verdict Corpus v2: nondeterministic cases recorded (known, not scored, never a blocker) | INFO | **PASS** | 0.0 s | Netdryrun verdicts per run: 18-aggregate-discard-route-removed: safe, safe, unsafe |
+| Verdict Corpus v2: nondeterministic cases recorded (known, not scored, never a blocker) | INFO | **FAIL** | 0.0 s | Netdryrun verdicts per run: 18-aggregate-discard-route-removed: safe, safe, safe; every run approved the harmful change: 18-aggregate-discard-route-removed |
 | Verdict Corpus v2: no harmful change approved beyond the published known misses | BLOCKER | **PASS** | 0.0 s | harmful changes approved: 1 (04-redundant-aggregate-typo); published known misses: 04-redundant-aggregate-typo |
 | Verdict Corpus v2: no lab left running | BLOCKER | **PASS** | 0.0 s | none left |
-| MCP handshake against the installed wheel | BLOCKER | **PASS** | 1.4 s | MCP handshake OK |
+| MCP handshake against the installed wheel | BLOCKER | **PASS** | 1.1 s | MCP handshake OK |
 | check pack verification | MAJOR | **ACCEPTED** | 0.0 s | no --pack script given (accepted: No check pack is sold yet: pack verification is paused by the roadmap until the 45-day demand test; it runs with --pack before any pack ships.) |
 | 20-node scale test | MAJOR | **ACCEPTED** | 0.0 s | not scripted in the repository yet: run it by hand (accepted: Not scripted yet. A 20-node lab was run by hand in pre-launch testing (it found the PR-comment size limit, fixed in 0.3.1); scripting it is a 0.4.1 item.) |
-| SIGINT during deploy: exit 130, a clear message | BLOCKER | **PASS** | 4.7 s | exit 130 |
+| SIGINT during deploy: exit 130, a clear message | BLOCKER | **PASS** | 4.6 s | exit 130 |
 | SIGINT during deploy: no lab left running | BLOCKER | **PASS** | 0.0 s | none left |
-| SIGINT during checks: exit 130, a clear message | BLOCKER | **PASS** | 17.2 s | exit 130 |
+| SIGINT during checks: exit 130, a clear message | BLOCKER | **PASS** | 16.9 s | exit 130 |
 | SIGINT during checks: no lab left running | BLOCKER | **PASS** | 0.0 s | none left |
-| SIGTERM during deploy: exit 143, a clear message | BLOCKER | **PASS** | 6.0 s | exit 143 |
+| SIGTERM during deploy: exit 143, a clear message | BLOCKER | **PASS** | 5.5 s | exit 143 |
 | SIGTERM during deploy: no lab left running | BLOCKER | **PASS** | 0.0 s | none left |
-| SIGTERM during checks: exit 143, a clear message | BLOCKER | **PASS** | 17.1 s | exit 143 |
+| SIGTERM during checks: exit 143, a clear message | BLOCKER | **PASS** | 16.8 s | exit 143 |
 | SIGTERM during checks: no lab left running | BLOCKER | **PASS** | 0.0 s | none left |
-| a node's image does not exist: exit 2 with a clear error | BLOCKER | **PASS** | 0.5 s | exit 2:   wrote json report: /tmp/ndr-gate-live-c2phzuon/reports/frr-bgp-missing-image.json |
+| a node's image does not exist: exit 2 with a clear error | BLOCKER | **PASS** | 0.5 s | exit 2:   wrote json report: /tmp/ndr-gate-live-ikt_pw0_/reports/frr-bgp-missing-image.json |
 | a node's image does not exist: no lab left running | BLOCKER | **PASS** | 0.0 s | none left |
-| a node cannot be created (a bind source does not exist): exit 2 with a clear error | BLOCKER | **PASS** | 0.4 s | exit 2:   wrote json report: /tmp/ndr-gate-live-c2phzuon/reports/frr-bgp-deploy-fails.json |
+| a node cannot be created (a bind source does not exist): exit 2 with a clear error | BLOCKER | **PASS** | 0.2 s | exit 2:   wrote json report: /tmp/ndr-gate-live-ikt_pw0_/reports/frr-bgp-deploy-fails.json |
 | a node cannot be created (a bind source does not exist): no lab left running | BLOCKER | **PASS** | 0.0 s | none left |
-| two runs of the same lab at once: no false verdict, no crash | BLOCKER | **PASS** | 1.8 min | exit codes 2 and 0 |
+| two runs of the same lab at once: no false verdict, no crash | BLOCKER | **PASS** | 1.7 min | exit codes 0 and 2 |
 | two runs at once: no lab left running | BLOCKER | **PASS** | 0.0 s | none left |
 | Docker restarts mid-run | MAJOR | **ACCEPTED** | 0.0 s | off by default (restarts every container on the machine): pass --chaos-docker-restart (accepted: Optional by RELEASING.md (Layer 5, Chaos): it restarts Docker, which stops every container on the machine, and the lab machine is shared with other sessions' labs. The other chaos cases (SIGINT and SIGTERM in the deploy and the checks, a missing image, a node that can't be created, two runs of one lab) ran and passed on 81a49b3. Coordinator, 2026-10-31: kept for 0.4.0 (the interop stress test holds the lab, and a Docker restart would kill its labs); the restart case runs in the next quiet lab window or, at the latest, in the 0.4.1 gate.) |
 
@@ -349,3 +360,28 @@ Carried-over mutation records, each byte-identical to 81a49b3 (`git diff 81a49b3
 **Live layer (coordinator: keep live).** Live on 3ca6145; b4130ad differs only in releases/0.4.0/accepted.json and review.md. Unit, mutation (drivers fresh, the ten modules above carried over) and static ran on b4130ad. The interop L1 rerun runs on 3ca6145 too, and src/ and tests/ are byte-identical between the two commits.
 
 **Repository rename (coordinator, 2026-10-31).** The repository is now github.com/netdryrun/Netdryrun. a46138b moves every current surface to the new name: docs, site, templates, examples, scripts, workflows, pyproject URLs and server.json `repository.url`. Some places keep the old spelling: the MCP Registry name `io.github.netdryrun/netdryrun`, the history (releases/0.3.x, advisories, older CHANGELOG sections) and the two `src/` links (cli.py FEEDBACK_URL, comment.py), which change in 0.4.1. The gate's Action-ref patterns accept either case, and a lowercase repo link in a public page is a stale phrase (fail-closed, tested). d180ece adds the Glama listing (prose only). `src/` is byte-identical to 3ca6145 at both commits. So the mutation record carries over: drivers was mutated fresh at a46138b and the ten other modules are carried from 81a49b3, each byte-identical. Unit and static ran on d180ece. Live stays on 3ca6145, which has the same `src/`, and so does the interop rerun.
+
+## Interop run 2: IOP-6 and IOP-7 (2026-10-31)
+
+Interop run 2 (the same mixed lab, rerun on 3ca6145) found two false passes; the owner pre-approved "BLOCKER fixed and re-checked, then publish". IOP-8 stays a strict xfail and moves to 0.4.1 (CHANGELOG, RELEASES.md). Tests from `ndr/interop` (652ee31..0f5ea24): `tests/test_interop_04_run2.py`; the fix's own edge cases: `tests/test_interop_04_fixes.py`.
+
+- **IOP-6, false pass (SR Linux): a route rejected by import policy counted as received.** SR Linux keeps it in the BGP local RIB with `invalid-reason {rejected-route: true}`; the driver read it as a path, so `active: false` passed ("present via bgp (not selected)") and `present: false` failed, and a failure blamed an unreachable next hop. **Fix (9ea8b34):** `srlinux._received` leaves a rejected path out, as every other driver does; a path invalid for any other reason, or an `invalid-reason` that is not a map of booleans, is an error (`DriverError`), never a verdict.
+- **IOP-7, false pass (Junos): the prefix count was Junos's accepted count**, which also leaves out a received route hidden for an unusable next hop (206 received, 205 accepted: `max: 205` and `exact: 205` passed; the reference count, received minus import-policy rejects as FRR, SR Linux and EOS count, is 206). **Fix (9ea8b34):** when received exceeds accepted, the driver reads the peer's hidden routes (`show route receive-protocol bgp <peer> table <table> hidden extensive`, output captured live from cJunosEvolved 26.2R1.7-EVO) and subtracts only those rejected by import policy. A received count lower than accepted is unexpected output. Must-fail tests: the 205 case and the live 3-received/1-accepted capture.
+
+**Cold review of the fix (fresh agent, no context; fixes in 94a6cd4, each test-first):**
+
+| # | Finding | Severity | Fix |
+|---|---|---|---|
+| 1 | Any hidden reason other than "rejected by import policy" was counted as received: a looped or martian route hidden by Junos made `min: 3` pass where the reference count is 2 | BLOCKER (false pass) | Only the two reasons seen live are classified (`REJECTED`, `NEXT_HOP_UNUSABLE`); any other, missing or empty reason keeps the count a range from accepted to received (`BgpNeighbor.prefixes_upto`), and a bound is judged only when the whole range agrees, otherwise the check fails with "can't tell whether the bound holds" |
+| 2 | A failed hidden-route read was swallowed and the accepted count used | MAJOR | The error is kept (`BgpNeighbor.prefixes_unread`); a bound the range can't settle is `Unready` ("error: ...", no usable state), not a verdict |
+| 3 | `record` wrote the lower end of a range as an exact count | MAJOR | A range is not recorded: an INCOMPLETE BASELINE warning asks for a check by hand |
+
+Minor items for 0.4.1 (sent to the coordinator): the runner's convergence stability uses accepted counts only; an SR Linux release that omits `invalid-reason` is not covered; the neighbor and hidden-route reads are two commands (a route can change between them).
+
+**Live repro on a real lab** (labs `ndr-iop6`, `ndr-iop7`, the failing interop cells and their neighbours, under the lab lock): run on 9ea8b34 and again on 8e9a376, with the same results. **Junos (`ndr-iop7`), 7 of 7 cells correct:** the count is 2 (received 3, 1 rejected by import policy); `max: 1` and `exact: 1` (the accepted count only) fail; the route hidden for its next hop is in the BGP table. **SR Linux (`ndr-iop6`):** the rejected route is absent (`present: false` passes) and `active: false` fails ("not active via bgp; seen: nothing"), the old false pass. One extra cell, `bgp_prefixes` expected 1, read 3. The expectation was wrong, not the driver: SR Linux counts 4 received, a looped route among them, and 1 rejected. That is SR Linux's documented loop-detection limit (`received-routes` counts looped routes, `compat_verified.json`). It is out of IOP-6's scope, and the cell is not a gate check.
+
+**Mutation.** `drivers` and `checks` ran fresh at 8e9a376 (`drivers` 3077 mutants, 247 accepted; `checks` 1246, 82 accepted; none unaccepted). New acceptances, each with a class, a reason and its diff fingerprint: `junos._count_hidden` #4 (message text of the unread reason; the check is still `Unready`) and #16 (equivalent: `_table` tests `family == 6` only), `srlinux._received` #11-16 and #23-31 (message text), `srlinux._rib_rows` #26 (the command name passed for error messages only). Nine `_rib_rows` acceptances whose diff context moved were re-fingerprinted (#4, 11, 13, 19-24), unchanged in meaning. `checks._bgp_prefixes` #83 and #84 (the range detail text) are not accepted: a test pins the full message and kills both.
+
+Carried-over mutation records, each byte-identical to 81a49b3 (`git diff 81a49b3 8e9a376` is empty for its source): `config`, `runner`, `verify.engine`, `verify.intent`, `verify.frr`, `verify.snapshot`, `verify.converge`, `verify.run`, `verify.report`. `checks` and `drivers` changed and were mutated fresh.
+
+**Gate on one commit, 8e9a376:** unit (3723 passed, 2 strict xfails: IOP-4, IOP-8), mutation as above, the full live matrix (FRR, SR Linux, Junos, EOS, SONiC examples, corpus v1 and v2, signals, failure modes), the IOP-6/7 repro above, and static last.

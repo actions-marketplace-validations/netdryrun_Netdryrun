@@ -429,6 +429,729 @@ Each mutant below is a deliberate change to the code that no test noticed. In ve
      return data["paths"]
 ```
 
+## `checks._ping` (23)
+
+`netdryrun.checks.x__ping__mutmut_37`: survived (accepted, equivalent: equivalent: separator between evidence entries; no unreachable pattern contains a newline or 'XX', so no match can span or appear at a boundary); argument: Same behaviour on every input the function can receive: separator between evidence entries; no unreachable pattern contains a newline or 'XX', so no match can span or appear at a boundary. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 3: confirmed after the code trace (research/model-reviews/release-0.3.3/adversarial-round3); diff fingerprint `c7591a1d795d5755`
+
+```diff
+# netdryrun.checks.x__ping__mutmut_37: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -3,7 +3,7 @@
+     obs = d.ping(p["target"], p.get("source"), count, p.get("vrf", "default"))
+     sent, received = obs.value
+     if sent == 0:
+-        text = "\n".join(f"{e.get('output', '')}\n{e.get('stderr', '')}" for e in obs.evidence)
++        text = "XX\nXX".join(f"{e.get('output', '')}\n{e.get('stderr', '')}" for e in obs.evidence)
+         m = _UNREACHABLE.search(text)
+         if m:
+             why = f"0/{count} replies (destination unreachable: {m.group(0)})"
+```
+
+`netdryrun.checks.x__ping__mutmut_39`: survived (accepted, equivalent: equivalent: text used for a missing output key; 'None' matches no unreachable pattern); argument: Same behaviour on every input the function can receive: text used for a missing output key; 'None' matches no unreachable pattern. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `bcc965c30c19a214`
+
+```diff
+# netdryrun.checks.x__ping__mutmut_39: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -3,7 +3,7 @@
+     obs = d.ping(p["target"], p.get("source"), count, p.get("vrf", "default"))
+     sent, received = obs.value
+     if sent == 0:
+-        text = "\n".join(f"{e.get('output', '')}\n{e.get('stderr', '')}" for e in obs.evidence)
++        text = "\n".join(f"{e.get('output', None)}\n{e.get('stderr', '')}" for e in obs.evidence)
+         m = _UNREACHABLE.search(text)
+         if m:
+             why = f"0/{count} replies (destination unreachable: {m.group(0)})"
+```
+
+`netdryrun.checks.x__ping__mutmut_41`: survived (accepted, equivalent: equivalent: text used for a missing output key; 'None' matches no unreachable pattern); argument: Same behaviour on every input the function can receive: text used for a missing output key; 'None' matches no unreachable pattern. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `e443436a3ed7d743`
+
+```diff
+# netdryrun.checks.x__ping__mutmut_41: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -3,7 +3,7 @@
+     obs = d.ping(p["target"], p.get("source"), count, p.get("vrf", "default"))
+     sent, received = obs.value
+     if sent == 0:
+-        text = "\n".join(f"{e.get('output', '')}\n{e.get('stderr', '')}" for e in obs.evidence)
++        text = "\n".join(f"{e.get('output', )}\n{e.get('stderr', '')}" for e in obs.evidence)
+         m = _UNREACHABLE.search(text)
+         if m:
+             why = f"0/{count} replies (destination unreachable: {m.group(0)})"
+```
+
+`netdryrun.checks.x__ping__mutmut_44`: survived (accepted, equivalent: equivalent: text used for a missing output key; 'XXXX' matches no unreachable pattern); argument: Same behaviour on every input the function can receive: text used for a missing output key; 'XXXX' matches no unreachable pattern. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `9ceddfc80657f919`
+
+```diff
+# netdryrun.checks.x__ping__mutmut_44: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -3,7 +3,7 @@
+     obs = d.ping(p["target"], p.get("source"), count, p.get("vrf", "default"))
+     sent, received = obs.value
+     if sent == 0:
+-        text = "\n".join(f"{e.get('output', '')}\n{e.get('stderr', '')}" for e in obs.evidence)
++        text = "\n".join(f"{e.get('output', 'XXXX')}\n{e.get('stderr', '')}" for e in obs.evidence)
+         m = _UNREACHABLE.search(text)
+         if m:
+             why = f"0/{count} replies (destination unreachable: {m.group(0)})"
+```
+
+`netdryrun.checks.x__ping__mutmut_46`: survived (accepted, equivalent: equivalent: text used for a missing stderr key; 'None' matches no unreachable pattern); argument: Same behaviour on every input the function can receive: text used for a missing stderr key; 'None' matches no unreachable pattern. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `3426d07abdb75d1a`
+
+```diff
+# netdryrun.checks.x__ping__mutmut_46: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -3,7 +3,7 @@
+     obs = d.ping(p["target"], p.get("source"), count, p.get("vrf", "default"))
+     sent, received = obs.value
+     if sent == 0:
+-        text = "\n".join(f"{e.get('output', '')}\n{e.get('stderr', '')}" for e in obs.evidence)
++        text = "\n".join(f"{e.get('output', '')}\n{e.get('stderr', None)}" for e in obs.evidence)
+         m = _UNREACHABLE.search(text)
+         if m:
+             why = f"0/{count} replies (destination unreachable: {m.group(0)})"
+```
+
+`netdryrun.checks.x__ping__mutmut_48`: survived (accepted, equivalent: equivalent: text used for a missing stderr key; 'None' matches no unreachable pattern); argument: Same behaviour on every input the function can receive: text used for a missing stderr key; 'None' matches no unreachable pattern. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `3e3c5bb2f3c0c41b`
+
+```diff
+# netdryrun.checks.x__ping__mutmut_48: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -3,7 +3,7 @@
+     obs = d.ping(p["target"], p.get("source"), count, p.get("vrf", "default"))
+     sent, received = obs.value
+     if sent == 0:
+-        text = "\n".join(f"{e.get('output', '')}\n{e.get('stderr', '')}" for e in obs.evidence)
++        text = "\n".join(f"{e.get('output', '')}\n{e.get('stderr', )}" for e in obs.evidence)
+         m = _UNREACHABLE.search(text)
+         if m:
+             why = f"0/{count} replies (destination unreachable: {m.group(0)})"
+```
+
+`netdryrun.checks.x__ping__mutmut_51`: survived (accepted, equivalent: equivalent: text used for a missing stderr key; 'XXXX' matches no unreachable pattern); argument: Same behaviour on every input the function can receive: text used for a missing stderr key; 'XXXX' matches no unreachable pattern. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `68f8198d34915ad7`
+
+```diff
+# netdryrun.checks.x__ping__mutmut_51: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -3,7 +3,7 @@
+     obs = d.ping(p["target"], p.get("source"), count, p.get("vrf", "default"))
+     sent, received = obs.value
+     if sent == 0:
+-        text = "\n".join(f"{e.get('output', '')}\n{e.get('stderr', '')}" for e in obs.evidence)
++        text = "\n".join(f"{e.get('output', '')}\n{e.get('stderr', 'XXXX')}" for e in obs.evidence)
+         m = _UNREACHABLE.search(text)
+         if m:
+             why = f"0/{count} replies (destination unreachable: {m.group(0)})"
+```
+
+`netdryrun.checks.x__ping__mutmut_56`: survived (accepted, message-text: message text only: the text of a detail or error message); argument: Changes only text: the text of a detail or error message. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `1242e44765662cc8`
+
+```diff
+# netdryrun.checks.x__ping__mutmut_56: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -6,7 +6,7 @@
+         text = "\n".join(f"{e.get('output', '')}\n{e.get('stderr', '')}" for e in obs.evidence)
+         m = _UNREACHABLE.search(text)
+         if m:
+-            why = f"0/{count} replies (destination unreachable: {m.group(0)})"
++            why = f"0/{count} replies (destination unreachable: {m.group(1)})"
+             if p.get("expect", "success") == "failure":
+                 return True, why, obs.evidence
+             return False, why, obs.evidence
+```
+
+`netdryrun.checks.x__ping__mutmut_58`: survived (accepted, equivalent: equivalent: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect)); argument: Same behaviour on every input the function can receive: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect). So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `d31744d77ab02484`
+
+```diff
+# netdryrun.checks.x__ping__mutmut_58: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -7,7 +7,7 @@
+         m = _UNREACHABLE.search(text)
+         if m:
+             why = f"0/{count} replies (destination unreachable: {m.group(0)})"
+-            if p.get("expect", "success") == "failure":
++            if p.get("expect", None) == "failure":
+                 return True, why, obs.evidence
+             return False, why, obs.evidence
+     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
+```
+
+`netdryrun.checks.x__ping__mutmut_60`: survived (accepted, equivalent: equivalent: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect)); argument: Same behaviour on every input the function can receive: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect). So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `8a95bb014039ee73`
+
+```diff
+# netdryrun.checks.x__ping__mutmut_60: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -7,7 +7,7 @@
+         m = _UNREACHABLE.search(text)
+         if m:
+             why = f"0/{count} replies (destination unreachable: {m.group(0)})"
+-            if p.get("expect", "success") == "failure":
++            if p.get("expect", ) == "failure":
+                 return True, why, obs.evidence
+             return False, why, obs.evidence
+     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
+```
+
+`netdryrun.checks.x__ping__mutmut_63`: survived (accepted, equivalent: equivalent: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect)); argument: Same behaviour on every input the function can receive: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect). So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `61fae5418dd35b57`
+
+```diff
+# netdryrun.checks.x__ping__mutmut_63: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -7,7 +7,7 @@
+         m = _UNREACHABLE.search(text)
+         if m:
+             why = f"0/{count} replies (destination unreachable: {m.group(0)})"
+-            if p.get("expect", "success") == "failure":
++            if p.get("expect", "XXsuccessXX") == "failure":
+                 return True, why, obs.evidence
+             return False, why, obs.evidence
+     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
+```
+
+`netdryrun.checks.x__ping__mutmut_64`: survived (accepted, equivalent: equivalent: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect)); argument: Same behaviour on every input the function can receive: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect). So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `bd66698206cc5d6a`
+
+```diff
+# netdryrun.checks.x__ping__mutmut_64: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -7,7 +7,7 @@
+         m = _UNREACHABLE.search(text)
+         if m:
+             why = f"0/{count} replies (destination unreachable: {m.group(0)})"
+-            if p.get("expect", "success") == "failure":
++            if p.get("expect", "SUCCESS") == "failure":
+                 return True, why, obs.evidence
+             return False, why, obs.evidence
+     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
+```
+
+`netdryrun.checks.x__ping__mutmut_72`: survived (accepted, message-text: message text only: the stderr quoted in the 'ping did not run' detail); argument: Changes only text: the stderr quoted in the 'ping did not run' detail. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `b96d73dec294704d`
+
+```diff
+# netdryrun.checks.x__ping__mutmut_72: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -11,7 +11,7 @@
+                 return True, why, obs.evidence
+             return False, why, obs.evidence
+     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
+-        err = obs.evidence[-1].get("stderr", "").strip() if obs.evidence else ""
++        err = None
+         return False, f"error: ping did not run{': ' + err if err else ''}", obs.evidence
+     if p.get("expect", "success") == "success":
+         need = int(p.get("min_replies", max(1, sent - 1)))  # tolerate one lost packet (first-packet ARP)
+```
+
+`netdryrun.checks.x__ping__mutmut_73`: survived (accepted, message-text: message text only: the stderr quoted in the 'ping did not run' detail); argument: Changes only text: the stderr quoted in the 'ping did not run' detail. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `de103690e3e24530`
+
+```diff
+# netdryrun.checks.x__ping__mutmut_73: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -11,7 +11,7 @@
+                 return True, why, obs.evidence
+             return False, why, obs.evidence
+     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
+-        err = obs.evidence[-1].get("stderr", "").strip() if obs.evidence else ""
++        err = obs.evidence[-1].get("stderr", "").strip() if (obs.evidence) and False else ""
+         return False, f"error: ping did not run{': ' + err if err else ''}", obs.evidence
+     if p.get("expect", "success") == "success":
+         need = int(p.get("min_replies", max(1, sent - 1)))  # tolerate one lost packet (first-packet ARP)
+```
+
+`netdryrun.checks.x__ping__mutmut_75`: survived (accepted, message-text: message text only: the stderr quoted in the 'ping did not run' detail); argument: Changes only text: the stderr quoted in the 'ping did not run' detail. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `a2fd27cd72eae81e`
+
+```diff
+# netdryrun.checks.x__ping__mutmut_75: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -11,7 +11,7 @@
+                 return True, why, obs.evidence
+             return False, why, obs.evidence
+     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
+-        err = obs.evidence[-1].get("stderr", "").strip() if obs.evidence else ""
++        err = obs.evidence[-1].get(None, "").strip() if obs.evidence else ""
+         return False, f"error: ping did not run{': ' + err if err else ''}", obs.evidence
+     if p.get("expect", "success") == "success":
+         need = int(p.get("min_replies", max(1, sent - 1)))  # tolerate one lost packet (first-packet ARP)
+```
+
+`netdryrun.checks.x__ping__mutmut_81`: survived (accepted, message-text: message text only: the stderr quoted in the 'ping did not run' detail); argument: Changes only text: the stderr quoted in the 'ping did not run' detail. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `592dce8496e84aba`
+
+```diff
+# netdryrun.checks.x__ping__mutmut_81: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -11,7 +11,7 @@
+                 return True, why, obs.evidence
+             return False, why, obs.evidence
+     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
+-        err = obs.evidence[-1].get("stderr", "").strip() if obs.evidence else ""
++        err = obs.evidence[-1].get("XXstderrXX", "").strip() if obs.evidence else ""
+         return False, f"error: ping did not run{': ' + err if err else ''}", obs.evidence
+     if p.get("expect", "success") == "success":
+         need = int(p.get("min_replies", max(1, sent - 1)))  # tolerate one lost packet (first-packet ARP)
+```
+
+`netdryrun.checks.x__ping__mutmut_82`: survived (accepted, message-text: message text only: the stderr quoted in the 'ping did not run' detail); argument: Changes only text: the stderr quoted in the 'ping did not run' detail. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `bc504b531c23c544`
+
+```diff
+# netdryrun.checks.x__ping__mutmut_82: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -11,7 +11,7 @@
+                 return True, why, obs.evidence
+             return False, why, obs.evidence
+     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
+-        err = obs.evidence[-1].get("stderr", "").strip() if obs.evidence else ""
++        err = obs.evidence[-1].get("STDERR", "").strip() if obs.evidence else ""
+         return False, f"error: ping did not run{': ' + err if err else ''}", obs.evidence
+     if p.get("expect", "success") == "success":
+         need = int(p.get("min_replies", max(1, sent - 1)))  # tolerate one lost packet (first-packet ARP)
+```
+
+`netdryrun.checks.x__ping__mutmut_83`: survived (accepted, message-text: message text only: the stderr quoted in the 'ping did not run' detail); argument: Changes only text: the stderr quoted in the 'ping did not run' detail. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `b307ca86822a2867`
+
+```diff
+# netdryrun.checks.x__ping__mutmut_83: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -11,7 +11,7 @@
+                 return True, why, obs.evidence
+             return False, why, obs.evidence
+     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
+-        err = obs.evidence[-1].get("stderr", "").strip() if obs.evidence else ""
++        err = obs.evidence[-1].get("stderr", "XXXX").strip() if obs.evidence else ""
+         return False, f"error: ping did not run{': ' + err if err else ''}", obs.evidence
+     if p.get("expect", "success") == "success":
+         need = int(p.get("min_replies", max(1, sent - 1)))  # tolerate one lost packet (first-packet ARP)
+```
+
+`netdryrun.checks.x__ping__mutmut_84`: survived (accepted, message-text: message text only: the stderr quoted in the 'ping did not run' detail); argument: Changes only text: the stderr quoted in the 'ping did not run' detail. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `7ec2812d16c91f5d`
+
+```diff
+# netdryrun.checks.x__ping__mutmut_84: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -11,7 +11,7 @@
+                 return True, why, obs.evidence
+             return False, why, obs.evidence
+     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
+-        err = obs.evidence[-1].get("stderr", "").strip() if obs.evidence else ""
++        err = obs.evidence[-1].get("stderr", "").strip() if obs.evidence else "XXXX"
+         return False, f"error: ping did not run{': ' + err if err else ''}", obs.evidence
+     if p.get("expect", "success") == "success":
+         need = int(p.get("min_replies", max(1, sent - 1)))  # tolerate one lost packet (first-packet ARP)
+```
+
+`netdryrun.checks.x__ping__mutmut_86`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `5511d05a5b0e53e9`
+
+```diff
+# netdryrun.checks.x__ping__mutmut_86: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -12,7 +12,7 @@
+             return False, why, obs.evidence
+     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
+         err = obs.evidence[-1].get("stderr", "").strip() if obs.evidence else ""
+-        return False, f"error: ping did not run{': ' + err if err else ''}", obs.evidence
++        return False, f"error: ping did not run{': ' + err if (err) and False else ''}", obs.evidence
+     if p.get("expect", "success") == "success":
+         need = int(p.get("min_replies", max(1, sent - 1)))  # tolerate one lost packet (first-packet ARP)
+         return received >= need, f"{received}/{sent} replies (need {need})", obs.evidence
+```
+
+`netdryrun.checks.x__ping__mutmut_87`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `825e8177cd4c8917`
+
+```diff
+# netdryrun.checks.x__ping__mutmut_87: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -12,7 +12,7 @@
+             return False, why, obs.evidence
+     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
+         err = obs.evidence[-1].get("stderr", "").strip() if obs.evidence else ""
+-        return False, f"error: ping did not run{': ' + err if err else ''}", obs.evidence
++        return False, f"error: ping did not run{': ' + err if (err) or True else ''}", obs.evidence
+     if p.get("expect", "success") == "success":
+         need = int(p.get("min_replies", max(1, sent - 1)))  # tolerate one lost packet (first-packet ARP)
+         return received >= need, f"{received}/{sent} replies (need {need})", obs.evidence
+```
+
+`netdryrun.checks.x__ping__mutmut_89`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `782421908c1d392e`
+
+```diff
+# netdryrun.checks.x__ping__mutmut_89: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -12,7 +12,7 @@
+             return False, why, obs.evidence
+     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
+         err = obs.evidence[-1].get("stderr", "").strip() if obs.evidence else ""
+-        return False, f"error: ping did not run{': ' + err if err else ''}", obs.evidence
++        return False, f"error: ping did not run{'XX: XX' + err if err else ''}", obs.evidence
+     if p.get("expect", "success") == "success":
+         need = int(p.get("min_replies", max(1, sent - 1)))  # tolerate one lost packet (first-packet ARP)
+         return received >= need, f"{received}/{sent} replies (need {need})", obs.evidence
+```
+
+`netdryrun.checks.x__ping__mutmut_90`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `7ec627e2a475b906`
+
+```diff
+# netdryrun.checks.x__ping__mutmut_90: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -12,7 +12,7 @@
+             return False, why, obs.evidence
+     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
+         err = obs.evidence[-1].get("stderr", "").strip() if obs.evidence else ""
+-        return False, f"error: ping did not run{': ' + err if err else ''}", obs.evidence
++        return False, f"error: ping did not run{': ' + err if err else 'XXXX'}", obs.evidence
+     if p.get("expect", "success") == "success":
+         need = int(p.get("min_replies", max(1, sent - 1)))  # tolerate one lost packet (first-packet ARP)
+         return received >= need, f"{received}/{sent} replies (need {need})", obs.evidence
+```
+
+## `checks._route` (20)
+
+`netdryrun.checks.x__route__mutmut_32`: survived (accepted, equivalent: equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'); argument: Same behaviour on every input the function can receive: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `69ae803e4824b276`
+
+```diff
+# netdryrun.checks.x__route__mutmut_32: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -5,7 +5,7 @@
+     active = [r for r in matching if r.active]
+     # `is not False`, the same test is_post_convergence uses, so the evaluator and the scheduler can never
+     # disagree on what a check means (config validation already insists on a real boolean)
+-    if p.get("present", True) is not False:
++    if p.get("present", None) is not False:
+         if active:
+             return True, f"active via {active[0].protocol}", obs.evidence
+         if p.get("active", True) is False and matching:
+```
+
+`netdryrun.checks.x__route__mutmut_34`: survived (accepted, equivalent: equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'); argument: Same behaviour on every input the function can receive: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `ed34e860b4b14741`
+
+```diff
+# netdryrun.checks.x__route__mutmut_34: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -5,7 +5,7 @@
+     active = [r for r in matching if r.active]
+     # `is not False`, the same test is_post_convergence uses, so the evaluator and the scheduler can never
+     # disagree on what a check means (config validation already insists on a real boolean)
+-    if p.get("present", True) is not False:
++    if p.get("present", ) is not False:
+         if active:
+             return True, f"active via {active[0].protocol}", obs.evidence
+         if p.get("active", True) is False and matching:
+```
+
+`netdryrun.checks.x__route__mutmut_44`: survived (accepted, equivalent: equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'); argument: Same behaviour on every input the function can receive: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `79c20ed0ddfaf432`
+
+```diff
+# netdryrun.checks.x__route__mutmut_44: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -8,7 +8,7 @@
+     if p.get("present", True) is not False:
+         if active:
+             return True, f"active via {active[0].protocol}", obs.evidence
+-        if p.get("active", True) is False and matching:
++        if p.get("active", None) is False and matching:
+             # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
+             return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
+         seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
+```
+
+`netdryrun.checks.x__route__mutmut_46`: survived (accepted, equivalent: equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'); argument: Same behaviour on every input the function can receive: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `32255ffebb371b50`
+
+```diff
+# netdryrun.checks.x__route__mutmut_46: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -8,7 +8,7 @@
+     if p.get("present", True) is not False:
+         if active:
+             return True, f"active via {active[0].protocol}", obs.evidence
+-        if p.get("active", True) is False and matching:
++        if p.get("active", ) is False and matching:
+             # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
+             return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
+         seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
+```
+
+`netdryrun.checks.x__route__mutmut_57`: survived (accepted, message-text: message text only: the text of a detail or error message); argument: Changes only text: the text of a detail or error message. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `1ba2110fc7d34fe8`
+
+```diff
+# netdryrun.checks.x__route__mutmut_57: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -11,7 +11,7 @@
+         if p.get("active", True) is False and matching:
+             # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
+             return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
+-        seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
++        seen = "XX, XX".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
+         return False, f"not active{' via ' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
+     # Absent means not in the routing table at all: a received-but-not-selected route
+     # (e.g. a leaked default losing to a local one) is still a leak.
+```
+
+`netdryrun.checks.x__route__mutmut_58`: survived (accepted, message-text: message text only: the text of a detail or error message); argument: Changes only text: the text of a detail or error message. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `3af93d9cce0bb518`
+
+```diff
+# netdryrun.checks.x__route__mutmut_58: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -11,7 +11,7 @@
+         if p.get("active", True) is False and matching:
+             # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
+             return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
+-        seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
++        seen = ", ".join(f"{r.protocol}{'' if (r.active) and False else ' (inactive)'}" for r in obs.value) or "nothing"
+         return False, f"not active{' via ' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
+     # Absent means not in the routing table at all: a received-but-not-selected route
+     # (e.g. a leaked default losing to a local one) is still a leak.
+```
+
+`netdryrun.checks.x__route__mutmut_60`: survived (accepted, message-text: message text only: the text of a detail or error message); argument: Changes only text: the text of a detail or error message. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `892953c2fb42d6e2`
+
+```diff
+# netdryrun.checks.x__route__mutmut_60: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -11,7 +11,7 @@
+         if p.get("active", True) is False and matching:
+             # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
+             return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
+-        seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
++        seen = ", ".join(f"{r.protocol}{'XXXX' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
+         return False, f"not active{' via ' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
+     # Absent means not in the routing table at all: a received-but-not-selected route
+     # (e.g. a leaked default losing to a local one) is still a leak.
+```
+
+`netdryrun.checks.x__route__mutmut_61`: survived (accepted, message-text: message text only: the text of a detail or error message); argument: Changes only text: the text of a detail or error message. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `6bd3c1555c4ff862`
+
+```diff
+# netdryrun.checks.x__route__mutmut_61: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -11,7 +11,7 @@
+         if p.get("active", True) is False and matching:
+             # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
+             return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
+-        seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
++        seen = ", ".join(f"{r.protocol}{'' if r.active else 'XX (inactive)XX'}" for r in obs.value) or "nothing"
+         return False, f"not active{' via ' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
+     # Absent means not in the routing table at all: a received-but-not-selected route
+     # (e.g. a leaked default losing to a local one) is still a leak.
+```
+
+`netdryrun.checks.x__route__mutmut_63`: survived (accepted, message-text: message text only: the text of a detail or error message); argument: Changes only text: the text of a detail or error message. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `054d9decca0eb7bd`
+
+```diff
+# netdryrun.checks.x__route__mutmut_63: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -11,7 +11,7 @@
+         if p.get("active", True) is False and matching:
+             # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
+             return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
+-        seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
++        seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "XXnothingXX"
+         return False, f"not active{' via ' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
+     # Absent means not in the routing table at all: a received-but-not-selected route
+     # (e.g. a leaked default losing to a local one) is still a leak.
+```
+
+`netdryrun.checks.x__route__mutmut_64`: survived (accepted, message-text: message text only: the text of a detail or error message); argument: Changes only text: the text of a detail or error message. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `0ecd1737e9af0350`
+
+```diff
+# netdryrun.checks.x__route__mutmut_64: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -11,7 +11,7 @@
+         if p.get("active", True) is False and matching:
+             # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
+             return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
+-        seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
++        seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "NOTHING"
+         return False, f"not active{' via ' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
+     # Absent means not in the routing table at all: a received-but-not-selected route
+     # (e.g. a leaked default losing to a local one) is still a leak.
+```
+
+`netdryrun.checks.x__route__mutmut_66`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `1e9055e8e477cb19`
+
+```diff
+# netdryrun.checks.x__route__mutmut_66: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -12,7 +12,7 @@
+             # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
+             return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
+         seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
+-        return False, f"not active{' via ' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
++        return False, f"not active{' via ' + want_proto if (want_proto) and False else ''}; seen: {seen}", obs.evidence
+     # Absent means not in the routing table at all: a received-but-not-selected route
+     # (e.g. a leaked default losing to a local one) is still a leak.
+     if matching:
+```
+
+`netdryrun.checks.x__route__mutmut_67`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `e679f4bd983ca5c8`
+
+```diff
+# netdryrun.checks.x__route__mutmut_67: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -12,7 +12,7 @@
+             # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
+             return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
+         seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
+-        return False, f"not active{' via ' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
++        return False, f"not active{' via ' + want_proto if (want_proto) or True else ''}; seen: {seen}", obs.evidence
+     # Absent means not in the routing table at all: a received-but-not-selected route
+     # (e.g. a leaked default losing to a local one) is still a leak.
+     if matching:
+```
+
+`netdryrun.checks.x__route__mutmut_69`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `7648d4978cb45185`
+
+```diff
+# netdryrun.checks.x__route__mutmut_69: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -12,7 +12,7 @@
+             # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
+             return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
+         seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
+-        return False, f"not active{' via ' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
++        return False, f"not active{'XX via XX' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
+     # Absent means not in the routing table at all: a received-but-not-selected route
+     # (e.g. a leaked default losing to a local one) is still a leak.
+     if matching:
+```
+
+`netdryrun.checks.x__route__mutmut_70`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `459833adcb0f6ad9`
+
+```diff
+# netdryrun.checks.x__route__mutmut_70: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -12,7 +12,7 @@
+             # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
+             return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
+         seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
+-        return False, f"not active{' via ' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
++        return False, f"not active{' VIA ' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
+     # Absent means not in the routing table at all: a received-but-not-selected route
+     # (e.g. a leaked default losing to a local one) is still a leak.
+     if matching:
+```
+
+`netdryrun.checks.x__route__mutmut_71`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `ddc4a38953bb8cb9`
+
+```diff
+# netdryrun.checks.x__route__mutmut_71: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -12,7 +12,7 @@
+             # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
+             return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
+         seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
+-        return False, f"not active{' via ' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
++        return False, f"not active{' via ' + want_proto if want_proto else 'XXXX'}; seen: {seen}", obs.evidence
+     # Absent means not in the routing table at all: a received-but-not-selected route
+     # (e.g. a leaked default losing to a local one) is still a leak.
+     if matching:
+```
+
+`netdryrun.checks.x__route__mutmut_75`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `0d668104e6011fd5`
+
+```diff
+# netdryrun.checks.x__route__mutmut_75: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -17,5 +17,5 @@
+     # (e.g. a leaked default losing to a local one) is still a leak.
+     if matching:
+         r = matching[0]
+-        return False, f"unexpectedly present via {r.protocol}{'' if r.active else ' (not selected)'}", obs.evidence
++        return False, f"unexpectedly present via {r.protocol}{'' if (r.active) and False else ' (not selected)'}", obs.evidence
+     return True, "absent", obs.evidence
+```
+
+`netdryrun.checks.x__route__mutmut_77`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `5fa2ee3a77630a7a`
+
+```diff
+# netdryrun.checks.x__route__mutmut_77: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -17,5 +17,5 @@
+     # (e.g. a leaked default losing to a local one) is still a leak.
+     if matching:
+         r = matching[0]
+-        return False, f"unexpectedly present via {r.protocol}{'' if r.active else ' (not selected)'}", obs.evidence
++        return False, f"unexpectedly present via {r.protocol}{'XXXX' if r.active else ' (not selected)'}", obs.evidence
+     return True, "absent", obs.evidence
+```
+
+`netdryrun.checks.x__route__mutmut_78`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `af3d0000780c5f26`
+
+```diff
+# netdryrun.checks.x__route__mutmut_78: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -17,5 +17,5 @@
+     # (e.g. a leaked default losing to a local one) is still a leak.
+     if matching:
+         r = matching[0]
+-        return False, f"unexpectedly present via {r.protocol}{'' if r.active else ' (not selected)'}", obs.evidence
++        return False, f"unexpectedly present via {r.protocol}{'' if r.active else 'XX (not selected)XX'}", obs.evidence
+     return True, "absent", obs.evidence
+```
+
+`netdryrun.checks.x__route__mutmut_81`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `e00117cd4cb5d2d8`
+
+```diff
+# netdryrun.checks.x__route__mutmut_81: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -18,4 +18,4 @@
+     if matching:
+         r = matching[0]
+         return False, f"unexpectedly present via {r.protocol}{'' if r.active else ' (not selected)'}", obs.evidence
+-    return True, "absent", obs.evidence
++    return True, "XXabsentXX", obs.evidence
+```
+
+`netdryrun.checks.x__route__mutmut_82`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `053b4b1c00ac88da`
+
+```diff
+# netdryrun.checks.x__route__mutmut_82: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -18,4 +18,4 @@
+     if matching:
+         r = matching[0]
+         return False, f"unexpectedly present via {r.protocol}{'' if r.active else ' (not selected)'}", obs.evidence
+-    return True, "absent", obs.evidence
++    return True, "ABSENT", obs.evidence
+```
+
 ## `drivers.frr._route_table` (18)
 
 `netdryrun.drivers.frr.x__route_table__mutmut_10`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `7d96088b6aa52080`
@@ -1241,6 +1964,252 @@ Each mutant below is a deliberate change to the code that no test noticed. In ve
          if not isinstance(e, dict) or not isinstance(e.get("bgpRoutePaths"), list):
 ```
 
+## `drivers.srlinux._received` (15)
+
+`netdryrun.drivers.srlinux.x__received__mutmut_11`: survived (accepted, message-text: message text only: the command name or text in the unexpected-output error; a missing argument becomes a TypeError that the parser wrapper (parse_routes, parse_rib_paths) turns into the same DriverError); diff fingerprint `f9ec37976e806dcf`
+
+```diff
+# netdryrun.drivers.srlinux.x__received__mutmut_11: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -6,7 +6,7 @@
+     if why is None:
+         return True
+     if not isinstance(why, dict) or not all(isinstance(v, bool) for v in why.values()):
+-        raise unexpected(RIB_CMD, f"invalid-reason {str(why)[:100]}")
++        raise unexpected(None, f"invalid-reason {str(why)[:100]}")
+     reasons = sorted(k for k, v in why.items() if v)
+     if any(k != "rejected-route" for k in reasons):
+         raise DriverError(f"{row.get('prefix')}: the path from {row.get('neighbor')} is invalid for "
+```
+
+`netdryrun.drivers.srlinux.x__received__mutmut_12`: survived (accepted, message-text: message text only: the command name or text in the unexpected-output error; a missing argument becomes a TypeError that the parser wrapper (parse_routes, parse_rib_paths) turns into the same DriverError); diff fingerprint `e8958be398620fbe`
+
+```diff
+# netdryrun.drivers.srlinux.x__received__mutmut_12: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -6,7 +6,7 @@
+     if why is None:
+         return True
+     if not isinstance(why, dict) or not all(isinstance(v, bool) for v in why.values()):
+-        raise unexpected(RIB_CMD, f"invalid-reason {str(why)[:100]}")
++        raise unexpected(RIB_CMD, None)
+     reasons = sorted(k for k, v in why.items() if v)
+     if any(k != "rejected-route" for k in reasons):
+         raise DriverError(f"{row.get('prefix')}: the path from {row.get('neighbor')} is invalid for "
+```
+
+`netdryrun.drivers.srlinux.x__received__mutmut_13`: survived (accepted, message-text: message text only: the command name or text in the unexpected-output error; a missing argument becomes a TypeError that the parser wrapper (parse_routes, parse_rib_paths) turns into the same DriverError); diff fingerprint `b346c618bfc1c503`
+
+```diff
+# netdryrun.drivers.srlinux.x__received__mutmut_13: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -6,7 +6,7 @@
+     if why is None:
+         return True
+     if not isinstance(why, dict) or not all(isinstance(v, bool) for v in why.values()):
+-        raise unexpected(RIB_CMD, f"invalid-reason {str(why)[:100]}")
++        raise unexpected(f"invalid-reason {str(why)[:100]}")
+     reasons = sorted(k for k, v in why.items() if v)
+     if any(k != "rejected-route" for k in reasons):
+         raise DriverError(f"{row.get('prefix')}: the path from {row.get('neighbor')} is invalid for "
+```
+
+`netdryrun.drivers.srlinux.x__received__mutmut_14`: survived (accepted, message-text: message text only: the command name or text in the unexpected-output error; a missing argument becomes a TypeError that the parser wrapper (parse_routes, parse_rib_paths) turns into the same DriverError); diff fingerprint `59d3dcad22a15c9d`
+
+```diff
+# netdryrun.drivers.srlinux.x__received__mutmut_14: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -6,7 +6,7 @@
+     if why is None:
+         return True
+     if not isinstance(why, dict) or not all(isinstance(v, bool) for v in why.values()):
+-        raise unexpected(RIB_CMD, f"invalid-reason {str(why)[:100]}")
++        raise unexpected(RIB_CMD, )
+     reasons = sorted(k for k, v in why.items() if v)
+     if any(k != "rejected-route" for k in reasons):
+         raise DriverError(f"{row.get('prefix')}: the path from {row.get('neighbor')} is invalid for "
+```
+
+`netdryrun.drivers.srlinux.x__received__mutmut_15`: survived (accepted, message-text: message text only: the command name or text in the unexpected-output error; a missing argument becomes a TypeError that the parser wrapper (parse_routes, parse_rib_paths) turns into the same DriverError); diff fingerprint `b6e8b14df6c35435`
+
+```diff
+# netdryrun.drivers.srlinux.x__received__mutmut_15: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -6,7 +6,7 @@
+     if why is None:
+         return True
+     if not isinstance(why, dict) or not all(isinstance(v, bool) for v in why.values()):
+-        raise unexpected(RIB_CMD, f"invalid-reason {str(why)[:100]}")
++        raise unexpected(RIB_CMD, f"invalid-reason {str(None)[:100]}")
+     reasons = sorted(k for k, v in why.items() if v)
+     if any(k != "rejected-route" for k in reasons):
+         raise DriverError(f"{row.get('prefix')}: the path from {row.get('neighbor')} is invalid for "
+```
+
+`netdryrun.drivers.srlinux.x__received__mutmut_16`: survived (accepted, message-text: message text only: the command name or text in the unexpected-output error; a missing argument becomes a TypeError that the parser wrapper (parse_routes, parse_rib_paths) turns into the same DriverError); diff fingerprint `8222985255758cc2`
+
+```diff
+# netdryrun.drivers.srlinux.x__received__mutmut_16: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -6,7 +6,7 @@
+     if why is None:
+         return True
+     if not isinstance(why, dict) or not all(isinstance(v, bool) for v in why.values()):
+-        raise unexpected(RIB_CMD, f"invalid-reason {str(why)[:100]}")
++        raise unexpected(RIB_CMD, f"invalid-reason {str(why)[:101]}")
+     reasons = sorted(k for k, v in why.items() if v)
+     if any(k != "rejected-route" for k in reasons):
+         raise DriverError(f"{row.get('prefix')}: the path from {row.get('neighbor')} is invalid for "
+```
+
+`netdryrun.drivers.srlinux.x__received__mutmut_23`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `0049d1eaed6eab99`
+
+```diff
+# netdryrun.drivers.srlinux.x__received__mutmut_23: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -9,6 +9,5 @@
+         raise unexpected(RIB_CMD, f"invalid-reason {str(why)[:100]}")
+     reasons = sorted(k for k, v in why.items() if v)
+     if any(k != "rejected-route" for k in reasons):
+-        raise DriverError(f"{row.get('prefix')}: the path from {row.get('neighbor')} is invalid for "
+-                          f"{', '.join(reasons)}, a reason the srlinux driver doesn't read yet")
++        raise DriverError(None)
+     return not reasons
+```
+
+`netdryrun.drivers.srlinux.x__received__mutmut_24`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `29cb46bc0946877e`
+
+```diff
+# netdryrun.drivers.srlinux.x__received__mutmut_24: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -9,6 +9,6 @@
+         raise unexpected(RIB_CMD, f"invalid-reason {str(why)[:100]}")
+     reasons = sorted(k for k, v in why.items() if v)
+     if any(k != "rejected-route" for k in reasons):
+-        raise DriverError(f"{row.get('prefix')}: the path from {row.get('neighbor')} is invalid for "
++        raise DriverError(f"{row.get(None)}: the path from {row.get('neighbor')} is invalid for "
+                           f"{', '.join(reasons)}, a reason the srlinux driver doesn't read yet")
+     return not reasons
+```
+
+`netdryrun.drivers.srlinux.x__received__mutmut_25`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `c89bf066a32ced30`
+
+```diff
+# netdryrun.drivers.srlinux.x__received__mutmut_25: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -9,6 +9,6 @@
+         raise unexpected(RIB_CMD, f"invalid-reason {str(why)[:100]}")
+     reasons = sorted(k for k, v in why.items() if v)
+     if any(k != "rejected-route" for k in reasons):
+-        raise DriverError(f"{row.get('prefix')}: the path from {row.get('neighbor')} is invalid for "
++        raise DriverError(f"{row.get('XXprefixXX')}: the path from {row.get('neighbor')} is invalid for "
+                           f"{', '.join(reasons)}, a reason the srlinux driver doesn't read yet")
+     return not reasons
+```
+
+`netdryrun.drivers.srlinux.x__received__mutmut_26`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `de952338310aca2a`
+
+```diff
+# netdryrun.drivers.srlinux.x__received__mutmut_26: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -9,6 +9,6 @@
+         raise unexpected(RIB_CMD, f"invalid-reason {str(why)[:100]}")
+     reasons = sorted(k for k, v in why.items() if v)
+     if any(k != "rejected-route" for k in reasons):
+-        raise DriverError(f"{row.get('prefix')}: the path from {row.get('neighbor')} is invalid for "
++        raise DriverError(f"{row.get('PREFIX')}: the path from {row.get('neighbor')} is invalid for "
+                           f"{', '.join(reasons)}, a reason the srlinux driver doesn't read yet")
+     return not reasons
+```
+
+`netdryrun.drivers.srlinux.x__received__mutmut_27`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `93c8315f63e369d8`
+
+```diff
+# netdryrun.drivers.srlinux.x__received__mutmut_27: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -9,6 +9,6 @@
+         raise unexpected(RIB_CMD, f"invalid-reason {str(why)[:100]}")
+     reasons = sorted(k for k, v in why.items() if v)
+     if any(k != "rejected-route" for k in reasons):
+-        raise DriverError(f"{row.get('prefix')}: the path from {row.get('neighbor')} is invalid for "
++        raise DriverError(f"{row.get('prefix')}: the path from {row.get(None)} is invalid for "
+                           f"{', '.join(reasons)}, a reason the srlinux driver doesn't read yet")
+     return not reasons
+```
+
+`netdryrun.drivers.srlinux.x__received__mutmut_28`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `26ecf33179056368`
+
+```diff
+# netdryrun.drivers.srlinux.x__received__mutmut_28: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -9,6 +9,6 @@
+         raise unexpected(RIB_CMD, f"invalid-reason {str(why)[:100]}")
+     reasons = sorted(k for k, v in why.items() if v)
+     if any(k != "rejected-route" for k in reasons):
+-        raise DriverError(f"{row.get('prefix')}: the path from {row.get('neighbor')} is invalid for "
++        raise DriverError(f"{row.get('prefix')}: the path from {row.get('XXneighborXX')} is invalid for "
+                           f"{', '.join(reasons)}, a reason the srlinux driver doesn't read yet")
+     return not reasons
+```
+
+`netdryrun.drivers.srlinux.x__received__mutmut_29`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `c5f2adfa9da0aff9`
+
+```diff
+# netdryrun.drivers.srlinux.x__received__mutmut_29: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -9,6 +9,6 @@
+         raise unexpected(RIB_CMD, f"invalid-reason {str(why)[:100]}")
+     reasons = sorted(k for k, v in why.items() if v)
+     if any(k != "rejected-route" for k in reasons):
+-        raise DriverError(f"{row.get('prefix')}: the path from {row.get('neighbor')} is invalid for "
++        raise DriverError(f"{row.get('prefix')}: the path from {row.get('NEIGHBOR')} is invalid for "
+                           f"{', '.join(reasons)}, a reason the srlinux driver doesn't read yet")
+     return not reasons
+```
+
+`netdryrun.drivers.srlinux.x__received__mutmut_30`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `411da6e71fe6233b`
+
+```diff
+# netdryrun.drivers.srlinux.x__received__mutmut_30: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -10,5 +10,5 @@
+     reasons = sorted(k for k, v in why.items() if v)
+     if any(k != "rejected-route" for k in reasons):
+         raise DriverError(f"{row.get('prefix')}: the path from {row.get('neighbor')} is invalid for "
+-                          f"{', '.join(reasons)}, a reason the srlinux driver doesn't read yet")
++                          f"{', '.join(None)}, a reason the srlinux driver doesn't read yet")
+     return not reasons
+```
+
+`netdryrun.drivers.srlinux.x__received__mutmut_31`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `a9df1c7c11e92ee4`
+
+```diff
+# netdryrun.drivers.srlinux.x__received__mutmut_31: survived
+--- src/netdryrun/drivers/srlinux.py
++++ src/netdryrun/drivers/srlinux.py
+@@ -10,5 +10,5 @@
+     reasons = sorted(k for k, v in why.items() if v)
+     if any(k != "rejected-route" for k in reasons):
+         raise DriverError(f"{row.get('prefix')}: the path from {row.get('neighbor')} is invalid for "
+-                          f"{', '.join(reasons)}, a reason the srlinux driver doesn't read yet")
++                          f"{'XX, XX'.join(reasons)}, a reason the srlinux driver doesn't read yet")
+     return not reasons
+```
+
 ## `drivers.eos._vrf` (12)
 
 `netdryrun.drivers.eos.x__vrf__mutmut_12`: survived (accepted, message-text: message text only: the text of the NoSuchInstance raised either way); diff fingerprint `f9f70159b8385cac`
@@ -1439,16 +2408,183 @@ Each mutant below is a deliberate change to the code that no test noticed. In ve
                            f"{', '.join(sorted(map(str, vrfs))) or 'none'}): it does not exist, or this "
 ```
 
+## `checks._describe_path` (11)
+
+`netdryrun.checks.x__describe_path__mutmut_10`: survived (accepted, message-text: message text only: the description of a best path inside a detail); diff fingerprint `ea26769c5b005a6d`
+
+```diff
+# netdryrun.checks.x__describe_path__mutmut_10: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -1,5 +1,5 @@
+ def _describe_path(path) -> str:
+     comms = " ".join(community_name(c) for c in path.all_communities()) or "none"
+-    as_path = "?" if path.as_path is None else f"'{path.as_path}'"
++    as_path = "?" if (path.as_path is None) or True else f"'{path.as_path}'"
+     return (f"as-path {as_path}, next hop {path.next_hop or '?'}, local-pref {_opt(path.local_pref)}, "
+             f"MED {_opt(path.med)}, communities {comms}")
+```
+
+`netdryrun.checks.x__describe_path__mutmut_11`: survived (accepted, message-text: message text only: the text of a detail or error message); diff fingerprint `716e1462b3c031d7`
+
+```diff
+# netdryrun.checks.x__describe_path__mutmut_11: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -1,5 +1,5 @@
+ def _describe_path(path) -> str:
+     comms = " ".join(community_name(c) for c in path.all_communities()) or "none"
+-    as_path = "?" if path.as_path is None else f"'{path.as_path}'"
++    as_path = "XX?XX" if path.as_path is None else f"'{path.as_path}'"
+     return (f"as-path {as_path}, next hop {path.next_hop or '?'}, local-pref {_opt(path.local_pref)}, "
+             f"MED {_opt(path.med)}, communities {comms}")
+```
+
+`netdryrun.checks.x__describe_path__mutmut_12`: survived (accepted, message-text: message text only: the description of a best path inside a detail); diff fingerprint `2b3d8d002b6e85c1`
+
+```diff
+# netdryrun.checks.x__describe_path__mutmut_12: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -1,5 +1,5 @@
+ def _describe_path(path) -> str:
+     comms = " ".join(community_name(c) for c in path.all_communities()) or "none"
+-    as_path = "?" if path.as_path is None else f"'{path.as_path}'"
++    as_path = "?" if path.as_path is not None else f"'{path.as_path}'"
+     return (f"as-path {as_path}, next hop {path.next_hop or '?'}, local-pref {_opt(path.local_pref)}, "
+             f"MED {_opt(path.med)}, communities {comms}")
+```
+
+`netdryrun.checks.x__describe_path__mutmut_13`: survived (accepted, message-text: message text only: the description of a best path inside a detail); diff fingerprint `1e41c3ebef974075`
+
+```diff
+# netdryrun.checks.x__describe_path__mutmut_13: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -1,5 +1,5 @@
+ def _describe_path(path) -> str:
+     comms = " ".join(community_name(c) for c in path.all_communities()) or "none"
+     as_path = "?" if path.as_path is None else f"'{path.as_path}'"
+-    return (f"as-path {as_path}, next hop {path.next_hop or '?'}, local-pref {_opt(path.local_pref)}, "
++    return (f"as-path {as_path}, next hop {path.next_hop and '?'}, local-pref {_opt(path.local_pref)}, "
+             f"MED {_opt(path.med)}, communities {comms}")
+```
+
+`netdryrun.checks.x__describe_path__mutmut_14`: survived (accepted, message-text: message text only: the description of a best path inside a detail); diff fingerprint `af657a895342f594`
+
+```diff
+# netdryrun.checks.x__describe_path__mutmut_14: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -1,5 +1,5 @@
+ def _describe_path(path) -> str:
+     comms = " ".join(community_name(c) for c in path.all_communities()) or "none"
+     as_path = "?" if path.as_path is None else f"'{path.as_path}'"
+-    return (f"as-path {as_path}, next hop {path.next_hop or '?'}, local-pref {_opt(path.local_pref)}, "
++    return (f"as-path {as_path}, next hop {path.next_hop or 'XX?XX'}, local-pref {_opt(path.local_pref)}, "
+             f"MED {_opt(path.med)}, communities {comms}")
+```
+
+`netdryrun.checks.x__describe_path__mutmut_16`: survived (accepted, message-text: message text only: part of an error or detail message string); diff fingerprint `c0bd37018c96e390`
+
+```diff
+# netdryrun.checks.x__describe_path__mutmut_16: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -2,4 +2,4 @@
+     comms = " ".join(community_name(c) for c in path.all_communities()) or "none"
+     as_path = "?" if path.as_path is None else f"'{path.as_path}'"
+     return (f"as-path {as_path}, next hop {path.next_hop or '?'}, local-pref {_opt(path.local_pref)}, "
+-            f"MED {_opt(path.med)}, communities {comms}")
++            f"MED {_opt(None)}, communities {comms}")
+```
+
+`netdryrun.checks.x__describe_path__mutmut_4`: survived (accepted, message-text: message text only: the text of a detail or error message); diff fingerprint `567edc5041362507`
+
+```diff
+# netdryrun.checks.x__describe_path__mutmut_4: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -1,5 +1,5 @@
+ def _describe_path(path) -> str:
+-    comms = " ".join(community_name(c) for c in path.all_communities()) or "none"
++    comms = "XX XX".join(community_name(c) for c in path.all_communities()) or "none"
+     as_path = "?" if path.as_path is None else f"'{path.as_path}'"
+     return (f"as-path {as_path}, next hop {path.next_hop or '?'}, local-pref {_opt(path.local_pref)}, "
+             f"MED {_opt(path.med)}, communities {comms}")
+```
+
+`netdryrun.checks.x__describe_path__mutmut_6`: survived (accepted, message-text: message text only: the text of a detail or error message); diff fingerprint `dec152bd7d240c71`
+
+```diff
+# netdryrun.checks.x__describe_path__mutmut_6: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -1,5 +1,5 @@
+ def _describe_path(path) -> str:
+-    comms = " ".join(community_name(c) for c in path.all_communities()) or "none"
++    comms = " ".join(community_name(c) for c in path.all_communities()) or "XXnoneXX"
+     as_path = "?" if path.as_path is None else f"'{path.as_path}'"
+     return (f"as-path {as_path}, next hop {path.next_hop or '?'}, local-pref {_opt(path.local_pref)}, "
+             f"MED {_opt(path.med)}, communities {comms}")
+```
+
+`netdryrun.checks.x__describe_path__mutmut_7`: survived (accepted, message-text: message text only: the text of a detail or error message); diff fingerprint `2c70cbb203a08daf`
+
+```diff
+# netdryrun.checks.x__describe_path__mutmut_7: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -1,5 +1,5 @@
+ def _describe_path(path) -> str:
+-    comms = " ".join(community_name(c) for c in path.all_communities()) or "none"
++    comms = " ".join(community_name(c) for c in path.all_communities()) or "NONE"
+     as_path = "?" if path.as_path is None else f"'{path.as_path}'"
+     return (f"as-path {as_path}, next hop {path.next_hop or '?'}, local-pref {_opt(path.local_pref)}, "
+             f"MED {_opt(path.med)}, communities {comms}")
+```
+
+`netdryrun.checks.x__describe_path__mutmut_8`: survived (accepted, message-text: message text only: the description of a best path inside a detail); diff fingerprint `a62c118fc04e6f18`
+
+```diff
+# netdryrun.checks.x__describe_path__mutmut_8: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -1,5 +1,5 @@
+ def _describe_path(path) -> str:
+     comms = " ".join(community_name(c) for c in path.all_communities()) or "none"
+-    as_path = "?" if path.as_path is None else f"'{path.as_path}'"
++    as_path = None
+     return (f"as-path {as_path}, next hop {path.next_hop or '?'}, local-pref {_opt(path.local_pref)}, "
+             f"MED {_opt(path.med)}, communities {comms}")
+```
+
+`netdryrun.checks.x__describe_path__mutmut_9`: survived (accepted, message-text: message text only: the description of a best path inside a detail); diff fingerprint `a28fe64593a65fc7`
+
+```diff
+# netdryrun.checks.x__describe_path__mutmut_9: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -1,5 +1,5 @@
+ def _describe_path(path) -> str:
+     comms = " ".join(community_name(c) for c in path.all_communities()) or "none"
+-    as_path = "?" if path.as_path is None else f"'{path.as_path}'"
++    as_path = "?" if (path.as_path is None) and False else f"'{path.as_path}'"
+     return (f"as-path {as_path}, next hop {path.next_hop or '?'}, local-pref {_opt(path.local_pref)}, "
+             f"MED {_opt(path.med)}, communities {comms}")
+```
+
 ## `drivers.srlinux._rib_rows` (10)
 
-`netdryrun.drivers.srlinux.x__rib_rows__mutmut_11`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `595f0d4568550fab`
+`netdryrun.drivers.srlinux.x__rib_rows__mutmut_11`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `b3a4231e932aea0c`
 
 ```diff
 # netdryrun.drivers.srlinux.x__rib_rows__mutmut_11: survived
 --- src/netdryrun/drivers/srlinux.py
 +++ src/netdryrun/drivers/srlinux.py
-@@ -1,6 +1,6 @@
+@@ -1,7 +1,7 @@
  def _rib_rows(text: str, prefix: str) -> list[dict]:
+     """Local-RIB paths for exactly `prefix`, leaving out those import policy rejected (see _received)."""
      want = ipaddress.ip_network(prefix)
 -    rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
 +    rows = _list(RIB_CMD, _json(text, None), "route")
@@ -1457,14 +2593,15 @@ Each mutant below is a deliberate change to the code that no test noticed. In ve
              raise unexpected(RIB_CMD, str(r)[:150])
 ```
 
-`netdryrun.drivers.srlinux.x__rib_rows__mutmut_13`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `4b1143b213bc504f`
+`netdryrun.drivers.srlinux.x__rib_rows__mutmut_13`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `ffcf880e084d516e`
 
 ```diff
 # netdryrun.drivers.srlinux.x__rib_rows__mutmut_13: survived
 --- src/netdryrun/drivers/srlinux.py
 +++ src/netdryrun/drivers/srlinux.py
-@@ -1,6 +1,6 @@
+@@ -1,7 +1,7 @@
  def _rib_rows(text: str, prefix: str) -> list[dict]:
+     """Local-RIB paths for exactly `prefix`, leaving out those import policy rejected (see _received)."""
      want = ipaddress.ip_network(prefix)
 -    rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
 +    rows = _list(RIB_CMD, _json(text, ), "route")
@@ -1473,124 +2610,278 @@ Each mutant below is a deliberate change to the code that no test noticed. In ve
              raise unexpected(RIB_CMD, str(r)[:150])
 ```
 
-`netdryrun.drivers.srlinux.x__rib_rows__mutmut_19`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `6a6193c731c35825`
+`netdryrun.drivers.srlinux.x__rib_rows__mutmut_19`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `e6f726dde3a953d2`
 
 ```diff
 # netdryrun.drivers.srlinux.x__rib_rows__mutmut_19: survived
 --- src/netdryrun/drivers/srlinux.py
 +++ src/netdryrun/drivers/srlinux.py
-@@ -3,5 +3,5 @@
+@@ -4,5 +4,5 @@
      rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
      for r in rows:
          if "prefix" not in r:
 -            raise unexpected(RIB_CMD, str(r)[:150])
 +            raise unexpected(None, str(r)[:150])
-     return [r for r in rows if network(RIB_CMD, r["prefix"]) == want]
+     return [r for r in rows if network(RIB_CMD, r["prefix"]) == want and _received(r)]
 ```
 
-`netdryrun.drivers.srlinux.x__rib_rows__mutmut_20`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `bcc9d04ace2bd0d6`
+`netdryrun.drivers.srlinux.x__rib_rows__mutmut_20`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `529b4a2e7ffb0731`
 
 ```diff
 # netdryrun.drivers.srlinux.x__rib_rows__mutmut_20: survived
 --- src/netdryrun/drivers/srlinux.py
 +++ src/netdryrun/drivers/srlinux.py
-@@ -3,5 +3,5 @@
+@@ -4,5 +4,5 @@
      rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
      for r in rows:
          if "prefix" not in r:
 -            raise unexpected(RIB_CMD, str(r)[:150])
 +            raise unexpected(RIB_CMD, None)
-     return [r for r in rows if network(RIB_CMD, r["prefix"]) == want]
+     return [r for r in rows if network(RIB_CMD, r["prefix"]) == want and _received(r)]
 ```
 
-`netdryrun.drivers.srlinux.x__rib_rows__mutmut_21`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `d951ce431bac664f`
+`netdryrun.drivers.srlinux.x__rib_rows__mutmut_21`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `19b33177fefec6c4`
 
 ```diff
 # netdryrun.drivers.srlinux.x__rib_rows__mutmut_21: survived
 --- src/netdryrun/drivers/srlinux.py
 +++ src/netdryrun/drivers/srlinux.py
-@@ -3,5 +3,5 @@
+@@ -4,5 +4,5 @@
      rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
      for r in rows:
          if "prefix" not in r:
 -            raise unexpected(RIB_CMD, str(r)[:150])
 +            raise unexpected(str(r)[:150])
-     return [r for r in rows if network(RIB_CMD, r["prefix"]) == want]
+     return [r for r in rows if network(RIB_CMD, r["prefix"]) == want and _received(r)]
 ```
 
-`netdryrun.drivers.srlinux.x__rib_rows__mutmut_22`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `4c146b75903c56a6`
+`netdryrun.drivers.srlinux.x__rib_rows__mutmut_22`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `267d4f7ece277db3`
 
 ```diff
 # netdryrun.drivers.srlinux.x__rib_rows__mutmut_22: survived
 --- src/netdryrun/drivers/srlinux.py
 +++ src/netdryrun/drivers/srlinux.py
-@@ -3,5 +3,5 @@
+@@ -4,5 +4,5 @@
      rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
      for r in rows:
          if "prefix" not in r:
 -            raise unexpected(RIB_CMD, str(r)[:150])
 +            raise unexpected(RIB_CMD, )
-     return [r for r in rows if network(RIB_CMD, r["prefix"]) == want]
+     return [r for r in rows if network(RIB_CMD, r["prefix"]) == want and _received(r)]
 ```
 
-`netdryrun.drivers.srlinux.x__rib_rows__mutmut_23`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `0d3414006c4babf0`
+`netdryrun.drivers.srlinux.x__rib_rows__mutmut_23`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `5d0d1db7dc894eb4`
 
 ```diff
 # netdryrun.drivers.srlinux.x__rib_rows__mutmut_23: survived
 --- src/netdryrun/drivers/srlinux.py
 +++ src/netdryrun/drivers/srlinux.py
-@@ -3,5 +3,5 @@
+@@ -4,5 +4,5 @@
      rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
      for r in rows:
          if "prefix" not in r:
 -            raise unexpected(RIB_CMD, str(r)[:150])
 +            raise unexpected(RIB_CMD, str(None)[:150])
-     return [r for r in rows if network(RIB_CMD, r["prefix"]) == want]
+     return [r for r in rows if network(RIB_CMD, r["prefix"]) == want and _received(r)]
 ```
 
-`netdryrun.drivers.srlinux.x__rib_rows__mutmut_24`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `9d8b87afbf113535`
+`netdryrun.drivers.srlinux.x__rib_rows__mutmut_24`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `c071b35b7e90debd`
 
 ```diff
 # netdryrun.drivers.srlinux.x__rib_rows__mutmut_24: survived
 --- src/netdryrun/drivers/srlinux.py
 +++ src/netdryrun/drivers/srlinux.py
-@@ -3,5 +3,5 @@
+@@ -4,5 +4,5 @@
      rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
      for r in rows:
          if "prefix" not in r:
 -            raise unexpected(RIB_CMD, str(r)[:150])
 +            raise unexpected(RIB_CMD, str(r)[:151])
-     return [r for r in rows if network(RIB_CMD, r["prefix"]) == want]
+     return [r for r in rows if network(RIB_CMD, r["prefix"]) == want and _received(r)]
 ```
 
-`netdryrun.drivers.srlinux.x__rib_rows__mutmut_25`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `4e13c8d4a06b79e1`
+`netdryrun.drivers.srlinux.x__rib_rows__mutmut_26`: survived (accepted, message-text: message text only: the command name passed only for error messages (network() raises the same DriverError)); diff fingerprint `9f4cb5c3a0cd2506`
 
 ```diff
-# netdryrun.drivers.srlinux.x__rib_rows__mutmut_25: survived
+# netdryrun.drivers.srlinux.x__rib_rows__mutmut_26: survived
 --- src/netdryrun/drivers/srlinux.py
 +++ src/netdryrun/drivers/srlinux.py
-@@ -4,4 +4,4 @@
+@@ -5,4 +5,4 @@
      for r in rows:
          if "prefix" not in r:
              raise unexpected(RIB_CMD, str(r)[:150])
--    return [r for r in rows if network(RIB_CMD, r["prefix"]) == want]
-+    return [r for r in rows if network(None, r["prefix"]) == want]
+-    return [r for r in rows if network(RIB_CMD, r["prefix"]) == want and _received(r)]
++    return [r for r in rows if network(None, r["prefix"]) == want and _received(r)]
 ```
 
-`netdryrun.drivers.srlinux.x__rib_rows__mutmut_4`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `6c4598e111047857`
+`netdryrun.drivers.srlinux.x__rib_rows__mutmut_4`: survived (accepted, message-text: message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)); diff fingerprint `11621539e3420257`
 
 ```diff
 # netdryrun.drivers.srlinux.x__rib_rows__mutmut_4: survived
 --- src/netdryrun/drivers/srlinux.py
 +++ src/netdryrun/drivers/srlinux.py
-@@ -1,6 +1,6 @@
+@@ -1,7 +1,7 @@
  def _rib_rows(text: str, prefix: str) -> list[dict]:
+     """Local-RIB paths for exactly `prefix`, leaving out those import policy rejected (see _received)."""
      want = ipaddress.ip_network(prefix)
 -    rows = _list(RIB_CMD, _json(text, RIB_CMD), "route")
 +    rows = _list(None, _json(text, RIB_CMD), "route")
      for r in rows:
          if "prefix" not in r:
              raise unexpected(RIB_CMD, str(r)[:150])
+```
+
+## `checks._bgp_route` (9)
+
+`netdryrun.checks.x__bgp_route__mutmut_129`: survived (accepted, message-text: message text only: the text of a failure detail, the verdict is unchanged); argument: Changes only text: the text of a failure detail, the verdict is unchanged. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `8766113b82390fa1`
+
+```diff
+# netdryrun.checks.x__bgp_route__mutmut_129: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -30,7 +30,7 @@
+         if key in p and getattr(best, key) != p[key]:
+             wrong.append(f"{label} is {_opt(getattr(best, key))}, expected {p[key]}")
+     if "next_hop" in p and best.next_hop != p["next_hop"]:
+-        wrong.append(f"next hop is {best.next_hop or '?'}, expected {p['next_hop']}")
++        wrong.append(f"next hop is {best.next_hop or 'XX?XX'}, expected {p['next_hop']}")
+     if wrong:
+         return False, f"{'; '.join(wrong)} (best path: {_describe_path(best)})", obs.evidence
+     return True, f"best path: {_describe_path(best)}", obs.evidence
+```
+
+`netdryrun.checks.x__bgp_route__mutmut_134`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `7d3804f9332113aa`
+
+```diff
+# netdryrun.checks.x__bgp_route__mutmut_134: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -32,5 +32,5 @@
+     if "next_hop" in p and best.next_hop != p["next_hop"]:
+         wrong.append(f"next hop is {best.next_hop or '?'}, expected {p['next_hop']}")
+     if wrong:
+-        return False, f"{'; '.join(wrong)} (best path: {_describe_path(best)})", obs.evidence
++        return False, f"{'XX; XX'.join(wrong)} (best path: {_describe_path(best)})", obs.evidence
+     return True, f"best path: {_describe_path(best)}", obs.evidence
+```
+
+`netdryrun.checks.x__bgp_route__mutmut_18`: survived (accepted, equivalent: equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'); argument: Same behaviour on every input the function can receive: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `85319e2fc2c4a348`
+
+```diff
+# netdryrun.checks.x__bgp_route__mutmut_18: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -2,7 +2,7 @@
+     """Attributes of the BGP best path for a prefix, read from the BGP table (not the routing table)."""
+     obs = d.bgp_paths(p["prefix"], p.get("vrf", "default"))
+     paths = obs.value
+-    if p.get("present", True) is False:
++    if p.get("present", None) is False:
+         # Absent means no path at all in the BGP table, best or not. The router's own non-BGP routes
+         # that a NOS lists there (SR Linux, whether exported or not) aren't BGP paths.
+         paths = [x for x in paths if not x.local_candidate]
+```
+
+`netdryrun.checks.x__bgp_route__mutmut_20`: survived (accepted, equivalent: equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'); argument: Same behaviour on every input the function can receive: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `3ce401d46427dd7a`
+
+```diff
+# netdryrun.checks.x__bgp_route__mutmut_20: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -2,7 +2,7 @@
+     """Attributes of the BGP best path for a prefix, read from the BGP table (not the routing table)."""
+     obs = d.bgp_paths(p["prefix"], p.get("vrf", "default"))
+     paths = obs.value
+-    if p.get("present", True) is False:
++    if p.get("present", ) is False:
+         # Absent means no path at all in the BGP table, best or not. The router's own non-BGP routes
+         # that a NOS lists there (SR Linux, whether exported or not) aren't BGP paths.
+         paths = [x for x in paths if not x.local_candidate]
+```
+
+`netdryrun.checks.x__bgp_route__mutmut_32`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `886537b37c36745c`
+
+```diff
+# netdryrun.checks.x__bgp_route__mutmut_32: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -8,7 +8,7 @@
+         paths = [x for x in paths if not x.local_candidate]
+         if paths:
+             return False, f"unexpectedly in the BGP table ({len(paths)} path(s); {_describe_path(paths[0])})", obs.evidence
+-        return True, "no BGP path", obs.evidence
++        return True, "XXno BGP pathXX", obs.evidence
+     if not paths:
+         return False, "no BGP path", obs.evidence
+     best = next((x for x in paths if x.best), None)
+```
+
+`netdryrun.checks.x__bgp_route__mutmut_33`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `1da19f8a7ecd8094`
+
+```diff
+# netdryrun.checks.x__bgp_route__mutmut_33: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -8,7 +8,7 @@
+         paths = [x for x in paths if not x.local_candidate]
+         if paths:
+             return False, f"unexpectedly in the BGP table ({len(paths)} path(s); {_describe_path(paths[0])})", obs.evidence
+-        return True, "no BGP path", obs.evidence
++        return True, "no bgp path", obs.evidence
+     if not paths:
+         return False, "no BGP path", obs.evidence
+     best = next((x for x in paths if x.best), None)
+```
+
+`netdryrun.checks.x__bgp_route__mutmut_34`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `dd0093f965de7715`
+
+```diff
+# netdryrun.checks.x__bgp_route__mutmut_34: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -8,7 +8,7 @@
+         paths = [x for x in paths if not x.local_candidate]
+         if paths:
+             return False, f"unexpectedly in the BGP table ({len(paths)} path(s); {_describe_path(paths[0])})", obs.evidence
+-        return True, "no BGP path", obs.evidence
++        return True, "NO BGP PATH", obs.evidence
+     if not paths:
+         return False, "no BGP path", obs.evidence
+     best = next((x for x in paths if x.best), None)
+```
+
+`netdryrun.checks.x__bgp_route__mutmut_59`: survived (accepted, message-text: message text only: the text of a failure detail, the verdict is unchanged); argument: Changes only text: the text of a failure detail, the verdict is unchanged. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `950d73f5e77adb05`
+
+```diff
+# netdryrun.checks.x__bgp_route__mutmut_59: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -18,7 +18,7 @@
+     have = set(best.all_communities())
+     missing = [c for c in p.get("communities", []) if c not in have]
+     if missing:
+-        wrong.append(f"missing communities {' '.join(community_name(c) for c in missing)}")
++        wrong.append(f"missing communities {'XX XX'.join(community_name(c) for c in missing)}")
+     extra = [c for c in p.get("without_communities", []) if c in have]
+     if extra:
+         wrong.append(f"carries communities {' '.join(community_name(c) for c in extra)}")
+```
+
+`netdryrun.checks.x__bgp_route__mutmut_71`: survived (accepted, message-text: message text only: the text of a failure detail, the verdict is unchanged); argument: Changes only text: the text of a failure detail, the verdict is unchanged. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `4fb7326c94111cf8`
+
+```diff
+# netdryrun.checks.x__bgp_route__mutmut_71: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -21,7 +21,7 @@
+         wrong.append(f"missing communities {' '.join(community_name(c) for c in missing)}")
+     extra = [c for c in p.get("without_communities", []) if c in have]
+     if extra:
+-        wrong.append(f"carries communities {' '.join(community_name(c) for c in extra)}")
++        wrong.append(f"carries communities {'XX XX'.join(community_name(c) for c in extra)}")
+     if "as_path" in p and best.as_path != p["as_path"]:
+         wrong.append(f"as-path is '{best.as_path}', expected '{p['as_path']}'")
+     if "as_path_regex" in p and not re.search(p["as_path_regex"], best.as_path or ""):
 ```
 
 ## `drivers.srlinux.SrlDriver._read_path` (9)
@@ -1859,6 +3150,110 @@ Each mutant below is a deliberate change to the code that no test noticed. In ve
      if "warning" in data:  # e.g. {"warning": "View/Vrf is unknown"}
          if isinstance(data["warning"], str) and _NO_INSTANCE.search(data["warning"]):
              raise NoSuchInstance(f"vtysh: {data['warning']}")
+```
+
+## `checks.is_post_convergence` (6)
+
+`netdryrun.checks.x_is_post_convergence__mutmut_13`: survived (accepted, equivalent: equivalent: only present `is False` matters; a missing key gives None or True, neither is False); argument: Same behaviour on every input the function can receive: only present `is False` matters; a missing key gives None or True, neither is False. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `a54ee3b873eccce1`
+
+```diff
+# netdryrun.checks.x_is_post_convergence__mutmut_13: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -5,7 +5,7 @@
+     about a best path's attributes (the best path can change when a slower session comes up)."""
+     p = check.params
+     return (
+-        (check.type in ("route", "bgp_route") and p.get("present", True) is False)
++        (check.type in ("route", "bgp_route") and p.get("present", None) is False)
+         # A best-path attribute (next hop, AS path, local-pref, MED, communities, or "must not carry") can
+         # pass on a transient best path before the real one arrives: judge it after convergence and hold it
+         or (check.type == "bgp_route" and any(k in p for k in BGP_ATTRIBUTES))
+```
+
+`netdryrun.checks.x_is_post_convergence__mutmut_15`: survived (accepted, equivalent: equivalent: only present `is False` matters; a missing key gives None or True, neither is False); argument: Same behaviour on every input the function can receive: only present `is False` matters; a missing key gives None or True, neither is False. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `f99b6607097f558f`
+
+```diff
+# netdryrun.checks.x_is_post_convergence__mutmut_15: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -5,7 +5,7 @@
+     about a best path's attributes (the best path can change when a slower session comes up)."""
+     p = check.params
+     return (
+-        (check.type in ("route", "bgp_route") and p.get("present", True) is False)
++        (check.type in ("route", "bgp_route") and p.get("present", ) is False)
+         # A best-path attribute (next hop, AS path, local-pref, MED, communities, or "must not carry") can
+         # pass on a transient best path before the real one arrives: judge it after convergence and hold it
+         or (check.type == "bgp_route" and any(k in p for k in BGP_ATTRIBUTES))
+```
+
+`netdryrun.checks.x_is_post_convergence__mutmut_32`: survived (accepted, equivalent: equivalent: only expect == 'failure' matters; a missing key gives a default that is not 'failure' either way); argument: Same behaviour on every input the function can receive: only expect == 'failure' matters; a missing key gives a default that is not 'failure' either way. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `f225b0c7e0661c7f`
+
+```diff
+# netdryrun.checks.x_is_post_convergence__mutmut_32: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -9,7 +9,7 @@
+         # A best-path attribute (next hop, AS path, local-pref, MED, communities, or "must not carry") can
+         # pass on a transient best path before the real one arrives: judge it after convergence and hold it
+         or (check.type == "bgp_route" and any(k in p for k in BGP_ATTRIBUTES))
+-        or (check.type == "ping" and p.get("expect", "success") == "failure")
++        or (check.type == "ping" and p.get("expect", None) == "failure")
+         or (check.type == "bgp_session" and p.get("state", "established") != "established")
+         or (check.type == "bgp_prefixes" and ("max" in p or "exact" in p))
+     )
+```
+
+`netdryrun.checks.x_is_post_convergence__mutmut_34`: survived (accepted, equivalent: equivalent: only expect == 'failure' matters; a missing key gives a default that is not 'failure' either way); argument: Same behaviour on every input the function can receive: only expect == 'failure' matters; a missing key gives a default that is not 'failure' either way. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `31543023a1dd6a1e`
+
+```diff
+# netdryrun.checks.x_is_post_convergence__mutmut_34: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -9,7 +9,7 @@
+         # A best-path attribute (next hop, AS path, local-pref, MED, communities, or "must not carry") can
+         # pass on a transient best path before the real one arrives: judge it after convergence and hold it
+         or (check.type == "bgp_route" and any(k in p for k in BGP_ATTRIBUTES))
+-        or (check.type == "ping" and p.get("expect", "success") == "failure")
++        or (check.type == "ping" and p.get("expect", ) == "failure")
+         or (check.type == "bgp_session" and p.get("state", "established") != "established")
+         or (check.type == "bgp_prefixes" and ("max" in p or "exact" in p))
+     )
+```
+
+`netdryrun.checks.x_is_post_convergence__mutmut_37`: survived (accepted, equivalent: equivalent: only expect == 'failure' matters; a missing key gives a default that is not 'failure' either way); argument: Same behaviour on every input the function can receive: only expect == 'failure' matters; a missing key gives a default that is not 'failure' either way. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `650cf5f3d9374b0a`
+
+```diff
+# netdryrun.checks.x_is_post_convergence__mutmut_37: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -9,7 +9,7 @@
+         # A best-path attribute (next hop, AS path, local-pref, MED, communities, or "must not carry") can
+         # pass on a transient best path before the real one arrives: judge it after convergence and hold it
+         or (check.type == "bgp_route" and any(k in p for k in BGP_ATTRIBUTES))
+-        or (check.type == "ping" and p.get("expect", "success") == "failure")
++        or (check.type == "ping" and p.get("expect", "XXsuccessXX") == "failure")
+         or (check.type == "bgp_session" and p.get("state", "established") != "established")
+         or (check.type == "bgp_prefixes" and ("max" in p or "exact" in p))
+     )
+```
+
+`netdryrun.checks.x_is_post_convergence__mutmut_38`: survived (accepted, equivalent: equivalent: only expect == 'failure' matters; a missing key gives a default that is not 'failure' either way); argument: Same behaviour on every input the function can receive: only expect == 'failure' matters; a missing key gives a default that is not 'failure' either way. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `a8d7b82d1560029f`
+
+```diff
+# netdryrun.checks.x_is_post_convergence__mutmut_38: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -9,7 +9,7 @@
+         # A best-path attribute (next hop, AS path, local-pref, MED, communities, or "must not carry") can
+         # pass on a transient best path before the real one arrives: judge it after convergence and hold it
+         or (check.type == "bgp_route" and any(k in p for k in BGP_ATTRIBUTES))
+-        or (check.type == "ping" and p.get("expect", "success") == "failure")
++        or (check.type == "ping" and p.get("expect", "SUCCESS") == "failure")
+         or (check.type == "bgp_session" and p.get("state", "established") != "established")
+         or (check.type == "bgp_prefixes" and ("max" in p or "exact" in p))
+     )
 ```
 
 ## `drivers.base.Driver._exec` (6)
@@ -2602,6 +3997,69 @@ Each mutant below is a deliberate change to the code that no test noticed. In ve
      return data
 ```
 
+## `checks._evaluate_all` (4)
+
+`netdryrun.checks.x__evaluate_all__mutmut_1`: survived (accepted, equivalent: equivalent: thread pool size; every check is still evaluated once and results keep input order); diff fingerprint `30e1f75d61ee9e5f`
+
+```diff
+# netdryrun.checks.x__evaluate_all__mutmut_1: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -1,4 +1,4 @@
+-def _evaluate_all(checks: list[Check], drivers: dict, workers: int = 8) -> list[tuple]:
++def _evaluate_all(checks: list[Check], drivers: dict, workers: int = 9) -> list[tuple]:
+     """One sample of every check, run concurrently (each is a docker exec), results in input order."""
+     if len(checks) <= 1:
+         return [_evaluate(c, drivers[c.node]) for c in checks]
+```
+
+`netdryrun.checks.x__evaluate_all__mutmut_2`: survived (accepted, equivalent: equivalent: one check evaluated through the pool instead of inline; same result); diff fingerprint `9a065e9a590d43a1`
+
+```diff
+# netdryrun.checks.x__evaluate_all__mutmut_2: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -1,6 +1,6 @@
+ def _evaluate_all(checks: list[Check], drivers: dict, workers: int = 8) -> list[tuple]:
+     """One sample of every check, run concurrently (each is a docker exec), results in input order."""
+-    if len(checks) <= 1:
++    if len(checks) < 1:
+         return [_evaluate(c, drivers[c.node]) for c in checks]
+     with ThreadPoolExecutor(max_workers=min(workers, len(checks))) as pool:
+         return list(pool.map(lambda c: _evaluate(c, drivers[c.node]), checks))
+```
+
+`netdryrun.checks.x__evaluate_all__mutmut_3`: survived (accepted, equivalent: equivalent: two checks evaluated inline instead of through the pool; same results, same order); diff fingerprint `f5599358fc010b5c`
+
+```diff
+# netdryrun.checks.x__evaluate_all__mutmut_3: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -1,6 +1,6 @@
+ def _evaluate_all(checks: list[Check], drivers: dict, workers: int = 8) -> list[tuple]:
+     """One sample of every check, run concurrently (each is a docker exec), results in input order."""
+-    if len(checks) <= 1:
++    if len(checks) <= 2:
+         return [_evaluate(c, drivers[c.node]) for c in checks]
+     with ThreadPoolExecutor(max_workers=min(workers, len(checks))) as pool:
+         return list(pool.map(lambda c: _evaluate(c, drivers[c.node]), checks))
+```
+
+`netdryrun.checks.x__evaluate_all__mutmut_8`: survived (accepted, equivalent: equivalent: thread pool size; every check is still evaluated once and results keep input order); diff fingerprint `81e46835f29009ac`
+
+```diff
+# netdryrun.checks.x__evaluate_all__mutmut_8: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -2,5 +2,5 @@
+     """One sample of every check, run concurrently (each is a docker exec), results in input order."""
+     if len(checks) <= 1:
+         return [_evaluate(c, drivers[c.node]) for c in checks]
+-    with ThreadPoolExecutor(max_workers=min(workers, len(checks))) as pool:
++    with ThreadPoolExecutor(max_workers=None) as pool:
+         return list(pool.map(lambda c: _evaluate(c, drivers[c.node]), checks))
+```
+
 ## `drivers.eos._json` (4)
 
 `netdryrun.drivers.eos.x__json__mutmut_10`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `b28984661e329cdc`
@@ -2862,6 +4320,59 @@ Each mutant below is a deliberate change to the code that no test noticed. In ve
          if tos:
              return tos[0]
      return None
+```
+
+## `checks.run_round_robin` (3)
+
+`netdryrun.checks.x_run_round_robin__mutmut_71`: survived (accepted, equivalent: equivalent: unreachable branch: the round-robin timeout only ends a check on a failing sample, so a finished check is never 'not passed but ok'); argument: Same behaviour on every input the function can receive: unreachable branch: the round-robin timeout only ends a check on a failing sample, so a finished check is never 'not passed but ok'. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `cf30660ae75c2c65`
+
+```diff
+# netdryrun.checks.x_run_round_robin__mutmut_71: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -23,7 +23,7 @@
+                 continue
+             passed = st["streak"] >= confirm
+             if not passed and ok:
+-                detail = f"{detail}, but not stable ({st['streak']}/{confirm} consecutive passes)"
++                detail = None
+             elif not passed and any(h["passed"] for h in st["history"]):
+                 detail = f"{detail} (flapping: passed {sum(h['passed'] for h in st['history'])} of {len(st['history'])} samples)"
+             done[id(c)] = Result(c, passed, detail, len(st["history"]), round(elapsed, 1), started, evidence,
+```
+
+`netdryrun.checks.x_run_round_robin__mutmut_72`: survived (accepted, equivalent: equivalent: unreachable branch: the round-robin timeout only ends a check on a failing sample, so a finished check is never 'not passed but ok'); argument: Same behaviour on every input the function can receive: unreachable branch: the round-robin timeout only ends a check on a failing sample, so a finished check is never 'not passed but ok'. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 3: confirmed after the code trace (research/model-reviews/release-0.3.3/adversarial-round3); diff fingerprint `97ef2442d40cba83`
+
+```diff
+# netdryrun.checks.x_run_round_robin__mutmut_72: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -23,7 +23,7 @@
+                 continue
+             passed = st["streak"] >= confirm
+             if not passed and ok:
+-                detail = f"{detail}, but not stable ({st['streak']}/{confirm} consecutive passes)"
++                detail = f"{detail}, but not stable ({st['XXstreakXX']}/{confirm} consecutive passes)"
+             elif not passed and any(h["passed"] for h in st["history"]):
+                 detail = f"{detail} (flapping: passed {sum(h['passed'] for h in st['history'])} of {len(st['history'])} samples)"
+             done[id(c)] = Result(c, passed, detail, len(st["history"]), round(elapsed, 1), started, evidence,
+```
+
+`netdryrun.checks.x_run_round_robin__mutmut_73`: survived (accepted, equivalent: equivalent: unreachable branch: the round-robin timeout only ends a check on a failing sample, so a finished check is never 'not passed but ok'); argument: Same behaviour on every input the function can receive: unreachable branch: the round-robin timeout only ends a check on a failing sample, so a finished check is never 'not passed but ok'. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 3: confirmed after the code trace (research/model-reviews/release-0.3.3/adversarial-round3); diff fingerprint `88dc0d8ad998e1b9`
+
+```diff
+# netdryrun.checks.x_run_round_robin__mutmut_73: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -23,7 +23,7 @@
+                 continue
+             passed = st["streak"] >= confirm
+             if not passed and ok:
+-                detail = f"{detail}, but not stable ({st['streak']}/{confirm} consecutive passes)"
++                detail = f"{detail}, but not stable ({st['STREAK']}/{confirm} consecutive passes)"
+             elif not passed and any(h["passed"] for h in st["history"]):
+                 detail = f"{detail} (flapping: passed {sum(h['passed'] for h in st['history'])} of {len(st['history'])} samples)"
+             done[id(c)] = Result(c, passed, detail, len(st["history"]), round(elapsed, 1), started, evidence,
 ```
 
 ## `drivers.base.Driver.all_routes` (3)
@@ -3205,6 +4716,73 @@ Each mutant below is a deliberate change to the code that no test noticed. In ve
                            f"({', '.join(others) or 'an option flag'}); unexpected output, never read as no delay")
 ```
 
+## `checks._reach_view` (2)
+
+`netdryrun.checks.x__reach_view__mutmut_15`: survived (accepted, equivalent: equivalent: min is assigned again on the next line (params['min'] = low), so not dropping the old one changes nothing); argument: Same behaviour on every input the function can receive: min is assigned again on the next line (params['min'] = low), so not dropping the old one changes nothing. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `54855ee173e29caa`
+
+```diff
+# netdryrun.checks.x__reach_view__mutmut_15: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -8,6 +8,6 @@
+     low = p.get("exact", p.get("min"))
+     if not low:
+         return None
+-    params = {k: v for k, v in p.items() if k not in ("min", "max", "exact")}
++    params = {k: v for k, v in p.items() if k not in ("XXminXX", "max", "exact")}
+     params["min"] = low
+     return replace(c, params=params, timeout=min(c.timeout, REACH_WINDOW))
+```
+
+`netdryrun.checks.x__reach_view__mutmut_16`: survived (accepted, equivalent: equivalent: min is assigned again on the next line (params['min'] = low), so not dropping the old one changes nothing); argument: Same behaviour on every input the function can receive: min is assigned again on the next line (params['min'] = low), so not dropping the old one changes nothing. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `66246b8f75b3189d`
+
+```diff
+# netdryrun.checks.x__reach_view__mutmut_16: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -8,6 +8,6 @@
+     low = p.get("exact", p.get("min"))
+     if not low:
+         return None
+-    params = {k: v for k, v in p.items() if k not in ("min", "max", "exact")}
++    params = {k: v for k, v in p.items() if k not in ("MIN", "max", "exact")}
+     params["min"] = low
+     return replace(c, params=params, timeout=min(c.timeout, REACH_WINDOW))
+```
+
+## `checks.inconclusive_reason` (2)
+
+`netdryrun.checks.x_inconclusive_reason__mutmut_21`: survived (accepted, message-text: message text only: the text of a detail or error message); argument: Changes only text: the text of a detail or error message. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `5de5f52b5490290e`
+
+```diff
+# netdryrun.checks.x_inconclusive_reason__mutmut_21: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -24,6 +24,6 @@
+     if not all(r.check.node in never_ready for r in failed):
+         return None
+     nodes = sorted({r.check.node for r in failed})
+-    why = "; ".join(f"{n}: {never_ready[n]}" for n in nodes)
++    why = "XX; XX".join(f"{n}: {never_ready[n]}" for n in nodes)
+     return (f"the lab did not reach a testable state: {', '.join(nodes)} never returned usable BGP state "
+             f"({why}), and no check passed on any sample. Rerun with a longer timeout, or check that the lab boots")
+```
+
+`netdryrun.checks.x_inconclusive_reason__mutmut_23`: survived (accepted, message-text: message text only: the node list in the inconclusive reason); argument: Changes only text: the node list in the inconclusive reason. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `098155857408edf8`
+
+```diff
+# netdryrun.checks.x_inconclusive_reason__mutmut_23: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -25,5 +25,5 @@
+         return None
+     nodes = sorted({r.check.node for r in failed})
+     why = "; ".join(f"{n}: {never_ready[n]}" for n in nodes)
+-    return (f"the lab did not reach a testable state: {', '.join(nodes)} never returned usable BGP state "
++    return (f"the lab did not reach a testable state: {'XX, XX'.join(nodes)} never returned usable BGP state "
+             f"({why}), and no check passed on any sample. Rerun with a longer timeout, or check that the lab boots")
+```
+
 ## `drivers.base.Driver.bgp_neighbors` (2)
 
 `netdryrun.drivers.base.xǁDriverǁbgp_neighbors__mutmut_1`: survived (accepted, equivalent: equivalent: default argument of an abstract base-class method that only raises NotImplementedError); diff fingerprint `6e942bf8e1424cf9`
@@ -3416,6 +4994,42 @@ Each mutant below is a deliberate change to the code that no test noticed. In ve
          if f:
 ```
 
+## `drivers.junos.JunosDriver._count_hidden` (2)
+
+`netdryrun.drivers.junos.xǁJunosDriverǁ_count_hidden__mutmut_16`: survived (accepted, equivalent: equivalent: _table tests family == 6 only; 4 and 5 both name the inet.0 table); diff fingerprint `733150c5e076e9e1`
+
+```diff
+# netdryrun.drivers.junos.xǁJunosDriverǁ_count_hidden__mutmut_16: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -8,7 +8,7 @@
+     except ValueError:
+         n.prefixes_unread[afi] = f"peer address {n.address!r} can't be used in a command"
+         return
+-    table = _table(vrf, 6 if afi == "ipv6-unicast" else 4)
++    table = _table(vrf, 6 if afi == "ipv6-unicast" else 5)
+     try:
+         counts = parse_hidden_received(self._cli(f"show route receive-protocol bgp {peer} table {table} "
+                                                  "hidden extensive", ev), table)
+```
+
+`netdryrun.drivers.junos.xǁJunosDriverǁ_count_hidden__mutmut_4`: survived (accepted, message-text: message text only: the reason kept for an unusable peer address; the afi is still in prefixes_unread, so the check is still an error (Unready) and never judged); diff fingerprint `126412f1b091aed2`
+
+```diff
+# netdryrun.drivers.junos.xǁJunosDriverǁ_count_hidden__mutmut_4: survived
+--- src/netdryrun/drivers/junos.py
++++ src/netdryrun/drivers/junos.py
+@@ -6,7 +6,7 @@
+     try:
+         peer = str(ipaddress.ip_address(n.address))   # from device output, going back into a CLI string
+     except ValueError:
+-        n.prefixes_unread[afi] = f"peer address {n.address!r} can't be used in a command"
++        n.prefixes_unread[afi] = None
+         return
+     table = _table(vrf, 6 if afi == "ipv6-unicast" else 4)
+     try:
+```
+
 ## `drivers.junos._afi` (2)
 
 `netdryrun.drivers.junos.x__afi__mutmut_16`: survived (accepted, equivalent: rib.rsplit('.') without maxsplit instead of rsplit('.', 2)); argument: only the last two components ([-2:]) are compared; rsplit from the right yields the same last two components whatever the maxsplit (>=1); reviewed: no; diff fingerprint `ca9182bf20ab462c`
@@ -3569,6 +5183,41 @@ Each mutant below is a deliberate change to the code that no test noticed. In ve
 -    state = _find(_json(text, INSTANCE_CMD), "oper-state")
 +    state = _find(_json(text, ), "oper-state")
      return state if isinstance(state, str) and state else None
+```
+
+## `checks._not_configured` (1)
+
+`netdryrun.checks.x__not_configured__mutmut_2`: survived (accepted, message-text: message text only: the detail stays an Unready instance, only its text changes); argument: Changes only text: the detail stays an Unready instance, only its text changes. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `f07a5abb19505536`
+
+```diff
+# netdryrun.checks.x__not_configured__mutmut_2: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -1,4 +1,4 @@
+ def _not_configured(neighbor: str, seen: dict) -> str:
+     if not seen:
+-        return Unready(f"neighbor {neighbor} not configured (no BGP neighbors at all on this node)")
++        return Unready(None)
+     return f"neighbor {neighbor} not configured (seen: {', '.join(seen)})"
+```
+
+## `checks.converge_then_hold` (1)
+
+`netdryrun.checks.x_converge_then_hold__mutmut_55`: survived (accepted, equivalent: equivalent: the sum of two durations already rounded to 0.1 s rounds the same to 0.01 s); argument: Same behaviour on every input the function can receive: the sum of two durations already rounded to 0.1 s rounds the same to 0.01 s. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `cf966c70d92a4995`
+
+```diff
+# netdryrun.checks.x_converge_then_hold__mutmut_55: survived
+--- src/netdryrun/checks.py
++++ src/netdryrun/checks.py
+@@ -11,7 +11,7 @@
+         return first
+     held = hold_check(check, driver, hold=check.hold or hold, interval=interval, clock=clock, sleep=sleep)
+     held.started = first.started
+-    held.duration = round(first.duration + held.duration, 1)
++    held.duration = round(first.duration + held.duration, 2)
+     held.attempts += first.attempts
+     held.history = (first.history + held.history)[-50:]
+     held.samples_passed += first.samples_passed
 ```
 
 ## `drivers.base.RepeatedKey.__init__` (1)
@@ -3731,7 +5380,7 @@ Each mutant below is a deliberate change to the code that no test noticed. In ve
 
 ## Carried over from 81a49b3
 
-The sections below are the 81a49b3 run's survivors for the modules whose source is byte-identical at this commit (see GATE.md, Layer 4); drivers above was mutated at this commit.
+The sections below are the 81a49b3 run's survivors for the modules whose source is byte-identical at this commit (see GATE.md, Layer 4); drivers and checks above were mutated at this commit.
 
 ## `verify.frr._nexthop` (148)
 
@@ -29634,399 +31283,6 @@ The sections below are the 81a49b3 run's survivors for the modules whose source 
      t = data.get("topology") if isinstance(data, dict) else None
 ```
 
-## `checks._ping` (23)
-
-`netdryrun.checks.x__ping__mutmut_37`: survived (accepted, equivalent: equivalent: separator between evidence entries; no unreachable pattern contains a newline or 'XX', so no match can span or appear at a boundary); argument: Same behaviour on every input the function can receive: separator between evidence entries; no unreachable pattern contains a newline or 'XX', so no match can span or appear at a boundary. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 3: confirmed after the code trace (research/model-reviews/release-0.3.3/adversarial-round3); diff fingerprint `c7591a1d795d5755`
-
-```diff
-# netdryrun.checks.x__ping__mutmut_37: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -3,7 +3,7 @@
-     obs = d.ping(p["target"], p.get("source"), count, p.get("vrf", "default"))
-     sent, received = obs.value
-     if sent == 0:
--        text = "\n".join(f"{e.get('output', '')}\n{e.get('stderr', '')}" for e in obs.evidence)
-+        text = "XX\nXX".join(f"{e.get('output', '')}\n{e.get('stderr', '')}" for e in obs.evidence)
-         m = _UNREACHABLE.search(text)
-         if m:
-             why = f"0/{count} replies (destination unreachable: {m.group(0)})"
-```
-
-`netdryrun.checks.x__ping__mutmut_39`: survived (accepted, equivalent: equivalent: text used for a missing output key; 'None' matches no unreachable pattern); argument: Same behaviour on every input the function can receive: text used for a missing output key; 'None' matches no unreachable pattern. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `bcc965c30c19a214`
-
-```diff
-# netdryrun.checks.x__ping__mutmut_39: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -3,7 +3,7 @@
-     obs = d.ping(p["target"], p.get("source"), count, p.get("vrf", "default"))
-     sent, received = obs.value
-     if sent == 0:
--        text = "\n".join(f"{e.get('output', '')}\n{e.get('stderr', '')}" for e in obs.evidence)
-+        text = "\n".join(f"{e.get('output', None)}\n{e.get('stderr', '')}" for e in obs.evidence)
-         m = _UNREACHABLE.search(text)
-         if m:
-             why = f"0/{count} replies (destination unreachable: {m.group(0)})"
-```
-
-`netdryrun.checks.x__ping__mutmut_41`: survived (accepted, equivalent: equivalent: text used for a missing output key; 'None' matches no unreachable pattern); argument: Same behaviour on every input the function can receive: text used for a missing output key; 'None' matches no unreachable pattern. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `e443436a3ed7d743`
-
-```diff
-# netdryrun.checks.x__ping__mutmut_41: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -3,7 +3,7 @@
-     obs = d.ping(p["target"], p.get("source"), count, p.get("vrf", "default"))
-     sent, received = obs.value
-     if sent == 0:
--        text = "\n".join(f"{e.get('output', '')}\n{e.get('stderr', '')}" for e in obs.evidence)
-+        text = "\n".join(f"{e.get('output', )}\n{e.get('stderr', '')}" for e in obs.evidence)
-         m = _UNREACHABLE.search(text)
-         if m:
-             why = f"0/{count} replies (destination unreachable: {m.group(0)})"
-```
-
-`netdryrun.checks.x__ping__mutmut_44`: survived (accepted, equivalent: equivalent: text used for a missing output key; 'XXXX' matches no unreachable pattern); argument: Same behaviour on every input the function can receive: text used for a missing output key; 'XXXX' matches no unreachable pattern. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `9ceddfc80657f919`
-
-```diff
-# netdryrun.checks.x__ping__mutmut_44: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -3,7 +3,7 @@
-     obs = d.ping(p["target"], p.get("source"), count, p.get("vrf", "default"))
-     sent, received = obs.value
-     if sent == 0:
--        text = "\n".join(f"{e.get('output', '')}\n{e.get('stderr', '')}" for e in obs.evidence)
-+        text = "\n".join(f"{e.get('output', 'XXXX')}\n{e.get('stderr', '')}" for e in obs.evidence)
-         m = _UNREACHABLE.search(text)
-         if m:
-             why = f"0/{count} replies (destination unreachable: {m.group(0)})"
-```
-
-`netdryrun.checks.x__ping__mutmut_46`: survived (accepted, equivalent: equivalent: text used for a missing stderr key; 'None' matches no unreachable pattern); argument: Same behaviour on every input the function can receive: text used for a missing stderr key; 'None' matches no unreachable pattern. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `3426d07abdb75d1a`
-
-```diff
-# netdryrun.checks.x__ping__mutmut_46: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -3,7 +3,7 @@
-     obs = d.ping(p["target"], p.get("source"), count, p.get("vrf", "default"))
-     sent, received = obs.value
-     if sent == 0:
--        text = "\n".join(f"{e.get('output', '')}\n{e.get('stderr', '')}" for e in obs.evidence)
-+        text = "\n".join(f"{e.get('output', '')}\n{e.get('stderr', None)}" for e in obs.evidence)
-         m = _UNREACHABLE.search(text)
-         if m:
-             why = f"0/{count} replies (destination unreachable: {m.group(0)})"
-```
-
-`netdryrun.checks.x__ping__mutmut_48`: survived (accepted, equivalent: equivalent: text used for a missing stderr key; 'None' matches no unreachable pattern); argument: Same behaviour on every input the function can receive: text used for a missing stderr key; 'None' matches no unreachable pattern. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `3e3c5bb2f3c0c41b`
-
-```diff
-# netdryrun.checks.x__ping__mutmut_48: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -3,7 +3,7 @@
-     obs = d.ping(p["target"], p.get("source"), count, p.get("vrf", "default"))
-     sent, received = obs.value
-     if sent == 0:
--        text = "\n".join(f"{e.get('output', '')}\n{e.get('stderr', '')}" for e in obs.evidence)
-+        text = "\n".join(f"{e.get('output', '')}\n{e.get('stderr', )}" for e in obs.evidence)
-         m = _UNREACHABLE.search(text)
-         if m:
-             why = f"0/{count} replies (destination unreachable: {m.group(0)})"
-```
-
-`netdryrun.checks.x__ping__mutmut_51`: survived (accepted, equivalent: equivalent: text used for a missing stderr key; 'XXXX' matches no unreachable pattern); argument: Same behaviour on every input the function can receive: text used for a missing stderr key; 'XXXX' matches no unreachable pattern. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `68f8198d34915ad7`
-
-```diff
-# netdryrun.checks.x__ping__mutmut_51: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -3,7 +3,7 @@
-     obs = d.ping(p["target"], p.get("source"), count, p.get("vrf", "default"))
-     sent, received = obs.value
-     if sent == 0:
--        text = "\n".join(f"{e.get('output', '')}\n{e.get('stderr', '')}" for e in obs.evidence)
-+        text = "\n".join(f"{e.get('output', '')}\n{e.get('stderr', 'XXXX')}" for e in obs.evidence)
-         m = _UNREACHABLE.search(text)
-         if m:
-             why = f"0/{count} replies (destination unreachable: {m.group(0)})"
-```
-
-`netdryrun.checks.x__ping__mutmut_56`: survived (accepted, message-text: message text only: the text of a detail or error message); argument: Changes only text: the text of a detail or error message. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `1242e44765662cc8`
-
-```diff
-# netdryrun.checks.x__ping__mutmut_56: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -6,7 +6,7 @@
-         text = "\n".join(f"{e.get('output', '')}\n{e.get('stderr', '')}" for e in obs.evidence)
-         m = _UNREACHABLE.search(text)
-         if m:
--            why = f"0/{count} replies (destination unreachable: {m.group(0)})"
-+            why = f"0/{count} replies (destination unreachable: {m.group(1)})"
-             if p.get("expect", "success") == "failure":
-                 return True, why, obs.evidence
-             return False, why, obs.evidence
-```
-
-`netdryrun.checks.x__ping__mutmut_58`: survived (accepted, equivalent: equivalent: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect)); argument: Same behaviour on every input the function can receive: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect). So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `d31744d77ab02484`
-
-```diff
-# netdryrun.checks.x__ping__mutmut_58: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -7,7 +7,7 @@
-         m = _UNREACHABLE.search(text)
-         if m:
-             why = f"0/{count} replies (destination unreachable: {m.group(0)})"
--            if p.get("expect", "success") == "failure":
-+            if p.get("expect", None) == "failure":
-                 return True, why, obs.evidence
-             return False, why, obs.evidence
-     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
-```
-
-`netdryrun.checks.x__ping__mutmut_60`: survived (accepted, equivalent: equivalent: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect)); argument: Same behaviour on every input the function can receive: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect). So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `8a95bb014039ee73`
-
-```diff
-# netdryrun.checks.x__ping__mutmut_60: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -7,7 +7,7 @@
-         m = _UNREACHABLE.search(text)
-         if m:
-             why = f"0/{count} replies (destination unreachable: {m.group(0)})"
--            if p.get("expect", "success") == "failure":
-+            if p.get("expect", ) == "failure":
-                 return True, why, obs.evidence
-             return False, why, obs.evidence
-     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
-```
-
-`netdryrun.checks.x__ping__mutmut_63`: survived (accepted, equivalent: equivalent: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect)); argument: Same behaviour on every input the function can receive: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect). So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `61fae5418dd35b57`
-
-```diff
-# netdryrun.checks.x__ping__mutmut_63: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -7,7 +7,7 @@
-         m = _UNREACHABLE.search(text)
-         if m:
-             why = f"0/{count} replies (destination unreachable: {m.group(0)})"
--            if p.get("expect", "success") == "failure":
-+            if p.get("expect", "XXsuccessXX") == "failure":
-                 return True, why, obs.evidence
-             return False, why, obs.evidence
-     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
-```
-
-`netdryrun.checks.x__ping__mutmut_64`: survived (accepted, equivalent: equivalent: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect)); argument: Same behaviour on every input the function can receive: default for a missing expect; any value but 'failure' means success, as 'success' does (config always sets expect). So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `bd66698206cc5d6a`
-
-```diff
-# netdryrun.checks.x__ping__mutmut_64: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -7,7 +7,7 @@
-         m = _UNREACHABLE.search(text)
-         if m:
-             why = f"0/{count} replies (destination unreachable: {m.group(0)})"
--            if p.get("expect", "success") == "failure":
-+            if p.get("expect", "SUCCESS") == "failure":
-                 return True, why, obs.evidence
-             return False, why, obs.evidence
-     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
-```
-
-`netdryrun.checks.x__ping__mutmut_72`: survived (accepted, message-text: message text only: the stderr quoted in the 'ping did not run' detail); argument: Changes only text: the stderr quoted in the 'ping did not run' detail. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `b96d73dec294704d`
-
-```diff
-# netdryrun.checks.x__ping__mutmut_72: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -11,7 +11,7 @@
-                 return True, why, obs.evidence
-             return False, why, obs.evidence
-     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
--        err = obs.evidence[-1].get("stderr", "").strip() if obs.evidence else ""
-+        err = None
-         return False, f"error: ping did not run{': ' + err if err else ''}", obs.evidence
-     if p.get("expect", "success") == "success":
-         need = int(p.get("min_replies", max(1, sent - 1)))  # tolerate one lost packet (first-packet ARP)
-```
-
-`netdryrun.checks.x__ping__mutmut_73`: survived (accepted, message-text: message text only: the stderr quoted in the 'ping did not run' detail); argument: Changes only text: the stderr quoted in the 'ping did not run' detail. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `de103690e3e24530`
-
-```diff
-# netdryrun.checks.x__ping__mutmut_73: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -11,7 +11,7 @@
-                 return True, why, obs.evidence
-             return False, why, obs.evidence
-     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
--        err = obs.evidence[-1].get("stderr", "").strip() if obs.evidence else ""
-+        err = obs.evidence[-1].get("stderr", "").strip() if (obs.evidence) and False else ""
-         return False, f"error: ping did not run{': ' + err if err else ''}", obs.evidence
-     if p.get("expect", "success") == "success":
-         need = int(p.get("min_replies", max(1, sent - 1)))  # tolerate one lost packet (first-packet ARP)
-```
-
-`netdryrun.checks.x__ping__mutmut_75`: survived (accepted, message-text: message text only: the stderr quoted in the 'ping did not run' detail); argument: Changes only text: the stderr quoted in the 'ping did not run' detail. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `a2fd27cd72eae81e`
-
-```diff
-# netdryrun.checks.x__ping__mutmut_75: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -11,7 +11,7 @@
-                 return True, why, obs.evidence
-             return False, why, obs.evidence
-     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
--        err = obs.evidence[-1].get("stderr", "").strip() if obs.evidence else ""
-+        err = obs.evidence[-1].get(None, "").strip() if obs.evidence else ""
-         return False, f"error: ping did not run{': ' + err if err else ''}", obs.evidence
-     if p.get("expect", "success") == "success":
-         need = int(p.get("min_replies", max(1, sent - 1)))  # tolerate one lost packet (first-packet ARP)
-```
-
-`netdryrun.checks.x__ping__mutmut_81`: survived (accepted, message-text: message text only: the stderr quoted in the 'ping did not run' detail); argument: Changes only text: the stderr quoted in the 'ping did not run' detail. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `592dce8496e84aba`
-
-```diff
-# netdryrun.checks.x__ping__mutmut_81: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -11,7 +11,7 @@
-                 return True, why, obs.evidence
-             return False, why, obs.evidence
-     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
--        err = obs.evidence[-1].get("stderr", "").strip() if obs.evidence else ""
-+        err = obs.evidence[-1].get("XXstderrXX", "").strip() if obs.evidence else ""
-         return False, f"error: ping did not run{': ' + err if err else ''}", obs.evidence
-     if p.get("expect", "success") == "success":
-         need = int(p.get("min_replies", max(1, sent - 1)))  # tolerate one lost packet (first-packet ARP)
-```
-
-`netdryrun.checks.x__ping__mutmut_82`: survived (accepted, message-text: message text only: the stderr quoted in the 'ping did not run' detail); argument: Changes only text: the stderr quoted in the 'ping did not run' detail. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `bc504b531c23c544`
-
-```diff
-# netdryrun.checks.x__ping__mutmut_82: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -11,7 +11,7 @@
-                 return True, why, obs.evidence
-             return False, why, obs.evidence
-     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
--        err = obs.evidence[-1].get("stderr", "").strip() if obs.evidence else ""
-+        err = obs.evidence[-1].get("STDERR", "").strip() if obs.evidence else ""
-         return False, f"error: ping did not run{': ' + err if err else ''}", obs.evidence
-     if p.get("expect", "success") == "success":
-         need = int(p.get("min_replies", max(1, sent - 1)))  # tolerate one lost packet (first-packet ARP)
-```
-
-`netdryrun.checks.x__ping__mutmut_83`: survived (accepted, message-text: message text only: the stderr quoted in the 'ping did not run' detail); argument: Changes only text: the stderr quoted in the 'ping did not run' detail. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `b307ca86822a2867`
-
-```diff
-# netdryrun.checks.x__ping__mutmut_83: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -11,7 +11,7 @@
-                 return True, why, obs.evidence
-             return False, why, obs.evidence
-     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
--        err = obs.evidence[-1].get("stderr", "").strip() if obs.evidence else ""
-+        err = obs.evidence[-1].get("stderr", "XXXX").strip() if obs.evidence else ""
-         return False, f"error: ping did not run{': ' + err if err else ''}", obs.evidence
-     if p.get("expect", "success") == "success":
-         need = int(p.get("min_replies", max(1, sent - 1)))  # tolerate one lost packet (first-packet ARP)
-```
-
-`netdryrun.checks.x__ping__mutmut_84`: survived (accepted, message-text: message text only: the stderr quoted in the 'ping did not run' detail); argument: Changes only text: the stderr quoted in the 'ping did not run' detail. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `7ec2812d16c91f5d`
-
-```diff
-# netdryrun.checks.x__ping__mutmut_84: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -11,7 +11,7 @@
-                 return True, why, obs.evidence
-             return False, why, obs.evidence
-     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
--        err = obs.evidence[-1].get("stderr", "").strip() if obs.evidence else ""
-+        err = obs.evidence[-1].get("stderr", "").strip() if obs.evidence else "XXXX"
-         return False, f"error: ping did not run{': ' + err if err else ''}", obs.evidence
-     if p.get("expect", "success") == "success":
-         need = int(p.get("min_replies", max(1, sent - 1)))  # tolerate one lost packet (first-packet ARP)
-```
-
-`netdryrun.checks.x__ping__mutmut_86`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `5511d05a5b0e53e9`
-
-```diff
-# netdryrun.checks.x__ping__mutmut_86: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -12,7 +12,7 @@
-             return False, why, obs.evidence
-     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
-         err = obs.evidence[-1].get("stderr", "").strip() if obs.evidence else ""
--        return False, f"error: ping did not run{': ' + err if err else ''}", obs.evidence
-+        return False, f"error: ping did not run{': ' + err if (err) and False else ''}", obs.evidence
-     if p.get("expect", "success") == "success":
-         need = int(p.get("min_replies", max(1, sent - 1)))  # tolerate one lost packet (first-packet ARP)
-         return received >= need, f"{received}/{sent} replies (need {need})", obs.evidence
-```
-
-`netdryrun.checks.x__ping__mutmut_87`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `825e8177cd4c8917`
-
-```diff
-# netdryrun.checks.x__ping__mutmut_87: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -12,7 +12,7 @@
-             return False, why, obs.evidence
-     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
-         err = obs.evidence[-1].get("stderr", "").strip() if obs.evidence else ""
--        return False, f"error: ping did not run{': ' + err if err else ''}", obs.evidence
-+        return False, f"error: ping did not run{': ' + err if (err) or True else ''}", obs.evidence
-     if p.get("expect", "success") == "success":
-         need = int(p.get("min_replies", max(1, sent - 1)))  # tolerate one lost packet (first-packet ARP)
-         return received >= need, f"{received}/{sent} replies (need {need})", obs.evidence
-```
-
-`netdryrun.checks.x__ping__mutmut_89`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `782421908c1d392e`
-
-```diff
-# netdryrun.checks.x__ping__mutmut_89: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -12,7 +12,7 @@
-             return False, why, obs.evidence
-     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
-         err = obs.evidence[-1].get("stderr", "").strip() if obs.evidence else ""
--        return False, f"error: ping did not run{': ' + err if err else ''}", obs.evidence
-+        return False, f"error: ping did not run{'XX: XX' + err if err else ''}", obs.evidence
-     if p.get("expect", "success") == "success":
-         need = int(p.get("min_replies", max(1, sent - 1)))  # tolerate one lost packet (first-packet ARP)
-         return received >= need, f"{received}/{sent} replies (need {need})", obs.evidence
-```
-
-`netdryrun.checks.x__ping__mutmut_90`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `7ec627e2a475b906`
-
-```diff
-# netdryrun.checks.x__ping__mutmut_90: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -12,7 +12,7 @@
-             return False, why, obs.evidence
-     if sent == 0:  # ping never ran properly (bad source address, missing VRF, ...): not a result
-         err = obs.evidence[-1].get("stderr", "").strip() if obs.evidence else ""
--        return False, f"error: ping did not run{': ' + err if err else ''}", obs.evidence
-+        return False, f"error: ping did not run{': ' + err if err else 'XXXX'}", obs.evidence
-     if p.get("expect", "success") == "success":
-         need = int(p.get("min_replies", max(1, sent - 1)))  # tolerate one lost packet (first-packet ARP)
-         return received >= need, f"{received}/{sent} replies (need {need})", obs.evidence
-```
-
 ## `verify.frr._dest_paths` (23)
 
 `netdryrun.verify.frr.x__dest_paths__mutmut_1`: survived; diff fingerprint `3229f58692d0f7bb`
@@ -31891,336 +33147,6 @@ The sections below are the 81a49b3 run's survivors for the modules whose source 
          if key == "protocol":
              if value not in PROTOCOLS:
                  raise IntentError(f"{where}: unknown protocol {value!r}")
-```
-
-## `checks._route` (20)
-
-`netdryrun.checks.x__route__mutmut_32`: survived (accepted, equivalent: equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'); argument: Same behaviour on every input the function can receive: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `69ae803e4824b276`
-
-```diff
-# netdryrun.checks.x__route__mutmut_32: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -5,7 +5,7 @@
-     active = [r for r in matching if r.active]
-     # `is not False`, the same test is_post_convergence uses, so the evaluator and the scheduler can never
-     # disagree on what a check means (config validation already insists on a real boolean)
--    if p.get("present", True) is not False:
-+    if p.get("present", None) is not False:
-         if active:
-             return True, f"active via {active[0].protocol}", obs.evidence
-         if p.get("active", True) is False and matching:
-```
-
-`netdryrun.checks.x__route__mutmut_34`: survived (accepted, equivalent: equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'); argument: Same behaviour on every input the function can receive: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `ed34e860b4b14741`
-
-```diff
-# netdryrun.checks.x__route__mutmut_34: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -5,7 +5,7 @@
-     active = [r for r in matching if r.active]
-     # `is not False`, the same test is_post_convergence uses, so the evaluator and the scheduler can never
-     # disagree on what a check means (config validation already insists on a real boolean)
--    if p.get("present", True) is not False:
-+    if p.get("present", ) is not False:
-         if active:
-             return True, f"active via {active[0].protocol}", obs.evidence
-         if p.get("active", True) is False and matching:
-```
-
-`netdryrun.checks.x__route__mutmut_44`: survived (accepted, equivalent: equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'); argument: Same behaviour on every input the function can receive: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `79c20ed0ddfaf432`
-
-```diff
-# netdryrun.checks.x__route__mutmut_44: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -8,7 +8,7 @@
-     if p.get("present", True) is not False:
-         if active:
-             return True, f"active via {active[0].protocol}", obs.evidence
--        if p.get("active", True) is False and matching:
-+        if p.get("active", None) is False and matching:
-             # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
-             return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
-         seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
-```
-
-`netdryrun.checks.x__route__mutmut_46`: survived (accepted, equivalent: equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'); argument: Same behaviour on every input the function can receive: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `32255ffebb371b50`
-
-```diff
-# netdryrun.checks.x__route__mutmut_46: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -8,7 +8,7 @@
-     if p.get("present", True) is not False:
-         if active:
-             return True, f"active via {active[0].protocol}", obs.evidence
--        if p.get("active", True) is False and matching:
-+        if p.get("active", ) is False and matching:
-             # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
-             return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
-         seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
-```
-
-`netdryrun.checks.x__route__mutmut_57`: survived (accepted, message-text: message text only: the text of a detail or error message); argument: Changes only text: the text of a detail or error message. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `1ba2110fc7d34fe8`
-
-```diff
-# netdryrun.checks.x__route__mutmut_57: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -11,7 +11,7 @@
-         if p.get("active", True) is False and matching:
-             # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
-             return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
--        seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
-+        seen = "XX, XX".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
-         return False, f"not active{' via ' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
-     # Absent means not in the routing table at all: a received-but-not-selected route
-     # (e.g. a leaked default losing to a local one) is still a leak.
-```
-
-`netdryrun.checks.x__route__mutmut_58`: survived (accepted, message-text: message text only: the text of a detail or error message); argument: Changes only text: the text of a detail or error message. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `3af93d9cce0bb518`
-
-```diff
-# netdryrun.checks.x__route__mutmut_58: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -11,7 +11,7 @@
-         if p.get("active", True) is False and matching:
-             # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
-             return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
--        seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
-+        seen = ", ".join(f"{r.protocol}{'' if (r.active) and False else ' (inactive)'}" for r in obs.value) or "nothing"
-         return False, f"not active{' via ' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
-     # Absent means not in the routing table at all: a received-but-not-selected route
-     # (e.g. a leaked default losing to a local one) is still a leak.
-```
-
-`netdryrun.checks.x__route__mutmut_60`: survived (accepted, message-text: message text only: the text of a detail or error message); argument: Changes only text: the text of a detail or error message. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `892953c2fb42d6e2`
-
-```diff
-# netdryrun.checks.x__route__mutmut_60: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -11,7 +11,7 @@
-         if p.get("active", True) is False and matching:
-             # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
-             return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
--        seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
-+        seen = ", ".join(f"{r.protocol}{'XXXX' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
-         return False, f"not active{' via ' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
-     # Absent means not in the routing table at all: a received-but-not-selected route
-     # (e.g. a leaked default losing to a local one) is still a leak.
-```
-
-`netdryrun.checks.x__route__mutmut_61`: survived (accepted, message-text: message text only: the text of a detail or error message); argument: Changes only text: the text of a detail or error message. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `6bd3c1555c4ff862`
-
-```diff
-# netdryrun.checks.x__route__mutmut_61: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -11,7 +11,7 @@
-         if p.get("active", True) is False and matching:
-             # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
-             return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
--        seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
-+        seen = ", ".join(f"{r.protocol}{'' if r.active else 'XX (inactive)XX'}" for r in obs.value) or "nothing"
-         return False, f"not active{' via ' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
-     # Absent means not in the routing table at all: a received-but-not-selected route
-     # (e.g. a leaked default losing to a local one) is still a leak.
-```
-
-`netdryrun.checks.x__route__mutmut_63`: survived (accepted, message-text: message text only: the text of a detail or error message); argument: Changes only text: the text of a detail or error message. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `054d9decca0eb7bd`
-
-```diff
-# netdryrun.checks.x__route__mutmut_63: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -11,7 +11,7 @@
-         if p.get("active", True) is False and matching:
-             # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
-             return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
--        seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
-+        seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "XXnothingXX"
-         return False, f"not active{' via ' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
-     # Absent means not in the routing table at all: a received-but-not-selected route
-     # (e.g. a leaked default losing to a local one) is still a leak.
-```
-
-`netdryrun.checks.x__route__mutmut_64`: survived (accepted, message-text: message text only: the text of a detail or error message); argument: Changes only text: the text of a detail or error message. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `0ecd1737e9af0350`
-
-```diff
-# netdryrun.checks.x__route__mutmut_64: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -11,7 +11,7 @@
-         if p.get("active", True) is False and matching:
-             # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
-             return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
--        seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
-+        seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "NOTHING"
-         return False, f"not active{' via ' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
-     # Absent means not in the routing table at all: a received-but-not-selected route
-     # (e.g. a leaked default losing to a local one) is still a leak.
-```
-
-`netdryrun.checks.x__route__mutmut_66`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `1e9055e8e477cb19`
-
-```diff
-# netdryrun.checks.x__route__mutmut_66: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -12,7 +12,7 @@
-             # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
-             return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
-         seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
--        return False, f"not active{' via ' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
-+        return False, f"not active{' via ' + want_proto if (want_proto) and False else ''}; seen: {seen}", obs.evidence
-     # Absent means not in the routing table at all: a received-but-not-selected route
-     # (e.g. a leaked default losing to a local one) is still a leak.
-     if matching:
-```
-
-`netdryrun.checks.x__route__mutmut_67`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `e679f4bd983ca5c8`
-
-```diff
-# netdryrun.checks.x__route__mutmut_67: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -12,7 +12,7 @@
-             # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
-             return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
-         seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
--        return False, f"not active{' via ' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
-+        return False, f"not active{' via ' + want_proto if (want_proto) or True else ''}; seen: {seen}", obs.evidence
-     # Absent means not in the routing table at all: a received-but-not-selected route
-     # (e.g. a leaked default losing to a local one) is still a leak.
-     if matching:
-```
-
-`netdryrun.checks.x__route__mutmut_69`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `7648d4978cb45185`
-
-```diff
-# netdryrun.checks.x__route__mutmut_69: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -12,7 +12,7 @@
-             # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
-             return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
-         seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
--        return False, f"not active{' via ' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
-+        return False, f"not active{'XX via XX' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
-     # Absent means not in the routing table at all: a received-but-not-selected route
-     # (e.g. a leaked default losing to a local one) is still a leak.
-     if matching:
-```
-
-`netdryrun.checks.x__route__mutmut_70`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `459833adcb0f6ad9`
-
-```diff
-# netdryrun.checks.x__route__mutmut_70: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -12,7 +12,7 @@
-             # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
-             return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
-         seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
--        return False, f"not active{' via ' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
-+        return False, f"not active{' VIA ' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
-     # Absent means not in the routing table at all: a received-but-not-selected route
-     # (e.g. a leaked default losing to a local one) is still a leak.
-     if matching:
-```
-
-`netdryrun.checks.x__route__mutmut_71`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `ddc4a38953bb8cb9`
-
-```diff
-# netdryrun.checks.x__route__mutmut_71: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -12,7 +12,7 @@
-             # present in the routing table, selected or not (e.g. a BGP default losing to a local one)
-             return True, f"present via {matching[0].protocol} (not selected)", obs.evidence
-         seen = ", ".join(f"{r.protocol}{'' if r.active else ' (inactive)'}" for r in obs.value) or "nothing"
--        return False, f"not active{' via ' + want_proto if want_proto else ''}; seen: {seen}", obs.evidence
-+        return False, f"not active{' via ' + want_proto if want_proto else 'XXXX'}; seen: {seen}", obs.evidence
-     # Absent means not in the routing table at all: a received-but-not-selected route
-     # (e.g. a leaked default losing to a local one) is still a leak.
-     if matching:
-```
-
-`netdryrun.checks.x__route__mutmut_75`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `0d668104e6011fd5`
-
-```diff
-# netdryrun.checks.x__route__mutmut_75: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -17,5 +17,5 @@
-     # (e.g. a leaked default losing to a local one) is still a leak.
-     if matching:
-         r = matching[0]
--        return False, f"unexpectedly present via {r.protocol}{'' if r.active else ' (not selected)'}", obs.evidence
-+        return False, f"unexpectedly present via {r.protocol}{'' if (r.active) and False else ' (not selected)'}", obs.evidence
-     return True, "absent", obs.evidence
-```
-
-`netdryrun.checks.x__route__mutmut_77`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `5fa2ee3a77630a7a`
-
-```diff
-# netdryrun.checks.x__route__mutmut_77: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -17,5 +17,5 @@
-     # (e.g. a leaked default losing to a local one) is still a leak.
-     if matching:
-         r = matching[0]
--        return False, f"unexpectedly present via {r.protocol}{'' if r.active else ' (not selected)'}", obs.evidence
-+        return False, f"unexpectedly present via {r.protocol}{'XXXX' if r.active else ' (not selected)'}", obs.evidence
-     return True, "absent", obs.evidence
-```
-
-`netdryrun.checks.x__route__mutmut_78`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `af3d0000780c5f26`
-
-```diff
-# netdryrun.checks.x__route__mutmut_78: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -17,5 +17,5 @@
-     # (e.g. a leaked default losing to a local one) is still a leak.
-     if matching:
-         r = matching[0]
--        return False, f"unexpectedly present via {r.protocol}{'' if r.active else ' (not selected)'}", obs.evidence
-+        return False, f"unexpectedly present via {r.protocol}{'' if r.active else 'XX (not selected)XX'}", obs.evidence
-     return True, "absent", obs.evidence
-```
-
-`netdryrun.checks.x__route__mutmut_81`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `e00117cd4cb5d2d8`
-
-```diff
-# netdryrun.checks.x__route__mutmut_81: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -18,4 +18,4 @@
-     if matching:
-         r = matching[0]
-         return False, f"unexpectedly present via {r.protocol}{'' if r.active else ' (not selected)'}", obs.evidence
--    return True, "absent", obs.evidence
-+    return True, "XXabsentXX", obs.evidence
-```
-
-`netdryrun.checks.x__route__mutmut_82`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `053b4b1c00ac88da`
-
-```diff
-# netdryrun.checks.x__route__mutmut_82: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -18,4 +18,4 @@
-     if matching:
-         r = matching[0]
-         return False, f"unexpectedly present via {r.protocol}{'' if r.active else ' (not selected)'}", obs.evidence
--    return True, "absent", obs.evidence
-+    return True, "ABSENT", obs.evidence
 ```
 
 ## `verify.run._git` (20)
@@ -36356,172 +37282,6 @@ The sections below are the 81a49b3 run's survivors for the modules whose source 
          bits.append(f"received from {self.neighbor} (before inbound policy)")
 ```
 
-## `checks._describe_path` (11)
-
-`netdryrun.checks.x__describe_path__mutmut_10`: survived (accepted, message-text: message text only: the description of a best path inside a detail); diff fingerprint `ea26769c5b005a6d`
-
-```diff
-# netdryrun.checks.x__describe_path__mutmut_10: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -1,5 +1,5 @@
- def _describe_path(path) -> str:
-     comms = " ".join(community_name(c) for c in path.all_communities()) or "none"
--    as_path = "?" if path.as_path is None else f"'{path.as_path}'"
-+    as_path = "?" if (path.as_path is None) or True else f"'{path.as_path}'"
-     return (f"as-path {as_path}, next hop {path.next_hop or '?'}, local-pref {_opt(path.local_pref)}, "
-             f"MED {_opt(path.med)}, communities {comms}")
-```
-
-`netdryrun.checks.x__describe_path__mutmut_11`: survived (accepted, message-text: message text only: the text of a detail or error message); diff fingerprint `716e1462b3c031d7`
-
-```diff
-# netdryrun.checks.x__describe_path__mutmut_11: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -1,5 +1,5 @@
- def _describe_path(path) -> str:
-     comms = " ".join(community_name(c) for c in path.all_communities()) or "none"
--    as_path = "?" if path.as_path is None else f"'{path.as_path}'"
-+    as_path = "XX?XX" if path.as_path is None else f"'{path.as_path}'"
-     return (f"as-path {as_path}, next hop {path.next_hop or '?'}, local-pref {_opt(path.local_pref)}, "
-             f"MED {_opt(path.med)}, communities {comms}")
-```
-
-`netdryrun.checks.x__describe_path__mutmut_12`: survived (accepted, message-text: message text only: the description of a best path inside a detail); diff fingerprint `2b3d8d002b6e85c1`
-
-```diff
-# netdryrun.checks.x__describe_path__mutmut_12: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -1,5 +1,5 @@
- def _describe_path(path) -> str:
-     comms = " ".join(community_name(c) for c in path.all_communities()) or "none"
--    as_path = "?" if path.as_path is None else f"'{path.as_path}'"
-+    as_path = "?" if path.as_path is not None else f"'{path.as_path}'"
-     return (f"as-path {as_path}, next hop {path.next_hop or '?'}, local-pref {_opt(path.local_pref)}, "
-             f"MED {_opt(path.med)}, communities {comms}")
-```
-
-`netdryrun.checks.x__describe_path__mutmut_13`: survived (accepted, message-text: message text only: the description of a best path inside a detail); diff fingerprint `1e41c3ebef974075`
-
-```diff
-# netdryrun.checks.x__describe_path__mutmut_13: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -1,5 +1,5 @@
- def _describe_path(path) -> str:
-     comms = " ".join(community_name(c) for c in path.all_communities()) or "none"
-     as_path = "?" if path.as_path is None else f"'{path.as_path}'"
--    return (f"as-path {as_path}, next hop {path.next_hop or '?'}, local-pref {_opt(path.local_pref)}, "
-+    return (f"as-path {as_path}, next hop {path.next_hop and '?'}, local-pref {_opt(path.local_pref)}, "
-             f"MED {_opt(path.med)}, communities {comms}")
-```
-
-`netdryrun.checks.x__describe_path__mutmut_14`: survived (accepted, message-text: message text only: the description of a best path inside a detail); diff fingerprint `af657a895342f594`
-
-```diff
-# netdryrun.checks.x__describe_path__mutmut_14: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -1,5 +1,5 @@
- def _describe_path(path) -> str:
-     comms = " ".join(community_name(c) for c in path.all_communities()) or "none"
-     as_path = "?" if path.as_path is None else f"'{path.as_path}'"
--    return (f"as-path {as_path}, next hop {path.next_hop or '?'}, local-pref {_opt(path.local_pref)}, "
-+    return (f"as-path {as_path}, next hop {path.next_hop or 'XX?XX'}, local-pref {_opt(path.local_pref)}, "
-             f"MED {_opt(path.med)}, communities {comms}")
-```
-
-`netdryrun.checks.x__describe_path__mutmut_16`: survived (accepted, message-text: message text only: part of an error or detail message string); diff fingerprint `c0bd37018c96e390`
-
-```diff
-# netdryrun.checks.x__describe_path__mutmut_16: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -2,4 +2,4 @@
-     comms = " ".join(community_name(c) for c in path.all_communities()) or "none"
-     as_path = "?" if path.as_path is None else f"'{path.as_path}'"
-     return (f"as-path {as_path}, next hop {path.next_hop or '?'}, local-pref {_opt(path.local_pref)}, "
--            f"MED {_opt(path.med)}, communities {comms}")
-+            f"MED {_opt(None)}, communities {comms}")
-```
-
-`netdryrun.checks.x__describe_path__mutmut_4`: survived (accepted, message-text: message text only: the text of a detail or error message); diff fingerprint `567edc5041362507`
-
-```diff
-# netdryrun.checks.x__describe_path__mutmut_4: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -1,5 +1,5 @@
- def _describe_path(path) -> str:
--    comms = " ".join(community_name(c) for c in path.all_communities()) or "none"
-+    comms = "XX XX".join(community_name(c) for c in path.all_communities()) or "none"
-     as_path = "?" if path.as_path is None else f"'{path.as_path}'"
-     return (f"as-path {as_path}, next hop {path.next_hop or '?'}, local-pref {_opt(path.local_pref)}, "
-             f"MED {_opt(path.med)}, communities {comms}")
-```
-
-`netdryrun.checks.x__describe_path__mutmut_6`: survived (accepted, message-text: message text only: the text of a detail or error message); diff fingerprint `dec152bd7d240c71`
-
-```diff
-# netdryrun.checks.x__describe_path__mutmut_6: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -1,5 +1,5 @@
- def _describe_path(path) -> str:
--    comms = " ".join(community_name(c) for c in path.all_communities()) or "none"
-+    comms = " ".join(community_name(c) for c in path.all_communities()) or "XXnoneXX"
-     as_path = "?" if path.as_path is None else f"'{path.as_path}'"
-     return (f"as-path {as_path}, next hop {path.next_hop or '?'}, local-pref {_opt(path.local_pref)}, "
-             f"MED {_opt(path.med)}, communities {comms}")
-```
-
-`netdryrun.checks.x__describe_path__mutmut_7`: survived (accepted, message-text: message text only: the text of a detail or error message); diff fingerprint `2c70cbb203a08daf`
-
-```diff
-# netdryrun.checks.x__describe_path__mutmut_7: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -1,5 +1,5 @@
- def _describe_path(path) -> str:
--    comms = " ".join(community_name(c) for c in path.all_communities()) or "none"
-+    comms = " ".join(community_name(c) for c in path.all_communities()) or "NONE"
-     as_path = "?" if path.as_path is None else f"'{path.as_path}'"
-     return (f"as-path {as_path}, next hop {path.next_hop or '?'}, local-pref {_opt(path.local_pref)}, "
-             f"MED {_opt(path.med)}, communities {comms}")
-```
-
-`netdryrun.checks.x__describe_path__mutmut_8`: survived (accepted, message-text: message text only: the description of a best path inside a detail); diff fingerprint `a62c118fc04e6f18`
-
-```diff
-# netdryrun.checks.x__describe_path__mutmut_8: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -1,5 +1,5 @@
- def _describe_path(path) -> str:
-     comms = " ".join(community_name(c) for c in path.all_communities()) or "none"
--    as_path = "?" if path.as_path is None else f"'{path.as_path}'"
-+    as_path = None
-     return (f"as-path {as_path}, next hop {path.next_hop or '?'}, local-pref {_opt(path.local_pref)}, "
-             f"MED {_opt(path.med)}, communities {comms}")
-```
-
-`netdryrun.checks.x__describe_path__mutmut_9`: survived (accepted, message-text: message text only: the description of a best path inside a detail); diff fingerprint `a28fe64593a65fc7`
-
-```diff
-# netdryrun.checks.x__describe_path__mutmut_9: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -1,5 +1,5 @@
- def _describe_path(path) -> str:
-     comms = " ".join(community_name(c) for c in path.all_communities()) or "none"
--    as_path = "?" if path.as_path is None else f"'{path.as_path}'"
-+    as_path = "?" if (path.as_path is None) and False else f"'{path.as_path}'"
-     return (f"as-path {as_path}, next hop {path.next_hop or '?'}, local-pref {_opt(path.local_pref)}, "
-             f"MED {_opt(path.med)}, communities {comms}")
-```
-
 ## `config._validate_bgp_route` (11)
 
 `netdryrun.config.x__validate_bgp_route__mutmut_15`: survived (accepted, message-text: message text only: part of an error or detail message string); diff fingerprint `6d87bff12aebf777`
@@ -38251,159 +39011,6 @@ The sections below are the 81a49b3 run's survivors for the modules whose source 
 +        return str(ipaddress.ip_network(value, strict=None))
      except ValueError:
          raise SnapshotError(f"{where}: not a prefix: {value[:80]!r}") from None
-```
-
-## `checks._bgp_route` (9)
-
-`netdryrun.checks.x__bgp_route__mutmut_129`: survived (accepted, message-text: message text only: the text of a failure detail, the verdict is unchanged); argument: Changes only text: the text of a failure detail, the verdict is unchanged. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `8766113b82390fa1`
-
-```diff
-# netdryrun.checks.x__bgp_route__mutmut_129: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -30,7 +30,7 @@
-         if key in p and getattr(best, key) != p[key]:
-             wrong.append(f"{label} is {_opt(getattr(best, key))}, expected {p[key]}")
-     if "next_hop" in p and best.next_hop != p["next_hop"]:
--        wrong.append(f"next hop is {best.next_hop or '?'}, expected {p['next_hop']}")
-+        wrong.append(f"next hop is {best.next_hop or 'XX?XX'}, expected {p['next_hop']}")
-     if wrong:
-         return False, f"{'; '.join(wrong)} (best path: {_describe_path(best)})", obs.evidence
-     return True, f"best path: {_describe_path(best)}", obs.evidence
-```
-
-`netdryrun.checks.x__bgp_route__mutmut_134`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `7d3804f9332113aa`
-
-```diff
-# netdryrun.checks.x__bgp_route__mutmut_134: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -32,5 +32,5 @@
-     if "next_hop" in p and best.next_hop != p["next_hop"]:
-         wrong.append(f"next hop is {best.next_hop or '?'}, expected {p['next_hop']}")
-     if wrong:
--        return False, f"{'; '.join(wrong)} (best path: {_describe_path(best)})", obs.evidence
-+        return False, f"{'XX; XX'.join(wrong)} (best path: {_describe_path(best)})", obs.evidence
-     return True, f"best path: {_describe_path(best)}", obs.evidence
-```
-
-`netdryrun.checks.x__bgp_route__mutmut_18`: survived (accepted, equivalent: equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'); argument: Same behaviour on every input the function can receive: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `85319e2fc2c4a348`
-
-```diff
-# netdryrun.checks.x__bgp_route__mutmut_18: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -2,7 +2,7 @@
-     """Attributes of the BGP best path for a prefix, read from the BGP table (not the routing table)."""
-     obs = d.bgp_paths(p["prefix"], p.get("vrf", "default"))
-     paths = obs.value
--    if p.get("present", True) is False:
-+    if p.get("present", None) is False:
-         # Absent means no path at all in the BGP table, best or not. The router's own non-BGP routes
-         # that a NOS lists there (SR Linux, whether exported or not) aren't BGP paths.
-         paths = [x for x in paths if not x.local_candidate]
-```
-
-`netdryrun.checks.x__bgp_route__mutmut_20`: survived (accepted, equivalent: equivalent: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'); argument: Same behaviour on every input the function can receive: default of a key that config validation always sets or that only matters when it is a real False; None and True are both 'not False'. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `3ce401d46427dd7a`
-
-```diff
-# netdryrun.checks.x__bgp_route__mutmut_20: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -2,7 +2,7 @@
-     """Attributes of the BGP best path for a prefix, read from the BGP table (not the routing table)."""
-     obs = d.bgp_paths(p["prefix"], p.get("vrf", "default"))
-     paths = obs.value
--    if p.get("present", True) is False:
-+    if p.get("present", ) is False:
-         # Absent means no path at all in the BGP table, best or not. The router's own non-BGP routes
-         # that a NOS lists there (SR Linux, whether exported or not) aren't BGP paths.
-         paths = [x for x in paths if not x.local_candidate]
-```
-
-`netdryrun.checks.x__bgp_route__mutmut_32`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `886537b37c36745c`
-
-```diff
-# netdryrun.checks.x__bgp_route__mutmut_32: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -8,7 +8,7 @@
-         paths = [x for x in paths if not x.local_candidate]
-         if paths:
-             return False, f"unexpectedly in the BGP table ({len(paths)} path(s); {_describe_path(paths[0])})", obs.evidence
--        return True, "no BGP path", obs.evidence
-+        return True, "XXno BGP pathXX", obs.evidence
-     if not paths:
-         return False, "no BGP path", obs.evidence
-     best = next((x for x in paths if x.best), None)
-```
-
-`netdryrun.checks.x__bgp_route__mutmut_33`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `1da19f8a7ecd8094`
-
-```diff
-# netdryrun.checks.x__bgp_route__mutmut_33: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -8,7 +8,7 @@
-         paths = [x for x in paths if not x.local_candidate]
-         if paths:
-             return False, f"unexpectedly in the BGP table ({len(paths)} path(s); {_describe_path(paths[0])})", obs.evidence
--        return True, "no BGP path", obs.evidence
-+        return True, "no bgp path", obs.evidence
-     if not paths:
-         return False, "no BGP path", obs.evidence
-     best = next((x for x in paths if x.best), None)
-```
-
-`netdryrun.checks.x__bgp_route__mutmut_34`: survived (accepted, message-text: message text only: the detail text of a check result, same verdict and evidence); argument: Changes only text: the detail text of a check result, same verdict and evidence. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `dd0093f965de7715`
-
-```diff
-# netdryrun.checks.x__bgp_route__mutmut_34: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -8,7 +8,7 @@
-         paths = [x for x in paths if not x.local_candidate]
-         if paths:
-             return False, f"unexpectedly in the BGP table ({len(paths)} path(s); {_describe_path(paths[0])})", obs.evidence
--        return True, "no BGP path", obs.evidence
-+        return True, "NO BGP PATH", obs.evidence
-     if not paths:
-         return False, "no BGP path", obs.evidence
-     best = next((x for x in paths if x.best), None)
-```
-
-`netdryrun.checks.x__bgp_route__mutmut_59`: survived (accepted, message-text: message text only: the text of a failure detail, the verdict is unchanged); argument: Changes only text: the text of a failure detail, the verdict is unchanged. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `950d73f5e77adb05`
-
-```diff
-# netdryrun.checks.x__bgp_route__mutmut_59: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -18,7 +18,7 @@
-     have = set(best.all_communities())
-     missing = [c for c in p.get("communities", []) if c not in have]
-     if missing:
--        wrong.append(f"missing communities {' '.join(community_name(c) for c in missing)}")
-+        wrong.append(f"missing communities {'XX XX'.join(community_name(c) for c in missing)}")
-     extra = [c for c in p.get("without_communities", []) if c in have]
-     if extra:
-         wrong.append(f"carries communities {' '.join(community_name(c) for c in extra)}")
-```
-
-`netdryrun.checks.x__bgp_route__mutmut_71`: survived (accepted, message-text: message text only: the text of a failure detail, the verdict is unchanged); argument: Changes only text: the text of a failure detail, the verdict is unchanged. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `4fb7326c94111cf8`
-
-```diff
-# netdryrun.checks.x__bgp_route__mutmut_71: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -21,7 +21,7 @@
-         wrong.append(f"missing communities {' '.join(community_name(c) for c in missing)}")
-     extra = [c for c in p.get("without_communities", []) if c in have]
-     if extra:
--        wrong.append(f"carries communities {' '.join(community_name(c) for c in extra)}")
-+        wrong.append(f"carries communities {'XX XX'.join(community_name(c) for c in extra)}")
-     if "as_path" in p and best.as_path != p["as_path"]:
-         wrong.append(f"as-path is '{best.as_path}', expected '{p['as_path']}'")
-     if "as_path_regex" in p and not re.search(p["as_path_regex"], best.as_path or ""):
 ```
 
 ## `runner._shape_problem` (9)
@@ -40238,110 +40845,6 @@ The sections below are the 81a49b3 run's survivors for the modules whose source 
 +        raise SnapshotError(None) from None
 ```
 
-## `checks.is_post_convergence` (6)
-
-`netdryrun.checks.x_is_post_convergence__mutmut_13`: survived (accepted, equivalent: equivalent: only present `is False` matters; a missing key gives None or True, neither is False); argument: Same behaviour on every input the function can receive: only present `is False` matters; a missing key gives None or True, neither is False. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `a54ee3b873eccce1`
-
-```diff
-# netdryrun.checks.x_is_post_convergence__mutmut_13: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -5,7 +5,7 @@
-     about a best path's attributes (the best path can change when a slower session comes up)."""
-     p = check.params
-     return (
--        (check.type in ("route", "bgp_route") and p.get("present", True) is False)
-+        (check.type in ("route", "bgp_route") and p.get("present", None) is False)
-         # A best-path attribute (next hop, AS path, local-pref, MED, communities, or "must not carry") can
-         # pass on a transient best path before the real one arrives: judge it after convergence and hold it
-         or (check.type == "bgp_route" and any(k in p for k in BGP_ATTRIBUTES))
-```
-
-`netdryrun.checks.x_is_post_convergence__mutmut_15`: survived (accepted, equivalent: equivalent: only present `is False` matters; a missing key gives None or True, neither is False); argument: Same behaviour on every input the function can receive: only present `is False` matters; a missing key gives None or True, neither is False. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `f99b6607097f558f`
-
-```diff
-# netdryrun.checks.x_is_post_convergence__mutmut_15: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -5,7 +5,7 @@
-     about a best path's attributes (the best path can change when a slower session comes up)."""
-     p = check.params
-     return (
--        (check.type in ("route", "bgp_route") and p.get("present", True) is False)
-+        (check.type in ("route", "bgp_route") and p.get("present", ) is False)
-         # A best-path attribute (next hop, AS path, local-pref, MED, communities, or "must not carry") can
-         # pass on a transient best path before the real one arrives: judge it after convergence and hold it
-         or (check.type == "bgp_route" and any(k in p for k in BGP_ATTRIBUTES))
-```
-
-`netdryrun.checks.x_is_post_convergence__mutmut_32`: survived (accepted, equivalent: equivalent: only expect == 'failure' matters; a missing key gives a default that is not 'failure' either way); argument: Same behaviour on every input the function can receive: only expect == 'failure' matters; a missing key gives a default that is not 'failure' either way. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `f225b0c7e0661c7f`
-
-```diff
-# netdryrun.checks.x_is_post_convergence__mutmut_32: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -9,7 +9,7 @@
-         # A best-path attribute (next hop, AS path, local-pref, MED, communities, or "must not carry") can
-         # pass on a transient best path before the real one arrives: judge it after convergence and hold it
-         or (check.type == "bgp_route" and any(k in p for k in BGP_ATTRIBUTES))
--        or (check.type == "ping" and p.get("expect", "success") == "failure")
-+        or (check.type == "ping" and p.get("expect", None) == "failure")
-         or (check.type == "bgp_session" and p.get("state", "established") != "established")
-         or (check.type == "bgp_prefixes" and ("max" in p or "exact" in p))
-     )
-```
-
-`netdryrun.checks.x_is_post_convergence__mutmut_34`: survived (accepted, equivalent: equivalent: only expect == 'failure' matters; a missing key gives a default that is not 'failure' either way); argument: Same behaviour on every input the function can receive: only expect == 'failure' matters; a missing key gives a default that is not 'failure' either way. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `31543023a1dd6a1e`
-
-```diff
-# netdryrun.checks.x_is_post_convergence__mutmut_34: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -9,7 +9,7 @@
-         # A best-path attribute (next hop, AS path, local-pref, MED, communities, or "must not carry") can
-         # pass on a transient best path before the real one arrives: judge it after convergence and hold it
-         or (check.type == "bgp_route" and any(k in p for k in BGP_ATTRIBUTES))
--        or (check.type == "ping" and p.get("expect", "success") == "failure")
-+        or (check.type == "ping" and p.get("expect", ) == "failure")
-         or (check.type == "bgp_session" and p.get("state", "established") != "established")
-         or (check.type == "bgp_prefixes" and ("max" in p or "exact" in p))
-     )
-```
-
-`netdryrun.checks.x_is_post_convergence__mutmut_37`: survived (accepted, equivalent: equivalent: only expect == 'failure' matters; a missing key gives a default that is not 'failure' either way); argument: Same behaviour on every input the function can receive: only expect == 'failure' matters; a missing key gives a default that is not 'failure' either way. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `650cf5f3d9374b0a`
-
-```diff
-# netdryrun.checks.x_is_post_convergence__mutmut_37: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -9,7 +9,7 @@
-         # A best-path attribute (next hop, AS path, local-pref, MED, communities, or "must not carry") can
-         # pass on a transient best path before the real one arrives: judge it after convergence and hold it
-         or (check.type == "bgp_route" and any(k in p for k in BGP_ATTRIBUTES))
--        or (check.type == "ping" and p.get("expect", "success") == "failure")
-+        or (check.type == "ping" and p.get("expect", "XXsuccessXX") == "failure")
-         or (check.type == "bgp_session" and p.get("state", "established") != "established")
-         or (check.type == "bgp_prefixes" and ("max" in p or "exact" in p))
-     )
-```
-
-`netdryrun.checks.x_is_post_convergence__mutmut_38`: survived (accepted, equivalent: equivalent: only expect == 'failure' matters; a missing key gives a default that is not 'failure' either way); argument: Same behaviour on every input the function can receive: only expect == 'failure' matters; a missing key gives a default that is not 'failure' either way. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `a8d7b82d1560029f`
-
-```diff
-# netdryrun.checks.x_is_post_convergence__mutmut_38: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -9,7 +9,7 @@
-         # A best-path attribute (next hop, AS path, local-pref, MED, communities, or "must not carry") can
-         # pass on a transient best path before the real one arrives: judge it after convergence and hold it
-         or (check.type == "bgp_route" and any(k in p for k in BGP_ATTRIBUTES))
--        or (check.type == "ping" and p.get("expect", "success") == "failure")
-+        or (check.type == "ping" and p.get("expect", "SUCCESS") == "failure")
-         or (check.type == "bgp_session" and p.get("state", "established") != "established")
-         or (check.type == "bgp_prefixes" and ("max" in p or "exact" in p))
-     )
-```
-
 ## `verify.engine._advertisement` (6)
 
 `netdryrun.verify.engine.x__advertisement__mutmut_60`: survived (accepted, message-text: message text only: the reason of a declaration that didn't happen; it didn't happen either way, same verdict); diff fingerprint `f6c7cea389005364`
@@ -41715,69 +42218,6 @@ The sections below are the 81a49b3 run's survivors for the modules whose source 
 +    raise SnapshotError(f"not a standard community: {str(token)[:61]!r}")
 ```
 
-## `checks._evaluate_all` (4)
-
-`netdryrun.checks.x__evaluate_all__mutmut_1`: survived (accepted, equivalent: equivalent: thread pool size; every check is still evaluated once and results keep input order); diff fingerprint `30e1f75d61ee9e5f`
-
-```diff
-# netdryrun.checks.x__evaluate_all__mutmut_1: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -1,4 +1,4 @@
--def _evaluate_all(checks: list[Check], drivers: dict, workers: int = 8) -> list[tuple]:
-+def _evaluate_all(checks: list[Check], drivers: dict, workers: int = 9) -> list[tuple]:
-     """One sample of every check, run concurrently (each is a docker exec), results in input order."""
-     if len(checks) <= 1:
-         return [_evaluate(c, drivers[c.node]) for c in checks]
-```
-
-`netdryrun.checks.x__evaluate_all__mutmut_2`: survived (accepted, equivalent: equivalent: one check evaluated through the pool instead of inline; same result); diff fingerprint `9a065e9a590d43a1`
-
-```diff
-# netdryrun.checks.x__evaluate_all__mutmut_2: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -1,6 +1,6 @@
- def _evaluate_all(checks: list[Check], drivers: dict, workers: int = 8) -> list[tuple]:
-     """One sample of every check, run concurrently (each is a docker exec), results in input order."""
--    if len(checks) <= 1:
-+    if len(checks) < 1:
-         return [_evaluate(c, drivers[c.node]) for c in checks]
-     with ThreadPoolExecutor(max_workers=min(workers, len(checks))) as pool:
-         return list(pool.map(lambda c: _evaluate(c, drivers[c.node]), checks))
-```
-
-`netdryrun.checks.x__evaluate_all__mutmut_3`: survived (accepted, equivalent: equivalent: two checks evaluated inline instead of through the pool; same results, same order); diff fingerprint `f5599358fc010b5c`
-
-```diff
-# netdryrun.checks.x__evaluate_all__mutmut_3: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -1,6 +1,6 @@
- def _evaluate_all(checks: list[Check], drivers: dict, workers: int = 8) -> list[tuple]:
-     """One sample of every check, run concurrently (each is a docker exec), results in input order."""
--    if len(checks) <= 1:
-+    if len(checks) <= 2:
-         return [_evaluate(c, drivers[c.node]) for c in checks]
-     with ThreadPoolExecutor(max_workers=min(workers, len(checks))) as pool:
-         return list(pool.map(lambda c: _evaluate(c, drivers[c.node]), checks))
-```
-
-`netdryrun.checks.x__evaluate_all__mutmut_8`: survived (accepted, equivalent: equivalent: thread pool size; every check is still evaluated once and results keep input order); diff fingerprint `81e46835f29009ac`
-
-```diff
-# netdryrun.checks.x__evaluate_all__mutmut_8: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -2,5 +2,5 @@
-     """One sample of every check, run concurrently (each is a docker exec), results in input order."""
-     if len(checks) <= 1:
-         return [_evaluate(c, drivers[c.node]) for c in checks]
--    with ThreadPoolExecutor(max_workers=min(workers, len(checks))) as pool:
-+    with ThreadPoolExecutor(max_workers=None) as pool:
-         return list(pool.map(lambda c: _evaluate(c, drivers[c.node]), checks))
-```
-
 ## `verify.engine._flat` (4)
 
 `netdryrun.verify.engine.x__flat__mutmut_17`: survived (accepted, equivalent: equivalent (reason corrected by the Layer 6 review): config 1-tuples (DiffItem.fields) and multi-entry RIB tuples (report._summary) do reach this line, but config fields are never read (skipped on afi; item_json returns early for config) and multi-entry RIB output is filtered to 'entries'; a crash would need an empty-string config line, which parse_running_config never produces); diff fingerprint `021b271fe6688efa`
@@ -42558,59 +42998,6 @@ The sections below are the 81a49b3 run's survivors for the modules whose source 
      return ":".join(str(int(x)) for x in m.groups())
 ```
 
-## `checks.run_round_robin` (3)
-
-`netdryrun.checks.x_run_round_robin__mutmut_71`: survived (accepted, equivalent: equivalent: unreachable branch: the round-robin timeout only ends a check on a failing sample, so a finished check is never 'not passed but ok'); argument: Same behaviour on every input the function can receive: unreachable branch: the round-robin timeout only ends a check on a failing sample, so a finished check is never 'not passed but ok'. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `cf30660ae75c2c65`
-
-```diff
-# netdryrun.checks.x_run_round_robin__mutmut_71: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -23,7 +23,7 @@
-                 continue
-             passed = st["streak"] >= confirm
-             if not passed and ok:
--                detail = f"{detail}, but not stable ({st['streak']}/{confirm} consecutive passes)"
-+                detail = None
-             elif not passed and any(h["passed"] for h in st["history"]):
-                 detail = f"{detail} (flapping: passed {sum(h['passed'] for h in st['history'])} of {len(st['history'])} samples)"
-             done[id(c)] = Result(c, passed, detail, len(st["history"]), round(elapsed, 1), started, evidence,
-```
-
-`netdryrun.checks.x_run_round_robin__mutmut_72`: survived (accepted, equivalent: equivalent: unreachable branch: the round-robin timeout only ends a check on a failing sample, so a finished check is never 'not passed but ok'); argument: Same behaviour on every input the function can receive: unreachable branch: the round-robin timeout only ends a check on a failing sample, so a finished check is never 'not passed but ok'. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 3: confirmed after the code trace (research/model-reviews/release-0.3.3/adversarial-round3); diff fingerprint `97ef2442d40cba83`
-
-```diff
-# netdryrun.checks.x_run_round_robin__mutmut_72: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -23,7 +23,7 @@
-                 continue
-             passed = st["streak"] >= confirm
-             if not passed and ok:
--                detail = f"{detail}, but not stable ({st['streak']}/{confirm} consecutive passes)"
-+                detail = f"{detail}, but not stable ({st['XXstreakXX']}/{confirm} consecutive passes)"
-             elif not passed and any(h["passed"] for h in st["history"]):
-                 detail = f"{detail} (flapping: passed {sum(h['passed'] for h in st['history'])} of {len(st['history'])} samples)"
-             done[id(c)] = Result(c, passed, detail, len(st["history"]), round(elapsed, 1), started, evidence,
-```
-
-`netdryrun.checks.x_run_round_robin__mutmut_73`: survived (accepted, equivalent: equivalent: unreachable branch: the round-robin timeout only ends a check on a failing sample, so a finished check is never 'not passed but ok'); argument: Same behaviour on every input the function can receive: unreachable branch: the round-robin timeout only ends a check on a failing sample, so a finished check is never 'not passed but ok'. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 3: confirmed after the code trace (research/model-reviews/release-0.3.3/adversarial-round3); diff fingerprint `88dc0d8ad998e1b9`
-
-```diff
-# netdryrun.checks.x_run_round_robin__mutmut_73: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -23,7 +23,7 @@
-                 continue
-             passed = st["streak"] >= confirm
-             if not passed and ok:
--                detail = f"{detail}, but not stable ({st['streak']}/{confirm} consecutive passes)"
-+                detail = f"{detail}, but not stable ({st['STREAK']}/{confirm} consecutive passes)"
-             elif not passed and any(h["passed"] for h in st["history"]):
-                 detail = f"{detail} (flapping: passed {sum(h['passed'] for h in st['history'])} of {len(st['history'])} samples)"
-             done[id(c)] = Result(c, passed, detail, len(st["history"]), round(elapsed, 1), started, evidence,
-```
-
 ## `config.Fault.describe` (3)
 
 `netdryrun.config.xǁFaultǁdescribe__mutmut_4`: survived (accepted, message-text: message text only: the default scenario name built from the faults); diff fingerprint `4d4d70e78cb721e7`
@@ -43004,73 +43391,6 @@ The sections below are the 81a49b3 run's survivors for the modules whose source 
      return got[0]
 ```
 
-## `checks._reach_view` (2)
-
-`netdryrun.checks.x__reach_view__mutmut_15`: survived (accepted, equivalent: equivalent: min is assigned again on the next line (params['min'] = low), so not dropping the old one changes nothing); argument: Same behaviour on every input the function can receive: min is assigned again on the next line (params['min'] = low), so not dropping the old one changes nothing. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `54855ee173e29caa`
-
-```diff
-# netdryrun.checks.x__reach_view__mutmut_15: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -8,6 +8,6 @@
-     low = p.get("exact", p.get("min"))
-     if not low:
-         return None
--    params = {k: v for k, v in p.items() if k not in ("min", "max", "exact")}
-+    params = {k: v for k, v in p.items() if k not in ("XXminXX", "max", "exact")}
-     params["min"] = low
-     return replace(c, params=params, timeout=min(c.timeout, REACH_WINDOW))
-```
-
-`netdryrun.checks.x__reach_view__mutmut_16`: survived (accepted, equivalent: equivalent: min is assigned again on the next line (params['min'] = low), so not dropping the old one changes nothing); argument: Same behaviour on every input the function can receive: min is assigned again on the next line (params['min'] = low), so not dropping the old one changes nothing. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `66246b8f75b3189d`
-
-```diff
-# netdryrun.checks.x__reach_view__mutmut_16: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -8,6 +8,6 @@
-     low = p.get("exact", p.get("min"))
-     if not low:
-         return None
--    params = {k: v for k, v in p.items() if k not in ("min", "max", "exact")}
-+    params = {k: v for k, v in p.items() if k not in ("MIN", "max", "exact")}
-     params["min"] = low
-     return replace(c, params=params, timeout=min(c.timeout, REACH_WINDOW))
-```
-
-## `checks.inconclusive_reason` (2)
-
-`netdryrun.checks.x_inconclusive_reason__mutmut_21`: survived (accepted, message-text: message text only: the text of a detail or error message); argument: Changes only text: the text of a detail or error message. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `5de5f52b5490290e`
-
-```diff
-# netdryrun.checks.x_inconclusive_reason__mutmut_21: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -24,6 +24,6 @@
-     if not all(r.check.node in never_ready for r in failed):
-         return None
-     nodes = sorted({r.check.node for r in failed})
--    why = "; ".join(f"{n}: {never_ready[n]}" for n in nodes)
-+    why = "XX; XX".join(f"{n}: {never_ready[n]}" for n in nodes)
-     return (f"the lab did not reach a testable state: {', '.join(nodes)} never returned usable BGP state "
-             f"({why}), and no check passed on any sample. Rerun with a longer timeout, or check that the lab boots")
-```
-
-`netdryrun.checks.x_inconclusive_reason__mutmut_23`: survived (accepted, message-text: message text only: the node list in the inconclusive reason); argument: Changes only text: the node list in the inconclusive reason. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `098155857408edf8`
-
-```diff
-# netdryrun.checks.x_inconclusive_reason__mutmut_23: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -25,5 +25,5 @@
-         return None
-     nodes = sorted({r.check.node for r in failed})
-     why = "; ".join(f"{n}: {never_ready[n]}" for n in nodes)
--    return (f"the lab did not reach a testable state: {', '.join(nodes)} never returned usable BGP state "
-+    return (f"the lab did not reach a testable state: {'XX, XX'.join(nodes)} never returned usable BGP state "
-             f"({why}), and no check passed on any sample. Rerun with a longer timeout, or check that the lab boots")
-```
-
 ## `config._validate_nodes` (2)
 
 `netdryrun.config.x__validate_nodes__mutmut_17`: survived (accepted, message-text: message text only: the same exception is still raised, only its message changes); diff fingerprint `638ef379d4a68d28`
@@ -43401,41 +43721,6 @@ The sections below are the 81a49b3 run's survivors for the modules whose source 
          suffix = key[len(src):] if src else ""
          for node, dest in targets.get(src, [("?", "?")]):
              full = dest + suffix if dest != "startup-config" else dest
-```
-
-## `checks._not_configured` (1)
-
-`netdryrun.checks.x__not_configured__mutmut_2`: survived (accepted, message-text: message text only: the detail stays an Unready instance, only its text changes); argument: Changes only text: the detail stays an Unready instance, only its text changes. The result's passed flag, its samples and the run status are computed from the observation, not from this text, so it can't turn a failure into a pass.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `f07a5abb19505536`
-
-```diff
-# netdryrun.checks.x__not_configured__mutmut_2: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -1,4 +1,4 @@
- def _not_configured(neighbor: str, seen: dict) -> str:
-     if not seen:
--        return Unready(f"neighbor {neighbor} not configured (no BGP neighbors at all on this node)")
-+        return Unready(None)
-     return f"neighbor {neighbor} not configured (seen: {', '.join(seen)})"
-```
-
-## `checks.converge_then_hold` (1)
-
-`netdryrun.checks.x_converge_then_hold__mutmut_55`: survived (accepted, equivalent: equivalent: the sum of two durations already rounded to 0.1 s rounds the same to 0.01 s); argument: Same behaviour on every input the function can receive: the sum of two durations already rounded to 0.1 s rounds the same to 0.01 s. So the verdict can't change.; reviewed: adversarial (ChatGPT), round 2: confirmed (research/model-reviews/release-0.3.3/adversarial-round2); diff fingerprint `cf966c70d92a4995`
-
-```diff
-# netdryrun.checks.x_converge_then_hold__mutmut_55: survived
---- src/netdryrun/checks.py
-+++ src/netdryrun/checks.py
-@@ -11,7 +11,7 @@
-         return first
-     held = hold_check(check, driver, hold=check.hold or hold, interval=interval, clock=clock, sleep=sleep)
-     held.started = first.started
--    held.duration = round(first.duration + held.duration, 1)
-+    held.duration = round(first.duration + held.duration, 2)
-     held.attempts += first.attempts
-     held.history = (first.history + held.history)[-50:]
-     held.samples_passed += first.samples_passed
 ```
 
 ## `config.parse_community` (1)
