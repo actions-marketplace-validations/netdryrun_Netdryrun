@@ -45,6 +45,10 @@ PING_CMD = "ping <target> count <n> rapid"
 
 # The one hidden reason that means "filtered on the way in": a route that was never accepted
 REJECTED = "rejected by import policy"
+# Hidden reasons that mean "received, but its next hop can't be used": FRR, SR Linux and EOS count such a route as
+# received (live capture, interop IOP-7). A prefix count is exact only when every hidden route has one of these
+# reasons or REJECTED; any other reason (a loop, a martian, ...) may be one another platform doesn't count.
+NEXT_HOP_UNUSABLE = frozenset({"protocol nexthop is not on the interface"})
 _ORIGINS = {"I", "E", "?"}
 # Every element Junos 26.2 prints in these containers (tests/fixtures/junos_*.txt)
 ROUTE_INFORMATION_KEYS = frozenset({"attributes", "route-table"})
@@ -223,15 +227,16 @@ def parse_bgp_neighbors(text: str, instance: str = "master") -> dict[str, BgpNei
 @parser(HIDDEN_CMD)
 def parse_hidden_received(text: str, table: str) -> tuple[int, int] | None:
     """`show route receive-protocol bgp <peer> table <table> hidden extensive`: (the peer's hidden routes, how
-    many of them import policy rejected), or None when a hidden route gives no reason."""
+    many of them import policy rejected), or None when a hidden route gives no reason, or one that is neither
+    REJECTED nor in NEXT_HOP_UNUSABLE."""
     hidden = rejected = 0
     for rt in _tables(HIDDEN_CMD, text, table):
         for e in _items(HIDDEN_CMD, rt, "rt-entry"):
-            reason = _leaf(HIDDEN_CMD, e, "hidden-reason", required=False)
-            if reason is None:
+            reason = (_leaf(HIDDEN_CMD, e, "hidden-reason", required=False) or "").strip().lower()
+            if reason != REJECTED and reason not in NEXT_HOP_UNUSABLE:
                 return None
             hidden += 1
-            rejected += reason.strip().lower() == REJECTED
+            rejected += reason == REJECTED
     return hidden, rejected
 
 
@@ -522,13 +527,20 @@ class JunosDriver(Driver):
 
     def _count_hidden(self, n: BgpNeighbor, afi: str, vrf: str, ev: list[dict]) -> None:
         """The reference count, received minus rejected by import policy, from the reasons of the routes Junos
-        hid. When they can't all be read, the count stays the range from accepted to received (interop IOP-7)."""
+        hid. When they can't all be read, the count stays the range from accepted to received (interop IOP-7);
+        a failed read is kept in prefixes_unread, so a check that can't be judged says the node gave no usable
+        state, not that the network is wrong."""
         try:
             peer = str(ipaddress.ip_address(n.address))   # from device output, going back into a CLI string
-            table = _table(vrf, 6 if afi == "ipv6-unicast" else 4)
+        except ValueError:
+            n.prefixes_unread[afi] = f"peer address {n.address!r} can't be used in a command"
+            return
+        table = _table(vrf, 6 if afi == "ipv6-unicast" else 4)
+        try:
             counts = parse_hidden_received(self._cli(f"show route receive-protocol bgp {peer} table {table} "
                                                      "hidden extensive", ev), table)
-        except (ValueError, DriverError):
+        except DriverError as e:
+            n.prefixes_unread[afi] = str(e)
             return
         received = n.prefixes_upto[afi]
         if counts is not None and counts[0] == received - n.prefixes[afi]:

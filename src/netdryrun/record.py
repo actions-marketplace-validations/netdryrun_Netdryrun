@@ -142,6 +142,11 @@ def _session_checks(name: str, neighbors: dict, prefix_mode: str, warnings: list
             continue
         checks.append({"type": "bgp_session", "node": name, "neighbor": addr, **at})
         for afi, count in sorted(n.prefixes.items()):
+            if afi in n.prefixes_upto:
+                warnings.append(f"INCOMPLETE BASELINE: {where}: BGP neighbor {addr} {afi}: the prefix count is "
+                                f"{count} to {n.prefixes_upto[afi]} (hidden routes Netdryrun can't classify); "
+                                "not recorded: add a check by hand")
+                continue
             c = {"type": "bgp_prefixes", "node": name, "neighbor": addr, "afi": afi, **at}
             if prefix_mode == "exact":
                 c["exact"] = count

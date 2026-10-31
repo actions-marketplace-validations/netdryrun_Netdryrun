@@ -117,6 +117,8 @@ class BgpNeighbor:
     # doesn't give (Junos hides routes import policy rejected and routes whose next hop it can't use alike): the
     # reference count, received minus rejected by import policy, is then from prefixes[afi] to this (interop IOP-7)
     prefixes_upto: dict[str, int] = field(default_factory=dict)
+    # afi -> why the hidden routes behind a prefixes_upto range couldn't be read (a failed command, unreadable output)
+    prefixes_unread: dict[str, str] = field(default_factory=dict, compare=False)
     # seconds between advertisements to this neighbor (MRAI) as the device reports it, or the platform's default
     # where it reports none; None: not known. A route can arrive this late after the session looks settled.
     # A timer, not the session's identity: not part of equality.

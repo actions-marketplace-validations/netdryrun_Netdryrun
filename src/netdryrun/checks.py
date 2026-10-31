@@ -91,6 +91,8 @@ def _bgp_prefixes(d: Driver, p: dict) -> tuple[bool, str, list]:
         return True, span, obs.evidence
     if top < low or (high is not None and count > high):
         return False, span, obs.evidence
+    if afi in n.prefixes_unread:   # the hidden routes couldn't be read: no usable state, not a wrong network
+        return False, Unready(f"error: {span}: {n.prefixes_unread[afi]}"), obs.evidence
     return False, f"{span}: can't tell whether the bound holds", obs.evidence
 
 

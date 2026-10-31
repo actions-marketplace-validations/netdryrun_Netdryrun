@@ -234,3 +234,14 @@ def test_a_link_with_no_global_address_where_it_is_read_is_loud(monkeypatch):
     data, warnings = run_record(monkeypatch, drivers, lab=FakeLab(None, addresses=addrs))
     assert [g for g in guards(data, "r1") if g != "0.0.0.0/0"] == []
     assert any(w.startswith("INCOMPLETE BASELINE") and "eth1" in w and "address" in w for w in warnings)
+
+
+def test_a_prefix_count_known_only_as_a_range_is_not_recorded():
+    # Junos hid routes for a reason Netdryrun can't classify: the count is 1 to 3, so no exact or min is written
+    from netdryrun.drivers.base import BgpNeighbor
+    from netdryrun.record import _session_checks
+    warnings: list[str] = []
+    n = BgpNeighbor("10.0.100.2", "established", {"ipv4-unicast": 1}, {"ipv4-unicast": 3})
+    checks = _session_checks("j1", {"10.0.100.2": n}, "exact", warnings)
+    assert [c["type"] for c in checks] == ["bgp_session"]
+    assert any("INCOMPLETE BASELINE" in w and "1 to 3" in w for w in warnings)

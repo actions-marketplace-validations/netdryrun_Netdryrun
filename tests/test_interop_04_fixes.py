@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from netdryrun.checks import EVALUATORS
+from netdryrun.checks import EVALUATORS, Unready
 from netdryrun.config import Check
 from netdryrun.drivers import DriverError, check_supported, eos, junos, srlinux
 from netdryrun.lab import ExecResult, Node
@@ -176,7 +176,10 @@ def _junos_lab(neighbors="junos_bgp_neighbor_hidden_nexthop.txt", hidden=None):
     ({"min": 206}, False, "can't tell"), ({"min": 206, "max": 206}, False, "can't tell"),
 ])
 def test_junos_a_bound_is_judged_only_when_the_whole_count_range_agrees(bound, passed, why):
-    ok, detail, _ = EVALUATORS["bgp_prefixes"](_junos_lab(), {"node": "j1", "neighbor": "10.1.1.2", **bound})
+    looped = json.loads((FIX / "junos_rp_hidden_iop7.txt").read_text())
+    looped["route-information"][0]["route-table"][0]["rt"][0]["rt-entry"][0]["hidden-reason"] = [{"data": "Looped"}]
+    d = _junos_lab(hidden=json.dumps(looped))
+    ok, detail, _ = EVALUATORS["bgp_prefixes"](d, {"node": "j1", "neighbor": "10.1.1.2", **bound})
     assert ok is passed, detail
     assert "205 to 206 ipv4-unicast prefixes accepted (1 received route(s) hidden" in detail
     assert (why in detail) if why else "can't tell" not in detail
@@ -227,8 +230,8 @@ def _hidden_doc(edit) -> str:
     lambda t: t["rt"].pop(),                                        # fewer hidden routes than received - accepted
     lambda t: t["rt"].append(t["rt"][0]),                           # more
     lambda t: t["rt"][1]["rt-entry"][0].pop("hidden-reason"),       # a hidden route with no reason
-    lambda t: t.update({"table-name": [{"data": "inet6.0"}]}),      # an answer for another table
-], ids=["fewer", "more", "no-reason", "other-table"])
+    lambda t: t["rt"][1]["rt-entry"][0].update({"hidden-reason": [{}]}),   # an empty one
+], ids=["fewer", "more", "no-reason", "empty-reason"])
 def test_junos_hidden_routes_that_dont_add_up_keep_the_count_a_range(edit):
     d = _junos_lab("junos_bgp_neighbor_policy_and_nexthop.txt", _hidden_doc(edit))
     n = d.bgp_neighbors().value["10.0.100.2"]
@@ -237,10 +240,50 @@ def test_junos_hidden_routes_that_dont_add_up_keep_the_count_a_range(edit):
     assert not ok and "can't tell" in detail
 
 
-def test_junos_a_reason_other_than_policy_counts_as_received():
-    doc = _hidden_doc(lambda t: t["rt"][0]["rt-entry"][0].update({"hidden-reason": [{"data": "Looped"}]}))
-    n = _junos_lab("junos_bgp_neighbor_policy_and_nexthop.txt", doc).bgp_neighbors().value["10.0.100.2"]
-    assert n.prefixes == {"ipv4-unicast": 3}
+@pytest.mark.parametrize("reason", ["Looped", "Martian", "Rejected by import policy (RPKI)", "Unusable path"])
+def test_junos_a_hidden_reason_the_driver_does_not_know_keeps_the_count_a_range(reason):
+    # cold review: an unknown reason counted as received made `min: 3` pass where the reference count is 2
+    doc = _hidden_doc(lambda t: t["rt"][0]["rt-entry"][0].update({"hidden-reason": [{"data": reason}]}))
+    d = _junos_lab("junos_bgp_neighbor_policy_and_nexthop.txt", doc)
+    n = d.bgp_neighbors().value["10.0.100.2"]
+    assert (n.prefixes, n.prefixes_upto, n.prefixes_unread) == ({"ipv4-unicast": 1}, {"ipv4-unicast": 3}, {})
+    ok, detail, _ = EVALUATORS["bgp_prefixes"](d, {"node": "j1", "neighbor": "10.0.100.2", "min": 3})
+    assert not ok and "can't tell" in detail
+
+
+@pytest.mark.parametrize("answer", [None, _hidden_doc(lambda t: t.update({"table-name": [{"data": "inet6.0"}]}))],
+                         ids=["unreadable", "other-table"])
+def test_junos_a_failed_hidden_route_read_is_no_usable_state_not_a_verdict(answer):
+    d = _junos_lab("junos_bgp_neighbor_policy_and_nexthop.txt", answer)   # None: answered with the neighbor output
+    n = d.bgp_neighbors().value["10.0.100.2"]
+    assert "unexpected output" in n.prefixes_unread["ipv4-unicast"]
+    ok, detail, _ = EVALUATORS["bgp_prefixes"](d, {"node": "j1", "neighbor": "10.0.100.2", "exact": 2})
+    assert not ok and isinstance(detail, Unready) and detail.startswith("error: 1 to 3 ipv4-unicast")
+    # a bound the whole range settles is still judged
+    assert EVALUATORS["bgp_prefixes"](d, {"node": "j1", "neighbor": "10.0.100.2", "max": 3})[0] is True
+
+
+@pytest.mark.parametrize("fixture, vrf, peer, table", [
+    ("junos_bgp_neighbor.txt", "default", "2001:db8:1::2", "inet6.0"),
+    ("junos_bgp_neighbor.txt", "default", "10.0.2.2", "inet.0"),
+    ("junos_bgp_neighbor_red.txt", "RED", None, "RED.inet.0"),
+])
+def test_junos_the_hidden_route_read_names_the_family_and_vrf_table(fixture, vrf, peer, table):
+    doc = json.loads((FIX / fixture).read_text())
+    for p in doc["bgp-information"][0]["bgp-peer"]:
+        for rib in p.get("bgp-rib", []):
+            rib["received-prefix-count"] = [{"data": str(int(rib["accepted-prefix-count"][0]["data"]) + 1)}]
+
+    class Lab:
+        calls: list = []
+
+        def exec(self, node, cmd, timeout=60, input=None):
+            self.calls.append(cmd[-1])
+            return ExecResult(cmd, 0, json.dumps(doc) if "show bgp neighbor" in cmd[-1] else "{}", "")
+    d = junos.JunosDriver(Lab(), "j1")
+    d.bgp_neighbors(vrf)
+    hidden = [c for c in d.lab.calls if "receive-protocol" in c]
+    assert any(f" table {table} hidden extensive" in c and (peer is None or f"bgp {peer} table" in c) for c in hidden)
 
 
 def test_junos_a_count_with_nothing_hidden_reads_no_hidden_routes():
