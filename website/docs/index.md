@@ -1,20 +1,71 @@
 ---
+hide:
+  - toc
 title: Fail CI on routing mistakes before they reach production
 description: Test a network change in CI with a containerlab lab. Netdryrun boots the topology, waits for convergence, checks BGP, routes and reachability, and fails the job on mistakes.
 ---
 
 # Fail CI on routing mistakes before they reach production
 
-To test a network change in CI, keep the changed configs and a containerlab topology in Git, describe the expected behavior in a `netdryrun.yml` file, and run `netdryrun run` (or the GitHub Action) on every pull request. Netdryrun™ deploys the lab, waits for BGP to converge, checks sessions, prefix counts, routes and pings, then destroys the lab. Any failed check exits non-zero and fails the job, with a JSON evidence file showing every command and its raw output.
+<p class="ndr-lead">Netdryrun™ boots your changed configs in a real containerlab lab, checks BGP sessions, prefixes, routes and reachability, and returns a pass/fail verdict with the evidence. One command, one CI step, or one tool call for an AI agent.</p>
 
 [Try it in your browser](https://codespaces.new/netdryrun/netdryrun?quickstart=1){ .md-button .md-button--primary } [Add it where your agent works](add.md){ .md-button } [View the source on GitHub](https://github.com/netdryrun/netdryrun){ .md-button }
 
-The browser trial runs in GitHub Codespaces: it needs a free GitHub account, takes a few minutes to start, and then `bash examples/agent-demo/demo.sh` shows a bad change rejected and the fix accepted. Nothing to install.
+<p class="ndr-note">The browser trial runs in GitHub Codespaces: it needs a free GitHub account, takes a few minutes to start, and then <code>bash examples/agent-demo/demo.sh</code> shows a bad change rejected and the fix accepted. Nothing to install.</p>
 
-**Before you start:** Linux or WSL2, Docker and containerlab. A small FRR lab takes about a minute once images are pulled. A pass covers only the checks in your file, in the lab. Apache-2.0, first released in October 2026: we're looking for the first outside engineers to try it on a real change ([free help](design-partners.md)). Known limit through 0.3.3: keep routing config out of topology `exec:` lines ([advisory](https://github.com/netdryrun/netdryrun/blob/main/advisories/0.3.3-exec-not-checked/README.md)).
+<ul class="ndr-facts" aria-label="Key facts">
+<li>Open source, Apache-2.0</li>
+<li>Runs on your machine or your CI runner</li>
+<li>Never connects to real devices</li>
+<li>JSON, Markdown and JUnit evidence</li>
+</ul>
 
-!!! abstract "What Netdryrun is"
-    Software teams don't ship code without running its tests. Network changes deserve the same step: run the change in a real lab, check how the network behaves, and ship only on a pass. Netdryrun is the open-source tool that makes that one command, one CI step, or one tool call for an AI agent. It tests network changes in a real virtual lab before they reach production. It boots the topology with containerlab, waits for convergence, checks BGP sessions, prefixes, routes and reachability, and returns a pass/fail verdict with evidence. It runs locally, in GitHub Actions, or as an MCP server for AI agents.
+## How it works
+
+To test a network change in CI, keep the changed configs and a containerlab topology in Git, describe the expected behavior in a `netdryrun.yml` file, and run `netdryrun run` (or the GitHub Action) on every pull request.
+
+1. **Deploy.** Netdryrun deploys the lab from your topology and waits for BGP to converge.
+2. **Check.** It checks sessions, prefix counts, routes and pings, including things that must *not* happen, such as a leaked default route.
+3. **Decide.** It destroys the lab. Any failed check exits non-zero and fails the job, with a JSON evidence file showing every command and its raw output.
+
+<div class="grid cards" markdown>
+
+-   **On your machine**
+
+    ---
+
+    `netdryrun run my-lab` against your own containerlab topology, or `netdryrun record` to snapshot today's behavior as checks.
+
+    [Getting started](getting-started.md)
+
+-   **On every pull request**
+
+    ---
+
+    A GitHub Action that writes a job summary, uploads the JSON and JUnit reports, and fails the check on a bad change.
+
+    [GitHub Action](github-action.md)
+
+-   **For AI agents**
+
+    ---
+
+    An MCP server (`netdryrun mcp`): the agent calls `dry_run` before applying a change and proceeds only on a pass.
+
+    [AI agents (MCP)](ai-agents.md)
+
+</div>
+
+!!! info "Before you start"
+    Linux or WSL2, Docker and containerlab. A small FRR lab takes about a minute once images are pulled. A pass covers only the checks in your file, in the lab. Apache-2.0, first released in October 2026: we're looking for the first outside engineers to try it on a real change ([free help](design-partners.md)). Known limit through 0.3.3: keep routing config out of topology `exec:` lines ([advisory](https://github.com/netdryrun/netdryrun/blob/main/advisories/0.3.3-exec-not-checked/README.md)).
+
+## What Netdryrun is
+
+Software teams don't ship code without running its tests. Network changes deserve the same step: run the change in a real lab, check how the network behaves, and ship only on a pass. Netdryrun is the open-source tool that makes that one command, one CI step, or one tool call for an AI agent. It tests network changes in a real virtual lab before they reach production. It boots the topology with containerlab, waits for convergence, checks BGP sessions, prefixes, routes and reachability, and returns a pass/fail verdict with evidence. It runs locally, in GitHub Actions, or as an MCP server for AI agents.
+
+## Evidence, losses included
+
+Netdryrun is scored against ping-only and all-sessions-up checks on a [verdict corpus](corpus.md) of realistic BGP changes, with every expected verdict committed to Git before any run. Every miss is published with its case, and one command reruns the corpus. The current scores are under [Status](#status); how the project is tested and released is on [How it's built](how-its-built.md).
 
 ## Watch the demo
 
