@@ -19,12 +19,12 @@ V = "0.3.3"
 NAME = "io.github.netdryrun/netdryrun"
 ACTION = ".github/workflows/published-action.yml"
 NOTES = ("**The agent runtime.** 0.3.3 lets an AI agent get a verdict without local Docker.\n\n"
-         "**Full Changelog**: https://github.com/netdryrun/netdryrun/compare/v0.3.2...v0.3.3")
+         "**Full Changelog**: https://github.com/netdryrun/Netdryrun/compare/v0.3.2...v0.3.3")
 # what `gh release create --generate-notes` (release.yml) writes before the notes are pasted
-GENERATED = ("## What's Changed\n* Agent runtime by @someone in https://github.com/netdryrun/netdryrun/pull/12\n\n"
+GENERATED = ("## What's Changed\n* Agent runtime by @someone in https://github.com/netdryrun/Netdryrun/pull/12\n\n"
              "## New Contributors\n* @someone made their first contribution in "
-             "https://github.com/netdryrun/netdryrun/pull/12\n\n"
-             "**Full Changelog**: https://github.com/netdryrun/netdryrun/compare/v0.3.2...v0.3.3")
+             "https://github.com/netdryrun/Netdryrun/pull/12\n\n"
+             "**Full Changelog**: https://github.com/netdryrun/Netdryrun/compare/v0.3.2...v0.3.3")
 
 
 def registry(latest, listed=("0.3.2",)):
@@ -38,11 +38,11 @@ def sources(v=V, *, pypi=None, github=None, home=None, llms=None, reg=None):
     """url -> (HTTP status, body): every source on version v unless overridden."""
     return {
         "https://pypi.org/pypi/netdryrun/json": (200, json.dumps({"info": {"version": pypi or v}})),
-        "https://api.github.com/repos/netdryrun/netdryrun/releases/latest":
+        "https://api.github.com/repos/netdryrun/Netdryrun/releases/latest":
             github if isinstance(github, tuple) else (200, json.dumps({"tag_name": f"v{github or v}",
                                                                        "body": NOTES})),
         "https://netdryrun.com/": home or (200, f'<script>{{"softwareVersion": "{v}"}}</script>'
-                                                f"<p>Version {v}.</p><code>uses: netdryrun/netdryrun@v{v}</code>"),
+                                                f"<p>Version {v}.</p><code>uses: netdryrun/Netdryrun@v{v}</code>"),
         "https://netdryrun.com/llms.txt": llms or (200, f"current version {v}). Facts: version {v};"),
         f"https://registry.modelcontextprotocol.io/v0/servers?search={NAME}": reg or (200, registry(v)),
     }
@@ -51,8 +51,8 @@ def sources(v=V, *, pypi=None, github=None, home=None, llms=None, reg=None):
 def main_files(v=V, **extra):
     files = {
         "README.md": f"# Netdryrun\n\n<!-- facts:readme_status -->\n> Status: **v{v}.** Runs on Linux.\n",
-        ACTION: f'name: Published release\nenv:\n  RELEASE: "{v}"\njobs:\n  - uses: netdryrun/netdryrun@v{v}\n',
-        "website/docs/github-action.md": f"x\n```yaml\n- uses: netdryrun/netdryrun@v{v}\n```\n",
+        ACTION: f'name: Published release\nenv:\n  RELEASE: "{v}"\njobs:\n  - uses: netdryrun/Netdryrun@v{v}\n',
+        "website/docs/github-action.md": f"x\n```yaml\n- uses: netdryrun/Netdryrun@v{v}\n```\n",
     }
     files.update(extra)
     return files
@@ -107,7 +107,7 @@ def test_registry_without_the_release_fails():
 
 def test_each_place_on_main_that_says_another_version_is_named_with_its_line():
     old = main_files("0.3.2")
-    old["website/docs/guide.md"] = "a\nb\n  uses: netdryrun/netdryrun@v0.3.1\n"
+    old["website/docs/guide.md"] = "a\nb\n  uses: netdryrun/netdryrun@v0.3.1\n"   # the pre-rename spelling still counts
     c = check(main=old)["main-version"]
     assert c.status == gate.FAIL
     for where in ("README.md:4", f"{ACTION}:3", f"{ACTION}:5", "website/docs/github-action.md:3",
@@ -125,7 +125,7 @@ def test_history_on_main_keeps_its_old_versions():
 
 def test_old_refs_in_test_fixtures_on_main_are_ignored():
     # this very file holds old Action refs as fixtures; once on main it must not page the nightly
-    files = main_files(**{"tests/test_release_gate_consistency.py": "netdryrun/netdryrun@v0.3.1\n"})
+    files = main_files(**{"tests/test_release_gate_consistency.py": "netdryrun/Netdryrun@v0.3.1\n"})
     assert check(main=files)["main-version"].status == gate.PASS
 
 
@@ -138,7 +138,7 @@ def test_a_missing_status_line_or_release_pin_fails():
 
 
 def test_site_pages_name_each_old_version_with_the_page():
-    c = check(sources(home=(200, '{"softwareVersion": "0.3.2"} uses: netdryrun/netdryrun@v0.3.3 Version 0.3.3.')))
+    c = check(sources(home=(200, '{"softwareVersion": "0.3.2"} uses: netdryrun/Netdryrun@v0.3.3 Version 0.3.3.')))
     c = c["site-version"]
     assert c.status == gate.FAIL and "https://netdryrun.com/" in c.output and "0.3.2" in c.output
 

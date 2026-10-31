@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false   # the lab runs privileged containers: leave no token in .git/config
-      - uses: netdryrun/netdryrun@v0.3.3
+      - uses: netdryrun/Netdryrun@v0.4.0
         with:
           path: network/        # the folder with netdryrun.yml
           pr-comment: true
@@ -93,7 +93,7 @@ Windsurf, Codex CLI, timeouts and the safety model: [AI agents (MCP)](ai-agents.
 
 ## Optional: the agent skill
 
-The rules in one file, for clients that read skills. Copy [`skills/netdryrun/`](https://github.com/netdryrun/netdryrun/tree/main/skills/netdryrun) to `.claude/skills/netdryrun/` (or `.agents/skills/netdryrun/`) in the repository and commit it. A skill alone runs nothing: it needs Option 1 or Option 3.
+The rules in one file, for clients that read skills. Copy [`skills/netdryrun/`](https://github.com/netdryrun/Netdryrun/tree/main/skills/netdryrun) to `.claude/skills/netdryrun/` (or `.agents/skills/netdryrun/`) in the repository and commit it. A skill alone runs nothing: it needs Option 1 or Option 3.
 
 ## The smallest netdryrun.yml
 
@@ -125,4 +125,4 @@ Full syntax: [netdryrun.yml reference](reference/config.md).
 - **Option 3:** `claude mcp get netdryrun` says `Connected`, or your client lists the `dry_run` tool.
 
 !!! warning "0.3.3 and earlier: keep routing config out of topology `exec:` lines"
-    A topology `exec:` command that fails is only logged by containerlab, and the lab runs without it, so a run can pass. Put routing config in `setup:` (or, on FRR, in `frr.conf`). Fixed in 0.4. [Advisory](https://github.com/netdryrun/netdryrun/blob/main/advisories/0.3.3-exec-not-checked/README.md).
+    A topology `exec:` command that fails is only logged by containerlab, and the lab runs without it, so a run can pass. Put routing config in `setup:` (or, on FRR, in `frr.conf`). Fixed in 0.4. [Advisory](https://github.com/netdryrun/Netdryrun/blob/main/advisories/0.3.3-exec-not-checked/README.md).
