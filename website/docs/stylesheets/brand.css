@@ -90,7 +90,7 @@
 }
 .md-typeset ul.ndr-facts li::before { content: "\2713\00a0"; color: var(--md-accent-fg-color); font-weight: 700; }
 @media screen and (min-width: 60em) {
-  .md-typeset h1#fail-ci-on-routing-mistakes-before-they-reach-production { font-size: 2.3rem; max-width: 18em; }
+  .md-typeset h1#ndr-hero { font-size: 2.3rem; max-width: 20em; }
 }
 
 /* Cards (Material's grid cards): a quiet border that turns amber on hover */

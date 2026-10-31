@@ -5,17 +5,17 @@ title: Fail CI on routing mistakes before they reach production
 description: Test a network change in CI with a containerlab lab. Netdryrun boots the topology, waits for convergence, checks BGP, routes and reachability, and fails the job on mistakes.
 ---
 
-# Fail CI on routing mistakes before they reach production
+# Let your AI agent change the network. Test every change in a lab before it merges. { #ndr-hero }
 
-<p class="ndr-lead">Netdryrun™ boots your changed configs in a real containerlab lab, checks BGP sessions, prefixes, routes and reachability, and returns a pass/fail verdict with the evidence. One command, one CI step, or one tool call for an AI agent.</p>
+<p class="ndr-lead">You place the gate: a pull-request check, an <code>AGENTS.md</code> rule or an MCP server. Netdryrun™ boots the changed configs on real network OS images in a containerlab lab, checks BGP, routes and reachability, and returns a pass/fail verdict with the evidence. Minutes per run, on your machine or CI runner. People's changes get the same check.</p>
 
-[Try it in your browser](https://codespaces.new/netdryrun/netdryrun?quickstart=1){ .md-button .md-button--primary } [Add it where your agent works](add.md){ .md-button } [View the source on GitHub](https://github.com/netdryrun/netdryrun){ .md-button }
+[Add it where your agent works](add.md){ .md-button .md-button--primary } [Try it in your browser](https://codespaces.new/netdryrun/netdryrun?quickstart=1){ .md-button } [View the source on GitHub](https://github.com/netdryrun/netdryrun){ .md-button }
 
 <p class="ndr-note">The browser trial runs in GitHub Codespaces: it needs a free GitHub account, takes a few minutes to start, and then <code>bash examples/agent-demo/demo.sh</code> shows a bad change rejected and the fix accepted. Nothing to install.</p>
 
 <ul class="ndr-facts" aria-label="Key facts">
 <li>Open source, Apache-2.0</li>
-<li>Runs on your machine or your CI runner</li>
+<li>Minutes per run, on your machine or CI runner</li>
 <li>Never connects to real devices</li>
 <li>JSON, Markdown and JUnit evidence</li>
 </ul>
@@ -28,7 +28,17 @@ To test a network change in CI, keep the changed configs and a containerlab topo
 2. **Check.** It checks sessions, prefix counts, routes and pings, including things that must *not* happen, such as a leaked default route.
 3. **Decide.** It destroys the lab. Any failed check exits non-zero and fails the job, with a JSON evidence file showing every command and its raw output.
 
+For an AI agent, the same steps run as one `dry_run` tool call before it applies a change, or as the required check on the pull request it opens. A pass covers only the checks in your file, in the lab: it is the gate before merge, not a guarantee about production.
+
 <div class="grid cards" markdown>
+
+-   **Gate an AI agent**
+
+    ---
+
+    An MCP server (`netdryrun mcp`): the agent calls `dry_run` before applying a change and proceeds only on a pass. No Docker on the agent's machine? Gate its pull requests instead.
+
+    [AI agents (MCP)](ai-agents.md)
 
 -   **On your machine**
 
@@ -45,14 +55,6 @@ To test a network change in CI, keep the changed configs and a containerlab topo
     A GitHub Action that writes a job summary, uploads the JSON and JUnit reports, and fails the check on a bad change.
 
     [GitHub Action](github-action.md)
-
--   **For AI agents**
-
-    ---
-
-    An MCP server (`netdryrun mcp`): the agent calls `dry_run` before applying a change and proceeds only on a pass.
-
-    [AI agents (MCP)](ai-agents.md)
 
 </div>
 
