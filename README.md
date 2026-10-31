@@ -1,11 +1,11 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/netdryrun/netdryrun/main/.github/assets/netdryrun-wordmark-white-tm.svg">
-    <img alt="Netdryrun" src="https://raw.githubusercontent.com/netdryrun/netdryrun/main/.github/assets/netdryrun-wordmark-navy-tm.svg" width="360">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/netdryrun/Netdryrun/main/.github/assets/netdryrun-wordmark-white-tm.svg">
+    <img alt="Netdryrun" src="https://raw.githubusercontent.com/netdryrun/Netdryrun/main/.github/assets/netdryrun-wordmark-navy-tm.svg" width="360">
   </picture>
 </p>
 
-[![CI](https://github.com/netdryrun/netdryrun/actions/workflows/ci.yml/badge.svg)](https://github.com/netdryrun/netdryrun/actions/workflows/ci.yml) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/netdryrun/netdryrun/badge)](https://scorecard.dev/viewer/?uri=github.com/netdryrun/netdryrun)
+[![CI](https://github.com/netdryrun/Netdryrun/actions/workflows/ci.yml/badge.svg)](https://github.com/netdryrun/Netdryrun/actions/workflows/ci.yml) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/netdryrun/Netdryrun/badge)](https://scorecard.dev/viewer/?uri=github.com/netdryrun/Netdryrun)
 
 **Test network changes before they touch production.**
 
@@ -17,7 +17,7 @@ Software teams don't ship code without running its tests. Network changes deserv
 
 Netdryrun™ boots your topology as a real virtual network ([containerlab](https://containerlab.dev)), applies your configs, and checks how the network actually *behaves*: BGP sessions, prefix counts, routes, reachability. It catches the mistakes your checks describe, such as a route leak, before the change reaches production, and leaves the commands and raw output for a reviewer to inspect.
 
-<p align="center"><img alt="Netdryrun catching a leaked default route that ping and session checks miss" src="https://raw.githubusercontent.com/netdryrun/netdryrun/main/.github/assets/netdryrun-demo.gif" width="820"></p>
+<p align="center"><img alt="Netdryrun catching a leaked default route that ping and session checks miss" src="https://raw.githubusercontent.com/netdryrun/Netdryrun/main/.github/assets/netdryrun-demo.gif" width="820"></p>
 
 ```text
 $ netdryrun run examples/frr-bgp-broken
@@ -45,7 +45,7 @@ That run caught a leaked default route that was *received but not selected*. Pin
 
 ### Try it in your browser (no install)
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/netdryrun/netdryrun?quickstart=1)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/netdryrun/Netdryrun?quickstart=1)
 
 The codespace comes with Docker, containerlab and Netdryrun already installed. When the terminal shows `Ready`, run:
 
@@ -61,7 +61,7 @@ Requirements: Linux or WSL2, Docker, [containerlab](https://containerlab.dev/ins
 
 ```bash
 pipx install netdryrun
-git clone https://github.com/netdryrun/netdryrun && cd netdryrun
+git clone https://github.com/netdryrun/Netdryrun && cd netdryrun
 netdryrun run examples/frr-bgp          # 3 FRR routers, should pass
 netdryrun run examples/srl-frr          # SR Linux + FRR, should pass
 netdryrun run examples/frr-bgp-broken   # a bad change, should fail
@@ -154,7 +154,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.4.0
+      - uses: netdryrun/Netdryrun@v0.4.0
         with:
           path: network/        # folder containing netdryrun.yml
 ```
@@ -163,9 +163,9 @@ The action installs containerlab, runs the checks, uploads the JSON and JUnit re
 
 ## For AI agents (MCP)
 
-Listed in the [official MCP Registry](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.netdryrun) (`io.github.netdryrun/netdryrun`); the agent skill is also on [Smithery](https://smithery.ai/skills/netdryrun/netdryrun).
+Listed in the [official MCP Registry](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.netdryrun) (`io.github.netdryrun/netdryrun`); the agent skill is also on [Smithery](https://smithery.ai/skills/netdryrun/Netdryrun).
 
-**AI can propose network changes. Netdryrun verifies the outcome.** Agents: read [AGENTS.md](https://github.com/netdryrun/netdryrun/blob/main/AGENTS.md).
+**AI can propose network changes. Netdryrun verifies the outcome.** Agents: read [AGENTS.md](https://github.com/netdryrun/Netdryrun/blob/main/AGENTS.md).
 
 AI agents are starting to change networks. Netdryrun gives them a safety gate: an [MCP](https://modelcontextprotocol.io) server that lets an agent dry-run its change in a real lab and proceed only if every check passes.
 
@@ -181,16 +181,16 @@ claude mcp add netdryrun -- netdryrun mcp
 
 Tools: `dry_run` (deploy, check, destroy, verdict), `run_checks` (against a running lab), `record_baseline` (snapshot a known-good lab into checks), `validate`, `check_types`. Each result carries a separate `verdict` field: `CHECKS PASSED (only what the checks cover)`, `DO NOT APPLY THIS CHANGE`, or `INCONCLUSIVE: the lab did not reach a testable state; ...` when the lab never came up. `CHECKS PASSED (only what the checks cover)` means only that every check in the file passed in the lab, so a pass never says "safe". A change can break something no check looks at and still get it: in our [agent evaluation](https://netdryrun.com/ai-agents/), an agent's "pure refactor" added `redistribute connected` and passed, because no check covered the extra routes. For a change that must not change behavior, record a baseline first. From 0.3.2 the verdict strings are frozen (0.3.1 said `SAFE TO PROCEED` for a pass; decide on `status`, not the text), a failed result lists each failed check with its reason, an evidence excerpt and one read-only next diagnostic command, and the result format is a published JSON Schema: [mcp-result-v1.json](https://netdryrun.com/schemas/mcp-result-v1.json).
 
-**Demo** ([examples/agent-demo](https://github.com/netdryrun/netdryrun/tree/main/examples/agent-demo)): the ticket says the customer's new block must reach the upstream and the peer. The tempting change passes every ticket check, session and ping, but leaks routes; Netdryrun rejects it. The two-line fix passes the same checks. (A scripted replay of the two attempts; CI runs it.)
+**Demo** ([examples/agent-demo](https://github.com/netdryrun/Netdryrun/tree/main/examples/agent-demo)): the ticket says the customer's new block must reach the upstream and the peer. The tempting change passes every ticket check, session and ping, but leaks routes; Netdryrun rejects it. The two-line fix passes the same checks. (A scripted replay of the two attempts; CI runs it.)
 
-<p align="center"><img alt="Attempt 1 passes the ticket checks but fails five leak guards; attempt 2 passes all 14 checks" src="https://raw.githubusercontent.com/netdryrun/netdryrun/main/.github/assets/netdryrun-agent-demo.gif" width="820"></p>
+<p align="center"><img alt="Attempt 1 passes the ticket checks but fails five leak guards; attempt 2 passes all 14 checks" src="https://raw.githubusercontent.com/netdryrun/Netdryrun/main/.github/assets/netdryrun-agent-demo.gif" width="820"></p>
 
 ### The agent skill
 
-[`skills/netdryrun/SKILL.md`](https://github.com/netdryrun/netdryrun/blob/main/skills/netdryrun/SKILL.md) teaches a coding agent the rules: dry-run a routing change before applying it, paste the verdict, stop on inconclusive, never write or weaken checks to make a change pass, and use `record_baseline` when there are no checks. Install it from this repository's git URL (from 0.3.2):
+[`skills/netdryrun/SKILL.md`](https://github.com/netdryrun/Netdryrun/blob/main/skills/netdryrun/SKILL.md) teaches a coding agent the rules: dry-run a routing change before applying it, paste the verdict, stop on inconclusive, never write or weaken checks to make a change pass, and use `record_baseline` when there are no checks. Install it from this repository's git URL (from 0.3.2):
 
 ```bash
-git clone --depth 1 https://github.com/netdryrun/netdryrun /tmp/netdryrun
+git clone --depth 1 https://github.com/netdryrun/Netdryrun /tmp/netdryrun
 mkdir -p ~/.claude/skills && cp -r /tmp/netdryrun/skills/netdryrun ~/.claude/skills/   # Claude Code, every project
 ```
 
@@ -231,6 +231,6 @@ If Netdryrun caught something for you, a ⭐ helps other engineers and agents fi
 
 ## License
 
-Apache-2.0. "Netdryrun" and the Netdryrun logo are trademarks; see [TRADEMARKS.md](https://github.com/netdryrun/netdryrun/blob/main/TRADEMARKS.md).
+Apache-2.0. "Netdryrun" and the Netdryrun logo are trademarks; see [TRADEMARKS.md](https://github.com/netdryrun/Netdryrun/blob/main/TRADEMARKS.md).
 
 <!-- mcp-name: io.github.netdryrun/netdryrun -->

@@ -4,7 +4,7 @@
   "title": "Netdryrun",
   "description": "Validate BGP and routing changes in a real containerlab lab: pass/fail verdict with evidence.",
   "repository": {
-    "url": "https://github.com/netdryrun/netdryrun",
+    "url": "https://github.com/netdryrun/Netdryrun",
     "source": "github"
   },
   "websiteUrl": "https://netdryrun.com/ai-agents/",

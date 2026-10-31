@@ -20,13 +20,13 @@ Netdryrun™ includes an [MCP](https://modelcontextprotocol.io) server for testi
 <figcaption>About 90 seconds, captions on screen, no sound. A leaked default route that ping and session checks miss, an AI agent's tempting change rejected and the two-line fix passed (a scripted replay), a real agent run, and the verdict corpus with its losses. Every terminal line comes from a real run. <a href="/assets/video/netdryrun-demo.vtt">Captions as text</a>.</figcaption>
 </figure>
 
-[Try it in your browser](https://codespaces.new/netdryrun/netdryrun?quickstart=1){ .md-button .md-button--primary }
+[Try it in your browser](https://codespaces.new/netdryrun/Netdryrun?quickstart=1){ .md-button .md-button--primary }
 
-The browser trial runs in GitHub Codespaces: it needs a free GitHub account, takes a few minutes to start, and then `bash examples/agent-demo/demo.sh` shows a bad change rejected and the fix accepted. Think you can make it give a wrong verdict? Try, and [tell us](https://github.com/netdryrun/netdryrun/issues/new/choose).
+The browser trial runs in GitHub Codespaces: it needs a free GitHub account, takes a few minutes to start, and then `bash examples/agent-demo/demo.sh` shows a bad change rejected and the fix accepted. Think you can make it give a wrong verdict? Try, and [tell us](https://github.com/netdryrun/Netdryrun/issues/new/choose).
 
 ## Set up the MCP server
 
-Listed where agents and their hosts look for tools: the [official MCP Registry](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.netdryrun) as `io.github.netdryrun/netdryrun`, [PyPI](https://pypi.org/project/netdryrun/) as `netdryrun`, and the agent skill on [Smithery](https://smithery.ai/skills/netdryrun/netdryrun).
+Listed where agents and their hosts look for tools: the [official MCP Registry](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.netdryrun) as `io.github.netdryrun/netdryrun`, [PyPI](https://pypi.org/project/netdryrun/) as `netdryrun`, and the agent skill on [Smithery](https://smithery.ai/skills/netdryrun/Netdryrun).
 
 ```bash
 pipx install netdryrun   # or uv tool install netdryrun
@@ -164,11 +164,11 @@ Netdryrun starts containerlab labs, so the server needs the Docker socket and ro
 
 ![An attempt that passes the ticket checks but leaks routes is rejected; the proper fix passes the same checks](assets/netdryrun-agent-demo.gif)
 
-[`examples/agent-demo`](https://github.com/netdryrun/netdryrun/tree/main/examples/agent-demo): the customer's new block must reach the upstream and the peer. The tempting change, removing the prefix-list filters, passes every ticket check, session check and ping, but leaks upstream routes and the upstream's default route to the peer, and accepts a prefix the customer doesn't own. The network team's leak guards fail, so the verdict is `DO NOT APPLY THIS CHANGE`. The proper fix, two prefix-list lines, passes the same checks. The checks never change; only the config does. Both attempts are a scripted replay (hand-written diffs, not output from a real agent); `demo.sh` runs them, and CI runs it on pushes to `main` and on pull requests. In a [real run](#a-real-agent-run), a fresh Claude Code agent with only the ticket, the lab and these MCP tools made the correct two-line change on the first try and proposed it with a `passed` verdict.
+[`examples/agent-demo`](https://github.com/netdryrun/Netdryrun/tree/main/examples/agent-demo): the customer's new block must reach the upstream and the peer. The tempting change, removing the prefix-list filters, passes every ticket check, session check and ping, but leaks upstream routes and the upstream's default route to the peer, and accepts a prefix the customer doesn't own. The network team's leak guards fail, so the verdict is `DO NOT APPLY THIS CHANGE`. The proper fix, two prefix-list lines, passes the same checks. The checks never change; only the config does. Both attempts are a scripted replay (hand-written diffs, not output from a real agent); `demo.sh` runs them, and CI runs it on pushes to `main` and on pull requests. In a [real run](#a-real-agent-run), a fresh Claude Code agent with only the ticket, the lab and these MCP tools made the correct two-line change on the first try and proposed it with a `passed` verdict.
 
 ## Give the agent a ticket (the TICKET.md pattern)
 
-An agent does better with a written task and explicit rules than with a chat message. Put a `TICKET.md` in the lab folder, next to `topology.clab.yml`, `configs/` and `netdryrun.yml`. [`examples/agent-demo/TICKET.md`](https://github.com/netdryrun/netdryrun/blob/main/examples/agent-demo/TICKET.md) is a complete example. A ticket says:
+An agent does better with a written task and explicit rules than with a chat message. Put a `TICKET.md` in the lab folder, next to `topology.clab.yml`, `configs/` and `netdryrun.yml`. [`examples/agent-demo/TICKET.md`](https://github.com/netdryrun/Netdryrun/blob/main/examples/agent-demo/TICKET.md) is a complete example. A ticket says:
 
 - **The goal, in network terms.** "The customer's new block 10.101.0.0/24 must reach the upstream and the peer." Name the routers, ASes and prefixes.
 - **What the agent may change.** "Change only `configs/edge1.conf`." A small allowed surface makes the change easy to review.
@@ -184,11 +184,11 @@ More guidance for the prompt or the agent's instructions file:
 - Don't show it the answer. In `examples/agent-demo`, the README, `changes/` and `demo.sh` contain the solution, so the real run could only see `TICKET.md`, `netdryrun.yml`, `topology.clab.yml` and `configs/`.
 - A pass covers only the checks that exist. Give the agent the network team's standing guards (leak checks, `present: false` routes), not only the ticket's acceptance checks.
 
-The repository's [`AGENTS.md`](https://github.com/netdryrun/netdryrun/blob/main/AGENTS.md) has the same rules written for agents.
+The repository's [`AGENTS.md`](https://github.com/netdryrun/Netdryrun/blob/main/AGENTS.md) has the same rules written for agents.
 
 ## A real agent run
 
-[`AGENT-RUN.md`](https://github.com/netdryrun/netdryrun/blob/main/examples/agent-demo/AGENT-RUN.md) records one real run on `examples/agent-demo`, not the scripted replay:
+[`AGENT-RUN.md`](https://github.com/netdryrun/Netdryrun/blob/main/examples/agent-demo/AGENT-RUN.md) records one real run on `examples/agent-demo`, not the scripted replay:
 
 - **Agent:** Claude Code 2.1.116 in headless mode (`claude -p`). It could read and edit files and call the Netdryrun MCP tools. No shell, no web access, so its only way to test was Netdryrun.
 - **What it did:** read the ticket, the router config and `netdryrun.yml`; added the new block to the two prefix lists in `configs/edge1.conf`; called `dry_run`; got `status: passed`, 14 of 14 checks, verdict `SAFE TO PROCEED` (the pass verdict before 0.3.2, now `CHECKS PASSED (only what the checks cover)`); proposed the two-line change with the verdict. 7 turns, 69 seconds.
@@ -198,7 +198,7 @@ The agent did not make the tempting leaky change, so this run did not show Netdr
 
 ## Measured: ten tickets worked unattended
 
-One good run is an anecdote, so on 2026-10-27 we measured. [`examples/agent-eval`](https://github.com/netdryrun/netdryrun/tree/main/examples/agent-eval) has ten tickets on the two FRR example labs: changes to make, colleagues' changes to review (some fine, some leaking routes or setting the wrong attribute while sessions and pings stay up), a request that is itself a route leak, and one broken lab. Each has a hidden grader. The expected answers were [pre-registered](https://github.com/netdryrun/netdryrun/blob/main/examples/agent-eval/PREREGISTRATION.md) before anything ran. A fresh headless Claude Code agent worked each ticket alone, with only `AGENTS.md`, this page and the MCP tools: no shell, no project memory, no human.
+One good run is an anecdote, so on 2026-10-27 we measured. [`examples/agent-eval`](https://github.com/netdryrun/Netdryrun/tree/main/examples/agent-eval) has ten tickets on the two FRR example labs: changes to make, colleagues' changes to review (some fine, some leaking routes or setting the wrong attribute while sessions and pings stay up), a request that is itself a route leak, and one broken lab. Each has a hidden grader. The expected answers were [pre-registered](https://github.com/netdryrun/Netdryrun/blob/main/examples/agent-eval/PREREGISTRATION.md) before anything ran. A fresh headless Claude Code agent worked each ticket alone, with only `AGENTS.md`, this page and the MCP tools: no shell, no project memory, no human.
 
 | Agent (Claude Code 2.1.116) | Netdryrun | Solved | Misses |
 |---|---|---|---|
@@ -218,7 +218,7 @@ What failed, and what changed because of it:
 
 The harness set `NETDRYRUN_MCP_ROOT` to the ticket folder, but 0.3.0 ignores that variable, so in the 0.3.0 runs the server was not confined to the folder; the agents had no shell.
 
-Ten small tickets written by the tool's author, two models, at most two runs each: evidence about the docs and the tool surface, not a rate. Full results, transcripts and every miss: [RESULTS.md](https://github.com/netdryrun/netdryrun/blob/main/examples/agent-eval/RESULTS.md).
+Ten small tickets written by the tool's author, two models, at most two runs each: evidence about the docs and the tool surface, not a rate. Full results, transcripts and every miss: [RESULTS.md](https://github.com/netdryrun/Netdryrun/blob/main/examples/agent-eval/RESULTS.md).
 
 ## Gate agent-made pull requests in CI
 
@@ -238,7 +238,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.4.0
+      - uses: netdryrun/Netdryrun@v0.4.0
         with:
           path: network/
           pr-comment: true
@@ -346,10 +346,10 @@ The full evidence is written to `netdryrun-report.json` next to `netdryrun.yml`.
 
 ## The agent skill
 
-[`skills/netdryrun/SKILL.md`](https://github.com/netdryrun/netdryrun/blob/main/skills/netdryrun/SKILL.md) (from 0.3.2) gives a coding agent the rules in one file: before applying a routing change, dry-run it; paste the verdict; stop on inconclusive; never write or weaken checks to make a change pass; use `record_baseline` when there are no checks. Install it from the repository's git URL:
+[`skills/netdryrun/SKILL.md`](https://github.com/netdryrun/Netdryrun/blob/main/skills/netdryrun/SKILL.md) (from 0.3.2) gives a coding agent the rules in one file: before applying a routing change, dry-run it; paste the verdict; stop on inconclusive; never write or weaken checks to make a change pass; use `record_baseline` when there are no checks. Install it from the repository's git URL:
 
 ```bash
-git clone --depth 1 https://github.com/netdryrun/netdryrun /tmp/netdryrun
+git clone --depth 1 https://github.com/netdryrun/Netdryrun /tmp/netdryrun
 mkdir -p ~/.claude/skills && cp -r /tmp/netdryrun/skills/netdryrun ~/.claude/skills/   # Claude Code, every project
 ```
 

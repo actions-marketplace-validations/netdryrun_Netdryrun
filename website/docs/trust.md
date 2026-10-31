@@ -7,20 +7,20 @@ description: Netdryrun license (Apache-2.0), how releases are published with PyP
 
 ## License
 
-Netdryrun™ is open source under the [Apache License 2.0](https://github.com/netdryrun/netdryrun/blob/main/LICENSE). The source is at [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun).
+Netdryrun™ is open source under the [Apache License 2.0](https://github.com/netdryrun/Netdryrun/blob/main/LICENSE). The source is at [github.com/netdryrun/Netdryrun](https://github.com/netdryrun/Netdryrun).
 
 ## How releases are published
 
 - Releases are built and published by a GitHub Actions workflow when a version tag (`v*`) is pushed. The workflow checks that the tag matches the package version before building.
 - Packages are uploaded to [PyPI](https://pypi.org/project/netdryrun/) with **Trusted Publishing** (OpenID Connect). No PyPI token or password is stored in the repository or its secrets; PyPI accepts the upload because it comes from that workflow in that repository.
 - The same workflow creates a GitHub release with the built files attached.
-- The GitHub Action (`netdryrun/netdryrun@v0.4.0`) installs Netdryrun from the action's own source at the tag you reference. Pin a tag or a commit SHA.
+- The GitHub Action (`netdryrun/Netdryrun@v0.4.0`) installs Netdryrun from the action's own source at the tag you reference. Pin a tag or a commit SHA.
 
 ## Reporting a security issue
 
 Email **[security@netdryrun.com](mailto:security@netdryrun.com)**. Please do not open a public issue for a vulnerability. Include the version, what you found, and how to reproduce it.
 
-Past advisories: [0.3.0 could pass a check without testing what the file said](https://github.com/netdryrun/netdryrun/blob/main/advisories/0.3.0-false-pass/README.md), found by our own audit and fixed in 0.3.1, with a rerunnable test for each path. 0.3.0 is yanked on PyPI.
+Past advisories: [0.3.0 could pass a check without testing what the file said](https://github.com/netdryrun/Netdryrun/blob/main/advisories/0.3.0-false-pass/README.md), found by our own audit and fixed in 0.3.1, with a rerunnable test for each path. 0.3.0 is yanked on PyPI.
 
 ## What a lab cannot prove
 
@@ -61,4 +61,4 @@ The GitHub Action has a `cloud` input reserved for a future hosted service, Netd
 
 ## Trademarks
 
-"Netdryrun" and the Netdryrun logos are trademarks of the Netdryrun project. The Apache-2.0 license covers the code, not the name: forks are welcome under a different name. See the [trademark policy](https://github.com/netdryrun/netdryrun/blob/main/TRADEMARKS.md).
+"Netdryrun" and the Netdryrun logos are trademarks of the Netdryrun project. The Apache-2.0 license covers the code, not the name: forks are welcome under a different name. See the [trademark policy](https://github.com/netdryrun/Netdryrun/blob/main/TRADEMARKS.md).

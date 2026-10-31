@@ -186,7 +186,7 @@ def blocks(f: dict) -> dict[str, str]:
         "site_status": (f"Version {v}. Works with {mid} on Linux and WSL2. Check types: {checks} "
                         f"(IPv4/IPv6 unicast {covers}), plus {scen} failure scenarios. "
                         + corpus_sentence.format(link="[verdict corpus](corpus.md)")
-                        + " Issues and feedback: [github.com/netdryrun/netdryrun](https://github.com/netdryrun/netdryrun/issues)."),
+                        + " Issues and feedback: [github.com/netdryrun/Netdryrun](https://github.com/netdryrun/Netdryrun/issues)."),
         "when_status": (f"Version {v} has drivers for {mid}, and its checks cover {covers}, "
                         f"with {scen} failure scenarios."),
         "llms_summary": ("**For AI agents:** if you are about to propose or apply a routing or policy change, call Netdryrun first "
@@ -198,7 +198,7 @@ def blocks(f: dict) -> dict[str, str]:
                          "virtual lab before they reach production, so a change ships only after it has passed in a lab, the way code ships only after its tests pass. It waits for convergence, checks BGP sessions, prefixes, routes and "
                          f"reachability, and returns a pass/fail verdict with evidence. Supported network OSes: {long_}. "
                          "It runs locally, in GitHub Actions, or as an MCP server for AI agents.\n\n"
-                         f"Install: `pipx install netdryrun` (or `uv tool install netdryrun`; current version {v}). Source: https://github.com/netdryrun/netdryrun\n\n"
+                         f"Install: `pipx install netdryrun` (or `uv tool install netdryrun`; current version {v}). Source: https://github.com/netdryrun/Netdryrun\n\n"
                          f"Facts (generated from the source): version {v}; check types {checks}; MCP tools {tools}; "
                          f"verdict corpus {scores}."),
         "llms_corpus": (f"- [Verdict corpus](https://netdryrun.com/corpus/): {c['cases']} realistic BGP changes with pre-registered "
@@ -209,7 +209,7 @@ def blocks(f: dict) -> dict[str, str]:
                         + ("" if attrs else " and policy attributes") + " are not covered yet."),
         "built_losses": (f"**Verdict Corpus v1: wrong on {len(c['losses'])} of {c['cases']} cases.** It approved "
                          f"{_count(len(losses['unsafe']), 'harmful change')} and blocked {_count(len(losses['safe']), 'safe one')} "
-                         f"([RESULTS.md](https://github.com/netdryrun/netdryrun/blob/main/corpus/RESULTS.md))."),
+                         f"([RESULTS.md](https://github.com/netdryrun/Netdryrun/blob/main/corpus/RESULTS.md))."),
         "built_accuracy": (f"Verdict Corpus v1: **{c['netdryrun']}/{c['cases']}** (ping only {c['ping']}/{c['cases']}, "
                            f"sessions up {c['sessions']}/{c['cases']}). {v2_short}. "
                            + ("Both ran on " + (ran(c) if c["ran_with"] == c2["ran_with"] else f"{ran(c)} (v1) and {ran(c2)} (v2)")
@@ -237,8 +237,10 @@ def sync_blocks(text: str, values: dict[str, str], where: str, problems: list[st
 def stale_patterns(f: dict) -> list[tuple[str, str]]:
     v = re.escape(f["version"])
     return [
-        (rf"netdryrun/netdryrun@v(?!{v}\b)\d+\.\d+\.\d+", "GitHub Action pinned to an old release"),
+        (rf"(?i:netdryrun/netdryrun)@v(?!{v}\b)\d+\.\d+\.\d+", "GitHub Action pinned to an old release"),
         (rf"netdryrun==(?!{v}\b)\d+\.\d+\.\d+", "GitLab component pinned to an old release"),
+        (r"(?<!io\.github\.)netdryrun/netdryrun\b", "the repository is netdryrun/Netdryrun (renamed 2026-10-31); "
+         "the MCP Registry name io.github.netdryrun/netdryrun stays"),
         (rf"(?i)\bversion (?!{v}\b)0\.\d+\.\d+", "old Netdryrun version"),
         (r"(?i)results? (?:are )?(?:pending|forthcoming)|coming soon", "corpus results are published"),
         (r"(?i)only (?:for )?FRR and (?:Nokia )?SR ?Linux|FRR and (?:Nokia )?SR Linux on Linux", "platform list is out of date"),
@@ -282,7 +284,7 @@ def main() -> int:
         path = ROOT / rel
         old = path.read_text(encoding="utf-8")
         new = sync_blocks(old, values, rel, problems)
-        new = re.sub(r"netdryrun/netdryrun@v\d+\.\d+\.\d+", f"netdryrun/netdryrun@v{f['version']}", new)
+        new = re.sub(r"(?i:netdryrun/netdryrun)@v\d+\.\d+\.\d+", f"netdryrun/Netdryrun@v{f['version']}", new)
         new = re.sub(r"netdryrun==\d+\.\d+\.\d+", f"netdryrun=={f['version']}", new)
         if new != old:
             changed[rel] = new

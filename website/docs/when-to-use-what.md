@@ -5,7 +5,7 @@ description: A neutral comparison of Batfish, pyATS/Genie, containerlab and Netd
 
 # When to use what
 
-Several good open-source tools help you test network changes. They answer different questions and work well together. This page tries to describe each one fairly; if something here is wrong or out of date, please [open an issue](https://github.com/netdryrun/netdryrun/issues).
+Several good open-source tools help you test network changes. They answer different questions and work well together. This page tries to describe each one fairly; if something here is wrong or out of date, please [open an issue](https://github.com/netdryrun/Netdryrun/issues).
 
 ## The short version
 

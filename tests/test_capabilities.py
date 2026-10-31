@@ -41,7 +41,7 @@ def test_its_facts_are_the_codes():
             params = inspect.signature(getattr(mcp_server, uc["mcp"]["tool"])).parameters
             assert set(uc["mcp"]["arguments"]) <= set(params), uc["id"]
         if "github_action" in uc:
-            assert uc["github_action"]["uses"] == f"netdryrun/netdryrun@v{__version__}"
+            assert uc["github_action"]["uses"] == f"netdryrun/Netdryrun@v{__version__}"
 
 
 def test_every_use_case_says_when_and_how():
@@ -76,3 +76,19 @@ def test_each_released_platforms_verified_limits_are_in_the_statement():
         for limit in verified.get(driver, {}).get("limits", []):
             assert f"{names[2]}: {limit}" in limits, (driver, limit)
     assert any(x.startswith("Juniper (beta): ") for x in limits)
+
+
+def test_a_link_to_the_pre_rename_repository_is_a_stale_phrase_but_the_registry_name_is_not():
+    """The repository is netdryrun/Netdryrun since 2026-10-31; the MCP Registry name keeps the old spelling."""
+    import re
+
+    import sync_facts
+
+    def stale(text):
+        return [why for pat, why in sync_facts.stale_patterns({"version": __version__})
+                if "renamed" in why and re.search(pat, text)]
+
+    assert stale("see https://github.com/netdryrun/netdryrun/issues")
+    assert stale(f"uses: netdryrun/netdryrun@v{__version__}")
+    assert not stale("see https://github.com/netdryrun/Netdryrun/issues")
+    assert not stale("the MCP Registry name io.github.netdryrun/netdryrun")

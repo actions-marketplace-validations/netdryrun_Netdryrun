@@ -47,6 +47,7 @@
 
 ### Changed
 
+- **The repository is now [github.com/netdryrun/Netdryrun](https://github.com/netdryrun/Netdryrun)** (renamed 2026-10-31). Old links and `uses: netdryrun/netdryrun@vX` keep working through GitHub's redirect; the docs, the Action examples, the GitLab component URLs and the package's project links use the new name. Unchanged: the MCP Registry name `io.github.netdryrun/netdryrun`. Two links printed by the package itself (the CLI's feedback link, the GitLab MR comment's token-help link) keep the old spelling in 0.4.0 and change in 0.4.1.
 - **Advertisement intervals stretch the windows.** Each BGP session's advertisement interval (MRAI) is read where the driver reports it (FRR and SONiC: per neighbor; SR Linux: `minimum-advertisement-interval`, default 5 s; EOS: its default of 0, because a configured `out-delay` is not read yet: on EOS raise `--settle` and `--hold` above it, fix planned for 0.4.1), and `--settle` and `--hold` of `run`, and `verify`'s `--settle`, stretch to the longest one plus 2 s, so a leak sent after the default windows can't let a negative check pass on a prefix count still at 0 (0.3.2 multi-vendor audit). The log says when they were stretched.
 
 - **`record` beyond the default VRF** (0.3.3 cross-platform review): on FRR and SONiC it records every active VRF, each check with its `vrf:`; a VRF without BGP is skipped. On SR Linux and Arista EOS it still records the default VRF only, and now says so in a warning instead of silently.

@@ -136,7 +136,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: netdryrun/netdryrun@v0.4.0
+      - uses: netdryrun/Netdryrun@v0.4.0
         with:
           path: network/
           pr-comment: true

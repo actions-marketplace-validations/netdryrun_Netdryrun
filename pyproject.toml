@@ -52,9 +52,9 @@ dev = [
 [project.urls]
 Homepage = "https://netdryrun.com"
 Documentation = "https://netdryrun.com/getting-started/"
-Changelog = "https://github.com/netdryrun/netdryrun/blob/main/CHANGELOG.md"
-Issues = "https://github.com/netdryrun/netdryrun/issues"
-Source = "https://github.com/netdryrun/netdryrun"
+Changelog = "https://github.com/netdryrun/Netdryrun/blob/main/CHANGELOG.md"
+Issues = "https://github.com/netdryrun/Netdryrun/issues"
+Source = "https://github.com/netdryrun/Netdryrun"
 
 [project.scripts]
 netdryrun = "netdryrun.cli:main"

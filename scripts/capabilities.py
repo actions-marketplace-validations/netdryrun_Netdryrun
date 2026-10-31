@@ -30,7 +30,7 @@ USE_CASES = [
              "lab. A pass covers only what the checks look at.",
      "mcp": {"tool": "dry_run", "arguments": {"path": "/path/to/lab"}},
      "cli": "netdryrun run /path/to/lab --json report.json",
-     "github_action": {"uses": "netdryrun/netdryrun@vVERSION", "with": {"path": "lab"}}},
+     "github_action": {"uses": "netdryrun/Netdryrun@vVERSION", "with": {"path": "lab"}}},
     {"id": "verify_change",
      "since": "0.4", "platforms": ["frr"],
      "when": "When no checks exist and a ticket states what the change is meant to do: declare that intent, and "
@@ -42,7 +42,7 @@ USE_CASES = [
              "arguments": {"topology": "/path/to/lab/topology.clab.yml", "before": "main", "after": "/path/to/lab-after",
                            "intent": "intent:\n  - prefix: 10.101.0.0/24\n    appears_on: [edge1, up1, peer1]\n"}},
      "cli": "netdryrun verify topology.clab.yml --before main --after HEAD --intent netdryrun-intent.yml --json report.json",
-     "github_action": {"uses": "netdryrun/netdryrun@vVERSION",
+     "github_action": {"uses": "netdryrun/Netdryrun@vVERSION",
                        "with": {"mode": "verify", "topology": "lab/topology.clab.yml",
                                 "intent-file": "netdryrun-intent.yml"}}},
     {"id": "record_baseline",
@@ -104,7 +104,7 @@ DOCS = {
     "github_action": "https://netdryrun.com/github-action/",
     "mcp_result_schema": "https://netdryrun.com/schemas/mcp-result-v1.json",
     "verify_report_schema": "https://netdryrun.com/schemas/verify-v1.json",
-    "agents_md": "https://github.com/netdryrun/netdryrun/blob/main/AGENTS.md",
+    "agents_md": "https://github.com/netdryrun/Netdryrun/blob/main/AGENTS.md",
     "llms_txt": "https://netdryrun.com/llms.txt",
 }
 

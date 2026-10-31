@@ -456,7 +456,7 @@ def version_sources(version: str) -> tuple[list[tuple[str, str]], list[str]]:
     m = re.search(r"^## (\d+\.\d+\.\d+)\b", (ROOT / "CHANGELOG.md").read_text(encoding="utf-8"), re.M)
     found.append(("CHANGELOG.md newest release heading", m.group(1) if m else "missing"))
 
-    # `uses: netdryrun/netdryrun@vX.Y.Z` in docs, examples and workflows; `netdryrun==X.Y.Z` and
+    # `uses: netdryrun/Netdryrun@vX.Y.Z` in docs, examples and workflows; `netdryrun==X.Y.Z` and
     # `netdryrun@X.Y.Z` (uvx) in the docs. Other projects' tags are not ours to check.
     docs = tracked_files(("README.md", "AGENTS.md", "action.yml", "website/docs/*", "examples/*", ".github/*"))
     for f in docs:
@@ -466,7 +466,7 @@ def version_sources(version: str) -> tuple[list[tuple[str, str]], list[str]]:
             continue
         text = f.read_text(encoding="utf-8", errors="replace")
         rel = f.relative_to(ROOT).as_posix()
-        patterns = [r"netdryrun/netdryrun@v(\d+\.\d+\.\d+)"]
+        patterns = [r"(?i:netdryrun/netdryrun)@v(\d+\.\d+\.\d+)"]
         if not rel.startswith("examples/"):   # an example may name the version it was recorded with
             patterns.append(r"\bnetdryrun(?:\[mcp\])?(?:==|@)(\d+\.\d+\.\d+)")
         for pat in patterns:
@@ -1372,12 +1372,12 @@ def after_publish_live(layer: Layer, work: Path, args) -> None:
 
 SITE_PAGES = ("https://netdryrun.com/", "https://netdryrun.com/llms.txt")
 PUBLISHED_ACTION = ".github/workflows/published-action.yml"
-ACTION_REF = re.compile(r"netdryrun/netdryrun@v(\d+\.\d+\.\d+)")
+ACTION_REF = re.compile(r"(?i:netdryrun/netdryrun)@v(\d+\.\d+\.\d+)")   # either case: GitHub repo names are case-insensitive
 README_STATUS = re.compile(r"^> Status: \*\*v(\d+\.\d+\.\d+)\.\*\*", re.M)
 RELEASE_PIN = re.compile(r'^\s*RELEASE:\s*"?(\d+\.\d+\.\d+)"?\s*$', re.M)
 # What the site says about the current version: its structured data, the Action ref, and "version X.Y.Z" (the
 # phrase sync_facts writes). Past releases named as history ("ran on Netdryrun 0.3.1") match none of these.
-SITE_VERSION = re.compile(r'"softwareVersion":\s*"(\d+\.\d+\.\d+)"|netdryrun/netdryrun@v(\d+\.\d+\.\d+)'
+SITE_VERSION = re.compile(r'"softwareVersion":\s*"(\d+\.\d+\.\d+)"|(?i:netdryrun/netdryrun)@v(\d+\.\d+\.\d+)'
                           r"|(?i:\bversion) (\d+\.\d+\.\d+)")
 
 
@@ -1397,7 +1397,7 @@ def main_texts() -> dict[str, str] | None:
     """README.md, published-action.yml and every file naming the Action, as origin/main has them after one fetch."""
     if run(["git", "-C", ROOT, "fetch", "--quiet", "origin", "main"], timeout=120).code != 0:
         return None
-    p = run(["git", "-C", ROOT, "grep", "-l", "-F", "netdryrun/netdryrun@v", "origin/main"], timeout=60)
+    p = run(["git", "-C", ROOT, "grep", "-l", "-i", "-F", "netdryrun/netdryrun@v", "origin/main"], timeout=60)
     if p.code not in (0, 1):   # 1: no match
         return None
     paths = {ln.split(":", 1)[1] for ln in p.out.splitlines() if ln.startswith("origin/main:")}
@@ -1510,7 +1510,7 @@ def release_consistency(layer: Layer, version: str, get=fetch, main=main_texts) 
                f"latest release: {got or f'unreadable (HTTP {status})'}"
                + ("" if pasted or not got else "; its notes are only what GitHub generates (paste the release notes)"))
 
-    title = f"main names {version}: README status line, every netdryrun/netdryrun@v ref, published-action.yml RELEASE"
+    title = f"main names {version}: README status line, every netdryrun/Netdryrun@v ref, published-action.yml RELEASE"
     texts = main()
     if texts is None:
         report("main-version", title, None, "could not fetch and read origin/main")

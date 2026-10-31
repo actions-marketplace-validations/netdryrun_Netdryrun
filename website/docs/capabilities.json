@@ -17,7 +17,7 @@
       },
       "cli": "netdryrun run /path/to/lab --json report.json",
       "github_action": {
-        "uses": "netdryrun/netdryrun@v0.4.0",
+        "uses": "netdryrun/Netdryrun@v0.4.0",
         "with": {
           "path": "lab"
         }
@@ -42,7 +42,7 @@
       },
       "cli": "netdryrun verify topology.clab.yml --before main --after HEAD --intent netdryrun-intent.yml --json report.json",
       "github_action": {
-        "uses": "netdryrun/netdryrun@v0.4.0",
+        "uses": "netdryrun/Netdryrun@v0.4.0",
         "with": {
           "mode": "verify",
           "topology": "lab/topology.clab.yml",
@@ -197,7 +197,7 @@
     "github_action": "https://netdryrun.com/github-action/",
     "mcp_result_schema": "https://netdryrun.com/schemas/mcp-result-v1.json",
     "verify_report_schema": "https://netdryrun.com/schemas/verify-v1.json",
-    "agents_md": "https://github.com/netdryrun/netdryrun/blob/main/AGENTS.md",
+    "agents_md": "https://github.com/netdryrun/Netdryrun/blob/main/AGENTS.md",
     "llms_txt": "https://netdryrun.com/llms.txt"
   }
 }

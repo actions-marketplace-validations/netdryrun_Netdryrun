@@ -7,7 +7,7 @@ description: Try Netdryrun in your browser with GitHub Codespaces, or install it
 
 ## Try it in your browser
 
-No install: [open Netdryrun in GitHub Codespaces](https://codespaces.new/netdryrun/netdryrun?quickstart=1) and click **Create codespace**.
+No install: [open Netdryrun in GitHub Codespaces](https://codespaces.new/netdryrun/Netdryrun?quickstart=1) and click **Create codespace**.
 
 GitHub starts a Linux machine with Docker, containerlab 0.81.1 and Netdryrun installed from the repository, and pulls the FRR image the examples use. This takes a few minutes the first time. When the creation log shows `Ready`, run this in the terminal:
 
@@ -15,7 +15,7 @@ GitHub starts a Linux machine with Docker, containerlab 0.81.1 and Netdryrun ins
 bash examples/agent-demo/demo.sh
 ```
 
-The [agent demo](https://github.com/netdryrun/netdryrun/tree/main/examples/agent-demo) boots four FRR routers twice, which takes about 65 s. The first change opens the filters to make a ticket work and is rejected by the leak guards; the second adds two prefix-list lines and passes all 14 checks. The run ends with `Demo OK`. The other FRR examples (`netdryrun run examples/frr-bgp`, `examples/frr-bgp-broken`) work the same way.
+The [agent demo](https://github.com/netdryrun/Netdryrun/tree/main/examples/agent-demo) boots four FRR routers twice, which takes about 65 s. The first change opens the filters to make a ticket work and is rejected by the leak guards; the second adds two prefix-list lines and passes all 14 checks. The run ends with `Demo OK`. The other FRR examples (`netdryrun run examples/frr-bgp`, `examples/frr-bgp-broken`) work the same way.
 
 The codespace runs on the 2-core machine and uses your GitHub account's free Codespaces allowance (GitHub Free includes 120 core-hours and 15 GB of storage a month, so about 60 hours on this machine; Pro includes 180 core-hours). Stop or delete the codespace when you're done ([github.com/codespaces](https://github.com/codespaces)) so it doesn't use more. VM-based nodes (vrnetlab) don't work in Codespaces, which has no nested virtualization.
 
@@ -49,7 +49,7 @@ The MCP server for AI agents is included: run `netdryrun mcp`. See [AI agents](a
 The repository ships these example labs. The FRR and SR Linux images are pulled automatically on first use.
 
 ```bash
-git clone https://github.com/netdryrun/netdryrun && cd netdryrun
+git clone https://github.com/netdryrun/Netdryrun && cd netdryrun
 netdryrun run examples/frr-bgp          # 3 FRR routers, should pass
 netdryrun run examples/srl-frr          # SR Linux + FRR, should pass
 netdryrun run examples/frr-bgp-broken   # a bad change, should fail

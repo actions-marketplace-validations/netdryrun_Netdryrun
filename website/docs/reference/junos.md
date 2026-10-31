@@ -79,4 +79,4 @@ Junos exits 0 for everything, errors included. The driver reads every answer as 
 
 ## Example
 
-[`examples/junos-frr`](https://github.com/netdryrun/netdryrun/tree/main/examples/junos-frr): cJunosEvolved and FRR peering eBGP, the good configs passing and a one-line leak failing exactly the leak guard. Its README has the real output of both runs.
+[`examples/junos-frr`](https://github.com/netdryrun/Netdryrun/tree/main/examples/junos-frr): cJunosEvolved and FRR peering eBGP, the good configs passing and a one-line leak failing exactly the leak guard. Its README has the real output of both runs.

@@ -7,8 +7,8 @@ site_description: >-
 site_author: Netdryrun
 copyright: 'Netdryrun™ is open source under the Apache-2.0 license. Netdryrun and the Netdryrun logo are trademarks. <a href="/privacy/">Privacy</a> · <a href="/trust/">Trust</a> · <a href="/support/">Support</a> · <a href="/contact/">Contact</a>'
 
-repo_url: https://github.com/netdryrun/netdryrun
-repo_name: netdryrun/netdryrun
+repo_url: https://github.com/netdryrun/Netdryrun
+repo_name: netdryrun/Netdryrun
 edit_uri: edit/main/website/docs/
 
 theme:
@@ -125,7 +125,7 @@ nav:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/netdryrun/netdryrun
+      link: https://github.com/netdryrun/Netdryrun
       name: Netdryrun on GitHub
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/netdryrun/
