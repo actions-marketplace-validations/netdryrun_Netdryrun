@@ -163,7 +163,7 @@ The action installs containerlab, runs the checks, uploads the JSON and JUnit re
 
 ## For AI agents (MCP)
 
-Listed in the [official MCP Registry](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.netdryrun) (`io.github.netdryrun/netdryrun`); the agent skill is also on [Smithery](https://smithery.ai/skills/netdryrun/Netdryrun).
+Listed in the [official MCP Registry](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.netdryrun) (`io.github.netdryrun/netdryrun`) and on [Glama](https://glama.ai/mcp/servers/netdryrun/Netdryrun); the agent skill is also on [Smithery](https://smithery.ai/skills/netdryrun/Netdryrun).
 
 **AI can propose network changes. Netdryrun verifies the outcome.** Agents: read [AGENTS.md](https://github.com/netdryrun/Netdryrun/blob/main/AGENTS.md).
 

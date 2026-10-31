@@ -26,7 +26,7 @@ The browser trial runs in GitHub Codespaces: it needs a free GitHub account, tak
 
 ## Set up the MCP server
 
-Listed where agents and their hosts look for tools: the [official MCP Registry](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.netdryrun) as `io.github.netdryrun/netdryrun`, [PyPI](https://pypi.org/project/netdryrun/) as `netdryrun`, and the agent skill on [Smithery](https://smithery.ai/skills/netdryrun/Netdryrun).
+Listed where agents and their hosts look for tools: the [official MCP Registry](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.netdryrun) as `io.github.netdryrun/netdryrun`, [PyPI](https://pypi.org/project/netdryrun/) as `netdryrun`, [Glama](https://glama.ai/mcp/servers/netdryrun/Netdryrun), and the agent skill on [Smithery](https://smithery.ai/skills/netdryrun/Netdryrun).
 
 ```bash
 pipx install netdryrun   # or uv tool install netdryrun

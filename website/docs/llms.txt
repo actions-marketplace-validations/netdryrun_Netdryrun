@@ -46,6 +46,7 @@ Facts (generated from the source): version 0.4.0; check types `bgp_session`, `bg
 - [Source on GitHub](https://github.com/netdryrun/Netdryrun): code, examples, issues, AGENTS.md
 - [PyPI package](https://pypi.org/project/netdryrun/): `netdryrun`
 - MCP Registry: `io.github.netdryrun/netdryrun` (run with `uvx netdryrun mcp`)
+- [Glama](https://glama.ai/mcp/servers/netdryrun/Netdryrun): the MCP server's listing
 
 ## Full documentation
 
