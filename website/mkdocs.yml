@@ -109,11 +109,17 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - Getting started: getting-started.md
-  - Add it where your agent works: add.md
-  - "Tutorial: test a change on your own lab": tutorial.md
-  - Examples: examples.md
-  - Guard recipes and scenarios: recipes.md
+  - Get started:
+      - Getting started: getting-started.md
+      - Add it where your agent works: add.md
+      - "Tutorial: test a change on your own lab": tutorial.md
+      - Examples: examples.md
+      - Guard recipes and scenarios: recipes.md
+  - Use it:
+      - GitHub Action: github-action.md
+      - AI agents (MCP): ai-agents.md
+      - Troubleshooting: troubleshooting.md
+      - FAQ: faq.md
   - Guides:
       - "Validate a BGP change before production": guides/validate-bgp-change.md
       - "Add Netdryrun to your lab (10 minutes)": guides/your-lab.md
@@ -125,22 +131,20 @@ nav:
       - CLI and reports: reference/cli.md
       - Compatibility matrix: reference/compatibility.md
       - "Network Change Verdict v1 (spec)": spec/verdict-v1.md
-  - GitHub Action: github-action.md
-  - Batfish, then Netdryrun: batfish.md
-  - AI agents (MCP): ai-agents.md
-  - Troubleshooting: troubleshooting.md
-  - FAQ: faq.md
+  - Evidence:
+      - Verdict corpus: corpus.md
+      - How it's built: how-its-built.md
+      - Batfish, then Netdryrun: batfish.md
+      - When to use what: when-to-use-what.md
   - News: news/index.md
-  - Posts:
+  - Write-ups:
       - "Ping and 'BGP up' passed. The route leak was still there.": posts/ping-missed-the-leak.md
-  - Verdict corpus: corpus.md
-  - How it's built: how-its-built.md
-  - When to use what: when-to-use-what.md
-  - Trust and security: trust.md
-  - Support and versioning: support.md
-  - Design partners: design-partners.md
-  - Contact: contact.md
-  - Privacy notice: privacy.md
+  - Project:
+      - Trust and security: trust.md
+      - Support and versioning: support.md
+      - Design partners: design-partners.md
+      - Contact: contact.md
+      - Privacy notice: privacy.md
 
 extra:
   social:
