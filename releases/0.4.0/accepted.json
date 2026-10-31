@@ -3228,42 +3228,42 @@
     },
     "netdryrun.drivers.srlinux.x__rib_rows__mutmut_11": {
       "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-      "diff": "595f0d4568550fab",
+      "diff": "b3a4231e932aea0c",
       "class": "message-text"
     },
     "netdryrun.drivers.srlinux.x__rib_rows__mutmut_13": {
       "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-      "diff": "4b1143b213bc504f",
+      "diff": "ffcf880e084d516e",
       "class": "message-text"
     },
     "netdryrun.drivers.srlinux.x__rib_rows__mutmut_19": {
       "reason": "message text only: the same exception is still raised, only its message changes",
-      "diff": "6a6193c731c35825",
+      "diff": "e6f726dde3a953d2",
       "class": "message-text"
     },
     "netdryrun.drivers.srlinux.x__rib_rows__mutmut_20": {
       "reason": "message text only: the same exception is still raised, only its message changes",
-      "diff": "bcc9d04ace2bd0d6",
+      "diff": "529b4a2e7ffb0731",
       "class": "message-text"
     },
     "netdryrun.drivers.srlinux.x__rib_rows__mutmut_21": {
       "reason": "message text only: the same exception is still raised, only its message changes",
-      "diff": "d951ce431bac664f",
+      "diff": "19b33177fefec6c4",
       "class": "message-text"
     },
     "netdryrun.drivers.srlinux.x__rib_rows__mutmut_22": {
       "reason": "message text only: the same exception is still raised, only its message changes",
-      "diff": "4c146b75903c56a6",
+      "diff": "267d4f7ece277db3",
       "class": "message-text"
     },
     "netdryrun.drivers.srlinux.x__rib_rows__mutmut_23": {
       "reason": "message text only: the same exception is still raised, only its message changes",
-      "diff": "0d3414006c4babf0",
+      "diff": "5d0d1db7dc894eb4",
       "class": "message-text"
     },
     "netdryrun.drivers.srlinux.x__rib_rows__mutmut_24": {
       "reason": "message text only: the same exception is still raised, only its message changes",
-      "diff": "9d8b87afbf113535",
+      "diff": "c071b35b7e90debd",
       "class": "message-text"
     },
     "netdryrun.drivers.srlinux.x__rib_rows__mutmut_25": {
@@ -3273,7 +3273,7 @@
     },
     "netdryrun.drivers.srlinux.x__rib_rows__mutmut_4": {
       "reason": "message text only: the command name passed only for error messages (and a missing one becomes a TypeError that the parser wrapper turns into the same DriverError)",
-      "diff": "6c4598e111047857",
+      "diff": "11621539e3420257",
       "class": "message-text"
     },
     "netdryrun.drivers.srlinux.x_parse_instance_state__mutmut_7": {
@@ -5028,6 +5028,96 @@
     "netdryrun.drivers.junos.x__next_hop__mutmut_40": {
       "reason": "message text only: how many of the disagreeing next hops the error lists; the error is still raised",
       "diff": "0b876c23f9cf9e7a",
+      "class": "message-text"
+    },
+    "netdryrun.drivers.junos.xǁJunosDriverǁ_count_hidden__mutmut_16": {
+      "reason": "equivalent: _table tests family == 6 only; 4 and 5 both name the inet.0 table",
+      "diff": "733150c5e076e9e1",
+      "class": "equivalent"
+    },
+    "netdryrun.drivers.junos.xǁJunosDriverǁ_count_hidden__mutmut_4": {
+      "reason": "message text only: the reason kept for an unusable peer address; the afi is still in prefixes_unread, so the check is still an error (Unready) and never judged",
+      "diff": "126412f1b091aed2",
+      "class": "message-text"
+    },
+    "netdryrun.drivers.srlinux.x__received__mutmut_11": {
+      "reason": "message text only: the command name or text in the unexpected-output error; a missing argument becomes a TypeError that the parser wrapper (parse_routes, parse_rib_paths) turns into the same DriverError",
+      "diff": "f9ec37976e806dcf",
+      "class": "message-text"
+    },
+    "netdryrun.drivers.srlinux.x__received__mutmut_12": {
+      "reason": "message text only: the command name or text in the unexpected-output error; a missing argument becomes a TypeError that the parser wrapper (parse_routes, parse_rib_paths) turns into the same DriverError",
+      "diff": "e8958be398620fbe",
+      "class": "message-text"
+    },
+    "netdryrun.drivers.srlinux.x__received__mutmut_13": {
+      "reason": "message text only: the command name or text in the unexpected-output error; a missing argument becomes a TypeError that the parser wrapper (parse_routes, parse_rib_paths) turns into the same DriverError",
+      "diff": "b346c618bfc1c503",
+      "class": "message-text"
+    },
+    "netdryrun.drivers.srlinux.x__received__mutmut_14": {
+      "reason": "message text only: the command name or text in the unexpected-output error; a missing argument becomes a TypeError that the parser wrapper (parse_routes, parse_rib_paths) turns into the same DriverError",
+      "diff": "59d3dcad22a15c9d",
+      "class": "message-text"
+    },
+    "netdryrun.drivers.srlinux.x__received__mutmut_15": {
+      "reason": "message text only: the command name or text in the unexpected-output error; a missing argument becomes a TypeError that the parser wrapper (parse_routes, parse_rib_paths) turns into the same DriverError",
+      "diff": "b6e8b14df6c35435",
+      "class": "message-text"
+    },
+    "netdryrun.drivers.srlinux.x__received__mutmut_16": {
+      "reason": "message text only: the command name or text in the unexpected-output error; a missing argument becomes a TypeError that the parser wrapper (parse_routes, parse_rib_paths) turns into the same DriverError",
+      "diff": "8222985255758cc2",
+      "class": "message-text"
+    },
+    "netdryrun.drivers.srlinux.x__received__mutmut_23": {
+      "reason": "message text only: the same exception is still raised, only its message changes",
+      "diff": "0049d1eaed6eab99",
+      "class": "message-text"
+    },
+    "netdryrun.drivers.srlinux.x__received__mutmut_24": {
+      "reason": "message text only: the same exception is still raised, only its message changes",
+      "diff": "29cb46bc0946877e",
+      "class": "message-text"
+    },
+    "netdryrun.drivers.srlinux.x__received__mutmut_25": {
+      "reason": "message text only: the same exception is still raised, only its message changes",
+      "diff": "c89bf066a32ced30",
+      "class": "message-text"
+    },
+    "netdryrun.drivers.srlinux.x__received__mutmut_26": {
+      "reason": "message text only: the same exception is still raised, only its message changes",
+      "diff": "de952338310aca2a",
+      "class": "message-text"
+    },
+    "netdryrun.drivers.srlinux.x__received__mutmut_27": {
+      "reason": "message text only: the same exception is still raised, only its message changes",
+      "diff": "93c8315f63e369d8",
+      "class": "message-text"
+    },
+    "netdryrun.drivers.srlinux.x__received__mutmut_28": {
+      "reason": "message text only: the same exception is still raised, only its message changes",
+      "diff": "26ecf33179056368",
+      "class": "message-text"
+    },
+    "netdryrun.drivers.srlinux.x__received__mutmut_29": {
+      "reason": "message text only: the same exception is still raised, only its message changes",
+      "diff": "c5f2adfa9da0aff9",
+      "class": "message-text"
+    },
+    "netdryrun.drivers.srlinux.x__received__mutmut_30": {
+      "reason": "message text only: the same exception is still raised, only its message changes",
+      "diff": "411da6e71fe6233b",
+      "class": "message-text"
+    },
+    "netdryrun.drivers.srlinux.x__received__mutmut_31": {
+      "reason": "message text only: the same exception is still raised, only its message changes",
+      "diff": "a9df1c7c11e92ee4",
+      "class": "message-text"
+    },
+    "netdryrun.drivers.srlinux.x__rib_rows__mutmut_26": {
+      "reason": "message text only: the command name passed only for error messages (network() raises the same DriverError)",
+      "diff": "9f4cb5c3a0cd2506",
       "class": "message-text"
     }
   },

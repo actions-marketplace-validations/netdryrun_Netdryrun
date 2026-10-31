@@ -181,7 +181,8 @@ def test_junos_a_bound_is_judged_only_when_the_whole_count_range_agrees(bound, p
     d = _junos_lab(hidden=json.dumps(looped))
     ok, detail, _ = EVALUATORS["bgp_prefixes"](d, {"node": "j1", "neighbor": "10.1.1.2", **bound})
     assert ok is passed, detail
-    assert "205 to 206 ipv4-unicast prefixes accepted (1 received route(s) hidden" in detail
+    assert detail.startswith("205 to 206 ipv4-unicast prefixes accepted (1 received route(s) hidden: rejected by "
+                             "import policy or with a next hop the node can't use, which its output doesn't tell apart)")
     assert (why in detail) if why else "can't tell" not in detail
 
 
