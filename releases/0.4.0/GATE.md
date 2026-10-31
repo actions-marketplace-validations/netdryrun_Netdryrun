@@ -2,11 +2,7 @@
 
 Written by `scripts/release_gate.py` (see [RELEASING.md](../../RELEASING.md)). Do not edit by hand: rerun a layer, or record a decision in `accepted.json` or `review.md`.
 
-**READY TO PUBLISH**: every layer before publishing ran on the same clean commit; no BLOCKER failed or was skipped; every MAJOR passed or was accepted. Tag it, then run `after-publish` to clear it.
-
-**Layers not run yet:**
-
-- Layer 7: after-publish proof
+**CLEARED**: every layer ran on the same clean commit; no BLOCKER failed or was skipped; every MAJOR passed or was accepted.
 
 | Layer | Commit | Ran | Time | Result |
 |---|---|---|---|---|
@@ -14,7 +10,7 @@ Written by `scripts/release_gate.py` (see [RELEASING.md](../../RELEASING.md)). D
 | [Layer 2: unit tests on every supported Python](#layer-2-unit-tests-on-every-supported-python) | `8e9a376832` | 2026-10-31 06:48:54 UTC | 8.0 min | 7 PASS |
 | [Layer 4: mutation testing](#layer-4-mutation-testing) | `8e9a376832` | 2026-10-31 06:57:09 UTC | 17.4 min | 11 PASS |
 | [Layer 5: live matrix on the built package](#layer-5-live-matrix-on-the-built-package) | `8e9a376832` | 2026-10-31 07:15:26 UTC | 163.1 min | 3 ACCEPTED, 1 FAIL, 51 PASS |
-| Layer 7: after-publish proof | | not run | | |
+| [Layer 7: after-publish proof](#layer-7-after-publish-proof) | `8e9a376832` | 2026-10-31 10:31:35 UTC | 2.7 min | 1 ACCEPTED, 17 PASS |
 
 ## Layer 1: static
 
@@ -231,6 +227,33 @@ Tools: containerlab ⣴⡾⠛⠛⠖ ⢠⣶⠟⠛⢷⣦ ⢸⣿⣧ ⣿ ⠘⠛⢻�
 | two runs at once: no lab left running | BLOCKER | **PASS** | 0.0 s | none left |
 | Docker restarts mid-run | MAJOR | **ACCEPTED** | 0.0 s | off by default (restarts every container on the machine): pass --chaos-docker-restart (accepted: Optional by RELEASING.md (Layer 5, Chaos): it restarts Docker, which stops every container on the machine, and the lab machine is shared with other sessions' labs. The other chaos cases (SIGINT and SIGTERM in the deploy and the checks, a missing image, a node that can't be created, two runs of one lab) ran and passed on 81a49b3. Coordinator, 2026-10-31: kept for 0.4.0 (the interop stress test holds the lab, and a Docker restart would kill its labs); the restart case runs in the next quiet lab window or, at the latest, in the 0.4.1 gate.) |
 
+## Layer 7: after-publish proof
+
+Commit `8e9a376832a2bc8d1f4ca19b3340d3a22a453358` on `HEAD`; 2026-10-31 10:31:35 UTC; 2.7 min; Linux 6.18.54.1-microsoft-standard-WSL2 (x86_64); Python 3.10.12; --strict.
+
+Tools: uv 0.13.6 (x86_64-unknown-linux-gnu).
+
+| Check | Severity | Result | Time | Notes |
+|---|---|---|---|---|
+| PyPI serves netdryrun 0.4.0 | BLOCKER | **PASS** | 0.0 s | HTTP 200 |
+| pip install netdryrun==0.4.0 on Python 3.10: --version, validate, MCP handshake | BLOCKER | **PASS** | 9.3 s | MCP handshake OK |
+| uvx netdryrun@0.4.0 on Python 3.10: --version, MCP handshake | BLOCKER | **PASS** | 1.3 s | MCP handshake OK |
+| pip install netdryrun==0.4.0 on Python 3.11: --version, validate, MCP handshake | BLOCKER | **PASS** | 8.0 s | MCP handshake OK |
+| uvx netdryrun@0.4.0 on Python 3.11: --version, MCP handshake | BLOCKER | **PASS** | 1.3 s | MCP handshake OK |
+| pip install netdryrun==0.4.0 on Python 3.12: --version, validate, MCP handshake | BLOCKER | **PASS** | 8.3 s | MCP handshake OK |
+| uvx netdryrun@0.4.0 on Python 3.12: --version, MCP handshake | BLOCKER | **PASS** | 1.5 s | MCP handshake OK |
+| pip install netdryrun==0.4.0 on Python 3.13: --version, validate, MCP handshake | BLOCKER | **PASS** | 9.1 s | MCP handshake OK |
+| uvx netdryrun@0.4.0 on Python 3.13: --version, MCP handshake | BLOCKER | **PASS** | 1.6 s | MCP handshake OK |
+| pip install netdryrun==0.4.0 on Python 3.14: --version, validate, MCP handshake | BLOCKER | **PASS** | 9.5 s | MCP handshake OK |
+| uvx netdryrun@0.4.0 on Python 3.14: --version, MCP handshake | BLOCKER | **PASS** | 1.5 s | MCP handshake OK |
+| frr-bgp from PyPI: `PASSED: 11 passed, 0 failed`, exit 0, no lab left | BLOCKER | **PASS** | 1.8 min | exit 0 |
+| PyPI's latest netdryrun is 0.4.0 | BLOCKER | **PASS** | 0.0 s | PyPI latest: 0.4.0 |
+| the GitHub latest release is v0.4.0 (notes pasted, marked latest) | BLOCKER | **PASS** | 0.0 s | latest release: v0.4.0 |
+| main names 0.4.0: README status line, every netdryrun/Netdryrun@v ref, published-action.yml RELEASE | BLOCKER | **PASS** | 0.0 s | 43 places say 0.4.0 |
+| netdryrun.com names 0.4.0 (home page, llms.txt) | BLOCKER | **PASS** | 0.0 s | 5 mentions say 0.4.0 |
+| the MCP Registry's latest io.github.netdryrun/netdryrun is 0.4.0 | BLOCKER | **PASS** | 0.0 s | latest: 0.4.0; listed: 0.3.0, 0.3.1, 0.3.2, 0.3.3, 0.4.0 |
+| latest published-action.yml run | MAJOR | **ACCEPTED** | 0.0 s | gh is not installed (accepted: Read through the public GitHub API, no gh CLI on the release machine (GET /repos/netdryrun/Netdryrun/actions/runs/41192619813): Published release run 68 on c615ea8 (main, the 0.4.0 merge, RELEASE 0.4.0, `uses: netdryrun/Netdryrun@v0.4.0`) completed with conclusion success, every job green: action-passes, action-catches-bad-change, and install on Python 3.10 to 3.15. https://github.com/netdryrun/Netdryrun/actions/runs/41192619813) |
+
 ## Layer 6: independent review
 
 # Layer 6: independent review, Netdryrun 0.4.0 (verify_change)
@@ -385,3 +408,9 @@ Minor items for 0.4.1 (sent to the coordinator): the runner's convergence stabil
 Carried-over mutation records, each byte-identical to 81a49b3 (`git diff 81a49b3 8e9a376` is empty for its source): `config`, `runner`, `verify.engine`, `verify.intent`, `verify.frr`, `verify.snapshot`, `verify.converge`, `verify.run`, `verify.report`. `checks` and `drivers` changed and were mutated fresh.
 
 **Gate on one commit, 8e9a376:** unit (3723 passed, 2 strict xfails: IOP-4, IOP-8), mutation as above, the full live matrix (FRR, SR Linux, Junos, EOS, SONiC examples, corpus v1 and v2, signals, failure modes), the IOP-6/7 repro above, and static last.
+
+## After publishing (2026-10-31)
+
+Tag `v0.4.0` (annotated) on c236045, the READY TO PUBLISH commit. The release workflow published to PyPI through Trusted Publishing and created the GitHub release with signed provenance (run 41192110428); the MCP Registry workflow published `server.json` 0.4.0 (run 41192110427). The release branch was merged into main as c615ea8 (with `published-action.yml` at 0.4.0 and the CHANGELOG dated), and the site deployed from it. after-publish ran on 8e9a376, the commit every other layer ran on; the tagged c236045 differs from it only in `releases/0.4.0/`, so the published package is the same. All its BLOCKERs pass: pip and uvx on Python 3.10 to 3.14, frr-bgp from PyPI, and release consistency on every surface (PyPI, the GitHub release with the pasted notes, main, netdryrun.com and llms.txt, the MCP Registry).
+
+**The Action by its tag (`after-publish/published-action`).** The gate reads the last `published-action.yml` run with the gh CLI, which the release machine doesn't use, so the check is a SKIP. The run was read instead through the public GitHub API: Published release run 68 on c615ea8 (main, the 0.4.0 merge, RELEASE 0.4.0, `uses: netdryrun/Netdryrun@v0.4.0`) completed with conclusion success, every job green: action-passes, action-catches-bad-change, and install on Python 3.10 to 3.15. https://github.com/netdryrun/Netdryrun/actions/runs/41192619813 Recorded with this evidence in `accepted.json`.
