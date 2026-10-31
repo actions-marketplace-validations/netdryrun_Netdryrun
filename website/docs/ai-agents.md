@@ -5,6 +5,10 @@ description: Connect an AI agent to Netdryrun. MCP setup for Claude Code and oth
 
 # AI agents (MCP server)
 
+<p class="ndr-lead">Let your AI agent change the network. Netdryrun tests each change in a lab before anyone merges it.</p>
+
+This page is for the engineer who places the agent. You put the gate in its path: a required pull-request check, an `AGENTS.md` rule, or the MCP server below ([two-minute setup](add.md)). Each run takes minutes, on your machine or CI runner: Netdryrun boots the changed configs on real network OS images in a containerlab lab, runs the checks in your `netdryrun.yml`, and returns a pass/fail verdict with the evidence. A pass covers only those checks, in the lab, so it is the gate before merge, not a guarantee about production. People's changes go through the same check: [GitHub Action](github-action.md) or [CLI](getting-started.md).
+
 Netdryrun™ includes an [MCP](https://modelcontextprotocol.io) server for testing network changes: `netdryrun mcp` (stdio). Before an AI agent applies a change, it calls `dry_run`; Netdryrun boots the changed configs in a real containerlab lab, runs the checks in `netdryrun.yml`, destroys the lab and returns a `verdict` field, so the agent proceeds only if every check passed. It is listed in the official MCP Registry as `io.github.netdryrun/netdryrun`, and it never connects to real devices.
 
 **Agents use it where a human puts it.** In our agent evaluation (2026-10-30), Claude Code worked 28 network tickets with no mention of Netdryrun and never searched for, fetched or installed a verifier: it used containerlab and the router CLI. To get Netdryrun into an agent's path, add it as a pull-request check, an `AGENTS.md` rule or an MCP server: [two-minute setup](add.md). The real run below was a workflow test with the tool provided, not a test of discovery.
