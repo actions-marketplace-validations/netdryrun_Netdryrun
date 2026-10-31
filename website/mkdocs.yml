@@ -65,9 +65,24 @@ not_in_nav: |
 # Per-page schema.org JSON-LD (FAQPage, TechArticle, BlogPosting, BreadcrumbList); the site-wide graph is in overrides/main.html.
 hooks:
   - hooks/structured_data.py
+  # RSS for the News section, from the posts' front matter (no extra plugin)
+  - hooks/news_feed.py
 
 plugins:
   - search
+  # News: release notes, findings and write-ups (Material's built-in blog plugin). The RSS feed is hooks/news_feed.py.
+  - blog:
+      blog_dir: news
+      blog_toc: true
+      post_url_format: "{slug}"
+      post_date_format: long
+      post_readtime: false
+      authors: false
+      archive: false
+      categories_allowed:
+        - Releases
+        - Findings
+        - Write-ups
   # Self-host fonts and other external assets at build time: visitors' browsers never contact Google.
   - privacy
 
@@ -111,6 +126,7 @@ nav:
   - AI agents (MCP): ai-agents.md
   - Troubleshooting: troubleshooting.md
   - FAQ: faq.md
+  - News: news/index.md
   - Posts:
       - "Ping and 'BGP up' passed. The route leak was still there.": posts/ping-missed-the-leak.md
   - Verdict corpus: corpus.md

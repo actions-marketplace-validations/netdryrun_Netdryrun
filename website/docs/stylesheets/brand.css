@@ -115,3 +115,7 @@
 @media screen and (max-width: 44.984375em) {
   .md-typeset .ndr-lead { font-size: 0.9rem; }
 }
+
+/* News list: post titles in the text colour, the date line quiet */
+.md-typeset .md-post--excerpt h2 a { color: var(--md-default-fg-color); }
+.md-typeset .md-post--excerpt h2 a:hover { color: var(--md-typeset-a-color); }
