@@ -17,7 +17,7 @@ import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
-from netdryrun.drivers import DriverError, eos, frr, srlinux
+from netdryrun.drivers import DriverError, eos, frr, junos, srlinux
 
 FIX = Path(__file__).parent / "fixtures"
 SETTINGS = settings(max_examples=60, deadline=None, suppress_health_check=[HealthCheck.too_slow])
@@ -77,6 +77,26 @@ def srl_list_empty(key):
     return check
 
 
+def junos_neighbors_empty(d) -> bool:
+    try:
+        (info,) = d["bgp-information"]
+        return set(d) == {"bgp-information"} and isinstance(info, dict) and "bgp-peer" not in info \
+            and set(info) <= junos.BGP_INFORMATION_KEYS
+    except (TypeError, KeyError, ValueError):
+        return False
+
+
+def junos_route_empty(d) -> bool:
+    """route-information with no route-table (prefix not in the table), or tables without routes."""
+    try:
+        (info,) = d["route-information"]
+        tables = info.get("route-table", [])
+        return set(d) == {"route-information"} and isinstance(tables, list) and \
+            all(isinstance(t, dict) and not t.get("rt") for t in tables)
+    except (TypeError, KeyError, ValueError, AttributeError):
+        return False
+
+
 @dataclass
 class Case:
     id: str
@@ -125,6 +145,29 @@ CASES = [
     Case("srlinux.parse_rib_paths", lambda t: srlinux.parse_rib_paths(t, "192.168.20.0/24"),
          ["srl_bgp_rib_paths.txt"], srl_list_empty("route")),
     Case("srlinux.parse_all_routes", lambda t: srlinux.parse_all_routes(t), ["srl_route.txt"], srl_list_empty("route")),
+    Case("junos.parse_bgp_neighbors", lambda t: junos.parse_bgp_neighbors(t, "master"), ["junos_bgp_neighbor.txt"],
+         junos_neighbors_empty),
+    Case("junos.parse_bgp_neighbors[instance]", lambda t: junos.parse_bgp_neighbors(t, "RED"),
+         ["junos_bgp_neighbor_red.txt"], junos_neighbors_empty),
+    Case("junos.parse_routes", lambda t: junos.parse_routes(t, "10.20.0.0/24"), ["junos_route_paths.txt"],
+         junos_route_empty),
+    Case("junos.parse_routes[leak]", lambda t: junos.parse_routes(t, "0.0.0.0/0"), ["junos_route_leak.txt"],
+         junos_route_empty),
+    Case("junos.parse_routes[hidden next hop]", lambda t: junos.parse_routes(t, "10.31.0.0/24"),
+         ["junos_route_hidden_nexthop.txt"], junos_route_empty),
+    Case("junos.parse_routes[v6]", lambda t: junos.parse_routes(t, "2001:db8:20::/48", "inet6.0"),
+         ["junos_route_v6.txt"], junos_route_empty),
+    Case("junos.parse_routes[instance]", lambda t: junos.parse_routes(t, "10.40.0.0/24", "RED.inet.0"),
+         ["junos_route_red.txt"], junos_route_empty),
+    Case("junos.parse_all_routes", lambda t: junos.parse_all_routes(t), ["junos_route_table.txt"], junos_route_empty),
+    Case("junos.parse_bgp_paths", lambda t: junos.parse_bgp_paths(t, "10.20.0.0/24"), ["junos_route_paths.txt"],
+         junos_route_empty),
+    Case("junos.parse_bgp_paths[leak]", lambda t: junos.parse_bgp_paths(t, "0.0.0.0/0"), ["junos_route_leak.txt"],
+         junos_route_empty),
+    Case("junos.parse_bgp_paths[ibgp]", lambda t: junos.parse_bgp_paths(t, "10.50.0.0/24"),
+         ["junos_route_ibgp.txt"], junos_route_empty),
+    Case("junos.parse_bgp_paths[hidden next hop]", lambda t: junos.parse_bgp_paths(t, "10.31.0.0/24"),
+         ["junos_route_hidden_nexthop.txt"], junos_route_empty),
     Case("srlinux.parse_attr_set", lambda t: srlinux.parse_attr_set(t, SRL_ROW),
          ["srl_attr_set_best.txt", "srl_attr_set_backup.txt"], lambda d: False),
 ]
@@ -204,7 +247,9 @@ KEYS = ["vrfs", "default", "routes", "route", "peers", "neighbor", "paths", "pre
         "bgpRoutePaths", "bgpState", "peerState", "protocol", "ipv4-prefix", "afi-safi", "session-state",
         "peer-address", "addressFamilyInfo", "acceptedPrefixCounter", "prefixAccepted", "warning", "errors",
         "192.168.20.0/24", "192.168.3.0/24", "0.0.0.0/0", "10.0.0.2", "peer", "peerId", "peerEntry",
-        "peerAddr", "origin-protocol", "local-pref", "as-path"]
+        "peerAddr", "origin-protocol", "local-pref", "as-path", "route-information", "route-table", "rt",
+        "rt-entry", "bgp-information", "bgp-peer", "bgp-rib", "data", "peer-state", "table-name", "ping-results",
+        "probe-results-summary", "route-table-error", "instance-core"]
 scalars = st.none() | st.booleans() | st.integers() | st.floats(allow_nan=False) | st.text(max_size=12) | \
     st.sampled_from(KEYS)
 json_values = st.recursive(
@@ -224,7 +269,7 @@ def test_wrong_type_json(case, value):
 # --- reordered: same answer, whatever the order of keys and list entries
 
 # Lists whose order carries no meaning (AS path segments and next hops do carry one: not shuffled)
-UNORDERED = {"route", "neighbor", "paths", "bgpRoutePaths", "afi-safi"}
+UNORDERED = {"route", "neighbor", "paths", "bgpRoutePaths", "afi-safi", "bgp-peer", "bgp-rib", "rt"}
 
 
 def shuffled(node, rnd: random.Random, key=None):
@@ -296,6 +341,11 @@ def test_mutated_output(case, data):
 #   srlinux.parse_instance_state: None -> the driver raises "network-instance ... does not exist"
 #   frr.parse_ping: (0, 0) -> the ping check reports "ping did not run" (failed, never passed)
 #   frr.parse_default_local_pref: None -> local-pref "not set", which never equals an expected value
+#   junos.parse_ping: (0, 0) -> "ping did not run", as frr.parse_ping
+#   junos.parse_instance: None -> the driver raises "routing-instance ... does not exist". It is read only
+#     after Junos said a table doesn't exist (route-table-error) or a neighbor list is empty
+#   junos.parse_hidden_received: (0, 0) or None -> the prefix count stays a range from accepted to received,
+#     judged only where the whole range agrees (interop IOP-7)
 # They are fuzzed for crashes (only DriverError may escape) and for a well-typed answer.
 
 def _ping_ok(r) -> bool:
@@ -306,10 +356,25 @@ FAIL_SAFE = [
     ("frr.parse_vrfs", lambda t: frr.parse_vrfs(t), ["frr_route.txt"],
      lambda r: isinstance(r, dict) and all(isinstance(k, str) and isinstance(v, bool) for k, v in r.items())),
     ("frr.parse_ping", frr.parse_ping, ["frr_ping.txt", "srl_ping.txt", "eos_ping.txt"], _ping_ok),
+    ("frr.parse_version", frr.parse_version, ["frr_route.txt", "frr_ping.txt"],
+     lambda r: r is None or (isinstance(r, str) and r.startswith("FRRouting "))),
     ("frr.parse_default_local_pref", lambda t: frr.parse_default_local_pref(t), ["frr_bgp_table_header.txt"],
      lambda r: r is None or isinstance(r, int)),
+    # raises on anything it can't account for (never "clean"): a run with such output is an error
+    ("eos.parse_startup_config_errors", eos.parse_startup_config_errors,
+     ["eos_startup_config_errors_clean.txt", "eos_startup_config_errors_one.txt", "eos_startup_config_errors_two.txt"],
+     lambda r: isinstance(r, list) and all(isinstance(x, str) and x.startswith("line ") for x in r)),
     ("srlinux.parse_instance_state", lambda t: srlinux.parse_instance_state(t), ["srl_neighbor_local_pref.txt"],
      lambda r: r is None or isinstance(r, str)),
+    ("junos.parse_ping", junos.parse_ping, ["junos_ping.txt", "junos_ping_noreply.txt", "junos_ping6.txt"], _ping_ok),
+    # junos.parse_vrfs: [] only narrows what `netdryrun record` reads (it warns "only the default VRF")
+    ("junos.parse_vrfs", junos.parse_vrfs, ["junos_instance_red.txt", "junos_instance_master.txt"],
+     lambda r: isinstance(r, list) and all(isinstance(x, str) for x in r)),
+    ("junos.parse_hidden_received", lambda t: junos.parse_hidden_received(t, "inet.0"), ["junos_rp_hidden.txt"],
+     lambda r: r is None or (isinstance(r, tuple) and len(r) == 2 and all(isinstance(x, int) for x in r)
+                             and 0 <= r[1] <= r[0])),
+    ("junos.parse_instance", lambda t: junos.parse_instance(t, "RED"), ["junos_instance_red.txt"],
+     lambda r: r is None or (isinstance(r, list) and all(isinstance(x, str) for x in r))),
     # reads a whole boot log: it finds vtysh's error lines or nothing, and never crashes
     ("frr.parse_config_load_errors", frr.parse_config_load_errors,
      ["frr_boot_log_rejected.txt", "frr_boot_log_clean.txt"], lambda r: isinstance(r, list) and all(isinstance(x, str) for x in r)),
@@ -350,6 +415,8 @@ def test_fail_safe_parsers_read_real_output():
     assert frr.parse_default_local_pref(read("frr_bgp_table_header.txt")) == 100
     assert srlinux.parse_instance_state('{"name": "red", "oper-state": "up"}') == "up"
     assert srlinux.parse_instance_state("{\n}") is None
+    assert junos.parse_ping(read("junos_ping.txt")) == (3, 3)
+    assert junos.parse_instance(read("junos_instance_red.txt"), "RED") == ["RED.inet.0"]
 
 
 # --- coverage meta-test: a new driver or parser without fuzz coverage turns CI red
@@ -360,6 +427,7 @@ DRIVER_PARSER_MODULES = {
     "sonic": ["netdryrun.drivers.sonic", "netdryrun.drivers.frr"],
     "eos": ["netdryrun.drivers.eos", "netdryrun.drivers.frr"],   # parse_ping is FRR's
     "srlinux": ["netdryrun.drivers.srlinux", "netdryrun.drivers.frr"],
+    "junos": ["netdryrun.drivers.junos"],
 }
 
 

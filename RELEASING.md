@@ -41,6 +41,12 @@ the time, the host and the tool versions. `GATE.md` is then rebuilt from every r
 because the layers run on different machines and at different times. The script exits non-zero
 when a BLOCKER fails.
 
+A fix late in a release that touches some verdict modules reruns mutation on those modules only:
+`mutation --modules drivers --carry-mutation <earlier gate/mutation.json>`. Every other module keeps
+its earlier record only if its source file is byte-identical at the new commit; GATE.md says
+"carried over from <commit>" on each one. A module whose source changed, or one neither mutated nor
+carried, fails the layer. The other layers run in full on the new commit.
+
 ### 1. Static
 
 - **ruff**, set up in `pyproject.toml` to look for bugs rather than style (pyflakes, pycodestyle
@@ -50,7 +56,7 @@ when a BLOCKER fails.
 - **No empty `${{ }}`** in `action.yml` or the workflows: GitHub rejects the whole file.
 - **`scripts/sync_facts.py --check`**: the public numbers and versions match the source.
 - **Version consistency**: `pyproject.toml`, `src/netdryrun/__init__.py`, both versions in
-  `server.json`, the newest CHANGELOG release heading, and every `netdryrun/netdryrun@vX.Y.Z`
+  `server.json`, the newest CHANGELOG release heading, and every `netdryrun/Netdryrun@vX.Y.Z`
   in the docs, examples and workflows must give the same version.
 - **Python range**: `requires-python` and the classifiers match the versions the unit layer tests.
 - **Every example is documented**: each folder in `examples/` has an expected result and exit
@@ -145,7 +151,7 @@ python scripts/release_gate.py after-publish 0.4.0
   [`published-action.yml`](.github/workflows/published-action.yml) workflow);
 - release consistency (BLOCKER): every public place names the new version, and each one that doesn't
   is listed: PyPI's latest version, the GitHub release marked latest, `main`'s README status line,
-  every `uses: netdryrun/netdryrun@vX` on `main` (outside the CHANGELOG, advisories and release
+  every `uses: netdryrun/Netdryrun@vX` on `main` (outside the CHANGELOG, advisories and release
   records), `RELEASE` in `published-action.yml` on `main`, the netdryrun.com home page and
   `llms.txt`, and the MCP Registry's latest version. One request per source, no retries: a source
   that can't be reached is SKIP, never a pass.

@@ -67,6 +67,18 @@ VERDICT_MODULES = {
     "config": "src/netdryrun/config.py",
     "runner": "src/netdryrun/runner.py",
     "drivers": "src/netdryrun/drivers/",
+    # verify (0.4): the diff and the match against the intent decide its verdict; the intent parser decides
+    # what a declaration may explain
+    "verify.engine": "src/netdryrun/verify/engine.py",
+    "verify.intent": "src/netdryrun/verify/intent.py",
+    # the rest of verify (0.4 release gate): what is collected and normalised (frr, snapshot), when a snapshot is
+    # taken (converge), what may be compared at all (run: sides, binds, nodes, config load) and what the report
+    # and the PR header say (report)
+    "verify.frr": "src/netdryrun/verify/frr.py",
+    "verify.snapshot": "src/netdryrun/verify/snapshot.py",
+    "verify.converge": "src/netdryrun/verify/converge.py",
+    "verify.run": "src/netdryrun/verify/run.py",
+    "verify.report": "src/netdryrun/verify/report.py",
 }
 
 # Coverage floors (percent of lines and branches). A ratchet: raise a floor when coverage rises,
@@ -74,7 +86,37 @@ VERDICT_MODULES = {
 # coverage measured then (Python 3.12, rounded down; drivers measured 100, floored at 99 so that one
 # platform-specific branch does not fail the gate): checks 99.5, config 99.2, runner 98.3, drivers 100.
 # The runner's deploy, scenario and gate paths run on a fake lab and a fake clock (tests/test_verdict_runner.py).
-COVERAGE_FLOORS = {"checks": 99, "config": 99, "runner": 98, "drivers": 99}
+# verify.engine and verify.intent joined in 0.4 at the coverage measured then (Python 3.10, rounded down):
+# engine 95.9, intent 93.3.
+# Verdict modules gated on the functions that decide what verify compares, refuses or reports (coordinator, 0.4):
+# a survivor there, or a mutant in code no test runs anywhere in the module, is a BLOCKER; the other survivors
+# (parsers that fail closed, rendering) are counted and named, and their full zero is a 0.4.1 gate item. A function
+# found on that path joins the list (a floor, not a ceiling).
+SCOPED_FUNCTIONS = {
+    "verify.frr": {"_boot_free", "parse_link_local", "link_local_names", "configured_link_locals",
+                   "link_local_owners", "parse_running_config", "qualified", "cond_adv_timer"},
+    "verify.run": {"check_sides", "check_changed_binds", "bind_reach", "is_router_config", "classify_nodes",
+                   "check_config_loaded", "collect", "unobserved_reasons"},
+    "verify.converge": {"stable_snapshot", "_not_ready"},
+    "verify.snapshot": {"ItemKey.__post_init__", "NodeSnapshot.__post_init__", "value_matches_kind",
+                        "Snapshot.stability_view", "Snapshot.items"},
+    "verify.report": {"to_dict", "VerifyResult.verdict", "VerifyResult.exit_code"},
+}
+SCOPED_KNOWN_LABEL = "parsers that fail closed and rendering; their full zero is a 0.4.1 gate item"
+
+
+def gated(module: str, name: str, status: str) -> bool:
+    """Whether a surviving mutant blocks the release: always in a fully gated module; in a scoped one, when its
+    function is on the verdict path or no test runs its code (no untested code in a verdict module ships)."""
+    if module not in SCOPED_FUNCTIONS or status == "no tests":
+        return True
+    fn = mutant_function(name).removeprefix(f"{module}.")
+    return fn in SCOPED_FUNCTIONS[module]
+
+
+# verify.* raised or set on 2026-10-30 (0.4 release gate) to the coverage measured then, rounded down, minus one
+COVERAGE_FLOORS = {"checks": 99, "config": 99, "runner": 98, "drivers": 99, "verify.engine": 98, "verify.intent": 97,
+                   "verify.frr": 88, "verify.snapshot": 90, "verify.converge": 96, "verify.run": 83, "verify.report": 88}
 
 # Files that are evidence of past runs, and advisories about past versions (which name those versions on
 # purpose; tests/test_advisory_fixtures.py keeps their fixtures honest): never rewritten, so never linted or
@@ -414,7 +456,7 @@ def version_sources(version: str) -> tuple[list[tuple[str, str]], list[str]]:
     m = re.search(r"^## (\d+\.\d+\.\d+)\b", (ROOT / "CHANGELOG.md").read_text(encoding="utf-8"), re.M)
     found.append(("CHANGELOG.md newest release heading", m.group(1) if m else "missing"))
 
-    # `uses: netdryrun/netdryrun@vX.Y.Z` in docs, examples and workflows; `netdryrun==X.Y.Z` and
+    # `uses: netdryrun/Netdryrun@vX.Y.Z` in docs, examples and workflows; `netdryrun==X.Y.Z` and
     # `netdryrun@X.Y.Z` (uvx) in the docs. Other projects' tags are not ours to check.
     docs = tracked_files(("README.md", "AGENTS.md", "action.yml", "website/docs/*", "examples/*", ".github/*"))
     for f in docs:
@@ -424,7 +466,7 @@ def version_sources(version: str) -> tuple[list[tuple[str, str]], list[str]]:
             continue
         text = f.read_text(encoding="utf-8", errors="replace")
         rel = f.relative_to(ROOT).as_posix()
-        patterns = [r"netdryrun/netdryrun@v(\d+\.\d+\.\d+)"]
+        patterns = [r"(?i:netdryrun/netdryrun)@v(\d+\.\d+\.\d+)"]
         if not rel.startswith("examples/"):   # an example may name the version it was recorded with
             patterns.append(r"\bnetdryrun(?:\[mcp\])?(?:==|@)(\d+\.\d+\.\d+)")
         for pat in patterns:
@@ -651,7 +693,9 @@ def layer_mutation(args) -> Layer:
         mine = {n: s for n, s in status.items() if n.startswith(prefix)}
         checked = {n: s for n, s in mine.items() if s != "not checked"}
         survived = sorted(n for n, s in checked.items() if s not in CAUGHT)
-        open_ = [n for n in survived if not accepted_now(accepted, n, diffs)]
+        unaccepted = [n for n in survived if not accepted_now(accepted, n, diffs)]
+        open_ = [n for n in unaccepted if gated(module, n, checked[n])]
+        known = [n for n in unaccepted if n not in open_]
         stale = [n for n in survived if n in accepted and not accepted_now(accepted, n, diffs)]
         survivors_all[module] = survived
         caught = len(checked) - len(survived)
@@ -660,11 +704,19 @@ def layer_mutation(args) -> Layer:
         by_class = accepted_by_class(accepted, survived, diffs)
         summary = (f"{len(mine)} generated, {caught}/{len(checked)} caught ({score:.1f}%); not caught: "
                    f"{len(survived) - untested} survived the tests, {untested} in code no test runs"
-                   + (f", {len(survived) - len(open_)} accepted ("
+                   + (f", {sum(by_class.values())} accepted ("
                       + ", ".join(f"{v} {k}" for k, v in sorted(by_class.items())) + ")"
-                      if len(survived) != len(open_) else "")
+                      if by_class else "")
                    + (f"; {len(stale)} accepted entries don't accept their mutant (diff moved, no class, or no reviewed argument): see the notes"
-                      if stale else ""))
+                      if stale else "")
+                   + (f"; {len(known)} outside the gated functions ({SCOPED_KNOWN_LABEL})" if known else ""))
+        if known:
+            by_fn: dict[str, int] = {}
+            for n in known:
+                by_fn[mutant_function(n)] = by_fn.get(mutant_function(n), 0) + 1
+            layer.sections.append(f"**{VERDICT_MODULES[module]}: {len(known)} survivors outside the gated functions** "
+                                  f"({SCOPED_KNOWN_LABEL}): " + ", ".join(f"`{f}` {c}" for f, c in
+                                                                         sorted(by_fn.items(), key=lambda x: -x[1])))
         if not checked:
             layer.add(f"mutants-{module}", f"no surviving mutants in {VERDICT_MODULES[module]}", BLOCKER, False,
                       "no mutants were checked", tail(out), p.seconds)
@@ -674,6 +726,9 @@ def layer_mutation(args) -> Layer:
                                                                    else f"  [NOT accepted: {acceptance_problem(accepted[n], n, diffs)}]" if n in accepted else "")
                                           for n in survived), 40), p.seconds if module == modules[0] else 0.0,
                   cmdline(["mutmut", *cmd[3:]]))
+    if args.carry_mutation:
+        carry_mutation(layer, args.carry_mutation, modules)
+    require_every_module(layer, [*modules, *(c.id.removeprefix("mutants-") for c in layer.checks)])
     gone = sorted(n for n in accepted if n not in survived_names
                   and any(n.startswith(f"netdryrun.{m}.") for m in modules))
     if gone:
@@ -681,6 +736,36 @@ def layer_mutation(args) -> Layer:
                               "accepted.json): " + ", ".join(f"`{n}`" for n in gone[:40]) + (" ..." if len(gone) > 40 else ""))
     layer.sections.append(mutant_section(survivors_all, status, accepted, diffs, args))
     return layer
+
+
+def carry_mutation(layer: Layer, path: str, modules: list[str]) -> None:
+    """--carry-mutation: keep an earlier mutation record for each verdict module not mutated in this run, only
+    when its source is byte-identical at this commit (0.4.0: the interop fixes changed drivers only). A module
+    whose source changed since, or that git can't compare, fails: it must be mutated at this commit."""
+    prev = json.loads(Path(path).read_text(encoding="utf-8"))
+    sha = prev["git"]["sha"]
+    for c in prev["checks"]:
+        module = c["id"].removeprefix("mutants-")
+        if module not in VERDICT_MODULES or module in modules:
+            continue
+        src = VERDICT_MODULES[module]
+        changed = git("diff", "--name-only", sha, "HEAD", "--", src)
+        if changed == "":
+            layer.add(c["id"], c["title"], c["severity"], {PASS: True, FAIL: False}.get(c["status"]),
+                      f"carried over from {sha[:7]}: {src} is byte-identical at this commit. {c['summary']}",
+                      c["output"], 0.0, c["command"])
+            layer.sections += [s for s in prev.get("sections", []) if s.startswith(f"**{src}:")]
+        else:
+            why = f"{changed.replace(chr(10), ', ')} changed since {sha[:7]}" if changed else                 f"git can't compare {src} with {sha[:7]}"
+            layer.add(c["id"], c["title"], c["severity"], False, f"not carried over: {why}: mutate it at this commit")
+
+
+def require_every_module(layer: Layer, covered: list[str]) -> None:
+    """Every verdict module is mutated in this run or carried over: a partial run never reads as a full layer."""
+    for module, src in VERDICT_MODULES.items():
+        if module not in covered:
+            layer.add(f"mutants-{module}", f"no surviving mutants in {src}", BLOCKER, False,
+                      "not mutated at this commit (run it, or --carry-mutation a record whose file is unchanged)")
 
 
 def mutant_fingerprint(diff: str) -> str:
@@ -711,7 +796,8 @@ VERDICT_FUNCTIONS = frozenset({
     "runner._bgp_convergence_gate", "runner._wait_fault_visible", "runner._link_sessions",
     "runner._sessions_over_links", "runner._reach_then_hold", "runner.run_scenario",
     "runner.RunReport.passed", "runner.RunReport.failed", "runner.RunReport.status",
-    "runner.RunReport.inconclusive_reason", "runner.RunReport.exit_code", "runner.rejected_config",
+    "runner.RunReport.inconclusive_reason", "runner.RunReport.exit_code",
+    "runner.config_load_by_node", "runner._startup_load", "runner.rejected_config_message",
 })
 
 
@@ -1286,12 +1372,12 @@ def after_publish_live(layer: Layer, work: Path, args) -> None:
 
 SITE_PAGES = ("https://netdryrun.com/", "https://netdryrun.com/llms.txt")
 PUBLISHED_ACTION = ".github/workflows/published-action.yml"
-ACTION_REF = re.compile(r"netdryrun/netdryrun@v(\d+\.\d+\.\d+)")
+ACTION_REF = re.compile(r"(?i:netdryrun/netdryrun)@v(\d+\.\d+\.\d+)")   # either case: GitHub repo names are case-insensitive
 README_STATUS = re.compile(r"^> Status: \*\*v(\d+\.\d+\.\d+)\.\*\*", re.M)
 RELEASE_PIN = re.compile(r'^\s*RELEASE:\s*"?(\d+\.\d+\.\d+)"?\s*$', re.M)
 # What the site says about the current version: its structured data, the Action ref, and "version X.Y.Z" (the
 # phrase sync_facts writes). Past releases named as history ("ran on Netdryrun 0.3.1") match none of these.
-SITE_VERSION = re.compile(r'"softwareVersion":\s*"(\d+\.\d+\.\d+)"|netdryrun/netdryrun@v(\d+\.\d+\.\d+)'
+SITE_VERSION = re.compile(r'"softwareVersion":\s*"(\d+\.\d+\.\d+)"|(?i:netdryrun/netdryrun)@v(\d+\.\d+\.\d+)'
                           r"|(?i:\bversion) (\d+\.\d+\.\d+)")
 
 
@@ -1311,7 +1397,7 @@ def main_texts() -> dict[str, str] | None:
     """README.md, published-action.yml and every file naming the Action, as origin/main has them after one fetch."""
     if run(["git", "-C", ROOT, "fetch", "--quiet", "origin", "main"], timeout=120).code != 0:
         return None
-    p = run(["git", "-C", ROOT, "grep", "-l", "-F", "netdryrun/netdryrun@v", "origin/main"], timeout=60)
+    p = run(["git", "-C", ROOT, "grep", "-l", "-i", "-F", "netdryrun/netdryrun@v", "origin/main"], timeout=60)
     if p.code not in (0, 1):   # 1: no match
         return None
     paths = {ln.split(":", 1)[1] for ln in p.out.splitlines() if ln.startswith("origin/main:")}
@@ -1424,7 +1510,7 @@ def release_consistency(layer: Layer, version: str, get=fetch, main=main_texts) 
                f"latest release: {got or f'unreadable (HTTP {status})'}"
                + ("" if pasted or not got else "; its notes are only what GitHub generates (paste the release notes)"))
 
-    title = f"main names {version}: README status line, every netdryrun/netdryrun@v ref, published-action.yml RELEASE"
+    title = f"main names {version}: README status line, every netdryrun/Netdryrun@v ref, published-action.yml RELEASE"
     texts = main()
     if texts is None:
         report("main-version", title, None, "could not fetch and read origin/main")
@@ -1667,6 +1753,9 @@ def main() -> int:
                     help="static: this is the release candidate (CHANGELOG cut, tag and PyPI version unused)")
     ap.add_argument("--pythons", default=",".join(PYTHONS), help=f"unit/after-publish: versions (default {','.join(PYTHONS)})")
     ap.add_argument("--modules", default=",".join(VERDICT_MODULES), help="mutation: modules to mutate (default all)")
+    ap.add_argument("--carry-mutation", metavar="MUTATION_JSON",
+                    help="mutation: keep this earlier record for every module not in --modules whose source is "
+                         "byte-identical at this commit")
     ap.add_argument("--jobs", type=int, default=os.cpu_count() or 2, help="mutation: parallel workers")
     ap.add_argument("--mutation-timeout", type=float, default=4 * 3600, help="mutation: seconds (default 4 h)")
     ap.add_argument("--examples", help="live: only these examples (comma-separated)")
