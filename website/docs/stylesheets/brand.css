@@ -48,3 +48,6 @@
 .ndr-video { margin: 1.2em 0 1.6em; }
 .ndr-video video { display: block; width: 100%; height: auto; border-radius: 8px; background: #041334; }
 .ndr-video figcaption { font-size: 0.7rem; color: var(--md-default-fg-color--light); margin-top: 0.5em; text-align: left; max-width: none; }
+
+/* Buttons in a row wrap onto separate lines on narrow screens: keep a gap between them, so each reads as its own button */
+.md-typeset .md-button { margin: 0 0.3rem 0.6rem 0; }
